@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Shot Tutors | Mathematics Tutoring Grades 8-12</title>
+    <meta name="description" content="Professional Mathematics tutoring in South Africa for Grades 8-12. Pure Maths only (not Maths Literacy). Limited slots available per term.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0f172a', /* Navy */
+                            gold: '#fbbf24', /* Gold */
+                            light: '#f8fafc',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        .hero-pattern {
+            background-color: #0f172a;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231e293b' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        /* Mobile menu */
+        .mobile-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .mobile-menu.open {
+            max-height: 300px;
+        }
+        /* Scroll animations */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        /* Counter animation */
+        .counter {
+            display: inline-block;
+        }
+        /* Card hover enhancements */
+        .pricing-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .pricing-card:hover {
+            transform: translateY(-8px);
+        }
+        /* FAQ accordion */
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+        }
+        .faq-item.open .faq-answer {
+            max-height: 200px;
+        }
+        .faq-item.open .faq-icon {
+            transform: rotate(180deg);
+        }
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+        /* Testimonial cards */
+        .testimonial-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .testimonial-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="font-sans text-slate-800 antialiased bg-slate-50">
+
+    <nav class="bg-white shadow-md fixed w-full z-50" role="navigation" aria-label="Main navigation">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="#" class="text-2xl font-bold text-brand-dark tracking-tighter" aria-label="Top Shot Tutors Home">
+                        <i class="fas fa-graduation-cap text-brand-gold mr-2" aria-hidden="true"></i>Top Shot
+                    </a>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#about" class="text-gray-600 hover:text-brand-dark font-medium transition">Who We Are</a>
+                    <a href="#subjects" class="text-gray-600 hover:text-brand-dark font-medium transition">Subjects</a>
+                    <a href="#pricing" class="text-gray-600 hover:text-brand-dark font-medium transition">Packages</a>
+                    <a href="#faq" class="text-gray-600 hover:text-brand-dark font-medium transition">FAQ</a>
+                    <a href="#contact" class="bg-brand-dark text-white px-5 py-2 rounded-full font-medium hover:bg-slate-800 transition shadow-lg">
+                        Book a Slot
+                    </a>
+                </div>
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-gold rounded p-2" aria-expanded="false" aria-controls="mobile-menu" aria-label="Toggle navigation menu">
+                        <i class="fas fa-bars text-2xl" id="menu-icon"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="mobile-menu md:hidden">
+                <div class="py-4 space-y-3 border-t border-gray-100">
+                    <a href="#about" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-brand-dark font-medium rounded transition">Who We Are</a>
+                    <a href="#subjects" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-brand-dark font-medium rounded transition">Subjects</a>
+                    <a href="#pricing" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-brand-dark font-medium rounded transition">Packages</a>
+                    <a href="#faq" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-brand-dark font-medium rounded transition">FAQ</a>
+                    <a href="#contact" class="block mx-4 py-3 bg-brand-dark text-white font-medium text-center rounded-full hover:bg-slate-800 transition shadow-lg">Book a Slot</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero-pattern pt-32 pb-20 lg:pt-48 lg:pb-32 text-white relative overflow-hidden">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <div class="inline-block px-4 py-1 rounded-full bg-brand-gold/20 border border-brand-gold/50 text-brand-gold font-semibold text-sm mb-6 animate-pulse">
+                ⚠ Limited Availability: Only 8 Slots Per Term
+            </div>
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+                Unlock Your Academic <br>
+                <span class="text-brand-gold">Full Potential.</span>
+            </h1>
+            <p class="text-lg md:text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
+                Stop struggling alone. Get exclusive, results-driven tutoring from industry professionals. We don't just teach the subject; we teach you how to win.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#pricing" class="bg-brand-gold text-brand-dark px-8 py-4 rounded-lg font-bold text-lg hover:bg-yellow-400 transition shadow-xl transform hover:-translate-y-1">
+                    View Packages
+                </a>
+                <a href="#about" class="border border-slate-500 text-slate-300 px-8 py-4 rounded-lg font-semibold hover:bg-white/10 transition">
+                    Meet The Tutors
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section id="about" class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-brand-dark">Who We Are</h2>
+                <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="relative">
+                    <div class="absolute -inset-4 bg-brand-gold/20 rounded-xl transform -rotate-2"></div>
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Tutoring Team" class="relative rounded-xl shadow-2xl w-full object-cover h-80">
+                </div>
+                
+                <div>
+                    <h3 class="text-2xl font-bold text-brand-dark mb-4">Mathematics Specialists</h3>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        We are a team of two dedicated professionals specializing exclusively in Mathematics tutoring for Grades 8-12. Unlike large agencies where you are just a number, we personally invest in every student's success.
+                    </p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-brand-gold mt-1 mr-3"></i>
+                            <span class="text-gray-700"><strong>Proven Results:</strong> 2+ years of helping students improve their Maths grades significantly.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-brand-gold mt-1 mr-3"></i>
+                            <span class="text-gray-700"><strong>Personalized:</strong> We tailor every session to your specific exam board and learning style.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-brand-gold mt-1 mr-3"></i>
+                            <span class="text-gray-700"><strong>Pure Maths Only:</strong> We focus on Mathematics, not Maths Literacy — deep expertise in one subject.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats & Trust Section -->
+    <section class="py-16 bg-brand-dark text-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center fade-up">
+                <div>
+                    <div class="text-4xl md:text-5xl font-bold text-brand-gold mb-2">
+                        <span class="counter" data-target="150">0</span>+
+                    </div>
+                    <p class="text-slate-400">Students Helped</p>
+                </div>
+                <div>
+                    <div class="text-4xl md:text-5xl font-bold text-brand-gold mb-2">
+                        <span class="counter" data-target="95">0</span>%
+                    </div>
+                    <p class="text-slate-400">Grade Improvement</p>
+                </div>
+                <div>
+                    <div class="text-4xl md:text-5xl font-bold text-brand-gold mb-2">
+                        <span class="counter" data-target="2">0</span>+
+                    </div>
+                    <p class="text-slate-400">Years Experience</p>
+                </div>
+                <div>
+                    <div class="text-4xl md:text-5xl font-bold text-brand-gold mb-2">
+                        <span class="counter" data-target="100">0</span>%
+                    </div>
+                    <p class="text-slate-400">Parent Satisfaction</p>
+                </div>
+            </div>
+            <div class="mt-12 flex flex-wrap justify-center gap-6 text-sm fade-up">
+                <div class="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full">
+                    <i class="fas fa-shield-alt text-brand-gold" aria-hidden="true"></i>
+                    <span>Money-Back Guarantee</span>
+                </div>
+                <div class="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full">
+                    <i class="fas fa-certificate text-brand-gold" aria-hidden="true"></i>
+                    <span>Qualified Tutors</span>
+                </div>
+                <div class="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full">
+                    <i class="fas fa-clock text-brand-gold" aria-hidden="true"></i>
+                    <span>Flexible Scheduling</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Subjects Section -->
+    <section id="subjects" class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-up">
+                <h2 class="text-3xl font-bold text-brand-dark">What We Teach</h2>
+                <p class="text-gray-600 mt-4">Specialized Mathematics tutoring for Grades 8-12</p>
+                <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
+            </div>
+            
+            <div class="max-w-2xl mx-auto fade-up">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-xl text-center hover:shadow-lg transition group">
+                    <div class="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition">
+                        <i class="fas fa-calculator text-3xl text-white" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="font-bold text-2xl text-gray-900 mb-2">Mathematics</h3>
+                    <p class="text-sm text-red-600 font-medium mb-4">Pure Mathematics Only — Not Mathematics Literacy</p>
+                    <p class="text-gray-600 mb-6">Algebra, Functions, Calculus, Geometry, Trigonometry, Statistics & Probability</p>
+                    
+                    <div class="grid grid-cols-5 gap-2 mb-6">
+                        <div class="bg-white rounded-lg p-3 shadow-sm">
+                            <span class="text-lg font-bold text-blue-600">Gr 8</span>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 shadow-sm">
+                            <span class="text-lg font-bold text-blue-600">Gr 9</span>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 shadow-sm">
+                            <span class="text-lg font-bold text-blue-600">Gr 10</span>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 shadow-sm">
+                            <span class="text-lg font-bold text-blue-600">Gr 11</span>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 shadow-sm">
+                            <span class="text-lg font-bold text-blue-600">Gr 12</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2 justify-center">
+                        <span class="text-sm bg-blue-200 text-blue-800 px-3 py-1 rounded-full">IEB</span>
+                        <span class="text-sm bg-blue-200 text-blue-800 px-3 py-1 rounded-full">CAPS</span>
+                        <span class="text-sm bg-blue-200 text-blue-800 px-3 py-1 rounded-full">IGCSE</span>
+                        <span class="text-sm bg-blue-200 text-blue-800 px-3 py-1 rounded-full">Cambridge</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="py-20 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-brand-dark">Mathematics Tutoring Packages</h2>
+                <p class="text-gray-600 mt-4">Choose the plan that fits your goals. Spots are limited.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 fade-up">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg transition pricing-card">
+                    <h3 class="text-xl font-bold text-gray-900">Flexi-Hour</h3>
+                    <p class="text-sm text-gray-500 mt-2">Perfect for last-minute prep</p>
+                    <div class="my-6">
+                        <span class="text-4xl font-bold text-brand-dark">R250</span>
+                        <span class="text-gray-500">/hour</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 text-sm text-gray-600">
+                        <li><i class="fas fa-check text-brand-gold mr-2"></i>In-person focus</li>
+                        <li><i class="fas fa-check text-brand-gold mr-2"></i>Pay as you go</li>
+                        <li><i class="fas fa-check text-brand-gold mr-2"></i>Subject specific help</li>
+                    </ul>
+                    <a href="#contact" class="block w-full py-3 px-4 bg-slate-100 text-brand-dark font-bold text-center rounded-lg hover:bg-slate-200 transition">Book 1 Hour</a>
+                </div>
+
+                <div class="bg-white p-8 rounded-2xl shadow-xl border-2 border-brand-gold relative transform md:-translate-y-4 pricing-card">
+                    <div class="absolute top-0 right-0 bg-brand-gold text-brand-dark text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">POPULAR</div>
+                    <h3 class="text-xl font-bold text-gray-900">The 5-Hour Tune Up</h3>
+                    <p class="text-sm text-gray-500 mt-2">Consistent weekly support</p>
+                    <div class="my-6">
+                        <span class="text-4xl font-bold text-brand-dark">R950</span>
+                        <span class="text-gray-500">/total</span>
+                    </div>
+                    <p class="text-green-600 text-sm font-semibold mb-6">You save R300</p>
+                    <ul class="space-y-3 mb-8 text-sm text-gray-600">
+                        <li><i class="fas fa-check text-brand-gold mr-2"></i>R190 per hour effective rate</li>
+                        <li><i class="fas fa-check text-brand-gold mr-2"></i>Guaranteed weekly slot</li>
+                        <li><i class="fas fa-check text-brand-gold mr-2"></i>Custom study plan</li>
+                    </ul>
+                    <a href="#contact" class="block w-full py-3 px-4 bg-brand-gold text-brand-dark font-bold text-center rounded-lg hover:bg-yellow-400 transition shadow-lg">Get Started</a>
+                </div>
+
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg transition pricing-card">
+                    <h3 class="text-xl font-bold text-gray-900">The 10-Hour Distinction</h3>
+                    <p class="text-sm text-gray-500 mt-2">Complete term mastery</p>
+                    <div class="my-6">
+                        <span class="text-4xl font-bold text-brand-dark">R1,800</span>
+                        <span class="text-gray-500">/total</span>
+                    </div>
+                    <p class="text-green-600 text-sm font-semibold mb-6">You save R700</p>
+                    <ul class="space-y-3 mb-8 text-sm text-gray-600">
+                        <li><i class="fas fa-check text-brand-gold mr-2"></i>R180 per hour effective rate</li>
+                        <li><i class="fas fa-check text-brand-gold mr-2"></i>Priority scheduling</li>
+                        <li><i class="fas fa-check text-brand-gold mr-2"></i>Exam strategy session included</li>
+                    </ul>
+                    <a href="#contact" class="block w-full py-3 px-4 bg-brand-dark text-white font-bold text-center rounded-lg hover:bg-slate-800 transition">Get Best Value</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-up">
+                <h2 class="text-3xl font-bold text-brand-dark">What Parents & Students Say</h2>
+                <p class="text-gray-600 mt-4">Real results from real families</p>
+                <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 fade-up">
+                <div class="testimonial-card bg-slate-50 p-6 rounded-xl border border-slate-100">
+                    <div class="flex items-center gap-1 mb-4 text-brand-gold">
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-gray-600 italic mb-6">"My son went from 45% to 72% in Maths in just one term. The personalized approach made all the difference. Worth every cent!"</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-brand-gold/20 rounded-full flex items-center justify-center">
+                            <span class="text-brand-dark font-bold">SM</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">Sarah M.</p>
+                            <p class="text-sm text-gray-500">Parent, Grade 11 Student</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card bg-slate-50 p-6 rounded-xl border border-slate-100">
+                    <div class="flex items-center gap-1 mb-4 text-brand-gold">
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-gray-600 italic mb-6">"Finally understood Calculus! The tutors explain things in ways that actually make sense. Got my first A in Maths in years."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-brand-gold/20 rounded-full flex items-center justify-center">
+                            <span class="text-brand-dark font-bold">TN</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">Thabo N.</p>
+                            <p class="text-sm text-gray-500">Grade 12 Student</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card bg-slate-50 p-6 rounded-xl border border-slate-100">
+                    <div class="flex items-center gap-1 mb-4 text-brand-gold">
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <i class="fas fa-star-half-alt" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-gray-600 italic mb-6">"The 10-hour package was perfect for exam prep. They covered all my weak areas in Algebra and Trig and gave me strategies for the actual exam."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-brand-gold/20 rounded-full flex items-center justify-center">
+                            <span class="text-brand-dark font-bold">LP</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">Lerato P.</p>
+                            <p class="text-sm text-gray-500">Grade 10 Student</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Before/After Results -->
+            <div class="mt-16 bg-gradient-to-r from-brand-dark to-slate-800 p-8 rounded-2xl text-white fade-up">
+                <h3 class="text-2xl font-bold text-center mb-8">Real Grade Improvements in Mathematics</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <div class="flex items-center justify-center gap-4 mb-2">
+                            <span class="text-3xl font-bold text-red-400">45%</span>
+                            <i class="fas fa-arrow-right text-brand-gold" aria-hidden="true"></i>
+                            <span class="text-3xl font-bold text-green-400">78%</span>
+                        </div>
+                        <p class="text-slate-400">Grade 11 Algebra • 8 Sessions</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="flex items-center justify-center gap-4 mb-2">
+                            <span class="text-3xl font-bold text-red-400">52%</span>
+                            <i class="fas fa-arrow-right text-brand-gold" aria-hidden="true"></i>
+                            <span class="text-3xl font-bold text-green-400">84%</span>
+                        </div>
+                        <p class="text-slate-400">Grade 12 Calculus • 10 Sessions</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="flex items-center justify-center gap-4 mb-2">
+                            <span class="text-3xl font-bold text-red-400">38%</span>
+                            <i class="fas fa-arrow-right text-brand-gold" aria-hidden="true"></i>
+                            <span class="text-3xl font-bold text-green-400">71%</span>
+                        </div>
+                        <p class="text-slate-400">Grade 10 Functions • 6 Sessions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-20 bg-slate-50">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-up">
+                <h2 class="text-3xl font-bold text-brand-dark">Frequently Asked Questions</h2>
+                <p class="text-gray-600 mt-4">Everything you need to know</p>
+                <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
+            </div>
+            
+            <div class="space-y-4 fade-up">
+                <div class="faq-item bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <button class="faq-btn w-full px-6 py-4 text-left flex items-center justify-between font-semibold text-gray-900 hover:bg-slate-50 transition" aria-expanded="false">
+                        <span>How do the tutoring sessions work?</span>
+                        <i class="fas fa-chevron-down faq-icon text-brand-gold" aria-hidden="true"></i>
+                    </button>
+                    <div class="faq-answer px-6 text-gray-600">
+                        <p class="pb-4">Sessions are conducted in-person at a convenient location (usually your home or a quiet study space). Each session is 1 hour and focuses on your specific problem areas, upcoming tests, or exam preparation. We bring all necessary materials and track your progress week to week.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <button class="faq-btn w-full px-6 py-4 text-left flex items-center justify-between font-semibold text-gray-900 hover:bg-slate-50 transition" aria-expanded="false">
+                        <span>What if I need to reschedule a session?</span>
+                        <i class="fas fa-chevron-down faq-icon text-brand-gold" aria-hidden="true"></i>
+                    </button>
+                    <div class="faq-answer px-6 text-gray-600">
+                        <p class="pb-4">We understand life happens! Just give us 24 hours notice and we'll reschedule at no extra charge. Same-day cancellations may forfeit the session, but we try to be flexible where possible.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <button class="faq-btn w-full px-6 py-4 text-left flex items-center justify-between font-semibold text-gray-900 hover:bg-slate-50 transition" aria-expanded="false">
+                        <span>Do you offer online tutoring?</span>
+                        <i class="fas fa-chevron-down faq-icon text-brand-gold" aria-hidden="true"></i>
+                    </button>
+                    <div class="faq-answer px-6 text-gray-600">
+                        <p class="pb-4">We primarily focus on in-person tutoring for the best results, but we do offer online sessions via Zoom or Google Meet for package holders who occasionally can't meet in person. Contact us to discuss your needs.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <button class="faq-btn w-full px-6 py-4 text-left flex items-center justify-between font-semibold text-gray-900 hover:bg-slate-50 transition" aria-expanded="false">
+                        <span>What grades and subjects do you tutor?</span>
+                        <i class="fas fa-chevron-down faq-icon text-brand-gold" aria-hidden="true"></i>
+                    </button>
+                    <div class="faq-answer px-6 text-gray-600">
+                        <p class="pb-4">We specialize exclusively in <strong>Mathematics (Pure Maths)</strong> for students from Grade 8 to Grade 12. We do not tutor Mathematical Literacy. We cover IEB, CAPS, and Cambridge/IGCSE curricula, with particular expertise in matric preparation.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <button class="faq-btn w-full px-6 py-4 text-left flex items-center justify-between font-semibold text-gray-900 hover:bg-slate-50 transition" aria-expanded="false">
+                        <span>Is there a satisfaction guarantee?</span>
+                        <i class="fas fa-chevron-down faq-icon text-brand-gold" aria-hidden="true"></i>
+                    </button>
+                    <div class="faq-answer px-6 text-gray-600">
+                        <p class="pb-4">Yes! If you're not satisfied after your first session, we'll refund that session in full. For packages, if you're unhappy with the quality of tutoring, we'll work with you to make it right or provide a prorated refund for unused hours.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <footer id="contact" class="bg-brand-dark text-white py-16">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+                <!-- Contact Info -->
+                <div class="text-center lg:text-left">
+                    <h2 class="text-3xl font-bold mb-6">Secure Your Spot</h2>
+                    <p class="text-slate-400 mb-8">
+                        We tutor <strong class="text-white">Monday to Thursday (5pm - 8pm)</strong> and limited slots on weekends.
+                        <br>Message us via WhatsApp or fill out the form to book your assessment.
+                    </p>
+                    
+                    <div class="space-y-4 max-w-md mx-auto lg:mx-0">
+                        <a href="https://wa.me/27123456789" class="flex items-center justify-center w-full py-4 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition text-lg">
+                            <i class="fab fa-whatsapp text-2xl mr-3" aria-hidden="true"></i> Chat on WhatsApp
+                        </a>
+                        <a href="mailto:info@topshottutors.co.za" class="flex items-center justify-center w-full py-3 border border-slate-500 text-slate-300 rounded-lg hover:bg-white/5 transition">
+                            <i class="fas fa-envelope mr-3" aria-hidden="true"></i> info@topshottutors.co.za
+                        </a>
+                    </div>
+                    
+                    <div class="mt-8 flex justify-center lg:justify-start gap-4">
+                        <a href="#" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition" aria-label="Facebook">
+                            <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition" aria-label="Instagram">
+                            <i class="fab fa-instagram" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition" aria-label="LinkedIn">
+                            <i class="fab fa-linkedin-in" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Quick Contact Form -->
+                <div class="bg-white/5 p-8 rounded-xl backdrop-blur-sm border border-white/10">
+                    <h3 class="text-xl font-bold mb-6">Quick Enquiry</h3>
+                    <form id="contact-form" class="space-y-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-slate-400 mb-1">Your Name</label>
+                            <input type="text" id="name" name="name" required class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-gold focus:border-transparent transition" placeholder="John Smith">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-slate-400 mb-1">Email Address</label>
+                            <input type="email" id="email" name="email" required class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-gold focus:border-transparent transition" placeholder="john@example.com">
+                        </div>
+                        <div>
+                            <label for="grade" class="block text-sm font-medium text-slate-400 mb-1">Student's Grade</label>
+                            <select id="grade" name="grade" required class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-gold focus:border-transparent transition">
+                                <option value="" class="text-gray-900">Select grade...</option>
+                                <option value="8" class="text-gray-900">Grade 8</option>
+                                <option value="9" class="text-gray-900">Grade 9</option>
+                                <option value="10" class="text-gray-900">Grade 10</option>
+                                <option value="11" class="text-gray-900">Grade 11</option>
+                                <option value="12" class="text-gray-900">Grade 12</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="message" class="block text-sm font-medium text-slate-400 mb-1">Message (Optional)</label>
+                            <textarea id="message" name="message" rows="3" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-gold focus:border-transparent transition resize-none" placeholder="Tell us about your goals or current grade..."></textarea>
+                        </div>
+                        <button type="submit" class="w-full py-4 bg-brand-gold text-brand-dark font-bold rounded-lg hover:bg-yellow-400 transition shadow-lg">
+                            Send Enquiry <i class="fas fa-paper-plane ml-2" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
+                <p>&copy; 2026 Top Shot Tutors. All rights reserved.</p>
+                <div class="flex gap-6 mt-4 md:mt-0">
+                    <a href="#" class="hover:text-white transition">Privacy Policy</a>
+                    <a href="#" class="hover:text-white transition">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for interactions -->
+    <script>
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const menuIcon = document.getElementById('menu-icon');
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            const isOpen = mobileMenu.classList.toggle('open');
+            mobileMenuBtn.setAttribute('aria-expanded', isOpen);
+            menuIcon.classList.toggle('fa-bars');
+            menuIcon.classList.toggle('fa-times');
+        });
+        
+        // Close mobile menu when clicking a link
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('open');
+                mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                menuIcon.classList.add('fa-bars');
+                menuIcon.classList.remove('fa-times');
+            });
+        });
+        
+        // FAQ accordion
+        document.querySelectorAll('.faq-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.parentElement;
+                const isOpen = item.classList.contains('open');
+                
+                // Close all other FAQs
+                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+                document.querySelectorAll('.faq-btn').forEach(b => b.setAttribute('aria-expanded', 'false'));
+                
+                // Toggle current
+                if (!isOpen) {
+                    item.classList.add('open');
+                    btn.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+        
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+        
+        // Counter animation
+        const counters = document.querySelectorAll('.counter');
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const counter = entry.target;
+                    const target = parseInt(counter.dataset.target);
+                    const duration = 2000;
+                    const step = target / (duration / 16);
+                    let current = 0;
+                    
+                    const updateCounter = () => {
+                        current += step;
+                        if (current < target) {
+                            counter.textContent = Math.floor(current);
+                            requestAnimationFrame(updateCounter);
+                        } else {
+                            counter.textContent = target;
+                        }
+                    };
+                    
+                    updateCounter();
+                    counterObserver.unobserve(counter);
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        counters.forEach(counter => counterObserver.observe(counter));
+        
+        // Form submission (demo - replace with actual backend)
+        document.getElementById('contact-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+            btn.disabled = true;
+            
+            // Simulate form submission
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-check mr-2"></i> Sent Successfully!';
+                btn.classList.remove('bg-brand-gold', 'hover:bg-yellow-400');
+                btn.classList.add('bg-green-500');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.add('bg-brand-gold', 'hover:bg-yellow-400');
+                    btn.classList.remove('bg-green-500');
+                    btn.disabled = false;
+                    e.target.reset();
+                }, 2000);
+            }, 1500);
+        });
+    </script>
+
+</body>
+</html>
