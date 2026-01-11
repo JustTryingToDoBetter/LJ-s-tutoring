@@ -1,11 +1,11 @@
-# Robots.txt for Top Shot Tutors
-# https://www.topshottutors.co.za
+# Robots.txt for Project Odysseus
+# https://www.projectodysseus.co.za
 
 User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://www.topshottutors.co.za/sitemap.xml
+Sitemap: https://www.projectodysseus.co.za/sitemap.xml
 
 # Crawl-delay for respectful crawling
 Crawl-delay: 1

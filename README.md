@@ -1,4 +1,4 @@
-# Top Shot Tutors Website
+# Project Odysseus Website
 
 Professional Mathematics tutoring website for Grades 8-12 in South Africa.
 
@@ -117,4 +117,4 @@ For technical issues with this website template, please open an issue.
 
 ---
 
-© 2026 Top Shot Tutors. All rights reserved.
+© 2026 Project Odysseus. All rights reserved.

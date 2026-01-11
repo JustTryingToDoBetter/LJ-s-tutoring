@@ -10,8 +10,8 @@
 
 # Redirect www to non-www (or vice versa)
 [[redirects]]
-  from = "https://www.topshottutors.co.za/*"
-  to = "https://topshottutors.co.za/:splat"
+  from = "https://www.projectodysseus.co.za/*"
+  to = "https://projectodysseus.co.za/:splat"
   status = 301
   force = true
 

@@ -6,5 +6,11 @@
     </linearGradient>
   </defs>
   <circle cx="50" cy="50" r="48" fill="url(#grad)" stroke="#fbbf24" stroke-width="4"/>
-  <text x="50" y="65" font-family="Arial, sans-serif" font-size="45" font-weight="bold" fill="#fbbf24" text-anchor="middle">TS</text>
+  <!-- Compass/Navigation star inspired by Odysseus's journey -->
+  <polygon points="50,15 54,45 50,50 46,45" fill="#fbbf24"/>
+  <polygon points="85,50 55,54 50,50 55,46" fill="#fbbf24"/>
+  <polygon points="50,85 46,55 50,50 54,55" fill="#fbbf24"/>
+  <polygon points="15,50 45,46 50,50 45,54" fill="#fbbf24"/>
+  <circle cx="50" cy="50" r="8" fill="#fbbf24"/>
+  <circle cx="50" cy="50" r="4" fill="#0f172a"/>
 </svg>

@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Top Shot Tutors | Mathematics Tutoring Grades 8-12</title>
+    <title>Project Odysseus | Mathematics Tutoring Grades 8-12</title>
     <meta name="description" content="Professional Mathematics tutoring in South Africa for Grades 8-12. Pure Maths only (not Maths Literacy). Limited slots available per term.">
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://www.topshottutors.co.za/">
+    <link rel="canonical" href="https://www.projectodysseus.co.za/">
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -15,23 +15,23 @@
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://www.topshottutors.co.za/">
-    <meta property="og:title" content="Top Shot Tutors | Mathematics Tutoring Grades 8-12">
+    <meta property="og:url" content="https://www.projectodysseus.co.za/">
+    <meta property="og:title" content="Project Odysseus | Mathematics Tutoring Grades 8-12">
     <meta property="og:description" content="Professional Mathematics tutoring in South Africa for Grades 8-12. Pure Maths only (not Maths Literacy). Limited slots available per term.">
-    <meta property="og:image" content="https://www.topshottutors.co.za/og-image.jpg">
+    <meta property="og:image" content="https://www.projectodysseus.co.za/og-image.jpg">
     <meta property="og:locale" content="en_ZA">
-    <meta property="og:site_name" content="Top Shot Tutors">
+    <meta property="og:site_name" content="Project Odysseus">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://www.topshottutors.co.za/">
-    <meta name="twitter:title" content="Top Shot Tutors | Mathematics Tutoring Grades 8-12">
+    <meta name="twitter:url" content="https://www.projectodysseus.co.za/">
+    <meta name="twitter:title" content="Project Odysseus | Mathematics Tutoring Grades 8-12">
     <meta name="twitter:description" content="Professional Mathematics tutoring in South Africa for Grades 8-12. Pure Maths only (not Maths Literacy). Limited slots available per term.">
-    <meta name="twitter:image" content="https://www.topshottutors.co.za/og-image.jpg">
+    <meta name="twitter:image" content="https://www.projectodysseus.co.za/og-image.jpg">
     
     <!-- Additional SEO -->
     <meta name="robots" content="index, follow">
-    <meta name="author" content="Top Shot Tutors">
+    <meta name="author" content="Project Odysseus">
     <meta name="keywords" content="maths tutoring, mathematics tutor, grade 12 maths, matric maths, IEB maths, CAPS maths, South Africa tutoring, private tutor">
     <meta name="theme-color" content="#0f172a">
     
@@ -40,11 +40,11 @@
     {
         "@context": "https://schema.org",
         "@type": "EducationalOrganization",
-        "name": "Top Shot Tutors",
+        "name": "Project Odysseus",
         "description": "Professional Mathematics tutoring in South Africa for Grades 8-12. Pure Maths only.",
-        "url": "https://www.topshottutors.co.za",
-        "logo": "https://www.topshottutors.co.za/favicon.svg",
-        "email": "info@topshottutors.co.za",
+        "url": "https://www.projectodysseus.co.za",
+        "logo": "https://www.projectodysseus.co.za/favicon.svg",
+        "email": "info@projectodysseus.co.za",
         "areaServed": {
             "@type": "Country",
             "name": "South Africa"
@@ -90,8 +90,8 @@
     {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
-        "name": "Top Shot Tutors",
-        "image": "https://www.topshottutors.co.za/og-image.jpg",
+        "name": "Project Odysseus",
+        "image": "https://www.projectodysseus.co.za/og-image.jpg",
         "priceRange": "R180-R250/hour",
         "openingHours": "Mo-Th 17:00-20:00",
         "address": {
@@ -239,16 +239,92 @@
             0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
             50% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
         }
+        /* Dark mode */
+        .dark {
+            color-scheme: dark;
+        }
+        .dark body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+        .dark .bg-white {
+            background-color: #1e293b;
+        }
+        .dark .bg-slate-50 {
+            background-color: #0f172a;
+        }
+        .dark .text-gray-600,
+        .dark .text-gray-700,
+        .dark .text-slate-800 {
+            color: #cbd5e1;
+        }
+        .dark .text-gray-900,
+        .dark .text-brand-dark {
+            color: #f1f5f9;
+        }
+        .dark .border-slate-200,
+        .dark .border-slate-100 {
+            border-color: #334155;
+        }
+        .dark .bg-slate-100 {
+            background-color: #334155;
+        }
+        .dark nav.bg-white {
+            background-color: #1e293b;
+        }
+        .dark .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+        /* Social proof notification */
+        .social-proof {
+            transform: translateX(-100%);
+            transition: transform 0.5s ease-out;
+        }
+        .social-proof.show {
+            transform: translateX(0);
+        }
+        /* Countdown timer */
+        .countdown-digit {
+            min-width: 60px;
+        }
+        /* Skip link for accessibility */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #fbbf24;
+            color: #0f172a;
+            padding: 8px 16px;
+            z-index: 100;
+            transition: top 0.3s;
+        }
+        .skip-link:focus {
+            top: 0;
+        }
+        /* Focus visible for accessibility */
+        *:focus-visible {
+            outline: 2px solid #fbbf24;
+            outline-offset: 2px;
+        }
+        /* Comparison table */
+        .comparison-row:nth-child(odd) {
+            background-color: rgba(251, 191, 36, 0.05);
+        }
+        .dark .comparison-row:nth-child(odd) {
+            background-color: rgba(251, 191, 36, 0.1);
+        }
     </style>
 </head>
 <body class="font-sans text-slate-800 antialiased bg-slate-50">
+    <!-- Skip link for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <nav class="bg-white shadow-md fixed w-full z-50" role="navigation" aria-label="Main navigation">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <a href="#" class="text-2xl font-bold text-brand-dark tracking-tighter" aria-label="Top Shot Tutors Home">
-                        <i class="fas fa-graduation-cap text-brand-gold mr-2" aria-hidden="true"></i>Top Shot
+                    <a href="#" class="text-2xl font-bold text-brand-dark tracking-tighter" aria-label="Project Odysseus Home">
+                        <i class="fas fa-compass text-brand-gold mr-2" aria-hidden="true"></i>Project Odysseus
                     </a>
                 </div>
                 <div class="hidden md:flex items-center space-x-8">
@@ -256,6 +332,9 @@
                     <a href="#subjects" class="text-gray-600 hover:text-brand-dark font-medium transition">Subjects</a>
                     <a href="#pricing" class="text-gray-600 hover:text-brand-dark font-medium transition">Packages</a>
                     <a href="#faq" class="text-gray-600 hover:text-brand-dark font-medium transition">FAQ</a>
+                    <button id="dark-mode-toggle" class="text-gray-600 hover:text-brand-dark p-2 rounded-full hover:bg-gray-100 transition" aria-label="Toggle dark mode">
+                        <i class="fas fa-moon" id="dark-mode-icon" aria-hidden="true"></i>
+                    </button>
                     <a href="#contact" class="bg-brand-dark text-white px-5 py-2 rounded-full font-medium hover:bg-slate-800 transition shadow-lg">
                         Book a Slot
                     </a>
@@ -279,17 +358,41 @@
         </div>
     </nav>
 
-    <header class="hero-pattern pt-32 pb-20 lg:pt-48 lg:pb-32 text-white relative overflow-hidden">
+    <header class="hero-pattern pt-32 pb-20 lg:pt-48 lg:pb-32 text-white relative overflow-hidden" id="main-content">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <div class="inline-block px-4 py-1 rounded-full bg-brand-gold/20 border border-brand-gold/50 text-brand-gold font-semibold text-sm mb-6 animate-pulse">
-                ⚠ Limited Availability: Only 8 Slots Per Term
+            <!-- Countdown Timer -->
+            <div class="mb-8 fade-up">
+                <p class="text-slate-400 text-sm mb-3">Term 1 bookings close in:</p>
+                <div class="flex justify-center gap-3" id="countdown">
+                    <div class="countdown-digit bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+                        <span class="text-2xl md:text-3xl font-bold text-brand-gold" id="countdown-days">00</span>
+                        <p class="text-xs text-slate-400">Days</p>
+                    </div>
+                    <div class="countdown-digit bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+                        <span class="text-2xl md:text-3xl font-bold text-brand-gold" id="countdown-hours">00</span>
+                        <p class="text-xs text-slate-400">Hours</p>
+                    </div>
+                    <div class="countdown-digit bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+                        <span class="text-2xl md:text-3xl font-bold text-brand-gold" id="countdown-mins">00</span>
+                        <p class="text-xs text-slate-400">Mins</p>
+                    </div>
+                    <div class="countdown-digit bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+                        <span class="text-2xl md:text-3xl font-bold text-brand-gold" id="countdown-secs">00</span>
+                        <p class="text-xs text-slate-400">Secs</p>
+                    </div>
+                </div>
             </div>
+            
+            <div class="inline-block px-4 py-1 rounded-full bg-red-500/20 border border-red-500/50 text-red-300 font-semibold text-sm mb-6 animate-pulse">
+                🔥 Only 3 Slots Left This Term!
+            </div>
+            <p class="text-brand-gold/80 text-sm uppercase tracking-widest mb-2">Navigate Your Journey to Success</p>
             <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-                Unlock Your Academic <br>
-                <span class="text-brand-gold">Full Potential.</span>
+                Your Mathematical <br>
+                <span class="text-brand-gold">Odyssey Begins Here.</span>
             </h1>
             <p class="text-lg md:text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
-                Stop struggling alone. Get exclusive, results-driven tutoring from industry professionals. We don't just teach the subject; we teach you how to win.
+                Like Odysseus navigating the seas, we'll guide you through every mathematical challenge. Expert tutoring that turns struggles into triumphs.
             </p>
             <div class="flex flex-col sm:flex-row justify-center gap-4">
                 <a href="#pricing" class="bg-brand-gold text-brand-dark px-8 py-4 rounded-lg font-bold text-lg hover:bg-yellow-400 transition shadow-xl transform hover:-translate-y-1">
@@ -312,7 +415,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 <div class="relative">
                     <div class="absolute -inset-4 bg-brand-gold/20 rounded-xl transform -rotate-2"></div>
-                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Top Shot Tutors team helping a student with mathematics" loading="lazy" class="relative rounded-xl shadow-2xl w-full object-cover h-80">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Project Odysseus team helping a student with mathematics" loading="lazy" class="relative rounded-xl shadow-2xl w-full object-cover h-80">
                 </div>
                 
                 <div>
@@ -334,6 +437,77 @@
                             <span class="text-gray-700"><strong>Pure Maths Only:</strong> We focus on Mathematics, not Maths Literacy — deep expertise in one subject.</span>
                         </li>
                     </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Meet The Tutors -->
+    <section id="tutors" class="py-20 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-up">
+                <h2 class="text-3xl font-bold text-brand-dark">Meet Your Tutors</h2>
+                <p class="text-gray-600 mt-4">The faces behind your success</p>
+                <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto fade-up">
+                <!-- Tutor 1 -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition">
+                    <div class="flex flex-col sm:flex-row items-center gap-6">
+                        <div class="w-24 h-24 bg-gradient-to-br from-brand-dark to-slate-700 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-3xl font-bold text-brand-gold">LJ</span>
+                        </div>
+                        <div class="text-center sm:text-left">
+                            <h3 class="text-xl font-bold text-brand-dark">Tutor LJ</h3>
+                            <p class="text-brand-gold font-medium">Lead Tutor & Founder</p>
+                            <div class="flex items-center justify-center sm:justify-start gap-1 mt-2 text-brand-gold">
+                                <i class="fas fa-star text-sm" aria-hidden="true"></i>
+                                <i class="fas fa-star text-sm" aria-hidden="true"></i>
+                                <i class="fas fa-star text-sm" aria-hidden="true"></i>
+                                <i class="fas fa-star text-sm" aria-hidden="true"></i>
+                                <i class="fas fa-star text-sm" aria-hidden="true"></i>
+                                <span class="text-gray-500 text-sm ml-1">(4.9)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <p class="text-gray-600 text-sm leading-relaxed">Passionate about making Maths accessible to everyone. Specializes in breaking down complex concepts into simple, understandable steps.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Calculus</span>
+                            <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">Algebra</span>
+                            <span class="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full">Exam Prep</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tutor 2 -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition">
+                    <div class="flex flex-col sm:flex-row items-center gap-6">
+                        <div class="w-24 h-24 bg-gradient-to-br from-brand-gold to-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-3xl font-bold text-brand-dark">TS</span>
+                        </div>
+                        <div class="text-center sm:text-left">
+                            <h3 class="text-xl font-bold text-brand-dark">Tutor TS</h3>
+                            <p class="text-brand-gold font-medium">Senior Mathematics Tutor</p>
+                            <div class="flex items-center justify-center sm:justify-start gap-1 mt-2 text-brand-gold">
+                                <i class="fas fa-star text-sm" aria-hidden="true"></i>
+                                <i class="fas fa-star text-sm" aria-hidden="true"></i>
+                                <i class="fas fa-star text-sm" aria-hidden="true"></i>
+                                <i class="fas fa-star text-sm" aria-hidden="true"></i>
+                                <i class="fas fa-star text-sm" aria-hidden="true"></i>
+                                <span class="text-gray-500 text-sm ml-1">(5.0)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <p class="text-gray-600 text-sm leading-relaxed">Expert in building student confidence and exam technique. Known for patient, encouraging teaching style that gets results.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-full">Trigonometry</span>
+                            <span class="text-xs bg-pink-100 text-pink-700 px-3 py-1 rounded-full">Functions</span>
+                            <span class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">Geometry</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -502,6 +676,69 @@
                     <a href="#contact" class="flex-shrink-0 bg-brand-dark text-white px-8 py-4 rounded-lg font-bold hover:bg-slate-800 transition shadow-lg">
                         Learn More <i class="fas fa-arrow-right ml-2" aria-hidden="true"></i>
                     </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us - Comparison -->
+    <section class="py-20 bg-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 fade-up">
+                <h2 class="text-3xl font-bold text-brand-dark">Why Project Odysseus?</h2>
+                <p class="text-gray-600 mt-4">See how we compare to other options</p>
+                <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
+            </div>
+            
+            <div class="bg-slate-50 rounded-2xl overflow-hidden border border-slate-200 fade-up">
+                <div class="grid grid-cols-3 bg-brand-dark text-white font-semibold">
+                    <div class="p-4 text-center">Feature</div>
+                    <div class="p-4 text-center bg-brand-gold text-brand-dark">
+                        <i class="fas fa-crown mr-2" aria-hidden="true"></i>Project Odysseus
+                    </div>
+                    <div class="p-4 text-center">Big Agencies</div>
+                </div>
+                
+                <div class="comparison-row grid grid-cols-3 border-b border-slate-200">
+                    <div class="p-4 text-gray-700 font-medium">Personal Attention</div>
+                    <div class="p-4 text-center"><i class="fas fa-check-circle text-green-500 text-xl" aria-hidden="true"></i></div>
+                    <div class="p-4 text-center"><i class="fas fa-times-circle text-red-400 text-xl" aria-hidden="true"></i></div>
+                </div>
+                
+                <div class="comparison-row grid grid-cols-3 border-b border-slate-200">
+                    <div class="p-4 text-gray-700 font-medium">Same Tutor Every Week</div>
+                    <div class="p-4 text-center"><i class="fas fa-check-circle text-green-500 text-xl" aria-hidden="true"></i></div>
+                    <div class="p-4 text-center"><i class="fas fa-times-circle text-red-400 text-xl" aria-hidden="true"></i></div>
+                </div>
+                
+                <div class="comparison-row grid grid-cols-3 border-b border-slate-200">
+                    <div class="p-4 text-gray-700 font-medium">Custom Study Plans</div>
+                    <div class="p-4 text-center"><i class="fas fa-check-circle text-green-500 text-xl" aria-hidden="true"></i></div>
+                    <div class="p-4 text-center"><i class="fas fa-minus-circle text-gray-400 text-xl" aria-hidden="true"></i></div>
+                </div>
+                
+                <div class="comparison-row grid grid-cols-3 border-b border-slate-200">
+                    <div class="p-4 text-gray-700 font-medium">Flexible Scheduling</div>
+                    <div class="p-4 text-center"><i class="fas fa-check-circle text-green-500 text-xl" aria-hidden="true"></i></div>
+                    <div class="p-4 text-center"><i class="fas fa-minus-circle text-gray-400 text-xl" aria-hidden="true"></i></div>
+                </div>
+                
+                <div class="comparison-row grid grid-cols-3 border-b border-slate-200">
+                    <div class="p-4 text-gray-700 font-medium">WhatsApp Support</div>
+                    <div class="p-4 text-center"><i class="fas fa-check-circle text-green-500 text-xl" aria-hidden="true"></i></div>
+                    <div class="p-4 text-center"><i class="fas fa-times-circle text-red-400 text-xl" aria-hidden="true"></i></div>
+                </div>
+                
+                <div class="comparison-row grid grid-cols-3 border-b border-slate-200">
+                    <div class="p-4 text-gray-700 font-medium">Money-Back Guarantee</div>
+                    <div class="p-4 text-center"><i class="fas fa-check-circle text-green-500 text-xl" aria-hidden="true"></i></div>
+                    <div class="p-4 text-center"><i class="fas fa-times-circle text-red-400 text-xl" aria-hidden="true"></i></div>
+                </div>
+                
+                <div class="comparison-row grid grid-cols-3">
+                    <div class="p-4 text-gray-700 font-medium">Price Per Hour</div>
+                    <div class="p-4 text-center font-bold text-green-600">R180-250</div>
+                    <div class="p-4 text-center text-gray-500">R300-500</div>
                 </div>
             </div>
         </div>
@@ -734,8 +971,8 @@
                         <a href="https://wa.me/27123456789" class="flex items-center justify-center w-full py-4 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition text-lg">
                             <i class="fab fa-whatsapp text-2xl mr-3" aria-hidden="true"></i> Chat on WhatsApp
                         </a>
-                        <a href="mailto:info@topshottutors.co.za" class="flex items-center justify-center w-full py-3 border border-slate-500 text-slate-300 rounded-lg hover:bg-white/5 transition">
-                            <i class="fas fa-envelope mr-3" aria-hidden="true"></i> info@topshottutors.co.za
+                        <a href="mailto:info@projectodysseus.co.za" class="flex items-center justify-center w-full py-3 border border-slate-500 text-slate-300 rounded-lg hover:bg-white/5 transition">
+                            <i class="fas fa-envelope mr-3" aria-hidden="true"></i> info@projectodysseus.co.za
                         </a>
                     </div>
                     
@@ -792,7 +1029,7 @@
             </div>
             
             <div class="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
-                <p>&copy; 2026 Top Shot Tutors. All rights reserved.</p>
+                <p>&copy; 2026 Project Odysseus. All rights reserved.</p>
                 <div class="flex gap-6 mt-4 md:mt-0">
                     <a href="privacy.html" class="hover:text-white transition">Privacy Policy</a>
                     <a href="terms.html" class="hover:text-white transition">Terms of Service</a>
@@ -854,6 +1091,22 @@
         </div>
     </div>
 
+    <!-- Social Proof Notification -->
+    <div id="social-proof" class="social-proof fixed bottom-24 left-6 z-40 bg-white rounded-lg shadow-xl p-4 max-w-xs border border-slate-200" role="status" aria-live="polite">
+        <button id="social-proof-close" class="absolute -top-2 -right-2 w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-300 transition" aria-label="Dismiss notification">
+            <i class="fas fa-times text-xs" aria-hidden="true"></i>
+        </button>
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-check text-green-500" aria-hidden="true"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-900" id="social-proof-text">Someone just booked a session!</p>
+                <p class="text-xs text-gray-500" id="social-proof-time">2 minutes ago</p>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript for interactions -->
     <script>
         // ==========================================
@@ -868,13 +1121,110 @@
             formspreeEndpoint: 'https://formspree.io/f/YOUR_FORM_ID',
             
             // Your email for mailto links
-            email: 'info@topshottutors.co.za'
+            email: 'info@projectodysseus.co.za',
+            
+            // Countdown target date (YYYY, Month-1, Day, Hour, Min)
+            // Month is 0-indexed: January = 0, February = 1, etc.
+            countdownDate: new Date(2026, 1, 15, 17, 0, 0) // Feb 15, 2026 5pm
         };
         // ==========================================
         
         // Update WhatsApp links dynamically
         document.querySelectorAll('a[href*="wa.me"]').forEach(link => {
             link.href = `https://wa.me/${CONFIG.whatsappNumber}`;
+        });
+        
+        // ==========================================
+        // DARK MODE TOGGLE
+        // ==========================================
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const darkModeIcon = document.getElementById('dark-mode-icon');
+        const html = document.documentElement;
+        
+        // Check for saved preference or system preference
+        if (localStorage.getItem('darkMode') === 'true' || 
+            (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+            darkModeIcon.classList.replace('fa-moon', 'fa-sun');
+        }
+        
+        darkModeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            localStorage.setItem('darkMode', isDark);
+            darkModeIcon.classList.toggle('fa-moon', !isDark);
+            darkModeIcon.classList.toggle('fa-sun', isDark);
+        });
+        
+        // ==========================================
+        // COUNTDOWN TIMER
+        // ==========================================
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const target = CONFIG.countdownDate.getTime();
+            const diff = target - now;
+            
+            if (diff > 0) {
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                document.getElementById('countdown-days').textContent = String(days).padStart(2, '0');
+                document.getElementById('countdown-hours').textContent = String(hours).padStart(2, '0');
+                document.getElementById('countdown-mins').textContent = String(mins).padStart(2, '0');
+                document.getElementById('countdown-secs').textContent = String(secs).padStart(2, '0');
+            } else {
+                document.getElementById('countdown').innerHTML = '<p class="text-brand-gold font-bold">Bookings Now Open!</p>';
+            }
+        }
+        
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+        
+        // ==========================================
+        // SOCIAL PROOF NOTIFICATIONS
+        // ==========================================
+        const socialProof = document.getElementById('social-proof');
+        const socialProofClose = document.getElementById('social-proof-close');
+        const socialProofText = document.getElementById('social-proof-text');
+        const socialProofTime = document.getElementById('social-proof-time');
+        
+        const socialProofMessages = [
+            { text: "Thabo from Sandton just booked a session!", time: "2 minutes ago" },
+            { text: "Sarah secured her weekly slot!", time: "5 minutes ago" },
+            { text: "A Grade 12 student joined the 10-hour package!", time: "8 minutes ago" },
+            { text: "Parent from Pretoria inquired about tutoring!", time: "12 minutes ago" },
+            { text: "Lerato booked an exam prep session!", time: "15 minutes ago" }
+        ];
+        
+        let socialProofIndex = 0;
+        let socialProofTimeout;
+        
+        function showSocialProof() {
+            if (sessionStorage.getItem('socialProofDismissed')) return;
+            
+            const message = socialProofMessages[socialProofIndex % socialProofMessages.length];
+            socialProofText.textContent = message.text;
+            socialProofTime.textContent = message.time;
+            socialProof.classList.add('show');
+            
+            // Hide after 5 seconds
+            socialProofTimeout = setTimeout(() => {
+                socialProof.classList.remove('show');
+                socialProofIndex++;
+                // Show next one after 30-60 seconds
+                setTimeout(showSocialProof, 30000 + Math.random() * 30000);
+            }, 5000);
+        }
+        
+        // Start showing after 10 seconds
+        setTimeout(showSocialProof, 10000);
+        
+        socialProofClose.addEventListener('click', () => {
+            socialProof.classList.remove('show');
+            sessionStorage.setItem('socialProofDismissed', 'true');
+            clearTimeout(socialProofTimeout);
         });
         
         // Mobile menu toggle
@@ -1228,7 +1578,7 @@
         if (footer) whatsappObserver.observe(footer);
         
         // Console message for developers
-        console.log('%c🎓 Top Shot Tutors', 'font-size: 24px; font-weight: bold; color: #fbbf24;');
+        console.log('%c🎓 Project Odysseus', 'font-size: 24px; font-weight: bold; color: #fbbf24;');
         console.log('%cNeed a developer? Check out our code!', 'font-size: 14px; color: #64748b;');
         console.log('%c⚠️ Remember to update CONFIG values at the top of the script!', 'font-size: 12px; color: #ef4444;');
     </script>
