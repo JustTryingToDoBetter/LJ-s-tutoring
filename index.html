@@ -6,6 +6,51 @@
     <title>Top Shot Tutors | Mathematics Tutoring Grades 8-12</title>
     <meta name="description" content="Professional Mathematics tutoring in South Africa for Grades 8-12. Pure Maths only (not Maths Literacy). Limited slots available per term.">
     
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://www.topshottutors.co.za/">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="favicon.svg">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.topshottutors.co.za/">
+    <meta property="og:title" content="Top Shot Tutors | Mathematics Tutoring Grades 8-12">
+    <meta property="og:description" content="Professional Mathematics tutoring in South Africa for Grades 8-12. Pure Maths only (not Maths Literacy). Limited slots available per term.">
+    <meta property="og:image" content="https://www.topshottutors.co.za/og-image.jpg">
+    <meta property="og:locale" content="en_ZA">
+    <meta property="og:site_name" content="Top Shot Tutors">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://www.topshottutors.co.za/">
+    <meta name="twitter:title" content="Top Shot Tutors | Mathematics Tutoring Grades 8-12">
+    <meta name="twitter:description" content="Professional Mathematics tutoring in South Africa for Grades 8-12. Pure Maths only (not Maths Literacy). Limited slots available per term.">
+    <meta name="twitter:image" content="https://www.topshottutors.co.za/og-image.jpg">
+    
+    <!-- Additional SEO -->
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="Top Shot Tutors">
+    <meta name="keywords" content="maths tutoring, mathematics tutor, grade 12 maths, matric maths, IEB maths, CAPS maths, South Africa tutoring, private tutor">
+    <meta name="theme-color" content="#0f172a">
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    
+    <!-- Google Analytics - Replace GA_MEASUREMENT_ID with your actual ID -->
+    <!-- 
+    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'GA_MEASUREMENT_ID');
+    </script>
+    -->
+    
     <script src="https://cdn.tailwindcss.com"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -165,7 +210,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 <div class="relative">
                     <div class="absolute -inset-4 bg-brand-gold/20 rounded-xl transform -rotate-2"></div>
-                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Tutoring Team" class="relative rounded-xl shadow-2xl w-full object-cover h-80">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Top Shot Tutors team helping a student with mathematics" loading="lazy" class="relative rounded-xl shadow-2xl w-full object-cover h-80">
                 </div>
                 
                 <div>
@@ -582,8 +627,8 @@
             <div class="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
                 <p>&copy; 2026 Top Shot Tutors. All rights reserved.</p>
                 <div class="flex gap-6 mt-4 md:mt-0">
-                    <a href="#" class="hover:text-white transition">Privacy Policy</a>
-                    <a href="#" class="hover:text-white transition">Terms of Service</a>
+                    <a href="privacy.html" class="hover:text-white transition">Privacy Policy</a>
+                    <a href="terms.html" class="hover:text-white transition">Terms of Service</a>
                 </div>
             </div>
         </div>
@@ -591,6 +636,27 @@
 
     <!-- JavaScript for interactions -->
     <script>
+        // ==========================================
+        // CONFIGURATION - UPDATE THESE VALUES!
+        // ==========================================
+        const CONFIG = {
+            // Replace with your actual WhatsApp number (with country code, no + or spaces)
+            whatsappNumber: '27XXXXXXXXX', // e.g., '27821234567'
+            
+            // Formspree endpoint - Create free account at https://formspree.io
+            // Replace with your form ID after signup
+            formspreeEndpoint: 'https://formspree.io/f/YOUR_FORM_ID',
+            
+            // Your email for mailto links
+            email: 'info@topshottutors.co.za'
+        };
+        // ==========================================
+        
+        // Update WhatsApp links dynamically
+        document.querySelectorAll('a[href*="wa.me"]').forEach(link => {
+            link.href = `https://wa.me/${CONFIG.whatsappNumber}`;
+        });
+        
         // Mobile menu toggle
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -676,29 +742,122 @@
         
         counters.forEach(counter => counterObserver.observe(counter));
         
-        // Form submission (demo - replace with actual backend)
-        document.getElementById('contact-form').addEventListener('submit', (e) => {
+        // Form validation and submission with Formspree
+        const contactForm = document.getElementById('contact-form');
+        const formStatus = document.createElement('div');
+        formStatus.id = 'form-status';
+        formStatus.className = 'mt-4 text-center hidden';
+        contactForm.appendChild(formStatus);
+        
+        contactForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const btn = e.target.querySelector('button[type="submit"]');
             const originalText = btn.innerHTML;
+            
+            // Basic validation
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const grade = document.getElementById('grade').value;
+            
+            if (!name || name.length < 2) {
+                showFormError('Please enter a valid name.');
+                return;
+            }
+            
+            if (!email || !isValidEmail(email)) {
+                showFormError('Please enter a valid email address.');
+                return;
+            }
+            
+            if (!grade) {
+                showFormError('Please select a grade.');
+                return;
+            }
+            
+            // Show loading state
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
             btn.disabled = true;
+            formStatus.classList.add('hidden');
             
-            // Simulate form submission
-            setTimeout(() => {
+            try {
+                // If Formspree is configured, send the form
+                if (CONFIG.formspreeEndpoint && !CONFIG.formspreeEndpoint.includes('YOUR_FORM_ID')) {
+                    const formData = new FormData(contactForm);
+                    const response = await fetch(CONFIG.formspreeEndpoint, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Form submission failed');
+                    }
+                }
+                
+                // Success
                 btn.innerHTML = '<i class="fas fa-check mr-2"></i> Sent Successfully!';
                 btn.classList.remove('bg-brand-gold', 'hover:bg-yellow-400');
                 btn.classList.add('bg-green-500');
                 
+                formStatus.innerHTML = '<p class="text-green-400"><i class="fas fa-check-circle mr-2"></i>Thank you! We\'ll be in touch within 24 hours.</p>';
+                formStatus.classList.remove('hidden');
+                
+                // Reset form after delay
                 setTimeout(() => {
                     btn.innerHTML = originalText;
                     btn.classList.add('bg-brand-gold', 'hover:bg-yellow-400');
                     btn.classList.remove('bg-green-500');
                     btn.disabled = false;
-                    e.target.reset();
-                }, 2000);
-            }, 1500);
+                    contactForm.reset();
+                    formStatus.classList.add('hidden');
+                }, 3000);
+                
+            } catch (error) {
+                // Error handling
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showFormError('Something went wrong. Please try WhatsApp instead.');
+            }
         });
+        
+        function isValidEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+        
+        function showFormError(message) {
+            formStatus.innerHTML = `<p class="text-red-400"><i class="fas fa-exclamation-circle mr-2"></i>${message}</p>`;
+            formStatus.classList.remove('hidden');
+            setTimeout(() => formStatus.classList.add('hidden'), 5000);
+        }
+        
+        // Lazy loading for images
+        if ('loading' in HTMLImageElement.prototype) {
+            document.querySelectorAll('img[data-src]').forEach(img => {
+                img.src = img.dataset.src;
+            });
+        } else {
+            // Fallback for browsers that don't support lazy loading
+            const lazyImages = document.querySelectorAll('img[data-src]');
+            const lazyImageObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        lazyImageObserver.unobserve(img);
+                    }
+                });
+            });
+            lazyImages.forEach(img => lazyImageObserver.observe(img));
+        }
+        
+        // Console message for developers
+        console.log('%c🎓 Top Shot Tutors', 'font-size: 24px; font-weight: bold; color: #fbbf24;');
+        console.log('%cNeed a developer? Check out our code!', 'font-size: 14px; color: #64748b;');
+        console.log('%c⚠️ Remember to update CONFIG values at the top of the script!', 'font-size: 12px; color: #ef4444;');
     </script>
 
 </body>

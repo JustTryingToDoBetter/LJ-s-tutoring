@@ -1,0 +1,40 @@
+/* ===========================================
+   NETLIFY CONFIGURATION
+   ===========================================
+   Deploy settings for Netlify hosting
+   Delete this file if not using Netlify
+   =========================================== */
+
+/* Redirect www to non-www (or vice versa) */
+[[redirects]]
+  from = "https://www.topshottutors.co.za/*"
+  to = "https://topshottutors.co.za/:splat"
+  status = 301
+  force = true
+
+/* Custom 404 page */
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
+
+/* Security headers */
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://images.unsplash.com; connect-src 'self' https://formspree.io https://www.google-analytics.com;"
+
+/* Cache static assets */
+[[headers]]
+  for = "/favicon.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
