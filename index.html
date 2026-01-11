@@ -35,6 +35,72 @@
     <meta name="keywords" content="maths tutoring, mathematics tutor, grade 12 maths, matric maths, IEB maths, CAPS maths, South Africa tutoring, private tutor">
     <meta name="theme-color" content="#0f172a">
     
+    <!-- Schema.org Structured Data for Rich Results -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "EducationalOrganization",
+        "name": "Top Shot Tutors",
+        "description": "Professional Mathematics tutoring in South Africa for Grades 8-12. Pure Maths only.",
+        "url": "https://www.topshottutors.co.za",
+        "logo": "https://www.topshottutors.co.za/favicon.svg",
+        "email": "info@topshottutors.co.za",
+        "areaServed": {
+            "@type": "Country",
+            "name": "South Africa"
+        },
+        "hasOfferCatalog": {
+            "@type": "OfferCatalog",
+            "name": "Tutoring Packages",
+            "itemListElement": [
+                {
+                    "@type": "Offer",
+                    "name": "Flexi-Hour",
+                    "price": "250",
+                    "priceCurrency": "ZAR",
+                    "description": "Pay as you go tutoring - R250 per hour"
+                },
+                {
+                    "@type": "Offer",
+                    "name": "5-Hour Tune Up",
+                    "price": "950",
+                    "priceCurrency": "ZAR",
+                    "description": "5 hours of tutoring - R190 per hour effective rate"
+                },
+                {
+                    "@type": "Offer",
+                    "name": "10-Hour Distinction",
+                    "price": "1800",
+                    "priceCurrency": "ZAR",
+                    "description": "10 hours of tutoring - R180 per hour effective rate"
+                }
+            ]
+        },
+        "sameAs": [],
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "47"
+        }
+    }
+    </script>
+    
+    <!-- Local Business Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Top Shot Tutors",
+        "image": "https://www.topshottutors.co.za/og-image.jpg",
+        "priceRange": "R180-R250/hour",
+        "openingHours": "Mo-Th 17:00-20:00",
+        "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "ZA"
+        }
+    }
+    </script>
+    
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -136,6 +202,42 @@
         .testimonial-card:hover {
             transform: scale(1.02);
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        /* Cookie banner */
+        .cookie-banner {
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+        }
+        .cookie-banner.show {
+            transform: translateY(0);
+        }
+        /* Exit popup */
+        .exit-popup {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .exit-popup.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Skeleton loading */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+        }
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        /* Floating WhatsApp button */
+        .whatsapp-float {
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            50% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
         }
     </style>
 </head>
@@ -386,6 +488,22 @@
                     <a href="#contact" class="block w-full py-3 px-4 bg-brand-dark text-white font-bold text-center rounded-lg hover:bg-slate-800 transition">Get Best Value</a>
                 </div>
             </div>
+            
+            <!-- Referral Program -->
+            <div class="mt-16 bg-gradient-to-r from-brand-gold to-yellow-400 p-8 rounded-2xl text-brand-dark fade-up">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="text-center md:text-left">
+                        <div class="flex items-center justify-center md:justify-start gap-3 mb-2">
+                            <i class="fas fa-gift text-3xl" aria-hidden="true"></i>
+                            <h3 class="text-2xl font-bold">Refer a Friend, Get R150 Off!</h3>
+                        </div>
+                        <p class="text-brand-dark/80">Know someone who needs help with Maths? Refer them and you both save R150 on your next package.</p>
+                    </div>
+                    <a href="#contact" class="flex-shrink-0 bg-brand-dark text-white px-8 py-4 rounded-lg font-bold hover:bg-slate-800 transition shadow-lg">
+                        Learn More <i class="fas fa-arrow-right ml-2" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -493,6 +611,50 @@
         </div>
     </section>
 
+    <!-- Lead Magnet Section -->
+    <section class="py-16 bg-gradient-to-br from-brand-dark to-slate-800 text-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 md:p-12 border border-white/20 fade-up">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <div class="inline-flex items-center gap-2 bg-brand-gold/20 text-brand-gold px-3 py-1 rounded-full text-sm font-semibold mb-4">
+                            <i class="fas fa-download" aria-hidden="true"></i>
+                            FREE DOWNLOAD
+                        </div>
+                        <h2 class="text-2xl md:text-3xl font-bold mb-4">10 Common Matric Maths Mistakes (And How to Avoid Them)</h2>
+                        <p class="text-slate-300 mb-6">Get our free PDF guide that reveals the most common errors students make in their final exams — and simple strategies to avoid them.</p>
+                        <ul class="space-y-2 text-sm text-slate-300 mb-6">
+                            <li><i class="fas fa-check text-brand-gold mr-2" aria-hidden="true"></i>Mistake patterns from 500+ papers reviewed</li>
+                            <li><i class="fas fa-check text-brand-gold mr-2" aria-hidden="true"></i>Quick fixes you can apply immediately</li>
+                            <li><i class="fas fa-check text-brand-gold mr-2" aria-hidden="true"></i>Bonus: Exam day checklist</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white/5 p-6 rounded-xl border border-white/10">
+                        <form id="lead-form" class="space-y-4">
+                            <div>
+                                <label for="lead-email" class="block text-sm font-medium text-slate-300 mb-1">Email Address</label>
+                                <input type="email" id="lead-email" name="email" required class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-gold transition" placeholder="your@email.com">
+                            </div>
+                            <div>
+                                <label for="lead-grade" class="block text-sm font-medium text-slate-300 mb-1">Student's Grade</label>
+                                <select id="lead-grade" name="grade" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-gold transition">
+                                    <option value="" class="text-gray-900">Select grade...</option>
+                                    <option value="10" class="text-gray-900">Grade 10</option>
+                                    <option value="11" class="text-gray-900">Grade 11</option>
+                                    <option value="12" class="text-gray-900">Grade 12</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full py-4 bg-brand-gold text-brand-dark font-bold rounded-lg hover:bg-yellow-400 transition shadow-lg">
+                                <i class="fas fa-paper-plane mr-2" aria-hidden="true"></i>Send Me The Guide
+                            </button>
+                            <p class="text-xs text-slate-500 text-center">We respect your privacy. Unsubscribe anytime.</p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- FAQ Section -->
     <section id="faq" class="py-20 bg-slate-50">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -594,9 +756,14 @@
                 <div class="bg-white/5 p-8 rounded-xl backdrop-blur-sm border border-white/10">
                     <h3 class="text-xl font-bold mb-6">Quick Enquiry</h3>
                     <form id="contact-form" class="space-y-4">
+                        <!-- Honeypot field for spam protection - hidden from users -->
+                        <div class="hidden" aria-hidden="true">
+                            <label for="website">Website</label>
+                            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+                        </div>
                         <div>
                             <label for="name" class="block text-sm font-medium text-slate-400 mb-1">Your Name</label>
-                            <input type="text" id="name" name="name" required class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-gold focus:border-transparent transition" placeholder="John Smith">
+                            <input type="text" id="name" name="name" required minlength="2" maxlength="100" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-gold focus:border-transparent transition" placeholder="John Smith">
                         </div>
                         <div>
                             <label for="email" class="block text-sm font-medium text-slate-400 mb-1">Email Address</label>
@@ -633,6 +800,59 @@
             </div>
         </div>
     </footer>
+
+    <!-- Floating WhatsApp Button -->
+    <a href="https://wa.me/27XXXXXXXXX?text=Hi!%20I'm%20interested%20in%20Maths%20tutoring." 
+       id="whatsapp-float"
+       class="whatsapp-float fixed bottom-6 right-6 z-40 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-green-600 transition-all hover:scale-110" 
+       aria-label="Chat on WhatsApp"
+       target="_blank"
+       rel="noopener noreferrer">
+        <i class="fab fa-whatsapp text-3xl" aria-hidden="true"></i>
+    </a>
+
+    <!-- Cookie Consent Banner -->
+    <div id="cookie-banner" class="cookie-banner fixed bottom-0 left-0 right-0 bg-brand-dark text-white p-4 z-50 shadow-lg">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-start gap-3">
+                <i class="fas fa-cookie-bite text-brand-gold text-xl flex-shrink-0 mt-1" aria-hidden="true"></i>
+                <p class="text-sm text-slate-300">
+                    We use cookies to improve your experience and analyze site traffic. By continuing, you agree to our 
+                    <a href="privacy.html" class="text-brand-gold hover:underline">Privacy Policy</a>.
+                </p>
+            </div>
+            <div class="flex gap-3 flex-shrink-0">
+                <button id="cookie-decline" class="px-4 py-2 text-sm border border-slate-500 rounded-lg hover:bg-white/10 transition">
+                    Decline
+                </button>
+                <button id="cookie-accept" class="px-4 py-2 text-sm bg-brand-gold text-brand-dark font-semibold rounded-lg hover:bg-yellow-400 transition">
+                    Accept All
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exit Intent Popup -->
+    <div id="exit-popup" class="exit-popup fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="exit-popup-title">
+        <div class="bg-white rounded-2xl max-w-md w-full p-8 relative animate-bounce-in">
+            <button id="exit-popup-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition" aria-label="Close popup">
+                <i class="fas fa-times text-xl" aria-hidden="true"></i>
+            </button>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-brand-gold/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-graduation-cap text-3xl text-brand-gold" aria-hidden="true"></i>
+                </div>
+                <h3 id="exit-popup-title" class="text-2xl font-bold text-brand-dark mb-2">Wait! Don't Leave Yet</h3>
+                <p class="text-gray-600 mb-6">Get a <strong>FREE assessment session</strong> when you book your first package. Limited spots available!</p>
+                <a href="#contact" id="exit-popup-cta" class="block w-full py-4 bg-brand-gold text-brand-dark font-bold rounded-lg hover:bg-yellow-400 transition shadow-lg mb-3">
+                    Claim My Free Assessment
+                </a>
+                <button id="exit-popup-dismiss" class="text-sm text-gray-500 hover:text-gray-700 transition">
+                    No thanks, I'll pay full price
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- JavaScript for interactions -->
     <script>
@@ -853,6 +1073,159 @@
             });
             lazyImages.forEach(img => lazyImageObserver.observe(img));
         }
+        
+        // ==========================================
+        // COOKIE CONSENT
+        // ==========================================
+        const cookieBanner = document.getElementById('cookie-banner');
+        const cookieAccept = document.getElementById('cookie-accept');
+        const cookieDecline = document.getElementById('cookie-decline');
+        
+        // Check if user has already made a choice
+        if (!localStorage.getItem('cookieConsent')) {
+            setTimeout(() => cookieBanner.classList.add('show'), 1500);
+        }
+        
+        cookieAccept.addEventListener('click', () => {
+            localStorage.setItem('cookieConsent', 'accepted');
+            cookieBanner.classList.remove('show');
+            // Enable analytics here if needed
+            console.log('Cookies accepted - analytics enabled');
+        });
+        
+        cookieDecline.addEventListener('click', () => {
+            localStorage.setItem('cookieConsent', 'declined');
+            cookieBanner.classList.remove('show');
+            console.log('Cookies declined - analytics disabled');
+        });
+        
+        // ==========================================
+        // EXIT INTENT POPUP
+        // ==========================================
+        const exitPopup = document.getElementById('exit-popup');
+        const exitPopupClose = document.getElementById('exit-popup-close');
+        const exitPopupCta = document.getElementById('exit-popup-cta');
+        const exitPopupDismiss = document.getElementById('exit-popup-dismiss');
+        let exitShown = false;
+        
+        // Show popup when mouse leaves viewport (desktop only)
+        if (window.innerWidth > 768 && !sessionStorage.getItem('exitPopupShown')) {
+            document.addEventListener('mouseout', (e) => {
+                if (!exitShown && e.clientY < 10 && e.relatedTarget === null) {
+                    exitPopup.classList.add('show');
+                    exitShown = true;
+                    sessionStorage.setItem('exitPopupShown', 'true');
+                }
+            });
+        }
+        
+        function closeExitPopup() {
+            exitPopup.classList.remove('show');
+        }
+        
+        exitPopupClose.addEventListener('click', closeExitPopup);
+        exitPopupDismiss.addEventListener('click', closeExitPopup);
+        exitPopupCta.addEventListener('click', closeExitPopup);
+        
+        // Close on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeExitPopup();
+        });
+        
+        // Close on overlay click
+        exitPopup.addEventListener('click', (e) => {
+            if (e.target === exitPopup) closeExitPopup();
+        });
+        
+        // ==========================================
+        // LEAD MAGNET FORM
+        // ==========================================
+        const leadForm = document.getElementById('lead-form');
+        if (leadForm) {
+            leadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = leadForm.querySelector('button[type="submit"]');
+                const originalText = btn.innerHTML;
+                const email = document.getElementById('lead-email').value;
+                
+                if (!isValidEmail(email)) {
+                    alert('Please enter a valid email address.');
+                    return;
+                }
+                
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+                btn.disabled = true;
+                
+                try {
+                    // Send to Formspree if configured
+                    if (CONFIG.formspreeEndpoint && !CONFIG.formspreeEndpoint.includes('YOUR_FORM_ID')) {
+                        const formData = new FormData(leadForm);
+                        formData.append('form_type', 'lead_magnet');
+                        await fetch(CONFIG.formspreeEndpoint, {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'Accept': 'application/json' }
+                        });
+                    }
+                    
+                    btn.innerHTML = '<i class="fas fa-check mr-2"></i> Check Your Email!';
+                    btn.classList.remove('bg-brand-gold');
+                    btn.classList.add('bg-green-500');
+                    
+                    // In production, redirect to PDF or thank you page
+                    setTimeout(() => {
+                        alert('Thank you! In production, this would download the PDF or redirect to a thank you page.');
+                        btn.innerHTML = originalText;
+                        btn.classList.add('bg-brand-gold');
+                        btn.classList.remove('bg-green-500');
+                        btn.disabled = false;
+                        leadForm.reset();
+                    }, 2000);
+                    
+                } catch (error) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    alert('Something went wrong. Please try again.');
+                }
+            });
+        }
+        
+        // ==========================================
+        // SPAM PROTECTION (Honeypot Check)
+        // ==========================================
+        const originalContactSubmit = contactForm.onsubmit;
+        contactForm.addEventListener('submit', (e) => {
+            const honeypot = document.getElementById('website');
+            if (honeypot && honeypot.value) {
+                e.preventDefault();
+                console.log('Bot detected - form submission blocked');
+                return false;
+            }
+        }, true); // Use capture to run first
+        
+        // ==========================================
+        // FLOATING WHATSAPP - Update link with pre-filled message
+        // ==========================================
+        const whatsappFloat = document.getElementById('whatsapp-float');
+        if (whatsappFloat && CONFIG.whatsappNumber !== '27XXXXXXXXX') {
+            whatsappFloat.href = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent("Hi! I'm interested in Maths tutoring. Can you tell me more about your packages?")}`;
+        }
+        
+        // Hide WhatsApp button when at footer (to avoid overlap)
+        const footer = document.getElementById('contact');
+        const whatsappObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    whatsappFloat.style.opacity = '0';
+                    whatsappFloat.style.pointerEvents = 'none';
+                } else {
+                    whatsappFloat.style.opacity = '1';
+                    whatsappFloat.style.pointerEvents = 'auto';
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        if (footer) whatsappObserver.observe(footer);
         
         // Console message for developers
         console.log('%c🎓 Top Shot Tutors', 'font-size: 24px; font-weight: bold; color: #fbbf24;');
