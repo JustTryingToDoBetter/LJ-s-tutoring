@@ -1812,15 +1812,15 @@
                     btn.classList.remove('bg-brand-gold');
                     btn.classList.add('bg-green-500');
                     
-                    // In production, redirect to PDF or thank you page
+                    // Open the PDF guide in a new tab
                     setTimeout(() => {
-                        alert('Thank you! In production, this would download the PDF or redirect to a thank you page.');
+                        window.open('guides/matric-maths-mistakes-guide.html', '_blank');
                         btn.innerHTML = originalText;
                         btn.classList.add('bg-brand-gold');
                         btn.classList.remove('bg-green-500');
                         btn.disabled = false;
                         leadForm.reset();
-                    }, 2000);
+                    }, 1500);
                     
                 } catch (error) {
                     btn.innerHTML = originalText;
