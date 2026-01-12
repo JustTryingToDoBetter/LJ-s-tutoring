@@ -32,7 +32,7 @@
     <!-- Additional SEO -->
     <meta name="robots" content="index, follow">
     <meta name="author" content="Project Odysseus">
-    <meta name="keywords" content="maths tutoring, mathematics tutor, grade 12 maths, matric maths, IEB maths, CAPS maths, South Africa tutoring, private tutor">
+    <meta name="keywords" content="maths tutoring, mathematics tutor, grade 12 maths, matric maths, CAPS maths, South Africa tutoring, private tutor">
     <meta name="theme-color" content="#0f172a">
     
     <!-- Schema.org Structured Data for Rich Results -->
@@ -274,6 +274,38 @@
         }
         .dark .shadow-md {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+        /* Dark mode FAQ fixes */
+        .dark .faq-item {
+            background-color: #1e293b;
+            border-color: #334155;
+        }
+        .dark .faq-btn {
+            color: #f1f5f9;
+        }
+        .dark .faq-btn:hover {
+            background-color: #334155;
+        }
+        .dark .faq-answer {
+            color: #cbd5e1;
+        }
+        /* Dark mode subjects section */
+        .dark .bg-gradient-to-br.from-blue-50 {
+            background: linear-gradient(to bottom right, #1e3a5f, #1e293b);
+        }
+        .dark .bg-blue-50,
+        .dark .from-blue-50,
+        .dark .to-blue-100 {
+            background-color: #1e293b;
+        }
+        .dark .text-blue-600 {
+            color: #60a5fa;
+        }
+        .dark .text-blue-800 {
+            color: #93c5fd;
+        }
+        .dark .bg-blue-200 {
+            background-color: #1e3a5f;
         }
         /* Social proof notification */
         .social-proof {
@@ -778,37 +810,34 @@
             </div>
             
             <div class="max-w-2xl mx-auto fade-up">
-                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-xl text-center hover:shadow-lg transition group">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-xl text-center hover:shadow-lg transition group dark:from-slate-800 dark:to-slate-700">
                     <div class="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition">
                         <i class="fas fa-calculator text-3xl text-white" aria-hidden="true"></i>
                     </div>
-                    <h3 class="font-bold text-2xl text-gray-900 mb-2">Mathematics</h3>
-                    <p class="text-sm text-red-600 font-medium mb-4">Pure Mathematics Only — Not Mathematics Literacy</p>
-                    <p class="text-gray-600 mb-6">Algebra, Functions, Calculus, Geometry, Trigonometry, Statistics & Probability</p>
+                    <h3 class="font-bold text-2xl text-gray-900 dark:text-white mb-2">Mathematics</h3>
+                    <p class="text-sm text-blue-600 dark:text-blue-400 font-medium mb-4">Grades 8–12 • CAPS Curriculum</p>
+                    <p class="text-gray-600 dark:text-slate-300 mb-6">Algebra, Functions, Calculus, Geometry, Trigonometry, Statistics & Probability</p>
                     
                     <div class="grid grid-cols-5 gap-2 mb-6">
-                        <div class="bg-white rounded-lg p-3 shadow-sm">
-                            <span class="text-lg font-bold text-blue-600">Gr 8</span>
+                        <div class="bg-white dark:bg-slate-600 rounded-lg p-3 shadow-sm">
+                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">Gr 8</span>
                         </div>
-                        <div class="bg-white rounded-lg p-3 shadow-sm">
-                            <span class="text-lg font-bold text-blue-600">Gr 9</span>
+                        <div class="bg-white dark:bg-slate-600 rounded-lg p-3 shadow-sm">
+                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">Gr 9</span>
                         </div>
-                        <div class="bg-white rounded-lg p-3 shadow-sm">
-                            <span class="text-lg font-bold text-blue-600">Gr 10</span>
+                        <div class="bg-white dark:bg-slate-600 rounded-lg p-3 shadow-sm">
+                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">Gr 10</span>
                         </div>
-                        <div class="bg-white rounded-lg p-3 shadow-sm">
-                            <span class="text-lg font-bold text-blue-600">Gr 11</span>
+                        <div class="bg-white dark:bg-slate-600 rounded-lg p-3 shadow-sm">
+                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">Gr 11</span>
                         </div>
-                        <div class="bg-white rounded-lg p-3 shadow-sm">
-                            <span class="text-lg font-bold text-blue-600">Gr 12</span>
+                        <div class="bg-white dark:bg-slate-600 rounded-lg p-3 shadow-sm">
+                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">Gr 12</span>
                         </div>
                     </div>
                     
                     <div class="flex flex-wrap gap-2 justify-center">
-                        <span class="text-sm bg-blue-200 text-blue-800 px-3 py-1 rounded-full">IEB</span>
-                        <span class="text-sm bg-blue-200 text-blue-800 px-3 py-1 rounded-full">CAPS</span>
-                        <span class="text-sm bg-blue-200 text-blue-800 px-3 py-1 rounded-full">IGCSE</span>
-                        <span class="text-sm bg-blue-200 text-blue-800 px-3 py-1 rounded-full">Cambridge</span>
+                        <span class="text-sm bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full">CAPS</span>
                     </div>
                 </div>
             </div>
@@ -1160,7 +1189,7 @@
                         <i class="fas fa-chevron-down faq-icon text-brand-gold" aria-hidden="true"></i>
                     </button>
                     <div class="faq-answer px-6 text-gray-600">
-                        <p class="pb-4">We specialize exclusively in <strong>Mathematics (Pure Maths)</strong> for students from Grade 8 to Grade 12. We do not tutor Mathematical Literacy. We cover IEB, CAPS, and Cambridge/IGCSE curricula, with particular expertise in matric preparation.</p>
+                        <p class="pb-4">We tutor <strong>Mathematics</strong> for students from Grade 8 to Grade 12, following the <strong>CAPS curriculum</strong>. Whether you're struggling with basics or aiming for a distinction, we've got you covered.</p>
                     </div>
                 </div>
                 
@@ -1195,18 +1224,6 @@
                         </a>
                         <a href="mailto:projectodysseus10@gmail.com" class="flex items-center justify-center w-full py-3 border border-slate-500 text-slate-300 rounded-lg hover:bg-white/5 transition">
                             <i class="fas fa-envelope mr-3" aria-hidden="true"></i> projectodysseus10@gmail.com
-                        </a>
-                    </div>
-                    
-                    <div class="mt-8 flex justify-center lg:justify-start gap-4">
-                        <a href="#" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition" aria-label="Facebook">
-                            <i class="fab fa-facebook-f" aria-hidden="true"></i>
-                        </a>
-                        <a href="#" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition" aria-label="Instagram">
-                            <i class="fab fa-instagram" aria-hidden="true"></i>
-                        </a>
-                        <a href="#" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition" aria-label="LinkedIn">
-                            <i class="fab fa-linkedin-in" aria-hidden="true"></i>
                         </a>
                     </div>
                 </div>
