@@ -1,11 +1,11 @@
 # Robots.txt for Project Odysseus
-# https://www.projectodysseus.co.za
+# https://projectodysseus.live
 
 User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://www.projectodysseus.co.za/sitemap.xml
+Sitemap: https://projectodysseus.live/sitemap.xml
 
 # Crawl-delay for respectful crawling
 Crawl-delay: 1
