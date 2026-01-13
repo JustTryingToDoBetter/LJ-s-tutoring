@@ -275,14 +275,6 @@
         .dark .shadow-md {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }
-        /* Social proof notification */
-        .social-proof {
-            transform: translateX(-100%);
-            transition: transform 0.5s ease-out;
-        }
-        .social-proof.show {
-            transform: translateX(0);
-        }
         /* Countdown timer */
         .countdown-digit {
             min-width: 60px;
@@ -1331,22 +1323,6 @@
         </div>
     </div>
 
-    <!-- Social Proof Notification -->
-    <div id="social-proof" class="social-proof fixed bottom-24 left-6 z-40 bg-white rounded-lg shadow-xl p-4 max-w-xs border border-slate-200" role="status" aria-live="polite">
-        <button id="social-proof-close" class="absolute -top-2 -right-2 w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-300 transition" aria-label="Dismiss notification">
-            <i class="fas fa-times text-xs" aria-hidden="true"></i>
-        </button>
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-check text-green-500" aria-hidden="true"></i>
-            </div>
-            <div>
-                <p class="text-sm font-medium text-gray-900" id="social-proof-text">Someone just booked a session!</p>
-                <p class="text-xs text-gray-500" id="social-proof-time">2 minutes ago</p>
-            </div>
-        </div>
-    </div>
-
     <!-- Back to Top Button -->
     <button id="back-to-top" class="back-to-top" aria-label="Back to top">
         <i class="fas fa-arrow-up" aria-hidden="true"></i>
@@ -1472,51 +1448,6 @@
         
         updateCountdown();
         setInterval(updateCountdown, 1000);
-        
-        // ==========================================
-        // SOCIAL PROOF NOTIFICATIONS
-        // ==========================================
-        const socialProof = document.getElementById('social-proof');
-        const socialProofClose = document.getElementById('social-proof-close');
-        const socialProofText = document.getElementById('social-proof-text');
-        const socialProofTime = document.getElementById('social-proof-time');
-        
-        const socialProofMessages = [
-            { text: "Thabo from Sandton just booked a session!", time: "2 minutes ago" },
-            { text: "Sarah secured her weekly slot!", time: "5 minutes ago" },
-            { text: "A Grade 12 student joined the 10-hour package!", time: "8 minutes ago" },
-            { text: "Parent from Pretoria inquired about tutoring!", time: "12 minutes ago" },
-            { text: "Lerato booked an exam prep session!", time: "15 minutes ago" }
-        ];
-        
-        let socialProofIndex = 0;
-        let socialProofTimeout;
-        
-        function showSocialProof() {
-            if (sessionStorage.getItem('socialProofDismissed')) return;
-            
-            const message = socialProofMessages[socialProofIndex % socialProofMessages.length];
-            socialProofText.textContent = message.text;
-            socialProofTime.textContent = message.time;
-            socialProof.classList.add('show');
-            
-            // Hide after 5 seconds
-            socialProofTimeout = setTimeout(() => {
-                socialProof.classList.remove('show');
-                socialProofIndex++;
-                // Show next one after 30-60 seconds
-                setTimeout(showSocialProof, 30000 + Math.random() * 30000);
-            }, 5000);
-        }
-        
-        // Start showing after 10 seconds
-        setTimeout(showSocialProof, 10000);
-        
-        socialProofClose.addEventListener('click', () => {
-            socialProof.classList.remove('show');
-            sessionStorage.setItem('socialProofDismissed', 'true');
-            clearTimeout(socialProofTimeout);
-        });
         
         // Mobile menu toggle
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
