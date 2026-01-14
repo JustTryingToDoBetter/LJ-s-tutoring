@@ -8,8 +8,8 @@ domains:
 
 static_sites:
   - name: website
-    build_command: npm run build
-    output_dir: /dist
+    build_command: npm ci && npm run build
+    output_dir: dist
     github:
       repo: JustTryingToDoBetter/LJ-s-tutoring
       branch: main
