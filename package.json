@@ -16,14 +16,21 @@
     "tailwindcss": "^3.4.17",
     "wait-on": "^7.2.0"
   },
-  "scripts": {
-    "build:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./assets/tailwind.css --minify",
-    "build": "npm run build:css",
-    "start": "http-server . -a 0.0.0.0 -p ${PORT:-8080} -c-1",
-    "serve": "http-server . -p 8080 -c-1",
-    "qa:html": "html-validate index.html 404.html terms.html privacy.html maths-tutoring-cape-town.html guides/*.html",
-    "qa:links": "linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip '^mailto:|^tel:|^https?:\\/\\/(?!localhost:8080)'",
-    "qa:a11y": "pa11y-ci",
-    "qa": "npm run build && npm run serve --silent & npx wait-on http://localhost:8080 && npm run qa:html && npm run qa:links && npm run qa:a11y"
-  }
+"scripts": {
+  "clean": "rmdir /s /q dist 2>nul || echo dist clean",
+  "build:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --minify",
+  "build:html": "xcopy index.html 404.html terms.html privacy.html maths-tutoring-cape-town.html dist /Y",
+  "build:guides": "xcopy guides dist\\guides /E /I /Y",
+  "build:images": "xcopy images dist\\images /E /I /Y",
+  "build": "npm run clean && mkdir dist && mkdir dist\\assets && npm run build:css && npm run build:html && npm run build:guides && npm run build:images",
+
+  "serve": "http-server dist -p 8080 -c-1",
+  "start": "http-server dist -a 0.0.0.0 -p %PORT% -c-1",
+
+  "qa:html": "html-validate index.html 404.html terms.html privacy.html maths-tutoring-cape-town.html guides/*.html",
+  "qa:links": "linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip '^mailto:|^tel:|^https?:\\/\\/(?!localhost:8080)'",
+  "qa:a11y": "pa11y-ci",
+  "qa": "npm run build && npm run serve --silent & npx wait-on http://localhost:8080 && npm run qa:html && npm run qa:links && npm run qa:a11y"
+}
+
 }
