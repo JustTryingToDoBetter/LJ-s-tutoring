@@ -146,14 +146,22 @@
   // PAGE LOADER
   // ==========================================
   function initLoader() {
-    window.addEventListener('load', function () {
-      var loader = $('#page-loader');
-      if (loader) {
-        setTimeout(function () {
-          loader.classList.add('hidden');
-        }, 500);
-      }
-    });
+    var loader = $('#page-loader');
+    if (!loader) return;
+
+    function hideLoader() {
+      setTimeout(function () {
+        loader.classList.add('hidden');
+      }, 500);
+    }
+
+    // If page is already loaded, hide immediately
+    if (document.readyState === 'complete') {
+      hideLoader();
+    } else {
+      // Otherwise wait for load event
+      window.addEventListener('load', hideLoader);
+    }
   }
 
   // ==========================================
