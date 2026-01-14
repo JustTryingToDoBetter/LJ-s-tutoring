@@ -58,6 +58,87 @@
     window.gtag('event', eventName, params || {});
   }
 
+  // ==========================================
+  // Web Vitals (lightweight, no dependencies)
+  // ==========================================
+  var vitalsStarted = false;
+
+  function startWebVitals() {
+    if (vitalsStarted) return;
+    if (!isConsentGranted()) return;
+    if (typeof PerformanceObserver !== 'function') return;
+
+    vitalsStarted = true;
+
+    var clsValue = 0;
+    var lcpEntry;
+    var inpValue = 0;
+
+    function sendVital(name, value, extra) {
+      sendEvent('web_vital', {
+        metric_name: name,
+        metric_value: Math.round(value * 1000) / 1000,
+        page_path: window.location.pathname,
+        ...(extra || {}),
+      });
+    }
+
+    // CLS
+    try {
+      var clsObserver = new PerformanceObserver(function (list) {
+        list.getEntries().forEach(function (entry) {
+          // Ignore shifts triggered by user input
+          if (!entry.hadRecentInput) clsValue += entry.value;
+        });
+      });
+      clsObserver.observe({ type: 'layout-shift', buffered: true });
+    } catch (_err) {
+      // ignore
+    }
+
+    // LCP
+    try {
+      var lcpObserver = new PerformanceObserver(function (list) {
+        var entries = list.getEntries();
+        if (entries && entries.length) lcpEntry = entries[entries.length - 1];
+      });
+      lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
+    } catch (_err) {
+      // ignore
+    }
+
+    // INP (best-effort using Event Timing API)
+    try {
+      var inpObserver = new PerformanceObserver(function (list) {
+        list.getEntries().forEach(function (entry) {
+          // Only count interactions
+          if (!entry.interactionId) return;
+          inpValue = Math.max(inpValue, entry.duration);
+        });
+      });
+      inpObserver.observe({ type: 'event', buffered: true, durationThreshold: 40 });
+    } catch (_err) {
+      // ignore
+    }
+
+    // Report when the page is being hidden (captures SPA-unfriendly but fine for static)
+    window.addEventListener(
+      'pagehide',
+      function () {
+        if (!isConsentGranted()) return;
+
+        if (typeof clsValue === 'number') sendVital('CLS', clsValue);
+        if (lcpEntry && typeof lcpEntry.startTime === 'number') {
+          sendVital('LCP', lcpEntry.startTime, {
+            lcp_element: lcpEntry.element ? lcpEntry.element.tagName : undefined,
+          });
+        }
+        if (inpValue > 0) sendVital('INP', inpValue);
+      },
+      { capture: true }
+    );
+  }
+
   function createBanner() {
     var banner = document.createElement('div');
     banner.id = 'po-cookie-banner';
@@ -99,6 +180,7 @@
       updateConsentTo('granted');
       sendEvent('consent_granted', { consent_type: 'analytics' });
       sendPageView();
+      startWebVitals();
       closeBanner();
     });
 
@@ -188,6 +270,7 @@
 
     if (stored === 'granted') {
       sendPageView();
+      startWebVitals();
     }
 
     showBannerIfNeeded();

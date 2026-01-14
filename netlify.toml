@@ -1,5 +1,6 @@
 [build]
   publish = "."
+  command = "npm run build"
 
 # Security headers for all routes
 [[headers]]
@@ -17,8 +18,8 @@
     X-Frame-Options = "DENY"
 
     # CSP: keeps site working while restricting sources.
-    # Note: this site currently uses inline scripts/styles, so 'unsafe-inline' is required unless we refactor.
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://formspree.io; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://images.unsplash.com https://www.google-analytics.com; connect-src 'self' https://formspree.io https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com; upgrade-insecure-requests"
+    # Note: inline scripts are still used for gtag consent/bootstrap.
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://formspree.io; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://images.unsplash.com https://www.google-analytics.com; connect-src 'self' https://formspree.io https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com; upgrade-insecure-requests"
 
     # Deprecated in modern browsers; explicitly disable
     X-XSS-Protection = "0"
@@ -27,7 +28,8 @@
 [[headers]]
   for = "/assets/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    # Don't use immutable unless filenames are fingerprinted.
+    Cache-Control = "public, max-age=604800"
 
 [[headers]]
   for = "/images/*"
