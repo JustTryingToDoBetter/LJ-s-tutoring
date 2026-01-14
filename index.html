@@ -1420,27 +1420,6 @@
         <i class="fab fa-whatsapp text-3xl" aria-hidden="true"></i>
     </a>
 
-    <!-- Cookie Consent Banner -->
-    <div id="cookie-banner" class="cookie-banner fixed bottom-0 left-0 right-0 bg-brand-dark text-white p-4 z-50 shadow-lg">
-        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-start gap-3">
-                <i class="fas fa-cookie-bite text-brand-gold text-xl flex-shrink-0 mt-1" aria-hidden="true"></i>
-                <p class="text-sm text-slate-300">
-                    We use cookies to improve your experience and analyze site traffic. By continuing, you agree to our 
-                    <a href="privacy.html" class="text-brand-gold hover:underline">Privacy Policy</a>.
-                </p>
-            </div>
-            <div class="flex gap-3 flex-shrink-0">
-                <button id="cookie-decline" class="px-4 py-2 text-sm border border-slate-500 rounded-lg hover:bg-white/10 transition">
-                    Decline
-                </button>
-                <button id="cookie-accept" class="px-4 py-2 text-sm bg-brand-gold text-brand-dark font-semibold rounded-lg hover:bg-yellow-400 transition">
-                    Accept All
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Exit Intent Popup -->
     <div id="exit-popup" class="exit-popup fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="exit-popup-title">
         <div class="bg-white rounded-2xl max-w-md w-full p-8 relative animate-bounce-in">
@@ -1523,9 +1502,8 @@
             // Replace with your actual WhatsApp number (with country code, no + or spaces)
             whatsappNumber: '27679327754', // e.g., '27821234567'
             
-            // Formspree endpoint - Create free account at https://formspree.io
-            // Replace with your form ID after signup
-            formspreeEndpoint: 'https://formspree.io/f/YOUR_FORM_ID',
+            // Formspree endpoint
+            formspreeEndpoint: 'https://formspree.io/f/xreebzqa',
             
             // Your email for mailto links
             email: 'projectodysseus10@gmail.com',
@@ -1727,6 +1705,15 @@
                     if (!response.ok) {
                         throw new Error('Form submission failed');
                     }
+
+                    // GA4: track lead only after consent
+                    if (typeof window.gtag === 'function' && localStorage.getItem('po_ga_consent') === 'granted') {
+                        window.gtag('event', 'generate_lead', {
+                            lead_type: 'contact_form',
+                            form_id: 'contact-form',
+                            page_path: window.location.pathname
+                        });
+                    }
                 }
                 
                 // Success
@@ -1785,31 +1772,6 @@
             });
             lazyImages.forEach(img => lazyImageObserver.observe(img));
         }
-        
-        // ==========================================
-        // COOKIE CONSENT
-        // ==========================================
-        const cookieBanner = document.getElementById('cookie-banner');
-        const cookieAccept = document.getElementById('cookie-accept');
-        const cookieDecline = document.getElementById('cookie-decline');
-        
-        // Check if user has already made a choice
-        if (!localStorage.getItem('cookieConsent')) {
-            setTimeout(() => cookieBanner.classList.add('show'), 1500);
-        }
-        
-        cookieAccept.addEventListener('click', () => {
-            localStorage.setItem('cookieConsent', 'accepted');
-            cookieBanner.classList.remove('show');
-            // Enable analytics here if needed
-            console.log('Cookies accepted - analytics enabled');
-        });
-        
-        cookieDecline.addEventListener('click', () => {
-            localStorage.setItem('cookieConsent', 'declined');
-            cookieBanner.classList.remove('show');
-            console.log('Cookies declined - analytics disabled');
-        });
         
         // ==========================================
         // EXIT INTENT POPUP
@@ -1873,11 +1835,24 @@
                     if (CONFIG.formspreeEndpoint && !CONFIG.formspreeEndpoint.includes('YOUR_FORM_ID')) {
                         const formData = new FormData(leadForm);
                         formData.append('form_type', 'lead_magnet');
-                        await fetch(CONFIG.formspreeEndpoint, {
+                        const response = await fetch(CONFIG.formspreeEndpoint, {
                             method: 'POST',
                             body: formData,
                             headers: { 'Accept': 'application/json' }
                         });
+
+                        if (!response.ok) {
+                            throw new Error('Lead magnet submission failed');
+                        }
+
+                        // GA4: track lead only after consent
+                        if (typeof window.gtag === 'function' && localStorage.getItem('po_ga_consent') === 'granted') {
+                            window.gtag('event', 'generate_lead', {
+                                lead_type: 'lead_magnet',
+                                form_id: 'lead-form',
+                                page_path: window.location.pathname
+                            });
+                        }
                     }
                     
                     btn.innerHTML = '<i class="fas fa-check mr-2"></i> Check Your Email!';
