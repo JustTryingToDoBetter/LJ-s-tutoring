@@ -104,6 +104,17 @@ Update the counter values to reflect your actual metrics.
 
 Netlify also runs the build step (`npm run build`) to generate `assets/tailwind.css`.
 
+### DigitalOcean App Platform
+
+If you deploy this repo as a **Web Service** (Node.js buildpack), use:
+
+- Build command: `npm run build`
+- Run command: `npm start`
+
+Notes:
+- Make sure `package-lock.json` is committed to the repo (App Platform requires a lockfile).
+- The server binds to `$PORT` automatically.
+
 ### GitHub Pages
 1. Go to Settings > Pages
 2. Select main branch
