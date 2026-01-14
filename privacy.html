@@ -10,14 +10,23 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="apple-touch-icon" href="favicon.svg">
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YLSHSGSXNE"></script>
+    <!-- Google tag (gtag.js) + Consent Mode -->
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-YLSHSGSXNE');
+        gtag('consent', 'default', {
+            'ad_storage': 'denied',
+            'analytics_storage': 'denied',
+            'ad_user_data': 'denied',
+            'ad_personalization': 'denied'
+        });
     </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YLSHSGSXNE"></script>
+    <script>
+        gtag('js', new Date());
+        gtag('config', 'G-YLSHSGSXNE', { 'send_page_view': false });
+    </script>
+    <script defer src="/assets/analytics.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -65,7 +74,7 @@
     <main class="pt-24 pb-16">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 class="text-4xl font-bold text-brand-dark mb-8">Privacy Policy</h1>
-            <p class="text-gray-500 mb-8">Last updated: January 11, 2026</p>
+            <p class="text-gray-500 mb-8">Last updated: January 14, 2026</p>
             
             <div class="prose prose-slate max-w-none space-y-8">
                 <section>
@@ -129,9 +138,22 @@
                         Our website may use cookies and similar tracking technologies to enhance your browsing experience and analyze website traffic. You can control cookie settings through your browser preferences.
                     </p>
                 </section>
+
+                <section>
+                    <h2 class="text-2xl font-bold text-brand-dark mb-4">8. Analytics (Google Analytics)</h2>
+                    <p class="text-gray-600 leading-relaxed mb-4">
+                        We use Google Analytics (GA4) to understand how visitors use our website (for example: which pages are visited, which links are clicked, and general usage patterns). This helps us improve the website and our services.
+                    </p>
+                    <ul class="list-disc list-inside text-gray-600 space-y-2">
+                        <li><strong>What we collect:</strong> limited usage data such as pages viewed, approximate location (derived from IP), device/browser information, and link click events.</li>
+                        <li><strong>Cookies:</strong> Google Analytics may set cookies on your device if you accept analytics cookies.</li>
+                        <li><strong>Your choice:</strong> you can accept or decline analytics cookies using the cookie banner. If you decline, we do not enable analytics cookies.</li>
+                        <li><strong>Change your mind:</strong> you can clear your browser site data (cookies/local storage) to see the banner again and choose differently.</li>
+                    </ul>
+                </section>
                 
                 <section>
-                    <h2 class="text-2xl font-bold text-brand-dark mb-4">8. Contact Us</h2>
+                    <h2 class="text-2xl font-bold text-brand-dark mb-4">9. Contact Us</h2>
                     <p class="text-gray-600 leading-relaxed">
                         If you have questions about this Privacy Policy or wish to exercise your rights, please contact us at:
                     </p>
