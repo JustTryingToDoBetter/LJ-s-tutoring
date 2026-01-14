@@ -1,0 +1,13 @@
+{
+  "extends": ["html-validate:recommended"],
+  "ignore": ["node_modules/**", "og-image-placeholder.html"],
+  "rules": {
+    "no-inline-style": "off",
+    "no-trailing-whitespace": "off",
+    "long-title": "off",
+    "no-redundant-role": "off",
+    "no-implicit-button-type": "off",
+    "aria-label-misuse": "off",
+    "no-dup-id": "error"
+  }
+}

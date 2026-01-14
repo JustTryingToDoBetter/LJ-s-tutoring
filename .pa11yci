@@ -1,0 +1,17 @@
+{
+  "defaults": {
+    "timeout": 60000,
+    "standard": "WCAG2AA",
+    "chromeLaunchConfig": {
+      "args": ["--no-sandbox", "--disable-setuid-sandbox"]
+    }
+  },
+  "urls": [
+    "http://localhost:8080/",
+    "http://localhost:8080/maths-tutoring-cape-town.html",
+    "http://localhost:8080/privacy.html",
+    "http://localhost:8080/terms.html",
+    "http://localhost:8080/guides/matric-maths-mistakes-guide.html",
+    "http://localhost:8080/404.html"
+  ]
+}

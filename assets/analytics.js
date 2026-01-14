@@ -2,6 +2,61 @@
   'use strict';
 
   var STORAGE_KEY = 'po_ga_consent';
+  var GA_MEASUREMENT_ID = 'G-YLSHSGSXNE';
+
+  var gtagLoadPromise = null;
+
+  function isDoNotTrackEnabled() {
+    try {
+      var dnt =
+        navigator.doNotTrack ||
+        window.doNotTrack ||
+        (navigator.msDoNotTrack ? navigator.msDoNotTrack : null);
+      return dnt === '1' || dnt === 'yes';
+    } catch (_err) {
+      return false;
+    }
+  }
+
+  function ensureGtagLoaded() {
+    if (typeof window.gtag === 'function') return Promise.resolve();
+    if (gtagLoadPromise) return gtagLoadPromise;
+
+    gtagLoadPromise = new Promise(function (resolve, reject) {
+      // Define dataLayer + gtag stub early
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () {
+        window.dataLayer.push(arguments);
+      };
+
+      var script = document.createElement('script');
+      script.async = true;
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_MEASUREMENT_ID);
+      script.onload = function () {
+        try {
+          window.gtag('js', new Date());
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      };
+      script.onerror = function () {
+        reject(new Error('Failed to load gtag.js'));
+      };
+
+      document.head.appendChild(script);
+    });
+
+    return gtagLoadPromise;
+  }
+
+  function ensureGtagConfigured() {
+    if (!hasGtag()) return;
+    if (window.__po_ga_configured) return;
+    window.__po_ga_configured = true;
+    // Do not auto send; we send page_view ourselves when consent is granted.
+    window.gtag('config', GA_MEASUREMENT_ID, { send_page_view: false });
+  }
 
   function hasGtag() {
     return typeof window.gtag === 'function';
@@ -44,6 +99,8 @@
     if (!hasGtag()) return;
     if (!isConsentGranted()) return;
 
+    ensureGtagConfigured();
+
     window.gtag('event', 'page_view', {
       page_location: window.location.href,
       page_path: window.location.pathname + window.location.search,
@@ -54,6 +111,8 @@
   function sendEvent(eventName, params) {
     if (!hasGtag()) return;
     if (!isConsentGranted()) return;
+
+    ensureGtagConfigured();
 
     window.gtag('event', eventName, params || {});
   }
@@ -139,6 +198,74 @@
     );
   }
 
+  // ==========================================
+  // Error Monitoring (consent-gated)
+  // ==========================================
+  var errorMonitoringStarted = false;
+
+  function startErrorMonitoring() {
+    if (errorMonitoringStarted) return;
+    if (!isConsentGranted()) return;
+
+    errorMonitoringStarted = true;
+
+    // Avoid floods on broken pages
+    var MAX_ERRORS_PER_PAGE = 10;
+    var sent = 0;
+
+    function shouldSend() {
+      sent += 1;
+      return sent <= MAX_ERRORS_PER_PAGE;
+    }
+
+    function safeStr(value, maxLen) {
+      try {
+        var s = String(value);
+        return s.length > maxLen ? s.slice(0, maxLen) + '…' : s;
+      } catch (_err) {
+        return '';
+      }
+    }
+
+    window.addEventListener(
+      'error',
+      function (event) {
+        if (!isConsentGranted()) return;
+        if (!shouldSend()) return;
+
+        // Ignore opaque "Script error." cases (usually cross-origin without CORS headers)
+        var msg = event && event.message ? event.message : '';
+        if (msg === 'Script error.' || msg === 'Script error') return;
+
+        sendEvent('js_error', {
+          error_message: safeStr(msg, 300),
+          error_source: safeStr(event && event.filename ? event.filename : '', 200),
+          error_lineno: event && typeof event.lineno === 'number' ? event.lineno : undefined,
+          error_colno: event && typeof event.colno === 'number' ? event.colno : undefined,
+          page_path: window.location.pathname,
+        });
+      },
+      { capture: true }
+    );
+
+    window.addEventListener(
+      'unhandledrejection',
+      function (event) {
+        if (!isConsentGranted()) return;
+        if (!shouldSend()) return;
+
+        var reason = event && event.reason ? event.reason : '';
+        var message = reason && reason.message ? reason.message : reason;
+
+        sendEvent('js_unhandled_rejection', {
+          rejection_reason: safeStr(message, 300),
+          page_path: window.location.pathname,
+        });
+      },
+      { capture: true }
+    );
+  }
+
   function createBanner() {
     var banner = document.createElement('div');
     banner.id = 'po-cookie-banner';
@@ -163,6 +290,11 @@
   function showBannerIfNeeded() {
     var stored = getStoredConsent();
     if (stored === 'granted' || stored === 'denied') return;
+    if (isDoNotTrackEnabled()) {
+      // Respect DNT by defaulting to denied.
+      setStoredConsent('denied');
+      return;
+    }
 
     var banner = createBanner();
     document.body.appendChild(banner);
@@ -177,10 +309,18 @@
 
     acceptBtn.addEventListener('click', function () {
       setStoredConsent('granted');
-      updateConsentTo('granted');
-      sendEvent('consent_granted', { consent_type: 'analytics' });
-      sendPageView();
-      startWebVitals();
+      ensureGtagLoaded()
+        .then(function () {
+          updateConsentTo('granted');
+          ensureGtagConfigured();
+          sendEvent('consent_granted', { consent_type: 'analytics' });
+          sendPageView();
+          startWebVitals();
+          startErrorMonitoring();
+        })
+        .catch(function () {
+          // If GA can't load, still close the banner (fail closed).
+        });
       closeBanner();
     });
 
@@ -264,13 +404,24 @@
 
   function init() {
     var stored = getStoredConsent();
-    if (stored === 'granted' || stored === 'denied') {
-      updateConsentTo(stored);
+    if (stored !== 'granted' && stored !== 'denied' && isDoNotTrackEnabled()) {
+      // Respect DNT without prompting.
+      setStoredConsent('denied');
+      stored = 'denied';
     }
 
     if (stored === 'granted') {
-      sendPageView();
-      startWebVitals();
+      ensureGtagLoaded()
+        .then(function () {
+          updateConsentTo('granted');
+          ensureGtagConfigured();
+          sendPageView();
+          startWebVitals();
+          startErrorMonitoring();
+        })
+        .catch(function () {
+          // If GA can't load, silently do nothing.
+        });
     }
 
     showBannerIfNeeded();

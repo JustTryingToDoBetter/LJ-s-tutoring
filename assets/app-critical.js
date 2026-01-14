@@ -184,13 +184,68 @@
     formStatus.className = 'mt-4 text-center hidden';
     form.appendChild(formStatus);
 
-    function showFormError(message) {
+    function trackFormEvent(eventName, params) {
+      if (typeof window.gtag !== 'function') return;
+      if (localStorage.getItem('po_ga_consent') !== 'granted') return;
+      window.gtag('event', eventName, params || {});
+    }
+
+    function showFormError(message, options) {
+      var opts = options || {};
       formStatus.innerHTML =
         '<p class="text-red-400"><i class="fas fa-exclamation-circle mr-2"></i>' + message + '</p>';
       formStatus.classList.remove('hidden');
-      setTimeout(function () {
-        formStatus.classList.add('hidden');
-      }, 5000);
+      if (!opts.sticky) {
+        setTimeout(function () {
+          formStatus.classList.add('hidden');
+        }, 5000);
+      }
+    }
+
+    function showFormFallback(details) {
+      var subject = 'Tutoring enquiry (website form)';
+      var body =
+        'Hi Project Odysseus,%0D%0A%0D%0A' +
+        'My form submission failed, but here are my details:%0D%0A' +
+        (details.name ? 'Name: ' + details.name + '%0D%0A' : '') +
+        (details.email ? 'Email: ' + details.email + '%0D%0A' : '') +
+        (details.grade ? 'Grade: ' + details.grade + '%0D%0A' : '') +
+        '%0D%0AThanks!';
+
+      var mailtoHref =
+        'mailto:' +
+        encodeURIComponent(CONFIG.email) +
+        '?subject=' +
+        encodeURIComponent(subject) +
+        '&body=' +
+        body;
+
+      var waMessage =
+        "Hi! My website form submission failed. My name is " +
+        (details.name || '') +
+        (details.grade ? ' (Grade ' + details.grade + ')' : '') +
+        '. Can you help me book a session?';
+
+      var waHref = 'https://wa.me/' + CONFIG.whatsappNumber + '?text=' + encodeURIComponent(waMessage);
+
+      formStatus.innerHTML =
+        '<div class="text-red-200">' +
+        '  <p class="text-red-400"><i class="fas fa-exclamation-circle mr-2"></i>We couldn\'t submit the form right now.</p>' +
+        '  <p class="mt-2 text-slate-200">No stress — you can still reach us instantly:</p>' +
+        '  <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">' +
+        '    <a class="inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-500" href="' +
+        waHref +
+        '" target="_blank" rel="noopener">' +
+        '      <i class="fab fa-whatsapp mr-2"></i> WhatsApp us' +
+        '    </a>' +
+        '    <a class="inline-flex items-center justify-center rounded-lg border border-slate-600 bg-slate-900/30 px-4 py-2 font-semibold text-white hover:bg-slate-900/50" href="' +
+        mailtoHref +
+        '">' +
+        '      <i class="fas fa-envelope mr-2"></i> Email us' +
+        '    </a>' +
+        '  </div>' +
+        '</div>';
+      formStatus.classList.remove('hidden');
     }
 
     // Honeypot check (capture phase)
@@ -233,6 +288,11 @@
         return;
       }
 
+      trackFormEvent('form_submit_attempt', {
+        form_id: 'contact-form',
+        page_path: window.location.pathname,
+      });
+
       btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
       btn.disabled = true;
       formStatus.classList.add('hidden');
@@ -246,6 +306,11 @@
             headers: { Accept: 'application/json' },
           });
           if (!response.ok) throw new Error('Form submission failed');
+
+          trackFormEvent('form_submit_success', {
+            form_id: 'contact-form',
+            page_path: window.location.pathname,
+          });
 
           if (typeof window.gtag === 'function' && localStorage.getItem('po_ga_consent') === 'granted') {
             window.gtag('event', 'generate_lead', {
@@ -275,7 +340,11 @@
       } catch (_err) {
         btn.innerHTML = originalText;
         btn.disabled = false;
-        showFormError('Something went wrong. Please try WhatsApp instead.');
+        trackFormEvent('form_submit_failure', {
+          form_id: 'contact-form',
+          page_path: window.location.pathname,
+        });
+        showFormFallback({ name: name, email: email, grade: grade });
       }
     });
   }
@@ -286,6 +355,12 @@
   function initLeadForm() {
     var form = $('#lead-form');
     if (!form) return;
+
+    function trackFormEvent(eventName, params) {
+      if (typeof window.gtag !== 'function') return;
+      if (localStorage.getItem('po_ga_consent') !== 'granted') return;
+      window.gtag('event', eventName, params || {});
+    }
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
@@ -298,6 +373,11 @@
         alert('Please enter a valid email address.');
         return;
       }
+
+      trackFormEvent('form_submit_attempt', {
+        form_id: 'lead-form',
+        page_path: window.location.pathname,
+      });
 
       btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
       btn.disabled = true;
@@ -312,6 +392,11 @@
             headers: { Accept: 'application/json' },
           });
           if (!response.ok) throw new Error('Lead magnet submission failed');
+
+          trackFormEvent('form_submit_success', {
+            form_id: 'lead-form',
+            page_path: window.location.pathname,
+          });
 
           if (typeof window.gtag === 'function' && localStorage.getItem('po_ga_consent') === 'granted') {
             window.gtag('event', 'generate_lead', {
@@ -337,7 +422,11 @@
       } catch (_err) {
         btn.innerHTML = originalText;
         btn.disabled = false;
-        alert('Something went wrong. Please try again.');
+        trackFormEvent('form_submit_failure', {
+          form_id: 'lead-form',
+          page_path: window.location.pathname,
+        });
+        alert('Something went wrong. Please try again, or contact us on WhatsApp.');
       }
     });
   }
