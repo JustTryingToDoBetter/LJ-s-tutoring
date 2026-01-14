@@ -6,9 +6,14 @@ Professional Mathematics tutoring website for Grades 8-12 in South Africa.
 
 1. Clone this repository
 2. Install dependencies: `npm install`
-3. Build CSS: `npm run build`
-4. Open `index.html` in your browser (or run `npm run serve`)
-5. For production, deploy to any static hosting (Netlify, Vercel, GitHub Pages)
+3. Build the project: `npm run build`
+4. Serve locally: `npm run serve`
+5. For production, deploy to any static hosting (Netlify, Vercel, GitHub Pages, DigitalOcean)
+
+**Note:** The build process:
+- Compiles Tailwind CSS from `assets/tailwind-input.css`
+- Copies HTML, JavaScript, images, and guides to `dist/`
+- The `dist/` directory is what gets deployed to production
 
 ## ⚙️ Configuration Required
 
@@ -44,15 +49,25 @@ Create a 1200x630px image named `og-image.jpg` for social media sharing.
 ## 📁 File Structure
 
 ```
-├── index.html          # Main website
-├── privacy.html        # Privacy Policy page
-├── terms.html          # Terms of Service page
-├── 404.html           # Custom 404 error page
-├── favicon.svg        # Browser favicon
-├── sitemap.xml        # SEO sitemap
-├── robots.txt         # Search engine crawling rules
-├── netlify.toml       # Netlify deployment config
-└── README.md          # This file
+├── index.html                    # Main website (source)
+├── privacy.html                  # Privacy Policy page
+├── terms.html                    # Terms of Service page
+├── 404.html                      # Custom 404 error page
+├── maths-tutoring-cape-town.html # SEO landing page
+├── assets/                       # Source JavaScript & CSS
+│   ├── analytics.js
+│   ├── app-critical.js
+│   ├── app-noncritical.js
+│   ├── site.css
+│   └── tailwind-input.css
+├── guides/                       # Blog/guide content
+├── images/                       # Image assets
+├── dist/                         # Build output (git ignored)
+├── favicon.svg                   # Browser favicon
+├── sitemap.xml                   # SEO sitemap
+├── robots.txt                    # Search engine crawling rules
+├── netlify.toml                  # Netlify deployment config
+└── README.md                     # This file
 ```
 
 ## ✅ QA / Smoke Checks
@@ -100,19 +115,21 @@ Update the counter values to reflect your actual metrics.
 1. Push to GitHub
 2. Connect to Netlify
 3. Deploy automatically!
-4. The `netlify.toml` file handles redirects and security headers
+4. The `netlify.toml` file handles build configuration and security headers
 
-Netlify also runs the build step (`npm run build`) to generate `assets/tailwind.css`.
+The build automatically runs `npm run build` and deploys from the `dist/` directory.
 
 ### DigitalOcean App Platform
 
-If you deploy this repo as a **Web Service** (Node.js buildpack), use:
+Deploy as a **Static Site** using the `.do/app.yaml` configuration:
 
-- Build command: `npm run build`
-- Run command: `npm start`
+- The app will auto-build and deploy from the `dist/` directory
+- Alternatively, deploy as a Web Service with:
+  - Build command: `npm run build`
+  - Run command: `npm start`
 
 Notes:
-- Make sure `package-lock.json` is committed to the repo (App Platform requires a lockfile).
+- Make sure `package-lock.json` is committed (required for deployment).
 - The server binds to `$PORT` automatically.
 
 ### GitHub Pages
