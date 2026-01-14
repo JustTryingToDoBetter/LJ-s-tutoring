@@ -5,5 +5,4 @@ pnpm-lock.yaml
 yarn.lock
 
 # Build outputs
-dist/*
-!dist/.gitkeep
+dist/
