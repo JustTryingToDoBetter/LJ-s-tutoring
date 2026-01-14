@@ -272,11 +272,16 @@
     banner.className =
       'fixed inset-x-0 bottom-0 z-[9999] border-t border-slate-200 bg-white/95 backdrop-blur px-4 py-4 shadow-lg';
 
+    var dntNote = isDoNotTrackEnabled()
+      ? '<div class="mt-2 text-xs text-slate-600"><strong>Note:</strong> Your browser has “Do Not Track” enabled. Analytics will stay off unless you accept.</div>'
+      : '';
+
     banner.innerHTML =
       '<div class="mx-auto flex max-w-6xl flex-col gap-3 md:flex-row md:items-center md:justify-between">' +
       '  <div class="text-sm text-slate-700">' +
       '    <div class="font-semibold text-slate-900">Cookies & analytics</div>' +
       '    <div class="mt-1">We use Google Analytics to understand site usage and improve the service. You can accept or decline analytics cookies. <a class="underline text-slate-900 hover:text-slate-700" href="/privacy.html">Privacy Policy</a>.</div>' +
+      dntNote +
       '  </div>' +
       '  <div class="flex gap-2">' +
       '    <button id="po-cookie-decline" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Decline</button>' +
@@ -290,11 +295,6 @@
   function showBannerIfNeeded() {
     var stored = getStoredConsent();
     if (stored === 'granted' || stored === 'denied') return;
-    if (isDoNotTrackEnabled()) {
-      // Respect DNT by defaulting to denied.
-      setStoredConsent('denied');
-      return;
-    }
 
     var banner = createBanner();
     document.body.appendChild(banner);
@@ -404,12 +404,6 @@
 
   function init() {
     var stored = getStoredConsent();
-    if (stored !== 'granted' && stored !== 'denied' && isDoNotTrackEnabled()) {
-      // Respect DNT without prompting.
-      setStoredConsent('denied');
-      stored = 'denied';
-    }
-
     if (stored === 'granted') {
       ensureGtagLoaded()
         .then(function () {

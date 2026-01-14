@@ -5,31 +5,31 @@ Professional Mathematics tutoring website for Grades 8-12 in South Africa.
 ## 🚀 Quick Start
 
 1. Clone this repository
-2. Open `index.html` in your browser
-3. For production, deploy to any static hosting (Netlify, Vercel, GitHub Pages)
+2. Install dependencies: `npm install`
+3. Build CSS: `npm run build`
+4. Open `index.html` in your browser (or run `npm run serve`)
+5. For production, deploy to any static hosting (Netlify, Vercel, GitHub Pages)
 
 ## ⚙️ Configuration Required
 
-Before going live, update these values in `index.html`:
+Before going live, update these values in the central config files:
 
 ### 1. WhatsApp Number
-Find the `CONFIG` object in the JavaScript section and update:
-```javascript
-whatsappNumber: '27XXXXXXXXX', // Replace with your actual number
-```
+Update `whatsappNumber` in `assets/app-critical.js`.
 
 ### 2. Form Backend (Formspree)
 1. Go to [formspree.io](https://formspree.io) and create a free account
 2. Create a new form and copy your form ID
-3. Update the config:
-```javascript
-formspreeEndpoint: 'https://formspree.io/f/YOUR_FORM_ID',
-```
+3. Update `formspreeEndpoint` in `assets/app-critical.js`.
 
 ### 3. Google Analytics
 1. Create a property at [analytics.google.com](https://analytics.google.com)
 2. Get your Measurement ID (starts with `G-`)
-3. Uncomment the Google Analytics section in `<head>` and replace `GA_MEASUREMENT_ID`
+3. Update `GA_MEASUREMENT_ID` in `assets/analytics.js`
+
+Notes:
+- Analytics only loads after opt-in via the cookie banner.
+- If a browser has “Do Not Track” enabled, analytics defaults to declined.
 
 ### 4. Domain & URLs
 Update these in `index.html`:
@@ -54,6 +54,13 @@ Create a 1200x630px image named `og-image.jpg` for social media sharing.
 ├── netlify.toml       # Netlify deployment config
 └── README.md          # This file
 ```
+
+## ✅ QA / Smoke Checks
+
+- HTML validation: `npm run qa:html`
+- Internal link checks (requires a server): `npm run qa:links`
+- Basic accessibility checks (requires a server): `npm run qa:a11y`
+- Run everything: `npm run qa`
 
 ## 🎨 Customization
 
@@ -94,6 +101,8 @@ Update the counter values to reflect your actual metrics.
 2. Connect to Netlify
 3. Deploy automatically!
 4. The `netlify.toml` file handles redirects and security headers
+
+Netlify also runs the build step (`npm run build`) to generate `assets/tailwind.css`.
 
 ### GitHub Pages
 1. Go to Settings > Pages
