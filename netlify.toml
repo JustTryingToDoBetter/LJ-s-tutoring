@@ -1,0 +1,35 @@
+[build]
+  publish = "."
+
+# Security headers for all routes
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Force HTTPS (Netlify already serves HTTPS, this hardens browser behavior)
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+    # Reduce common web attack surface
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+
+    # Clickjacking protection
+    X-Frame-Options = "DENY"
+
+    # CSP: keeps site working while restricting sources.
+    # Note: this site currently uses inline scripts/styles, so 'unsafe-inline' is required unless we refactor.
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://formspree.io; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://images.unsplash.com https://www.google-analytics.com; connect-src 'self' https://formspree.io https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com; upgrade-insecure-requests"
+
+    # Deprecated in modern browsers; explicitly disable
+    X-XSS-Protection = "0"
+
+# Cache static assets aggressively (safe because filenames are stable here)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
