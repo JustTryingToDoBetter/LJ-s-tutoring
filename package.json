@@ -21,10 +21,11 @@
     "prebuild": "npm run clean && mkdir -p dist/assets",
     "build:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --minify",
     "build:html": "cp index.html 404.html terms.html privacy.html maths-tutoring-cape-town.html dist/",
+    "build:static": "cp favicon.svg robots.txt sitemap.xml dist/ 2>/dev/null || true",
     "build:guides": "cp -r guides dist/",
     "build:images": "cp -r images dist/",
     "build:assets": "cp assets/*.js assets/site.css assets/tailwind-input.css dist/assets/ 2>/dev/null || true",
-    "build": "npm run prebuild && npm run build:css && npm run build:html && npm run build:guides && npm run build:images && npm run build:assets",
+    "build": "npm run prebuild && npm run build:css && npm run build:html && npm run build:static && npm run build:guides && npm run build:images && npm run build:assets",
 
     "serve": "http-server dist -p 8080 -c-1",
     "start": "http-server dist -a 0.0.0.0 -p ${PORT:-8080} -c-1",
