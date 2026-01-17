@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **CRITICAL**: Build pipeline now properly copies guides and images to subdirectories
+  - `build:guides` now creates `dist/guides/` (was flattening to dist root)
+  - `build:images` now creates `dist/images/` (was flattening to dist root)
+  - Fixed Lighthouse CI 404 errors on `/guides/matric-maths-mistakes-guide.html`
+  - Updated `prebuild` to create necessary subdirectories
+
 ### Added
 - Comprehensive inline documentation for all configuration and build scripts
 - Environment-based configuration system via `.env` file
