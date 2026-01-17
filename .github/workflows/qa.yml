@@ -25,18 +25,30 @@ jobs:
             npm install
           fi
 
+      # Security audit - check for known vulnerabilities in dependencies
+      # This runs before build to catch security issues early
+      - name: Security audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: false
+
+      # Build the site with injected configuration
       - name: Build
         run: npm run build
 
+      # Start local server for link/accessibility testing
       - name: Start server
         run: |
           npx http-server dist -p 8080 -c-1 &
           npx wait-on http://localhost:8080
 
+      # Validate HTML against W3C standards
       - name: HTML validation
         run: npm run qa:html
+        
+      # Check for broken internal links
       - name: Link check (internal)
         run: npm run qa:links
 
+      # Test basic accessibility (WCAG 2.0 AA compliance)
       - name: Accessibility smoke checks
         run: npm run qa:a11y

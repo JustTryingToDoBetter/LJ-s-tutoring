@@ -1,0 +1,308 @@
+# ============================================================================
+# EDITORCONFIG
+# ============================================================================
+# 
+# PURPOSE:
+# Maintains consistent coding styles across different editors and IDEs.
+# Prevents "tabs vs spaces" wars and line ending issues.
+# 
+# HOW IT FITS IN THE SYSTEM:
+# - Foundational constraint: Applied BEFORE linting/formatting
+# - Editor-agnostic: Works with VS Code, WebStorm, Sublime, Vim, etc.
+# - Version controlled: Same rules for entire team
+# - Prevents issues: Catches whitespace problems at source
+# 
+# SUPPORTED EDITORS:
+# Most modern editors support EditorConfig either built-in or via plugin:
+# - VS Code: Install "EditorConfig for VS Code" extension
+# - WebStorm/IntelliJ: Built-in support
+# - Sublime Text: Install "EditorConfig" package
+# - Vim: Install "editorconfig-vim" plugin
+# - Atom: Install "editorconfig" package
+# 
+# WHY THIS MATTERS:
+# - Git diffs stay clean (no whitespace-only changes)
+# - Files render correctly across platforms
+# - Team spends time on code, not formatting debates
+# 
+# DOCUMENTATION: https://editorconfig.org/
+# ============================================================================
+
+# This is the root EditorConfig file
+# Stops searching for .editorconfig files in parent directories
+root = true
+
+# ============================================================================
+# UNIVERSAL DEFAULTS - Apply to all files
+# ============================================================================
+
+[*]
+# Character encoding
+# REASON: UTF-8 supports international characters, is web standard
+# IMPACT: Prevents encoding issues with special characters (é, ñ, 中, etc.)
+charset = utf-8
+
+# Line ending style
+# OPTIONS: lf (Unix/Mac), crlf (Windows), cr (legacy Mac)
+# DECISION: lf (Unix-style) even on Windows
+# REASON: 
+# - Git converts to lf on commit (via .gitattributes if set)
+# - Most servers are Unix/Linux
+# - Consistent across all platforms
+# WINDOWS NOTE: Modern editors handle this transparently
+end_of_line = lf
+
+# Final newline
+# REASON: POSIX standard, some tools expect it, cleaner git diffs
+# EXAMPLE: Last line should end with \n
+insert_final_newline = true
+
+# Trailing whitespace
+# REASON: No purpose, clutters diffs, some linters flag it
+# REMOVES: Spaces/tabs at end of lines when saving
+trim_trailing_whitespace = true
+
+# ============================================================================
+# INDENTATION - Spaces vs tabs, and how many
+# ============================================================================
+
+# Use spaces for indentation
+# REASON: Renders identically everywhere, no ambiguity
+# ALTERNATIVE: tabs (some prefer for accessibility)
+# DECISION: Spaces for this project (matches ESLint config)
+indent_style = space
+
+# Default indent size: 2 spaces
+# REASON: Balance between readability and horizontal space
+# RATIONALE: Common for HTML/CSS/JS, less nesting depth than 4 spaces
+indent_size = 2
+
+# ============================================================================
+# JAVASCRIPT & JSON - Enforce 2-space indentation
+# ============================================================================
+
+[*.js]
+# Indent: 2 spaces (matches ESLint 'indent' rule)
+indent_size = 2
+
+# Trim trailing whitespace
+trim_trailing_whitespace = true
+
+# Newline at end of file
+insert_final_newline = true
+
+[*.json]
+# JSON: 2 spaces for readability
+indent_size = 2
+
+# JSON files should not have trailing commas (invalid)
+# EditorConfig doesn't enforce this, but linters do
+insert_final_newline = true
+
+# ============================================================================
+# HTML - 2-space indentation for consistency
+# ============================================================================
+
+[*.html]
+# Indent: 2 spaces (consistent with JS/CSS)
+indent_size = 2
+
+# Final newline (helps when concatenating files)
+insert_final_newline = true
+
+# Trim trailing whitespace
+# EXCEPTION: Some HTML needs trailing space for inline elements
+# Our html-validate is set to ignore trailing whitespace
+trim_trailing_whitespace = true
+
+# ============================================================================
+# CSS & SCSS - Style files
+# ============================================================================
+
+[*.{css,scss,less}]
+# Indent: 2 spaces
+indent_size = 2
+
+# Newline at end
+insert_final_newline = true
+
+# Trim whitespace
+trim_trailing_whitespace = true
+
+# ============================================================================
+# MARKDOWN - Special handling for documentation
+# ============================================================================
+
+[*.md]
+# Indent: 2 spaces
+indent_size = 2
+
+# Markdown: DO NOT trim trailing whitespace
+# REASON: Two trailing spaces = line break in Markdown
+# EXAMPLE: "Line one  \nLine two" renders with line break
+trim_trailing_whitespace = false
+
+# Newline at end
+insert_final_newline = true
+
+# Maximum line length (soft limit, not enforced by EditorConfig)
+# REASON: Improves readability in editors and diffs
+# NOTE: Some Markdown formatters use this as a guide
+max_line_length = 80
+
+# ============================================================================
+# YAML - Configuration files
+# ============================================================================
+
+[*.{yml,yaml}]
+# YAML: 2 spaces (YAML spec requires spaces, not tabs)
+# CRITICAL: Tabs break YAML parsers
+indent_style = space
+indent_size = 2
+
+# Newline at end
+insert_final_newline = true
+
+# Trim whitespace (YAML is whitespace-sensitive)
+trim_trailing_whitespace = true
+
+# ============================================================================
+# CONFIGURATION FILES - Package managers, tools
+# ============================================================================
+
+[{package.json,package-lock.json,.eslintrc.json,.htmlvalidate.json}]
+# Config files: 2 spaces for readability
+indent_size = 2
+
+[{.eslintrc.js,tailwind.config.js,lighthouserc.js}]
+# JS config files: 2 spaces (matches code style)
+indent_size = 2
+
+# ============================================================================
+# SHELL SCRIPTS - Bash/sh files
+# ============================================================================
+
+[*.{sh,bash}]
+# Shell scripts: 2 spaces
+indent_size = 2
+
+# End with newline (POSIX requirement)
+insert_final_newline = true
+
+# Unix line endings (critical for shell scripts)
+end_of_line = lf
+
+# ============================================================================
+# GIT & IGNORE FILES - Version control
+# ============================================================================
+
+[{.gitignore,.gitattributes,.gitmodules}]
+# Git files: 2 spaces
+indent_size = 2
+
+# Newline at end
+insert_final_newline = true
+
+# ============================================================================
+# MAKEFILES - Build automation
+# ============================================================================
+
+[Makefile]
+# Makefiles: MUST use tabs (not spaces)
+# REASON: Make tool requires literal tab characters
+# CRITICAL: Spaces will break Make
+indent_style = tab
+
+# ============================================================================
+# SPECIAL CASES - Files with different requirements
+# ============================================================================
+
+[*.bat]
+# Windows batch files: CRLF line endings (Windows requirement)
+end_of_line = crlf
+
+[*.{cmd}]
+# Windows command files: CRLF line endings
+end_of_line = crlf
+
+# ============================================================================
+# INTEGRATION WITH OTHER TOOLS
+# ============================================================================
+# 
+# EDITORCONFIG ← You are here (basic formatting)
+#     ↓
+# ESLINT (JavaScript: style + quality rules)
+#     ↓
+# HTML-VALIDATE (HTML: semantic + accessibility)
+#     ↓
+# PRETTIER (optional: advanced formatting)
+#     ↓
+# GIT PRE-COMMIT HOOK (enforces before commit)
+#     ↓
+# CI/CD (final validation before merge)
+# 
+# EditorConfig is the FIRST LAYER - prevents issues at source.
+# Other tools build on this foundation.
+# 
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+# 
+# PROBLEM: EditorConfig not working
+# SOLUTION: 
+# 1. Install EditorConfig extension for your editor
+# 2. Restart editor after installing
+# 3. Check "root = true" is in this file
+# 4. Verify file is named exactly ".editorconfig"
+# 
+# PROBLEM: Changes not applying to existing files
+# SOLUTION:
+# - EditorConfig only affects NEW edits, not existing content
+# - To reformat existing files:
+#   npm run lint:js -- --fix  (JavaScript)
+#   Or manually reformat in your editor
+# 
+# PROBLEM: Line endings keep changing
+# SOLUTION:
+# 1. Check git config: git config core.autocrlf
+# 2. Set to false on Windows: git config --global core.autocrlf false
+# 3. Create .gitattributes with: * text=auto eol=lf
+# 4. Run: git add --renormalize .
+# 
+# PROBLEM: Tabs showing up in files that should have spaces
+# SOLUTION:
+# - Check editor settings override EditorConfig
+# - Ensure EditorConfig extension is enabled
+# - Verify the file type matches a pattern in this config
+# 
+# ============================================================================
+# TEAM GUIDELINES
+# ============================================================================
+# 
+# DO:
+# - Install EditorConfig extension in your editor
+# - Let EditorConfig handle formatting automatically
+# - Report if EditorConfig rules feel wrong
+# 
+# DON'T:
+# - Manually adjust indentation (let EditorConfig do it)
+# - Mix tabs and spaces
+# - Commit files with wrong line endings
+# 
+# CHANGING RULES:
+# 1. Discuss with team (formatting affects everyone)
+# 2. Update this file with rationale
+# 3. Reformat all files: npm run lint:js -- --fix
+# 4. Commit: "chore: adjust EditorConfig for X because Y"
+# 5. Update CHANGELOG.md
+# 
+# ============================================================================
+# REFERENCES
+# ============================================================================
+# 
+# - EditorConfig Spec: https://editorconfig.org/
+# - Properties: https://github.com/editorconfig/editorconfig/wiki/EditorConfig-Properties
+# - Editor Plugins: https://editorconfig.org/#download
+# - Best Practices: https://github.com/editorconfig/editorconfig/wiki/EditorConfig-Best-Practices
+# 
+# ============================================================================

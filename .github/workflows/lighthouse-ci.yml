@@ -1,0 +1,201 @@
+# ============================================================================
+# LIGHTHOUSE CI WORKFLOW
+# ============================================================================
+# 
+# PURPOSE:
+# Automated performance, accessibility, and SEO auditing on every push/PR.
+# Catches regressions before they reach production.
+# 
+# WHEN IT RUNS:
+# - Every push to any branch
+# - Every pull request (new commits)
+# - Can be manually triggered from Actions tab
+# 
+# WHAT IT DOES:
+# 1. Builds the site (npm run build)
+# 2. Starts local server
+# 3. Runs Lighthouse on multiple pages
+# 4. Checks scores against thresholds (lighthouserc.js)
+# 5. Uploads reports for review
+# 6. Fails if performance/accessibility drops
+# 
+# HOW IT FITS IN THE SYSTEM:
+# - Parallel to QA workflow (can run simultaneously)
+# - Uses same build artifacts (dist/)
+# - Provides quantitative metrics (QA is qualitative)
+# - Enforces performance budgets (constraint)
+# ============================================================================
+
+name: Lighthouse CI
+
+# Trigger conditions
+on:
+  push:
+    branches: ['**']  # Run on all branches
+  pull_request:       # Run on PRs
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  lighthouse:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ========================================================================
+      # SETUP - Checkout code and prepare environment
+      # ========================================================================
+      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full git history (for comparison)
+      
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'  # Cache npm dependencies for faster runs
+      
+      # ========================================================================
+      # DEPENDENCIES - Install project dependencies
+      # ========================================================================
+      
+      - name: Install dependencies
+        run: |
+          # Use npm ci for reproducible builds (respects package-lock.json)
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+      
+      # ========================================================================
+      # BUILD - Create production-ready site in dist/
+      # ========================================================================
+      
+      - name: Build site
+        run: npm run build
+        env:
+          # Use production-like environment for realistic performance testing
+          NODE_ENV: production
+          # Inject test config values (same as production)
+          WHATSAPP_NUMBER: ${{ secrets.WHATSAPP_NUMBER || '27679327754' }}
+          FORMSPREE_ENDPOINT: ${{ secrets.FORMSPREE_ENDPOINT || 'https://formspree.io/f/xreebzqa' }}
+          CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL || 'projectodysseus10@gmail.com' }}
+          COUNTDOWN_DATE: ${{ secrets.COUNTDOWN_DATE || '2026-02-15T17:00:00' }}
+      
+      # ========================================================================
+      # LIGHTHOUSE CI - Install and run audits
+      # ========================================================================
+      
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.13.x
+        # Use specific version for reproducibility (0.13.x = latest stable)
+      
+      - name: Run Lighthouse CI
+        run: lhci autorun
+        # 'autorun' does:
+        # 1. Collect: Runs Lighthouse on URLs defined in lighthouserc.js
+        # 2. Assert: Checks scores against thresholds
+        # 3. Upload: Sends reports to temporary storage
+        # 
+        # Configuration comes from lighthouserc.js in repo root
+        env:
+          # GitHub token for commenting on PRs (optional)
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+      
+      # ========================================================================
+      # RESULTS - Upload artifacts for debugging
+      # ========================================================================
+      
+      - name: Upload Lighthouse results
+        if: always()  # Upload even if tests fail (for debugging)
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+          retention-days: 30  # Keep reports for 30 days
+      
+      # ========================================================================
+      # SUMMARY - Add results to GitHub Actions summary
+      # ========================================================================
+      
+      - name: Generate summary
+        if: always()
+        run: |
+          echo "## Lighthouse CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Lighthouse audits completed. Check the [temporary public storage](https://storage.googleapis.com/lighthouse-infrastructure.appspot.com) links in the logs above for detailed reports." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Audited Pages:" >> $GITHUB_STEP_SUMMARY
+          echo "- Homepage" >> $GITHUB_STEP_SUMMARY
+          echo "- Maths Tutoring Cape Town (SEO page)" >> $GITHUB_STEP_SUMMARY
+          echo "- Privacy Policy" >> $GITHUB_STEP_SUMMARY
+          echo "- Terms of Service" >> $GITHUB_STEP_SUMMARY
+          echo "- Matric Maths Mistakes Guide" >> $GITHUB_STEP_SUMMARY
+          echo "- 404 Error Page" >> $GITHUB_STEP_SUMMARY
+
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+# 
+# ERROR: "LHCI autorun failed"
+# - Click "Run Lighthouse CI" step to see which metric failed
+# - Click report URL to see detailed Lighthouse report
+# - Compare to thresholds in lighthouserc.js
+# - Fix issues and push again
+# 
+# ERROR: "Cannot start server"
+# - Check dist/ directory exists (build step succeeded)
+# - Verify lighthouserc.js staticDistDir path is correct
+# 
+# ERROR: "Timeout waiting for server"
+# - Server may be slow to start
+# - Increase timeout in lighthouserc.js
+# 
+# WARNING: "Scores vary between runs"
+# - Normal! Lighthouse has inherent variability
+# - That's why we run 3x and use median (see lighthouserc.js)
+# 
+# ============================================================================
+# PERFORMANCE TIPS
+# ============================================================================
+# 
+# To speed up this workflow:
+# 
+# 1. Use npm ci instead of npm install (already doing this)
+# 2. Cache node_modules (already doing this via setup-node)
+# 3. Reduce numberOfRuns in lighthouserc.js (trade-off: less reliable)
+# 4. Test fewer pages (trade-off: less coverage)
+# 5. Run on schedule instead of every push (trade-off: slower feedback)
+# 
+# ============================================================================
+# GITHUB SECRETS SETUP
+# ============================================================================
+# 
+# Required Secrets (optional but recommended):
+# 
+# 1. Go to: Repository → Settings → Secrets and variables → Actions
+# 
+# 2. Add secrets:
+#    - WHATSAPP_NUMBER: Your production WhatsApp number
+#    - FORMSPREE_ENDPOINT: Your production Formspree endpoint
+#    - CONTACT_EMAIL: Your production email
+#    - COUNTDOWN_DATE: Your production countdown date
+#    - LHCI_GITHUB_APP_TOKEN: For PR comments (optional)
+# 
+# Without secrets, workflow uses fallback defaults (safe for testing).
+# 
+# ============================================================================
+# INTEGRATION WITH OTHER WORKFLOWS
+# ============================================================================
+# 
+# This workflow is INDEPENDENT of qa.yml:
+# - Both run in parallel
+# - Both must pass for PR to be mergeable
+# - QA focuses on correctness (valid HTML, working links, a11y compliance)
+# - Lighthouse focuses on performance (speed, optimization, UX metrics)
+# 
+# Together they provide comprehensive quality assurance.
+# 
+# ============================================================================
