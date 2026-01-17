@@ -1,14 +1,14 @@
 (function () {
   'use strict';
 
-  var STORAGE_KEY = 'po_ga_consent';
-  var GA_MEASUREMENT_ID = 'G-YLSHSGSXNE';
+  const STORAGE_KEY = 'po_ga_consent';
+  const GA_MEASUREMENT_ID = 'G-YLSHSGSXNE';
 
-  var gtagLoadPromise = null;
+  let gtagLoadPromise = null;
 
   function isDoNotTrackEnabled() {
     try {
-      var dnt =
+      const dnt =
         navigator.doNotTrack ||
         window.doNotTrack ||
         (navigator.msDoNotTrack ? navigator.msDoNotTrack : null);
@@ -19,8 +19,8 @@
   }
 
   function ensureGtagLoaded() {
-    if (typeof window.gtag === 'function') return Promise.resolve();
-    if (gtagLoadPromise) return gtagLoadPromise;
+    if (typeof window.gtag === 'function') {return Promise.resolve();}
+    if (gtagLoadPromise) {return gtagLoadPromise;}
 
     gtagLoadPromise = new Promise(function (resolve, reject) {
       // Define dataLayer + gtag stub early
@@ -29,7 +29,7 @@
         window.dataLayer.push(arguments);
       };
 
-      var script = document.createElement('script');
+      const script = document.createElement('script');
       script.async = true;
       script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_MEASUREMENT_ID);
       script.onload = function () {
@@ -51,8 +51,8 @@
   }
 
   function ensureGtagConfigured() {
-    if (!hasGtag()) return;
-    if (window.__po_ga_configured) return;
+    if (!hasGtag()) {return;}
+    if (window.__po_ga_configured) {return;}
     window.__po_ga_configured = true;
     // Do not auto send; we send page_view ourselves when consent is granted.
     window.gtag('config', GA_MEASUREMENT_ID, { send_page_view: false });
@@ -83,9 +83,9 @@
   }
 
   function updateConsentTo(value) {
-    if (!hasGtag()) return;
+    if (!hasGtag()) {return;}
 
-    var granted = value === 'granted';
+    const granted = value === 'granted';
 
     window.gtag('consent', 'update', {
       ad_storage: 'denied',
@@ -96,8 +96,8 @@
   }
 
   function sendPageView() {
-    if (!hasGtag()) return;
-    if (!isConsentGranted()) return;
+    if (!hasGtag()) {return;}
+    if (!isConsentGranted()) {return;}
 
     ensureGtagConfigured();
 
@@ -109,8 +109,8 @@
   }
 
   function sendEvent(eventName, params) {
-    if (!hasGtag()) return;
-    if (!isConsentGranted()) return;
+    if (!hasGtag()) {return;}
+    if (!isConsentGranted()) {return;}
 
     ensureGtagConfigured();
 
@@ -120,18 +120,18 @@
   // ==========================================
   // Web Vitals (lightweight, no dependencies)
   // ==========================================
-  var vitalsStarted = false;
+  let vitalsStarted = false;
 
   function startWebVitals() {
-    if (vitalsStarted) return;
-    if (!isConsentGranted()) return;
-    if (typeof PerformanceObserver !== 'function') return;
+    if (vitalsStarted) {return;}
+    if (!isConsentGranted()) {return;}
+    if (typeof PerformanceObserver !== 'function') {return;}
 
     vitalsStarted = true;
 
-    var clsValue = 0;
-    var lcpEntry;
-    var inpValue = 0;
+    let clsValue = 0;
+    let lcpEntry = 0;
+    let inpValue = 0;
 
     function sendVital(name, value, extra) {
       sendEvent('web_vital', {
@@ -144,10 +144,10 @@
 
     // CLS
     try {
-      var clsObserver = new PerformanceObserver(function (list) {
+      const clsObserver = new PerformanceObserver(function (list) {
         list.getEntries().forEach(function (entry) {
           // Ignore shifts triggered by user input
-          if (!entry.hadRecentInput) clsValue += entry.value;
+          if (!entry.hadRecentInput) {clsValue += entry.value;}
         });
       });
       clsObserver.observe({ type: 'layout-shift', buffered: true });
@@ -157,9 +157,9 @@
 
     // LCP
     try {
-      var lcpObserver = new PerformanceObserver(function (list) {
-        var entries = list.getEntries();
-        if (entries && entries.length) lcpEntry = entries[entries.length - 1];
+      const lcpObserver = new PerformanceObserver(function (list) {
+        const entries = list.getEntries();
+        if (entries && entries.length) {lcpEntry = entries[entries.length - 1];}
       });
       lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
     } catch (_err) {
@@ -168,10 +168,10 @@
 
     // INP (best-effort using Event Timing API)
     try {
-      var inpObserver = new PerformanceObserver(function (list) {
+      const inpObserver = new PerformanceObserver(function (list) {
         list.getEntries().forEach(function (entry) {
           // Only count interactions
-          if (!entry.interactionId) return;
+          if (!entry.interactionId) {return;}
           inpValue = Math.max(inpValue, entry.duration);
         });
       });
@@ -184,34 +184,34 @@
     window.addEventListener(
       'pagehide',
       function () {
-        if (!isConsentGranted()) return;
+        if (!isConsentGranted()) {return;}
 
-        if (typeof clsValue === 'number') sendVital('CLS', clsValue);
+        if (typeof clsValue === 'number') {sendVital('CLS', clsValue);}
         if (lcpEntry && typeof lcpEntry.startTime === 'number') {
           sendVital('LCP', lcpEntry.startTime, {
             lcp_element: lcpEntry.element ? lcpEntry.element.tagName : undefined,
           });
         }
-        if (inpValue > 0) sendVital('INP', inpValue);
+        if (inpValue > 0) {sendVital('INP', inpValue);}
       },
-      { capture: true }
+      { capture: true },
     );
   }
 
   // ==========================================
   // Error Monitoring (consent-gated)
   // ==========================================
-  var errorMonitoringStarted = false;
+  let errorMonitoringStarted = false;
 
   function startErrorMonitoring() {
-    if (errorMonitoringStarted) return;
-    if (!isConsentGranted()) return;
+    if (errorMonitoringStarted) {return;}
+    if (!isConsentGranted()) {return;}
 
     errorMonitoringStarted = true;
 
     // Avoid floods on broken pages
-    var MAX_ERRORS_PER_PAGE = 10;
-    var sent = 0;
+    const MAX_ERRORS_PER_PAGE = 10;
+    let sent = 0;
 
     function shouldSend() {
       sent += 1;
@@ -220,7 +220,7 @@
 
     function safeStr(value, maxLen) {
       try {
-        var s = String(value);
+        const s = String(value);
         return s.length > maxLen ? s.slice(0, maxLen) + '…' : s;
       } catch (_err) {
         return '';
@@ -230,12 +230,12 @@
     window.addEventListener(
       'error',
       function (event) {
-        if (!isConsentGranted()) return;
-        if (!shouldSend()) return;
+        if (!isConsentGranted()) {return;}
+        if (!shouldSend()) {return;}
 
         // Ignore opaque "Script error." cases (usually cross-origin without CORS headers)
-        var msg = event && event.message ? event.message : '';
-        if (msg === 'Script error.' || msg === 'Script error') return;
+        const msg = event && event.message ? event.message : '';
+        if (msg === 'Script error.' || msg === 'Script error') {return;}
 
         sendEvent('js_error', {
           error_message: safeStr(msg, 300),
@@ -245,34 +245,34 @@
           page_path: window.location.pathname,
         });
       },
-      { capture: true }
+      { capture: true },
     );
 
     window.addEventListener(
       'unhandledrejection',
       function (event) {
-        if (!isConsentGranted()) return;
-        if (!shouldSend()) return;
+        if (!isConsentGranted()) {return;}
+        if (!shouldSend()) {return;}
 
-        var reason = event && event.reason ? event.reason : '';
-        var message = reason && reason.message ? reason.message : reason;
+        const reason = event && event.reason ? event.reason : '';
+        const message = reason && reason.message ? reason.message : reason;
 
         sendEvent('js_unhandled_rejection', {
           rejection_reason: safeStr(message, 300),
           page_path: window.location.pathname,
         });
       },
-      { capture: true }
+      { capture: true },
     );
   }
 
   function createBanner() {
-    var banner = document.createElement('div');
+    const banner = document.createElement('div');
     banner.id = 'po-cookie-banner';
     banner.className =
       'fixed inset-x-0 bottom-0 z-[9999] border-t border-slate-200 bg-white/95 backdrop-blur px-4 py-4 shadow-lg';
 
-    var dntNote = isDoNotTrackEnabled()
+    const dntNote = isDoNotTrackEnabled()
       ? '<div class="mt-2 text-xs text-slate-600"><strong>Note:</strong> Your browser has “Do Not Track” enabled. Analytics will stay off unless you accept.</div>'
       : '';
 
@@ -293,18 +293,18 @@
   }
 
   function showBannerIfNeeded() {
-    var stored = getStoredConsent();
-    if (stored === 'granted' || stored === 'denied') return;
+    const stored = getStoredConsent();
+    if (stored === 'granted' || stored === 'denied') {return;}
 
-    var banner = createBanner();
+    const banner = createBanner();
     document.body.appendChild(banner);
 
-    var acceptBtn = document.getElementById('po-cookie-accept');
-    var declineBtn = document.getElementById('po-cookie-decline');
+    const acceptBtn = document.getElementById('po-cookie-accept');
+    const declineBtn = document.getElementById('po-cookie-decline');
 
     function closeBanner() {
-      var el = document.getElementById('po-cookie-banner');
-      if (el && el.parentNode) el.parentNode.removeChild(el);
+      const el = document.getElementById('po-cookie-banner');
+      if (el && el.parentNode) {el.parentNode.removeChild(el);}
     }
 
     acceptBtn.addEventListener('click', function () {
@@ -335,15 +335,15 @@
     document.addEventListener(
       'click',
       function (event) {
-        if (!isConsentGranted()) return;
+        if (!isConsentGranted()) {return;}
 
-        var target = event.target;
-        if (!target) return;
+        const target = event.target;
+        if (!target) {return;}
 
         // Anchor clicks
-        var anchor = target.closest && target.closest('a');
+        const anchor = target.closest && target.closest('a');
         if (anchor && anchor.href) {
-          var href = anchor.getAttribute('href') || '';
+          const href = anchor.getAttribute('href') || '';
 
           // mailto / tel
           if (href.startsWith('mailto:')) {
@@ -357,8 +357,8 @@
 
           // WhatsApp
           try {
-            var url = new URL(anchor.href, window.location.href);
-            var host = (url.hostname || '').toLowerCase();
+            const url = new URL(anchor.href, window.location.href);
+            const host = (url.hostname || '').toLowerCase();
             if (host === 'wa.me' || host === 'api.whatsapp.com') {
               sendEvent('whatsapp_click', { link_url: url.href });
               return;
@@ -380,10 +380,10 @@
         }
 
         // Button clicks (e.g., guide print/download)
-        var button = target.closest && target.closest('button');
+        const button = target.closest && target.closest('button');
         if (button) {
-          var label = (button.textContent || '').trim().slice(0, 80);
-          var onclick = button.getAttribute('onclick') || '';
+          const label = (button.textContent || '').trim().slice(0, 80);
+          const onclick = button.getAttribute('onclick') || '';
 
           if (onclick.includes('window.print') || label.toLowerCase().includes('download pdf')) {
             sendEvent('download_pdf_click', { label: label || 'Download PDF' });
@@ -398,12 +398,12 @@
           }
         }
       },
-      { capture: true }
+      { capture: true },
     );
   }
 
   function init() {
-    var stored = getStoredConsent();
+    const stored = getStoredConsent();
     if (stored === 'granted') {
       ensureGtagLoaded()
         .then(function () {

@@ -11,7 +11,7 @@
   // ==========================================
   // CONFIGURATION - Single source of truth
   // ==========================================
-  var CONFIG = {
+  const CONFIG = {
     // WhatsApp number (country code, no + or spaces)
     whatsappNumber: '27679327754',
 
@@ -45,7 +45,7 @@
   // WHATSAPP LINK NORMALISATION (critical)
   // ==========================================
   function updateAllWhatsAppLinks(message) {
-    var msg =
+    const msg =
       message || "Hi! I'm interested in Maths tutoring. Can you tell me more about your packages?";
     $$('a[href*="wa.me"]').forEach(function (link) {
       link.href = 'https://wa.me/' + CONFIG.whatsappNumber + '?text=' + encodeURIComponent(msg);
@@ -65,11 +65,11 @@
   // DARK MODE TOGGLE (critical)
   // ==========================================
   function initDarkMode() {
-    var toggle = $('#dark-mode-toggle');
-    var icon = $('#dark-mode-icon');
-    var html = document.documentElement;
+    const toggle = $('#dark-mode-toggle');
+    const icon = $('#dark-mode-icon');
+    const html = document.documentElement;
 
-    if (!toggle || !icon) return;
+    if (!toggle || !icon) {return;}
 
     if (
       localStorage.getItem('darkMode') === 'true' ||
@@ -81,7 +81,7 @@
 
     toggle.addEventListener('click', function () {
       html.classList.toggle('dark');
-      var isDark = html.classList.contains('dark');
+      const isDark = html.classList.contains('dark');
       localStorage.setItem('darkMode', isDark);
       icon.classList.toggle('fa-moon', !isDark);
       icon.classList.toggle('fa-sun', isDark);
@@ -93,28 +93,28 @@
   // ==========================================
   function initCountdown() {
     function update() {
-      var now = Date.now();
-      var target = CONFIG.countdownDate.getTime();
-      var diff = target - now;
+      const now = Date.now();
+      const target = CONFIG.countdownDate.getTime();
+      const diff = target - now;
 
       if (diff > 0) {
-        var days = Math.floor(diff / 86400000);
-        var hours = Math.floor((diff % 86400000) / 3600000);
-        var mins = Math.floor((diff % 3600000) / 60000);
-        var secs = Math.floor((diff % 60000) / 1000);
+        const days = Math.floor(diff / 86400000);
+        const hours = Math.floor((diff % 86400000) / 3600000);
+        const mins = Math.floor((diff % 3600000) / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
 
-        var elDays = $('#countdown-days');
-        var elHours = $('#countdown-hours');
-        var elMins = $('#countdown-mins');
-        var elSecs = $('#countdown-secs');
+        const elDays = $('#countdown-days');
+        const elHours = $('#countdown-hours');
+        const elMins = $('#countdown-mins');
+        const elSecs = $('#countdown-secs');
 
-        if (elDays) elDays.textContent = String(days).padStart(2, '0');
-        if (elHours) elHours.textContent = String(hours).padStart(2, '0');
-        if (elMins) elMins.textContent = String(mins).padStart(2, '0');
-        if (elSecs) elSecs.textContent = String(secs).padStart(2, '0');
+        if (elDays) {elDays.textContent = String(days).padStart(2, '0');}
+        if (elHours) {elHours.textContent = String(hours).padStart(2, '0');}
+        if (elMins) {elMins.textContent = String(mins).padStart(2, '0');}
+        if (elSecs) {elSecs.textContent = String(secs).padStart(2, '0');}
       } else {
-        var countdown = $('#countdown');
-        if (countdown) countdown.innerHTML = '<p class="text-brand-gold font-bold">Bookings Now Open!</p>';
+        const countdown = $('#countdown');
+        if (countdown) {countdown.innerHTML = '<p class="text-brand-gold font-bold">Bookings Now Open!</p>';}
       }
     }
 
@@ -126,13 +126,13 @@
   // MOBILE MENU (critical)
   // ==========================================
   function initMobileMenu() {
-    var btn = $('#mobile-menu-btn');
-    var menu = $('#mobile-menu');
-    var icon = $('#menu-icon');
-    if (!btn || !menu || !icon) return;
+    const btn = $('#mobile-menu-btn');
+    const menu = $('#mobile-menu');
+    const icon = $('#menu-icon');
+    if (!btn || !menu || !icon) {return;}
 
     btn.addEventListener('click', function () {
-      var isOpen = menu.classList.toggle('open');
+      const isOpen = menu.classList.toggle('open');
       btn.setAttribute('aria-expanded', isOpen);
       icon.classList.toggle('fa-bars');
       icon.classList.toggle('fa-times');
@@ -154,8 +154,8 @@
   function initFaq() {
     $$('.faq-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var item = btn.parentElement;
-        var isOpen = item.classList.contains('open');
+        const item = btn.parentElement;
+        const isOpen = item.classList.contains('open');
 
         $$('.faq-item').forEach(function (i) {
           i.classList.remove('open');
@@ -176,22 +176,22 @@
   // CONTACT FORM (critical)
   // ==========================================
   function initContactForm() {
-    var form = $('#contact-form');
-    if (!form) return;
+    const form = $('#contact-form');
+    if (!form) {return;}
 
-    var formStatus = document.createElement('div');
+    const formStatus = document.createElement('div');
     formStatus.id = 'form-status';
     formStatus.className = 'mt-4 text-center hidden';
     form.appendChild(formStatus);
 
     function trackFormEvent(eventName, params) {
-      if (typeof window.gtag !== 'function') return;
-      if (localStorage.getItem('po_ga_consent') !== 'granted') return;
+      if (typeof window.gtag !== 'function') {return;}
+      if (localStorage.getItem('po_ga_consent') !== 'granted') {return;}
       window.gtag('event', eventName, params || {});
     }
 
     function showFormError(message, options) {
-      var opts = options || {};
+      const opts = options || {};
       formStatus.innerHTML =
         '<p class="text-red-400"><i class="fas fa-exclamation-circle mr-2"></i>' + message + '</p>';
       formStatus.classList.remove('hidden');
@@ -203,8 +203,8 @@
     }
 
     function showFormFallback(details) {
-      var subject = 'Tutoring enquiry (website form)';
-      var body =
+      const subject = 'Tutoring enquiry (website form)';
+      const body =
         'Hi Project Odysseus,%0D%0A%0D%0A' +
         'My form submission failed, but here are my details:%0D%0A' +
         (details.name ? 'Name: ' + details.name + '%0D%0A' : '') +
@@ -212,7 +212,7 @@
         (details.grade ? 'Grade: ' + details.grade + '%0D%0A' : '') +
         '%0D%0AThanks!';
 
-      var mailtoHref =
+      const mailtoHref =
         'mailto:' +
         encodeURIComponent(CONFIG.email) +
         '?subject=' +
@@ -220,13 +220,13 @@
         '&body=' +
         body;
 
-      var waMessage =
-        "Hi! My website form submission failed. My name is " +
+      const waMessage =
+        'Hi! My website form submission failed. My name is ' +
         (details.name || '') +
         (details.grade ? ' (Grade ' + details.grade + ')' : '') +
         '. Can you help me book a session?';
 
-      var waHref = 'https://wa.me/' + CONFIG.whatsappNumber + '?text=' + encodeURIComponent(waMessage);
+      const waHref = 'https://wa.me/' + CONFIG.whatsappNumber + '?text=' + encodeURIComponent(waMessage);
 
       formStatus.innerHTML =
         '<div class="text-red-200">' +
@@ -252,28 +252,28 @@
     form.addEventListener(
       'submit',
       function (e) {
-        var honeypot = $('#website');
+        const honeypot = $('#website');
         if (honeypot && honeypot.value) {
           e.preventDefault();
           console.log('Bot detected - form submission blocked');
         }
       },
-      true
+      true,
     );
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
 
-      var btn = form.querySelector('button[type="submit"]');
-      var originalText = btn.innerHTML;
+      const btn = form.querySelector('button[type="submit"]');
+      const originalText = btn.innerHTML;
 
-      var nameEl = $('#name');
-      var emailEl = $('#email');
-      var gradeEl = $('#grade');
+      const nameEl = $('#name');
+      const emailEl = $('#email');
+      const gradeEl = $('#grade');
 
-      var name = (nameEl && nameEl.value ? nameEl.value : '').trim();
-      var email = (emailEl && emailEl.value ? emailEl.value : '').trim();
-      var grade = gradeEl && gradeEl.value ? gradeEl.value : '';
+      const name = (nameEl && nameEl.value ? nameEl.value : '').trim();
+      const email = (emailEl && emailEl.value ? emailEl.value : '').trim();
+      const grade = gradeEl && gradeEl.value ? gradeEl.value : '';
 
       if (!name || name.length < 2) {
         showFormError('Please enter a valid name.');
@@ -299,13 +299,13 @@
 
       try {
         if (CONFIG.formspreeEndpoint && !CONFIG.formspreeEndpoint.includes('YOUR_FORM_ID')) {
-          var formData = new FormData(form);
-          var response = await fetch(CONFIG.formspreeEndpoint, {
+          const formData = new FormData(form);
+          const response = await fetch(CONFIG.formspreeEndpoint, {
             method: 'POST',
             body: formData,
             headers: { Accept: 'application/json' },
           });
-          if (!response.ok) throw new Error('Form submission failed');
+          if (!response.ok) {throw new Error('Form submission failed');}
 
           trackFormEvent('form_submit_success', {
             form_id: 'contact-form',
@@ -353,21 +353,21 @@
   // LEAD MAGNET FORM (critical)
   // ==========================================
   function initLeadForm() {
-    var form = $('#lead-form');
-    if (!form) return;
+    const form = $('#lead-form');
+    if (!form) {return;}
 
     function trackFormEvent(eventName, params) {
-      if (typeof window.gtag !== 'function') return;
-      if (localStorage.getItem('po_ga_consent') !== 'granted') return;
+      if (typeof window.gtag !== 'function') {return;}
+      if (localStorage.getItem('po_ga_consent') !== 'granted') {return;}
       window.gtag('event', eventName, params || {});
     }
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
-      var btn = form.querySelector('button[type="submit"]');
-      var originalText = btn.innerHTML;
-      var emailInput = $('#lead-email');
-      var email = emailInput ? emailInput.value : '';
+      const btn = form.querySelector('button[type="submit"]');
+      const originalText = btn.innerHTML;
+      const emailInput = $('#lead-email');
+      const email = emailInput ? emailInput.value : '';
 
       if (!isValidEmail(email)) {
         alert('Please enter a valid email address.');
@@ -384,14 +384,14 @@
 
       try {
         if (CONFIG.formspreeEndpoint && !CONFIG.formspreeEndpoint.includes('YOUR_FORM_ID')) {
-          var formData = new FormData(form);
+          const formData = new FormData(form);
           formData.append('form_type', 'lead_magnet');
-          var response = await fetch(CONFIG.formspreeEndpoint, {
+          const response = await fetch(CONFIG.formspreeEndpoint, {
             method: 'POST',
             body: formData,
             headers: { Accept: 'application/json' },
           });
-          if (!response.ok) throw new Error('Lead magnet submission failed');
+          if (!response.ok) {throw new Error('Lead magnet submission failed');}
 
           trackFormEvent('form_submit_success', {
             form_id: 'lead-form',
@@ -435,11 +435,11 @@
   // KEYBOARD SHORTCUTS (critical)
   // ==========================================
   function initShortcuts() {
-    var modal = $('#shortcuts-modal');
-    var closeBtn = $('#shortcuts-close');
-    var darkToggle = $('#dark-mode-toggle');
+    const modal = $('#shortcuts-modal');
+    const closeBtn = $('#shortcuts-close');
+    const darkToggle = $('#dark-mode-toggle');
 
-    if (!modal) return;
+    if (!modal) {return;}
 
     function open() {
       modal.classList.add('visible');
@@ -448,14 +448,14 @@
       modal.classList.remove('visible');
     }
 
-    if (closeBtn) closeBtn.addEventListener('click', close);
+    if (closeBtn) {closeBtn.addEventListener('click', close);}
     modal.addEventListener('click', function (e) {
-      if (e.target === modal) close();
+      if (e.target === modal) {close();}
     });
 
     document.addEventListener('keydown', function (e) {
-      var tag = e.target && e.target.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const tag = e.target && e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {return;}
 
       if (modal.classList.contains('visible') && e.key !== '?') {
         close();
@@ -463,27 +463,29 @@
       }
 
       switch (e.key.toLowerCase()) {
-        case '?':
-          e.preventDefault();
-          open();
-          break;
-        case 'd':
-          if (darkToggle) darkToggle.click();
-          break;
-        case 'p':
-          var pricing = $('#pricing');
-          if (pricing) pricing.scrollIntoView({ behavior: 'smooth' });
-          break;
-        case 'c':
-          var contact = $('#contact');
-          if (contact) contact.scrollIntoView({ behavior: 'smooth' });
-          break;
-        case 'w':
-          window.open('https://wa.me/' + CONFIG.whatsappNumber, '_blank');
-          break;
-        case 't':
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          break;
+      case '?':
+        e.preventDefault();
+        open();
+        break;
+      case 'd':
+        if (darkToggle) {darkToggle.click();}
+        break;
+      case 'p': {
+        const pricing = $('#pricing');
+        if (pricing) {pricing.scrollIntoView({ behavior: 'smooth' });}
+        break;
+      }
+      case 'c': {
+        const contact = $('#contact');
+        if (contact) {contact.scrollIntoView({ behavior: 'smooth' });}
+        break;
+      }
+      case 'w':
+        window.open('https://wa.me/' + CONFIG.whatsappNumber, '_blank');
+        break;
+      case 't':
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        break;
       }
     });
   }
@@ -492,12 +494,12 @@
   // REAL-TIME FORM VALIDATION + WHATSAPP MSG (critical)
   // ==========================================
   function initFormValidation() {
-    var nameInput = $('#name');
-    var emailInput = $('#email');
-    var gradeSelect = $('#grade');
+    const nameInput = $('#name');
+    const emailInput = $('#email');
+    const gradeSelect = $('#grade');
 
     function addValidationStyles(input, isValid) {
-      if (!input) return;
+      if (!input) {return;}
       input.classList.remove('input-valid', 'input-invalid');
       if (input.value.trim()) {
         input.classList.add(isValid ? 'input-valid' : 'input-invalid');
@@ -505,9 +507,9 @@
     }
 
     function updateWhatsAppMessage() {
-      var grade = gradeSelect ? gradeSelect.value : '';
-      var name = nameInput ? nameInput.value.trim() : '';
-      var message = "Hi! I'm interested in Maths tutoring.";
+      const grade = gradeSelect ? gradeSelect.value : '';
+      const name = nameInput ? nameInput.value.trim() : '';
+      let message = "Hi! I'm interested in Maths tutoring.";
 
       if (grade) {
         message = "Hi! I'm interested in Maths tutoring for a Grade " + grade + ' student.';
@@ -559,10 +561,10 @@
   // NON-CRITICAL LOADER
   // ==========================================
   function loadNonCriticalBundle() {
-    if (window.__poNonCriticalLoaded) return;
+    if (window.__poNonCriticalLoaded) {return;}
     window.__poNonCriticalLoaded = true;
 
-    var script = document.createElement('script');
+    const script = document.createElement('script');
     script.src = '/assets/app-noncritical.js';
     script.async = true;
     document.body.appendChild(script);

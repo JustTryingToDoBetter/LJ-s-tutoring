@@ -10,30 +10,43 @@
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.16",
+    "cpy-cli": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "eslint": "^8.57.0",
     "html-validate": "^9.5.3",
+    "husky": "^9.0.11",
     "linkinator": "^6.1.2",
+    "mkdirp": "^3.0.1",
+    "npm-run-all": "^4.1.5",
     "pa11y-ci": "^4.0.1",
+    "rimraf": "^5.0.5",
     "tailwindcss": "^3.4.17",
     "wait-on": "^7.2.0"
   },
 "scripts": {
-    "clean": "rm -rf dist",
-    "prebuild": "npm run clean && mkdir -p dist/assets",
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean && mkdirp dist/assets",
     "build:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --minify",
-    "build:html": "cp index.html 404.html terms.html privacy.html maths-tutoring-cape-town.html dist/",
-    "build:static": "cp favicon.svg robots.txt sitemap.xml dist/ 2>/dev/null || true",
-    "build:guides": "cp -r guides dist/",
-    "build:images": "cp -r images dist/",
-    "build:assets": "cp assets/*.js assets/site.css assets/tailwind-input.css dist/assets/ 2>/dev/null || true",
-    "build": "npm run prebuild && npm run build:css && npm run build:html && npm run build:static && npm run build:guides && npm run build:images && npm run build:assets",
-
+    "build:html": "cpy \"*.html\" dist --flat && node scripts/inject-config.js",
+    "build:static": "cpy \"favicon.svg\" \"robots.txt\" \"sitemap.xml\" dist --flat",
+    "build:guides": "cpy \"guides/**\" dist",
+    "build:images": "cpy \"images/**\" dist",
+    "build:assets": "cpy \"assets/*.js\" \"assets/site.css\" \"assets/tailwind-input.css\" dist/assets --flat",
+    "build": "npm run prebuild && npm-run-all --parallel build:css build:html build:static build:guides build:images build:assets",
+    "dev": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --watch",
+    "dev:full": "npm run prebuild && npm run build:html && npm run build:static && npm run build:guides && npm run build:images && npm run build:assets && npm run dev",
     "serve": "http-server dist -p 8080 -c-1",
     "start": "http-server dist -a 0.0.0.0 -p ${PORT:-8080} -c-1",
-
-    "qa:html": "html-validate index.html 404.html terms.html privacy.html maths-tutoring-cape-town.html guides/*.html",
-    "qa:links": "linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip '^mailto:|^tel:|^https?:\\/\\/(?!localhost:8080)'",
+    "lint:js": "eslint assets/*.js",
+    "lint:html": "html-validate \"*.html\" \"guides/*.html\"",
+    "lint": "npm-run-all --parallel lint:js lint:html",
+    "qa:html": "html-validate \"*.html\" \"guides/*.html\"",
+    "qa:links": "linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip \"^mailto:|^tel:|^https?:\\/\\/(?!localhost:8080)\"",
     "qa:a11y": "pa11y-ci",
-    "qa": "npm run build && npm run serve --silent & npx wait-on http://localhost:8080 && npm run qa:html && npm run qa:links && npm run qa:a11y"
+    "qa:quick": "npm run qa:html && npm run qa:links",
+    "preqa": "npm run build",
+    "qa": "npm run serve --silent & npx wait-on http://localhost:8080 && npm-run-all --parallel qa:html qa:links qa:a11y",
+    "prepare": "husky || true"
   }
 
 }

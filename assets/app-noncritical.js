@@ -5,8 +5,8 @@
 (function () {
   'use strict';
 
-  var PO = window.PO_APP || {};
-  var CONFIG = PO.CONFIG || window.CONFIG || { whatsappNumber: '27679327754' };
+  const PO = window.PO_APP || {};
+  const CONFIG = PO.CONFIG || window.CONFIG || { whatsappNumber: '27679327754' };
 
   function $(selector) {
     return (PO.$ && PO.$(selector)) || document.querySelector(selector);
@@ -17,8 +17,8 @@
   }
 
   function updateAllWhatsAppLinks(message) {
-    if (typeof PO.updateAllWhatsAppLinks === 'function') return PO.updateAllWhatsAppLinks(message);
-    var msg = message || "Hi! I'm interested in Maths tutoring.";
+    if (typeof PO.updateAllWhatsAppLinks === 'function') {return PO.updateAllWhatsAppLinks(message);}
+    const msg = message || "Hi! I'm interested in Maths tutoring.";
     $$('a[href*="wa.me"]').forEach(function (link) {
       link.href = 'https://wa.me/' + CONFIG.whatsappNumber + '?text=' + encodeURIComponent(msg);
     });
@@ -28,12 +28,12 @@
   // SCROLL / INTERSECTION ANIMATIONS
   // ==========================================
   function initScrollAnimations() {
-    if (typeof IntersectionObserver !== 'function') return;
-    var options = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+    if (typeof IntersectionObserver !== 'function') {return;}
+    const options = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
 
-    var observer = new IntersectionObserver(function (entries) {
+    const observer = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        if (entry.isIntersecting) entry.target.classList.add('visible');
+        if (entry.isIntersecting) {entry.target.classList.add('visible');}
       });
     }, options);
 
@@ -46,17 +46,17 @@
   // COUNTER ANIMATION
   // ==========================================
   function initCounters() {
-    if (typeof IntersectionObserver !== 'function') return;
+    if (typeof IntersectionObserver !== 'function') {return;}
 
-    var counterObserver = new IntersectionObserver(
+    const counterObserver = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-          var counter = entry.target;
-          var target = parseInt(counter.dataset.target, 10);
-          var duration = 2000;
-          var step = target / (duration / 16);
-          var current = 0;
+          if (!entry.isIntersecting) {return;}
+          const counter = entry.target;
+          const target = parseInt(counter.dataset.target, 10);
+          const duration = 2000;
+          const step = target / (duration / 16);
+          let current = 0;
 
           (function tick() {
             current += step;
@@ -71,7 +71,7 @@
           counterObserver.unobserve(counter);
         });
       },
-      { threshold: 0.5 }
+      { threshold: 0.5 },
     );
 
     $$('.counter').forEach(function (c) {
@@ -83,13 +83,13 @@
   // EXIT INTENT POPUP
   // ==========================================
   function initExitPopup() {
-    var popup = $('#exit-popup');
-    var closeBtn = $('#exit-popup-close');
-    var ctaBtn = $('#exit-popup-cta');
-    var dismissBtn = $('#exit-popup-dismiss');
-    if (!popup) return;
+    const popup = $('#exit-popup');
+    const closeBtn = $('#exit-popup-close');
+    const ctaBtn = $('#exit-popup-cta');
+    const dismissBtn = $('#exit-popup-dismiss');
+    if (!popup) {return;}
 
-    var shown = false;
+    let shown = false;
     function close() {
       popup.classList.remove('show');
     }
@@ -104,16 +104,16 @@
       });
     }
 
-    if (closeBtn) closeBtn.addEventListener('click', close);
-    if (dismissBtn) dismissBtn.addEventListener('click', close);
-    if (ctaBtn) ctaBtn.addEventListener('click', close);
+    if (closeBtn) {closeBtn.addEventListener('click', close);}
+    if (dismissBtn) {dismissBtn.addEventListener('click', close);}
+    if (ctaBtn) {ctaBtn.addEventListener('click', close);}
 
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') close();
+      if (e.key === 'Escape') {close();}
     });
 
     popup.addEventListener('click', function (e) {
-      if (e.target === popup) close();
+      if (e.target === popup) {close();}
     });
   }
 
@@ -121,23 +121,23 @@
   // FLOATING WHATSAPP BUTTON (hide near footer)
   // ==========================================
   function initWhatsAppFloat() {
-    var btn = $('#whatsapp-float');
-    if (!btn) return;
+    const btn = $('#whatsapp-float');
+    if (!btn) {return;}
 
     // Ensure link is correct
     updateAllWhatsAppLinks();
 
-    var footer = $('#contact');
-    if (!footer || typeof IntersectionObserver !== 'function') return;
+    const footer = $('#contact');
+    if (!footer || typeof IntersectionObserver !== 'function') {return;}
 
-    var observer = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           btn.style.opacity = entry.isIntersecting ? '0' : '1';
           btn.style.pointerEvents = entry.isIntersecting ? 'none' : 'auto';
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
     observer.observe(footer);
   }
@@ -146,8 +146,8 @@
   // PAGE LOADER
   // ==========================================
   function initLoader() {
-    var loader = $('#page-loader');
-    if (!loader) return;
+    const loader = $('#page-loader');
+    if (!loader) {return;}
 
     function hideLoader() {
       setTimeout(function () {
@@ -168,12 +168,12 @@
   // SCROLL PROGRESS BAR
   // ==========================================
   function initScrollProgress() {
-    var bar = $('#scroll-progress');
-    if (!bar) return;
+    const bar = $('#scroll-progress');
+    if (!bar) {return;}
 
     window.addEventListener('scroll', function () {
-      var scrollTop = window.scrollY;
-      var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       bar.style.width = (scrollTop / docHeight) * 100 + '%';
     });
   }
@@ -182,8 +182,8 @@
   // BACK TO TOP BUTTON
   // ==========================================
   function initBackToTop() {
-    var btn = $('#back-to-top');
-    if (!btn) return;
+    const btn = $('#back-to-top');
+    if (!btn) {return;}
 
     window.addEventListener('scroll', function () {
       btn.classList.toggle('visible', window.scrollY > 500);
@@ -198,15 +198,15 @@
   // MOBILE STICKY CTA
   // ==========================================
   function initMobileStickyCta() {
-    var cta = $('#mobile-sticky-cta');
-    var hero = $('#main-content');
-    if (!cta || !hero) return;
+    const cta = $('#mobile-sticky-cta');
+    const hero = $('#main-content');
+    if (!cta || !hero) {return;}
 
-    var lastScrollY = 0;
+    let lastScrollY = 0;
     window.addEventListener('scroll', function () {
-      var currentScrollY = window.scrollY;
-      var heroBottom = hero.offsetTop + hero.offsetHeight;
-      var nearBottom = document.documentElement.scrollHeight - window.innerHeight - 200;
+      const currentScrollY = window.scrollY;
+      const heroBottom = hero.offsetTop + hero.offsetHeight;
+      const nearBottom = document.documentElement.scrollHeight - window.innerHeight - 200;
 
       if (currentScrollY > heroBottom && currentScrollY < nearBottom) {
         if (currentScrollY < lastScrollY || currentScrollY - lastScrollY < 10) {
@@ -225,13 +225,13 @@
   // TESTIMONIAL CAROUSEL (Mobile)
   // ==========================================
   function initCarousel() {
-    var track = $('.testimonial-track');
-    var dots = $$('.carousel-dot');
-    if (!track || dots.length === 0) return;
+    const track = $('.testimonial-track');
+    const dots = $$('.carousel-dot');
+    if (!track || dots.length === 0) {return;}
 
-    var slideCount = dots.length;
-    var currentSlide = 0;
-    var autoSlideInterval;
+    const slideCount = dots.length;
+    let currentSlide = 0;
+    let autoSlideInterval;
 
     function goToSlide(index) {
       currentSlide = index;
@@ -276,15 +276,15 @@
       }
     });
 
-    var touchStartX = 0;
-    var touchEndX = 0;
+    let touchStartX = 0;
+    let touchEndX = 0;
 
     track.addEventListener(
       'touchstart',
       function (e) {
         touchStartX = e.changedTouches[0].screenX;
       },
-      { passive: true }
+      { passive: true },
     );
 
     track.addEventListener(
@@ -293,12 +293,12 @@
         touchEndX = e.changedTouches[0].screenX;
         handleSwipe();
       },
-      { passive: true }
+      { passive: true },
     );
 
     function handleSwipe() {
-      var threshold = 50;
-      var diff = touchStartX - touchEndX;
+      const threshold = 50;
+      const diff = touchStartX - touchEndX;
       if (Math.abs(diff) > threshold) {
         if (diff > 0 && currentSlide < slideCount - 1) {
           goToSlide(currentSlide + 1);
@@ -315,20 +315,20 @@
   // ==========================================
   function initSlots() {
     function update() {
-      var el = $('#slots-remaining');
-      if (!el) return;
+      const el = $('#slots-remaining');
+      if (!el) {return;}
 
-      var now = new Date();
-      var day = now.getDay();
-      var hour = now.getHours();
+      const now = new Date();
+      const day = now.getDay();
+      const hour = now.getHours();
 
-      var base = 5 - Math.floor(day / 2);
-      if (hour >= 17 && hour <= 20) base = Math.max(1, base - 1);
-      var slots = Math.max(1, Math.min(5, base + Math.floor(Math.random() * 2)));
+      let base = 5 - Math.floor(day / 2);
+      if (hour >= 17 && hour <= 20) {base = Math.max(1, base - 1);}
+      const slots = Math.max(1, Math.min(5, base + Math.floor(Math.random() * 2)));
 
       el.textContent = slots;
-      var badge = el.closest('div');
-      if (badge) badge.classList.toggle('animate-pulse', slots <= 2);
+      const badge = el.closest('div');
+      if (badge) {badge.classList.toggle('animate-pulse', slots <= 2);}
     }
 
     update();

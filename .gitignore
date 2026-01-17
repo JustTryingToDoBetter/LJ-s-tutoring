@@ -6,3 +6,20 @@ yarn.lock
 
 # Build outputs
 dist/
+
+# Environment variables
+.env
+
+# Husky
+.husky/_
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+*.swp
+
+# Test artifacts
+.server.pid
