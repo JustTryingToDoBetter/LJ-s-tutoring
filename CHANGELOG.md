@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **ACCESSIBILITY**: All color contrast issues now meet WCAG 2.0 AA standards (4.5:1 ratio)
+  - Brand gold: darkened from #fbbf24 to #b8860b (DarkGoldenrod)
+  - Green buttons: darkened to #008933 for white text contrast
+  - Blue badges: darkened to #2563eb for sufficient contrast
+  - Purple badges: darkened to #9333ea for sufficient contrast
+  - Amber buttons: darkened to #d97706 for sufficient contrast
+  - Footer text: changed from slate-500 to slate-300 on dark backgrounds
+  - Footer text: changed from gray-500 to gray-700 on light backgrounds
 - **CRITICAL**: Build pipeline now properly copies guides and images to subdirectories
   - `build:guides` now creates `dist/guides/` (was flattening to dist root)
   - `build:images` now creates `dist/images/` (was flattening to dist root)
