@@ -31,110 +31,38 @@ name: Lighthouse CI
 # Trigger conditions
 on:
   push:
-    branches: ['**']  # Run on all branches
+    branches:
+      - main # Run on all branches
   pull_request:       # Run on PRs
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
-  lighthouse:
-    name: Lighthouse Audit
+  audit:
     runs-on: ubuntu-latest
-    
+
     steps:
-      # ========================================================================
-      # SETUP - Checkout code and prepare environment
-      # ========================================================================
-      
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
-          fetch-depth: 0  # Full git history (for comparison)
-      
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'  # Cache npm dependencies for faster runs
-      
-      # ========================================================================
-      # DEPENDENCIES - Install project dependencies
-      # ========================================================================
-      
+          node-version: 20
+
       - name: Install dependencies
-        run: |
-          # Use npm ci for reproducible builds (respects package-lock.json)
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-      
-      # ========================================================================
-      # BUILD - Create production-ready site in dist/
-      # ========================================================================
-      
+        run: npm ci
+
       - name: Build site
         run: npm run build
-        env:
-          # Use production-like environment for realistic performance testing
-          NODE_ENV: production
-          # Inject test config values (same as production)
-          WHATSAPP_NUMBER: ${{ secrets.WHATSAPP_NUMBER || '27679327754' }}
-          FORMSPREE_ENDPOINT: ${{ secrets.FORMSPREE_ENDPOINT || 'https://formspree.io/f/xreebzqa' }}
-          CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL || 'projectodysseus10@gmail.com' }}
-          COUNTDOWN_DATE: ${{ secrets.COUNTDOWN_DATE || '2026-02-15T17:00:00' }}
-      
-      # ========================================================================
-      # LIGHTHOUSE CI - Install and run audits
-      # ========================================================================
-      
-      - name: Install Lighthouse CI
-        run: npm install -g @lhci/cli@0.13.x
-        # Use specific version for reproducibility (0.13.x = latest stable)
-      
-      - name: Run Lighthouse CI
-        run: lhci autorun
-        # 'autorun' does:
-        # 1. Collect: Runs Lighthouse on URLs defined in lighthouserc.js
-        # 2. Assert: Checks scores against thresholds
-        # 3. Upload: Sends reports to temporary storage
-        # 
-        # Configuration comes from lighthouserc.js in repo root
-        env:
-          # GitHub token for commenting on PRs (optional)
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-      
-      # ========================================================================
-      # RESULTS - Upload artifacts for debugging
-      # ========================================================================
-      
-      - name: Upload Lighthouse results
-        if: always()  # Upload even if tests fail (for debugging)
-        uses: actions/upload-artifact@v4
-        with:
-          name: lighthouse-results
-          path: .lighthouseci/
-          retention-days: 30  # Keep reports for 30 days
-      
-      # ========================================================================
-      # SUMMARY - Add results to GitHub Actions summary
-      # ========================================================================
-      
-      - name: Generate summary
-        if: always()
-        run: |
-          echo "## Lighthouse CI Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Lighthouse audits completed. Check the [temporary public storage](https://storage.googleapis.com/lighthouse-infrastructure.appspot.com) links in the logs above for detailed reports." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Audited Pages:" >> $GITHUB_STEP_SUMMARY
-          echo "- Homepage" >> $GITHUB_STEP_SUMMARY
-          echo "- Maths Tutoring Cape Town (SEO page)" >> $GITHUB_STEP_SUMMARY
-          echo "- Privacy Policy" >> $GITHUB_STEP_SUMMARY
-          echo "- Terms of Service" >> $GITHUB_STEP_SUMMARY
-          echo "- Matric Maths Mistakes Guide" >> $GITHUB_STEP_SUMMARY
-          echo "- 404 Error Page" >> $GITHUB_STEP_SUMMARY
 
+      - name: Start static server
+        run: |
+          npx http-server dist -p 8080 -c-1 --silent &
+          npx wait-on http://localhost:8080/index.html
+
+      - name: Run Lighthouse CI
+        run: npx lhci autorun
+
+      - name: Run Pa11y
+        run: npx pa11y-ci
 # ============================================================================
 # TROUBLESHOOTING
 # ============================================================================
