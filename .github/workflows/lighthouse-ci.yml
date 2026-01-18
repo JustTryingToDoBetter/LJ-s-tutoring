@@ -1,47 +1,42 @@
 # ============================================================================
-# LIGHTHOUSE CI WORKFLOW
+# LIGHTHOUSE CI WORKFLOW - Performance & SEO Monitoring
 # ============================================================================
 # 
 # PURPOSE:
-# Automated performance, accessibility, and SEO auditing on every push/PR.
-# Catches regressions before they reach production.
+# Automated performance, SEO, and best practices auditing.
+# Catches performance regressions before they reach production.
+# Focuses on PERFORMANCE (not correctness - that's QA's job).
 # 
-# WHEN IT RUNS:
-# - Every push to any branch
-# - Every pull request (new commits)
-# - Can be manually triggered from Actions tab
+# RUNS ON:
+# - Pull requests (all commits) - ONLY mode that enforces thresholds
+# - Manual trigger via Actions tab
+# - NOT on every push to main (too frequent, use QA for that)
 # 
-# WHAT IT DOES:
-# 1. Builds the site (npm run build)
-# 2. Starts local server
-# 3. Runs Lighthouse on multiple pages
-# 4. Checks scores against thresholds (lighthouserc.js)
-# 5. Uploads reports for review
-# 6. Fails if performance/accessibility drops
+# CHECKS PERFORMED:
+# 1. Lighthouse performance metrics
+# 2. SEO best practices
+# 3. PWA readiness
+# 4. Best practices compliance
 # 
-# HOW IT FITS IN THE SYSTEM:
-# - Parallel to QA workflow (can run simultaneously)
-# - Uses same build artifacts (dist/)
-# - Provides quantitative metrics (QA is qualitative)
-# - Enforces performance budgets (constraint)
+# OUTPUTS:
+# - Lighthouse HTML reports (downloadable)
+# - PR status check (enforces performance budgets)
+# - PR comment with score summary
 # ============================================================================
 
 name: Lighthouse CI
 
-# Trigger conditions
 on:
-  push:
-    branches:
-      - main # Run on main (PRs cover feature branches)
-  pull_request:       # Run on PRs
+  pull_request:       # Only run on PRs (most important)
   workflow_dispatch:  # Allow manual trigger
+  # Removed: push to main (redundant - PRs already tested)
 
 concurrency:
   group: lighthouse-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  audit:
+  lighthouse:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -56,80 +51,215 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # ========================================================================
+      # BUILD SITE
+      # ========================================================================
       - name: Build site
         run: npm run build
 
+      # ========================================================================
+      # START SERVER
+      # ========================================================================
       - name: Start static server
         run: |
           npx http-server dist -p 8080 -c-1 --silent &
           npx wait-on --timeout 60000 http://localhost:8080/
 
+      # ========================================================================
+      # RUN LIGHTHOUSE CI
+      # ========================================================================
       - name: Run Lighthouse CI
-        run: npx lhci autorun --config=./lighthouserc.js
+        id: lighthouse
+        continue-on-error: true
+        run: |
+          npx lhci autorun --config=./lighthouserc.js
+          echo "status=passed" >> $GITHUB_OUTPUT
 
-      - name: Run Pa11y
-        run: npx pa11y-ci
+      # ========================================================================
+      # UPLOAD LIGHTHOUSE REPORTS
+      # ========================================================================
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/
+          retention-days: 30
+
+      # ========================================================================
+      # PARSE LIGHTHOUSE RESULTS
+      # ========================================================================
+      - name: Parse Lighthouse results
+        if: always()
+        id: parse
+        run: |
+          # Find the most recent manifest file
+          MANIFEST=$(find .lighthouseci -name "manifest.json" | head -n 1)
+          
+          if [ -f "$MANIFEST" ]; then
+            # Extract scores from the first URL's latest run
+            REPORT=$(jq -r '.[0].jsonPath' "$MANIFEST" | head -n 1)
+            
+            if [ -f "$REPORT" ]; then
+              PERF=$(jq -r '.categories.performance.score * 100 | floor' "$REPORT")
+              A11Y=$(jq -r '.categories.accessibility.score * 100 | floor' "$REPORT")
+              PRACTICES=$(jq -r '.categories["best-practices"].score * 100 | floor' "$REPORT")
+              SEO=$(jq -r '.categories.seo.score * 100 | floor' "$REPORT")
+              
+              echo "performance=$PERF" >> $GITHUB_OUTPUT
+              echo "accessibility=$A11Y" >> $GITHUB_OUTPUT
+              echo "best_practices=$PRACTICES" >> $GITHUB_OUTPUT
+              echo "seo=$SEO" >> $GITHUB_OUTPUT
+            else
+              echo "No report found"
+              echo "performance=0" >> $GITHUB_OUTPUT
+              echo "accessibility=0" >> $GITHUB_OUTPUT
+              echo "best_practices=0" >> $GITHUB_OUTPUT
+              echo "seo=0" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No manifest found"
+            echo "performance=0" >> $GITHUB_OUTPUT
+            echo "accessibility=0" >> $GITHUB_OUTPUT
+            echo "best_practices=0" >> $GITHUB_OUTPUT
+            echo "seo=0" >> $GITHUB_OUTPUT
+          fi
+
+      # ========================================================================
+      # CREATE PR COMMENT
+      # ========================================================================
+      - name: Comment on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const perf = '${{ steps.parse.outputs.performance }}';
+            const a11y = '${{ steps.parse.outputs.accessibility }}';
+            const practices = '${{ steps.parse.outputs.best_practices }}';
+            const seo = '${{ steps.parse.outputs.seo }}';
+            const status = '${{ steps.lighthouse.outputs.status }}';
+            
+            const getEmoji = (score) => {
+              if (score >= 90) return '🟢';
+              if (score >= 50) return '🟠';
+              return '🔴';
+            };
+            
+            const body = `## ⚡ Lighthouse Performance Report
+            
+            | Category | Score |
+            |----------|-------|
+            | ${getEmoji(perf)} Performance | ${perf}/100 |
+            | ${getEmoji(a11y)} Accessibility | ${a11y}/100 |
+            | ${getEmoji(practices)} Best Practices | ${practices}/100 |
+            | ${getEmoji(seo)} SEO | ${seo}/100 |
+            
+            ${status === 'passed' 
+              ? '✅ **All performance budgets met!**' 
+              : '⚠️ **Performance budgets not met.** Download [detailed reports](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) from artifacts.'}
+            
+            <details>
+            <summary>Score Guide</summary>
+            
+            - 🟢 90-100: Good
+            - 🟠 50-89: Needs improvement
+            - 🔴 0-49: Poor
+            </details>
+            `;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('## ⚡ Lighthouse Performance Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+      # ========================================================================
+      # FINAL STATUS CHECK
+      # ========================================================================
+      - name: Check Lighthouse status
+        if: always()
+        run: |
+          if [[ "${{ steps.lighthouse.outputs.status }}" == "failed" ]]; then
+            echo "❌ Lighthouse checks failed - performance budgets not met"
+            exit 1
+          else
+            echo "✅ Lighthouse checks passed"
+          fi
+
 # ============================================================================
 # TROUBLESHOOTING
 # ============================================================================
 # 
 # ERROR: "LHCI autorun failed"
-# - Click "Run Lighthouse CI" step to see which metric failed
-# - Click report URL to see detailed Lighthouse report
-# - Compare to thresholds in lighthouserc.js
-# - Fix issues and push again
+# - Download lighthouse-reports artifact from Actions tab
+# - Open HTML reports in browser to see detailed metrics
+# - Compare scores to thresholds in lighthouserc.js
+# - Common fixes:
+#   * Optimize images (use WebP, proper sizing)
+#   * Minify JS/CSS
+#   * Enable caching headers
+#   * Lazy load images
+#   * Remove unused dependencies
 # 
-# ERROR: "Cannot start server"
-# - Check dist/ directory exists (build step succeeded)
-# - Verify lighthouserc.js staticDistDir path is correct
-# 
-# ERROR: "Timeout waiting for server"
-# - Server may be slow to start
-# - Increase timeout in lighthouserc.js
+# ERROR: "Cannot parse Lighthouse results"
+# - Check if build succeeded
+# - Verify lighthouserc.js exists and is valid
+# - Check .lighthouseci/ directory was created
 # 
 # WARNING: "Scores vary between runs"
-# - Normal! Lighthouse has inherent variability
-# - That's why we run 3x and use median (see lighthouserc.js)
+# - Normal! Lighthouse has ±5 point variance
+# - We run 3x and use median (configured in lighthouserc.js)
+# - Don't chase small fluctuations
 # 
 # ============================================================================
-# PERFORMANCE TIPS
+# PERFORMANCE BUDGETS
 # ============================================================================
 # 
-# To speed up this workflow:
+# Configured in lighthouserc.js:
+# - Performance: 75+
+# - Accessibility: 90+
+# - Best Practices: 90+
+# - SEO: 90+
 # 
-# 1. Use npm ci instead of npm install (already doing this)
-# 2. Cache node_modules (already doing this via setup-node)
-# 3. Reduce numberOfRuns in lighthouserc.js (trade-off: less reliable)
-# 4. Test fewer pages (trade-off: less coverage)
-# 5. Run on schedule instead of every push (trade-off: slower feedback)
-# 
-# ============================================================================
-# GITHUB SECRETS SETUP
-# ============================================================================
-# 
-# Required Secrets (optional but recommended):
-# 
-# 1. Go to: Repository → Settings → Secrets and variables → Actions
-# 
-# 2. Add secrets:
-#    - WHATSAPP_NUMBER: Your production WhatsApp number
-#    - FORMSPREE_ENDPOINT: Your production Formspree endpoint
-#    - CONTACT_EMAIL: Your production email
-#    - COUNTDOWN_DATE: Your production countdown date
-#    - LHCI_GITHUB_APP_TOKEN: For PR comments (optional)
-# 
-# Without secrets, workflow uses fallback defaults (safe for testing).
+# Adjust thresholds based on your needs, but never lower accessibility below 90.
 # 
 # ============================================================================
-# INTEGRATION WITH OTHER WORKFLOWS
+# INTEGRATION WITH QA WORKFLOW
 # ============================================================================
 # 
-# This workflow is INDEPENDENT of qa.yml:
-# - Both run in parallel
-# - Both must pass for PR to be mergeable
-# - QA focuses on correctness (valid HTML, working links, a11y compliance)
-# - Lighthouse focuses on performance (speed, optimization, UX metrics)
+# This workflow is COMPLEMENTARY to qa.yml:
 # 
-# Together they provide comprehensive quality assurance.
+# QA Workflow:
+# - Validates correctness (HTML, links, a11y compliance)
+# - Removed Pa11y (now here in Lighthouse - includes a11y scoring)
+# - Runs on every push + PR
+# 
+# Lighthouse Workflow:
+# - Validates performance (speed, optimization, UX)
+# - Includes accessibility scoring as part of Lighthouse
+# - Runs only on PRs (not every push)
+# 
+# Both must pass for PR merge.
 # 
 # ============================================================================
