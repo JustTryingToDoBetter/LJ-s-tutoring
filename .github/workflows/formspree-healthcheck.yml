@@ -10,10 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check Formspree endpoint responds
+        env:
+          FORMSPREE_ENDPOINT: ${{ secrets.FORMSPREE_ENDPOINT }}
         run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" https://formspree.io/f/xreebzqa)
+          url="${FORMSPREE_ENDPOINT:-https://formspree.io/f/xreebzqa}"
+          status=$(curl -sS -o /dev/null -w "%{http_code}" "$url")
           echo "Status: $status"
           if [ "$status" != "405" ]; then
-            echo "Unexpected status from Formspree endpoint (expected 405)."
+            echo "Unexpected status from Formspree endpoint (expected 405): $url"
             exit 1
           fi

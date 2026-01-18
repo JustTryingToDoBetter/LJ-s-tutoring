@@ -32,13 +32,18 @@ name: Lighthouse CI
 on:
   push:
     branches:
-      - main # Run on all branches
+      - main # Run on main (PRs cover feature branches)
   pull_request:       # Run on PRs
   workflow_dispatch:  # Allow manual trigger
+
+concurrency:
+  group: lighthouse-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +51,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -56,10 +62,10 @@ jobs:
       - name: Start static server
         run: |
           npx http-server dist -p 8080 -c-1 --silent &
-          npx wait-on http://localhost:8080/index.html
+          npx wait-on --timeout 60000 http://localhost:8080/
 
       - name: Run Lighthouse CI
-        run: npx lhci autorun
+        run: npx lhci autorun --config=./lighthouserc.js
 
       - name: Run Pa11y
         run: npx pa11y-ci

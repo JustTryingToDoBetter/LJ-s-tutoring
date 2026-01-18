@@ -4,10 +4,16 @@ on:
   pull_request:
   push:
     branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: qa-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   qa:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -19,9 +25,18 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Security audit (prod dependencies)
+        run: npm audit --audit-level=high --omit=dev
+
       # Build the site with injected configuration
       - name: Build Site
         run : npm run build
+
+      - name: Start static server
+        run: |
+          npx http-server dist -p 8080 -c-1 --silent &
+          npx wait-on http://localhost:8080/
 
       # Validate HTML against W3C standards
       - name: HTML validation
@@ -29,4 +44,7 @@ jobs:
         
       # Check for broken internal links
       - name: Link check (internal)
-        run: npx linkinator dist --recurse --skip "mailto:|tel:" --timeout 5000
+        run: npx linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip "^mailto:|^tel:|^https?:\/\/(?!localhost:8080)"
+
+      - name: Accessibility check (Pa11y)
+        run: npx pa11y-ci
