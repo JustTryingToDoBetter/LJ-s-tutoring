@@ -1,37 +1,57 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Odyssey Arcade | Project Odysseus</title>
-  <meta name="description" content="Play Odyssey-themed brain games: Sudoku, Chess, Wordle variant, Tic Tac Toe, Hangman, Quick Math." />
+  <!-- =========================================================================
+    Odyssey Arcade — Separate Page (Frontend-only)
+    Path: /arcade/index.html  -> loads at https://yourdomain.com/arcade/
+    Notes:
+    - Uses absolute paths (/assets/...) so it works inside /arcade/
+    - No inline JS (CSP-friendly)
+    - Expects: /assets/arcade.css and a controller script that mounts games
+  ========================================================================= -->
 
-  <!-- Keep consistent with your main site brand -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <title>Odyssey Arcade | LJ’s Tutoring</title>
+  <meta name="description" content="Odyssey Arcade: Sudoku, Tic Tac Toe, Chess, Quick Math, Hangman, and a Wordle-style word voyage — all frontend-only." />
+
+  <!-- Theme + Social -->
   <meta name="theme-color" content="#0f172a" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta property="og:title" content="Odyssey Arcade" />
+  <meta property="og:description" content="Train your mind like a hero—one quest at a time." />
+  <meta property="og:type" content="website" />
 
-  <!-- Optional: reuse your main Tailwind build if it’s already local -->
-  <link rel="stylesheet" href="/assets/tailwind.css" />
+  <!-- [Unverified placeholder] Replace with your real domain -->
+  <!-- <link rel="canonical" href="https://yourdomain.com/arcade/" /> -->
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+  <!-- If you already ship Tailwind locally, keep it. Otherwise remove it. -->
+  <!-- <link rel="stylesheet" href="/assets/tailwind.css" /> -->
+
   <link rel="stylesheet" href="/assets/arcade.css" />
 </head>
 
 <body class="po-arcade bg-slate-50 text-slate-900">
-  <!-- Skip link -->
+  <!-- Skip link for keyboard users -->
   <a class="po-skip" href="#main">Skip to arcade content</a>
 
-  <!-- Odyssey Header -->
+  <!-- Top Bar -->
   <header class="po-topbar" role="banner">
     <div class="po-wrap">
-      <div class="po-brand">
+      <div class="po-brand" aria-label="Odyssey Arcade header">
         <span class="po-mark" aria-hidden="true">🧭</span>
         <div>
           <div class="po-title">Odyssey Arcade</div>
-          <div class="po-subtitle">Train your mind like a hero—one quest at a time.</div>
+          <div class="po-subtitle">A separate page. Frontend-only. Local saves.</div>
         </div>
       </div>
 
       <nav class="po-nav" aria-label="Arcade navigation">
         <a class="po-link" href="/" title="Back to main site">Home</a>
+
+        <!-- Theme toggle is handled by your JS controller -->
         <button id="po-theme" class="po-btn" type="button" aria-pressed="false">
           Toggle night voyage
         </button>
@@ -40,13 +60,14 @@
   </header>
 
   <main id="main" class="po-wrap po-main" role="main">
-    <!-- Player card -->
+    <!-- Hero / Player Stats -->
     <section class="po-card po-hero" aria-labelledby="po-hero-title">
       <div class="po-hero-left">
         <h1 id="po-hero-title">Choose your next quest</h1>
         <p class="po-muted">
-          Daily challenges reset at midnight (local time). Progress saves on this device.
+          Progress saves on this device. No accounts. No backend. Just quests.
         </p>
+
         <div class="po-stats" role="list" aria-label="Your progress">
           <div class="po-stat" role="listitem">
             <div class="po-stat-label">Streak</div>
@@ -66,11 +87,15 @@
       <div class="po-hero-right">
         <div class="po-daily">
           <h2 class="po-daily-title">Daily Voyage</h2>
-          <p class="po-muted">A quick combo: Quick Math + Word puzzle.</p>
+          <p class="po-muted">
+            A quick combo to build habit: Quick Math + Word Voyage.
+          </p>
+
           <div class="po-daily-actions">
             <button id="po-play-daily" class="po-btn po-btn-primary" type="button">
               Start Daily Voyage
             </button>
+
             <button id="po-reset-profile" class="po-btn po-btn-ghost" type="button">
               Reset local progress
             </button>
@@ -83,8 +108,10 @@
     <section class="po-card" aria-labelledby="po-hub-title">
       <div class="po-hub-head">
         <h2 id="po-hub-title">Arcade Map</h2>
+
+        <!-- Tabs: the controller will hook into these -->
         <div class="po-tabs" role="tablist" aria-label="Select a game">
-          <button class="po-tab" role="tab" aria-selected="true" data-game="quickmath">Quick Math</button>
+          <button class="po-tab" role="tab" aria-selected="true"  data-game="quickmath">Quick Math</button>
           <button class="po-tab" role="tab" aria-selected="false" data-game="wordle">Word Voyage</button>
           <button class="po-tab" role="tab" aria-selected="false" data-game="sudoku">Sudoku</button>
           <button class="po-tab" role="tab" aria-selected="false" data-game="tictactoe">Tic Tac Toe</button>
@@ -93,16 +120,32 @@
         </div>
       </div>
 
-      <!-- Render target -->
+      <!-- Mount target -->
       <div id="po-stage" class="po-stage" aria-live="polite"></div>
     </section>
 
     <footer class="po-foot">
       <p class="po-muted">
-        Odyssey Arcade runs 100% in your browser. Offline-ready after first load.
+        Odyssey Arcade runs entirely in your browser. Works offline after first load (if you enable the arcade service worker).
       </p>
     </footer>
   </main>
+
+  <!-- =========================================================================
+    Scripts
+    Choose ONE architecture and stick to it:
+
+    A) ES Modules controller (recommended):
+       - /assets/arcade.js imports mount functions from /assets/games/*.js
+
+    B) Global registry controller:
+       - game scripts register into window.PO_ARCADE_GAMES and controller reads it
+
+    You should NOT mix A and B.
+
+    Below I’m wiring (A) ES Modules as the default. If you want registry-style,
+    tell me and I’ll give you the controller file + update quickmath/wordle modules.
+  ========================================================================= -->
 
   <script type="module" src="/assets/arcade.js"></script>
 </body>

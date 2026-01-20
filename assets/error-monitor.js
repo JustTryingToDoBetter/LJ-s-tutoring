@@ -111,13 +111,19 @@
       }
     } catch (_) {
       // ignore
+      void 0;
     }
 
     try {
       const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
       const timer = ctrl
         ? setTimeout(function () {
-            try {ctrl.abort();} catch (_) {}
+            try {
+              ctrl.abort();
+            } catch (_) {
+              // ignore
+              void 0;
+            }
           }, DEFAULTS.timeoutMs)
         : null;
 
@@ -134,6 +140,7 @@
       });
     } catch (_) {
       // ignore
+      void 0;
     }
   }
 
@@ -178,6 +185,7 @@
       });
     } catch (_) {
       // ignore
+      void 0;
     }
   });
 
@@ -191,6 +199,7 @@
       });
     } catch (_) {
       // ignore
+      void 0;
     }
   });
 })();
