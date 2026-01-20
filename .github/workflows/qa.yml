@@ -50,7 +50,16 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: "true"
         run: npm ci
+
+      - name: Install Chromium
+
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium
+          echo "CHROME_PATH=$(which chromium-browser || which chromium)" >> $GITHUB_ENV
 
       # ========================================================================
       # SECURITY AUDIT
