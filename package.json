@@ -35,6 +35,8 @@
     "build": "npm run prebuild && npm-run-all --parallel build:css build:html build:static build:guides build:images && npm-run-all build:assets inject:config build::html",
     "dev": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --watch",
     "dev:full": "npm run prebuild && npm run build:html && npm run build:static && npm run build:guides && npm run build:images && npm run build:assets && npm run dev",
+    "dev:serve": "npm-run-all --parallel dev:full serve",
+    "ci:smoke": "npm-run-all build qa:html",
     "serve": "http-server dist -p 8080 -c-1",
     "start": "http-server dist -a 0.0.0.0 -p ${PORT:-8080} -c-1",
     "lint:js": "eslint assets/*.js",
