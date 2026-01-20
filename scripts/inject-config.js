@@ -144,6 +144,7 @@ if (configPattern.test(content)) {
   // WRITE: Save the modified content back to the same file
   // This overwrites the original file with environment-specific config
   fs.writeFileSync(appCriticalPath, content, 'utf8');
+
   
   // FEEDBACK: Log success message to build output
   console.log('✅ Injected environment configuration into app-critical.js');
@@ -158,6 +159,78 @@ if (configPattern.test(content)) {
   console.warn('    The file structure may have changed. Check that CONFIG is defined as:');
   console.warn('    const CONFIG = { ... };');
 }
+
+// ============================================================================
+// Inject error-monitor runtime config into built HTML
+// ============================================================================
+
+function escapeJsString(value) {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, '')
+    .replace(/\n/g, '');
+}
+
+function injectErrorMonitorConfigIntoHtmlFile(filePath) {
+  let html;
+  try {
+    html = fs.readFileSync(filePath, 'utf8');
+  } catch (e) {
+    console.warn(`⚠️  Warning: Could not read HTML file: ${filePath}`);
+    return;
+  }
+
+  const replacement = `window.PO_ERROR_MONITOR = { endpoint: '${escapeJsString(errorMonitorEndpoint)}', sampleRate: ${errorMonitorSampleRate} };`;
+  const pattern = /window\.PO_ERROR_MONITOR\s*=\s*\{[\s\S]*?\};/;
+
+  if (pattern.test(html)) {
+    html = html.replace(pattern, replacement);
+  } else if (/<\/head>/i.test(html)) {
+    // If the snippet isn't present, insert a minimal config block in <head>
+    html = html.replace(
+      /<\/head>/i,
+      `  <script>\n    ${replacement}\n  </script>\n</head>`
+    );
+  } else {
+    return;
+  }
+
+  try {
+    fs.writeFileSync(filePath, html, 'utf8');
+  } catch (e) {
+    console.warn(`⚠️  Warning: Could not write HTML file: ${filePath}`);
+  }
+}
+
+function injectErrorMonitorConfigIntoHtml() {
+  if (!fs.existsSync(distDir)) {return;}
+
+  function walk(dir) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    entries.forEach((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.html')) {
+        injectErrorMonitorConfigIntoHtmlFile(full);
+      }
+    });
+  }
+
+  walk(distDir);
+}
+
+injectErrorMonitorConfigIntoHtml();
+
+if (errorMonitorEndpoint) {
+  console.log('✅ Injected ERROR_MONITOR_* config into dist HTML');
+  console.log(`   - Error monitor endpoint: ${errorMonitorEndpoint}`);
+  console.log(`   - Error monitor sample rate: ${errorMonitorSampleRate}`);
+} else {
+  console.log('ℹ️  ERROR_MONITOR_ENDPOINT not set; frontend error reporting will be disabled');
+}
+
 
 /**
  * ============================================================================
