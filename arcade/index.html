@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Odyssey Arcade | Project Odysseus</title>
+  <meta name="description" content="Play Odyssey-themed brain games: Sudoku, Chess, Wordle variant, Tic Tac Toe, Hangman, Quick Math." />
+
+  <!-- Keep consistent with your main site brand -->
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <!-- Optional: reuse your main Tailwind build if it’s already local -->
+  <link rel="stylesheet" href="/assets/tailwind.css" />
+  <link rel="stylesheet" href="/assets/arcade.css" />
+</head>
+
+<body class="po-arcade bg-slate-50 text-slate-900">
+  <!-- Skip link -->
+  <a class="po-skip" href="#main">Skip to arcade content</a>
+
+  <!-- Odyssey Header -->
+  <header class="po-topbar" role="banner">
+    <div class="po-wrap">
+      <div class="po-brand">
+        <span class="po-mark" aria-hidden="true">🧭</span>
+        <div>
+          <div class="po-title">Odyssey Arcade</div>
+          <div class="po-subtitle">Train your mind like a hero—one quest at a time.</div>
+        </div>
+      </div>
+
+      <nav class="po-nav" aria-label="Arcade navigation">
+        <a class="po-link" href="/" title="Back to main site">Home</a>
+        <button id="po-theme" class="po-btn" type="button" aria-pressed="false">
+          Toggle night voyage
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="po-wrap po-main" role="main">
+    <!-- Player card -->
+    <section class="po-card po-hero" aria-labelledby="po-hero-title">
+      <div class="po-hero-left">
+        <h1 id="po-hero-title">Choose your next quest</h1>
+        <p class="po-muted">
+          Daily challenges reset at midnight (local time). Progress saves on this device.
+        </p>
+        <div class="po-stats" role="list" aria-label="Your progress">
+          <div class="po-stat" role="listitem">
+            <div class="po-stat-label">Streak</div>
+            <div id="po-streak" class="po-stat-value">0</div>
+          </div>
+          <div class="po-stat" role="listitem">
+            <div class="po-stat-label">Quests completed</div>
+            <div id="po-completed" class="po-stat-value">0</div>
+          </div>
+          <div class="po-stat" role="listitem">
+            <div class="po-stat-label">Today’s seed</div>
+            <div id="po-seed" class="po-stat-value">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="po-hero-right">
+        <div class="po-daily">
+          <h2 class="po-daily-title">Daily Voyage</h2>
+          <p class="po-muted">A quick combo: Quick Math + Word puzzle.</p>
+          <div class="po-daily-actions">
+            <button id="po-play-daily" class="po-btn po-btn-primary" type="button">
+              Start Daily Voyage
+            </button>
+            <button id="po-reset-profile" class="po-btn po-btn-ghost" type="button">
+              Reset local progress
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Game Hub -->
+    <section class="po-card" aria-labelledby="po-hub-title">
+      <div class="po-hub-head">
+        <h2 id="po-hub-title">Arcade Map</h2>
+        <div class="po-tabs" role="tablist" aria-label="Select a game">
+          <button class="po-tab" role="tab" aria-selected="true" data-game="quickmath">Quick Math</button>
+          <button class="po-tab" role="tab" aria-selected="false" data-game="wordle">Word Voyage</button>
+          <button class="po-tab" role="tab" aria-selected="false" data-game="sudoku">Sudoku</button>
+          <button class="po-tab" role="tab" aria-selected="false" data-game="tictactoe">Tic Tac Toe</button>
+          <button class="po-tab" role="tab" aria-selected="false" data-game="hangman">Hangman</button>
+          <button class="po-tab" role="tab" aria-selected="false" data-game="chess">Chess</button>
+        </div>
+      </div>
+
+      <!-- Render target -->
+      <div id="po-stage" class="po-stage" aria-live="polite"></div>
+    </section>
+
+    <footer class="po-foot">
+      <p class="po-muted">
+        Odyssey Arcade runs 100% in your browser. Offline-ready after first load.
+      </p>
+    </footer>
+  </main>
+
+  <script type="module" src="/assets/arcade.js"></script>
+</body>
+</html>

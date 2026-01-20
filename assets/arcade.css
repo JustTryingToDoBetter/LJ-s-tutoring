@@ -1,0 +1,103 @@
+/* Odyssey Arcade theme (kept lightweight, tailwind-compatible) */
+
+.po-wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+.po-skip {
+  position: absolute; left: -999px; top: 8px;
+  background: #0f172a; color: #fff; padding: 8px 12px; border-radius: 10px;
+}
+.po-skip:focus { left: 12px; z-index: 9999; }
+
+.po-topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.po-topbar .po-wrap { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; }
+
+.po-brand { display: flex; gap: 12px; align-items: center; }
+.po-mark { font-size: 22px; }
+.po-title { font-weight: 800; letter-spacing: -0.02em; }
+.po-subtitle { font-size: 12px; opacity: 0.8; }
+
+.po-nav { display: flex; gap: 10px; align-items: center; }
+.po-link { color: rgba(255,255,255,0.86); text-decoration: none; font-weight: 600; }
+.po-link:hover { color: #fff; text-decoration: underline; }
+
+.po-main { padding: 22px 0 50px; }
+
+.po-card {
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(15,23,42,0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(15,23,42,0.08);
+  padding: 18px;
+  margin: 16px 0;
+}
+
+.po-hero { display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 16px; }
+@media (max-width: 900px) { .po-hero { grid-template-columns: 1fr; } }
+
+.po-muted { color: rgba(15,23,42,0.65); }
+
+.po-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+@media (max-width: 640px) { .po-stats { grid-template-columns: 1fr; } }
+
+.po-stat { background: rgba(15,23,42,0.04); border: 1px solid rgba(15,23,42,0.06); border-radius: 14px; padding: 12px; }
+.po-stat-label { font-size: 12px; color: rgba(15,23,42,0.55); }
+.po-stat-value { font-size: 20px; font-weight: 800; margin-top: 2px; }
+
+.po-btn {
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.po-btn:hover { background: rgba(255,255,255,0.16); }
+.po-btn:focus { outline: 3px solid rgba(234,179,8,0.45); outline-offset: 2px; }
+
+.po-btn-primary {
+  background: #eab308; color: #0f172a; border-color: rgba(0,0,0,0.08);
+}
+.po-btn-primary:hover { background: #facc15; }
+
+.po-btn-ghost {
+  background: rgba(15,23,42,0.04);
+  color: #0f172a;
+  border: 1px solid rgba(15,23,42,0.10);
+}
+.po-btn-ghost:hover { background: rgba(15,23,42,0.06); }
+
+.po-hub-head { display: flex; flex-direction: column; gap: 12px; }
+.po-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.po-tab {
+  border: 1px solid rgba(15,23,42,0.12);
+  background: rgba(255,255,255,0.7);
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.po-tab[aria-selected="true"] {
+  background: rgba(15,23,42,0.92);
+  color: #fff;
+  border-color: rgba(15,23,42,0.92);
+}
+
+.po-stage { margin-top: 14px; }
+.po-game-title { font-size: 18px; font-weight: 900; letter-spacing: -0.01em; }
+.po-game-sub { margin-top: 4px; color: rgba(15,23,42,0.65); }
+
+/* Night voyage (dark mode) */
+.po-arcade.po-dark { background: #0b1222; color: #e5e7eb; }
+.po-arcade.po-dark .po-card { background: rgba(15,23,42,0.85); border-color: rgba(255,255,255,0.10); }
+.po-arcade.po-dark .po-muted { color: rgba(229,231,235,0.70); }
+.po-arcade.po-dark .po-stat { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.10); }
+.po-arcade.po-dark .po-tab { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: #e5e7eb; }
+.po-arcade.po-dark .po-tab[aria-selected="true"] { background: #eab308; color: #0f172a; border-color: #eab308; }
