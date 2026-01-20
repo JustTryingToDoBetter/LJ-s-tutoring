@@ -65,28 +65,53 @@
   // DARK MODE TOGGLE (critical)
   // ==========================================
   function initDarkMode() {
-    const toggle = $('#dark-mode-toggle');
-    const icon = $('#dark-mode-icon');
-    const html = document.documentElement;
+  const toggle = $('#dark-mode-toggle');
+  const icon = $('#dark-mode-icon');
+  const html = document.documentElement;
 
-    if (!toggle || !icon) {return;}
+  if (!toggle || !icon) {return;}
 
-    if (
-      localStorage.getItem('darkMode') === 'true' ||
-      (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)
-    ) {
-      html.classList.add('dark');
-      icon.classList.replace('fa-moon', 'fa-sun');
-    }
+  const THEME_KEY = 'po_theme';     // 'dark' | 'light'
+  const LEGACY_KEY = 'darkMode';    // 'true' | 'false' (old)
 
-    toggle.addEventListener('click', function () {
-      html.classList.toggle('dark');
-      const isDark = html.classList.contains('dark');
-      localStorage.setItem('darkMode', isDark);
-      icon.classList.toggle('fa-moon', !isDark);
-      icon.classList.toggle('fa-sun', isDark);
-    });
+  // Read theme preference with backwards compatibility.
+  function readTheme() {
+    // 1) New key wins
+    const modern = localStorage.getItem(THEME_KEY);
+    if (modern === 'dark' || modern === 'light') {return modern;}
+
+    // 2) Legacy key fallback
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy === 'true') {return 'dark';}
+    if (legacy === 'false') {return 'light';}
+
+    // 3) System default
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
+
+  function applyTheme(mode) {
+    const isDark = mode === 'dark';
+
+    html.classList.toggle('dark', isDark);
+
+    // Keep icon consistent
+    icon.classList.toggle('fa-moon', !isDark);
+    icon.classList.toggle('fa-sun', isDark);
+
+    // Persist BOTH keys for backwards compatibility across versions/pages
+    localStorage.setItem(THEME_KEY, mode);
+    localStorage.setItem(LEGACY_KEY, String(isDark));
+  }
+
+  // Initial load
+  applyTheme(readTheme());
+
+  // Toggle handler
+  toggle.addEventListener('click', function () {
+    const isDark = html.classList.contains('dark');
+    applyTheme(isDark ? 'light' : 'dark');
+  });
+}
 
   // ==========================================
   // COUNTDOWN TIMER (critical)
