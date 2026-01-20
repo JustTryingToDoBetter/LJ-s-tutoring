@@ -26,6 +26,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <link rel="stylesheet" href="/assets/tailwind.css">
+
+    <script>
+  // runtime config (will be overwritten in dist by inject-config.js if you set env vars)
+  window.PO_ERROR_MONITOR = { endpoint: '', sampleRate: 1 };
+</script>
+<script defer src="/assets/error-monitor.js"></script>
+
 </head>
 <body class="font-sans text-slate-800 antialiased bg-slate-50">
     <!-- Navigation -->

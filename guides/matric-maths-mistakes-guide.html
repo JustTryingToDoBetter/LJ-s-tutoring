@@ -37,6 +37,12 @@
         }
         body { font-family: 'Inter', sans-serif; }
     </style>
+    <script>
+  // runtime config (will be overwritten in dist by inject-config.js if you set env vars)
+  window.PO_ERROR_MONITOR = { endpoint: '', sampleRate: 1 };
+</script>
+<script defer src="/assets/error-monitor.js"></script>
+
 </head>
 <body class="bg-white text-gray-800">
     <!-- Print/Download Button -->
