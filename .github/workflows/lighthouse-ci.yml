@@ -78,12 +78,9 @@ jobs:
       # RUN LIGHTHOUSE CI
       # ========================================================================
       - name: Run Lighthouse CI
-        id: lighthouse
-        continue-on-error: true
-        run: |
-          npx lhci autorun --config=./lighthouserc.js
-          echo "status=passed" >> $GITHUB_OUTPUT
-
+        env:
+          LHCI_CHROME_PATH: ${{ env.CHROME_PATH }}
+        run: npx lhci autorun --config=./lighthouserc.js
       # ========================================================================
       # UPLOAD LIGHTHOUSE REPORTS
       # ========================================================================
