@@ -1,1 +1,39 @@
 
+<img 
+  alt="Ship sailing placeholder"
+  src="data:image/svg+xml;utf8,
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'>
+    <defs>
+      <linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'>
+        <stop offset='0%' stop-color='%239ad9ff'/>
+        <stop offset='100%' stop-color='%23eaf6ff'/>
+      </linearGradient>
+      <linearGradient id='sea' x1='0' y1='0' x2='0' y2='1'>
+        <stop offset='0%' stop-color='%23007acc'/>
+        <stop offset='100%' stop-color='%23004577'/>
+      </linearGradient>
+    </defs>
+
+    <!-- Sky -->
+    <rect width='600' height='220' fill='url(%23sky)'/>
+
+    <!-- Sea -->
+    <rect y='220' width='600' height='180' fill='url(%23sea)'/>
+
+    <!-- Waves -->
+    <path d='M0 250 Q 50 240 100 250 T 200 250 T 300 250 T 400 250 T 500 250 T 600 250' fill='none' stroke='%23ffffff' stroke-opacity='0.4'/>
+    <path d='M0 280 Q 50 270 100 280 T 200 280 T 300 280 T 400 280 T 500 280 T 600 280' fill='none' stroke='%23ffffff' stroke-opacity='0.25'/>
+
+    <!-- Ship hull -->
+    <path d='M250 270 L 350 270 L 320 300 L 280 300 Z' fill='%23333'/>
+
+    <!-- Mast -->
+    <rect x='297' y='180' width='6' height='90' fill='%23333'/>
+
+    <!-- Sail -->
+    <path d='M300 185 L 300 260 L 360 260 Z' fill='%23ffffff'/>
+
+    <!-- Sun -->
+    <circle cx='80' cy='80' r='30' fill='%23ffd966'/>
+  </svg>"
+>
