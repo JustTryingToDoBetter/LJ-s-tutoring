@@ -157,12 +157,9 @@ jobs:
       # ACCESSIBILITY CHECK
       # ========================================================================
       - name: Accessibility check (Pa11y)
-        id: a11y
-        continue-on-error: true
-        run: |
-          npx pa11y-ci --json > pa11y-report.json 2>&1 || true
-          npx pa11y-ci
-          echo "status=passed" >> $GITHUB_OUTPUT
+        env:
+          PUPPETEER_EXECUTABLE_PATH: ${{ env.CHROME_PATH }}
+        run: npx pa11y-ci
 
       - name: Upload accessibility report
         if: always()
