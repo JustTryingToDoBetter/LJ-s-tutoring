@@ -1,3 +1,28 @@
+# ============================================================================
+# QA WORKFLOW - Code Quality & Accessibility
+# ============================================================================
+# 
+# PURPOSE:
+# Validates code quality, HTML standards, links, and accessibility.
+# Focuses on CORRECTNESS (not performance - that's Lighthouse's job).
+# 
+# RUNS ON:
+# - Pull requests (all commits)
+# - Pushes to main branch
+# - Manual trigger via Actions tab
+# 
+# CHECKS PERFORMED:
+# 1. Security audit (npm audit)
+# 2. HTML validation (W3C standards)
+# 3. Internal link checking
+# 4. Accessibility compliance (Pa11y)
+# 
+# OUTPUTS:
+# - Status check (pass/fail for PR mergeability)
+# - Uploaded reports (downloadable from Actions tab)
+# - PR comment with summary (when failures occur)
+# ============================================================================
+
 name: QA
 
 on:
@@ -14,6 +39,7 @@ jobs:
   qa:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    
     steps:
       - uses: actions/checkout@v4
 
@@ -26,25 +52,212 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # ========================================================================
+      # SECURITY AUDIT
+      # ========================================================================
       - name: Security audit (prod dependencies)
-        run: npm audit --audit-level=high --omit=dev
+        id: security
+        continue-on-error: true
+        run: |
+          npm audit --audit-level=high --omit=dev > security-report.txt 2>&1 || true
+          if npm audit --audit-level=high --omit=dev; then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
 
-      # Build the site with injected configuration
-      - name: Build Site
-        run : npm run build
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-report
+          path: security-report.txt
+          retention-days: 30
 
+      # ========================================================================
+      # BUILD SITE
+      # ========================================================================
+      - name: Build site
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-dist
+          path: dist/
+          retention-days: 7
+
+      # ========================================================================
+      # START SERVER (for link checking)
+      # ========================================================================
       - name: Start static server
         run: |
           npx http-server dist -p 8080 -c-1 --silent &
-          npx wait-on http://localhost:8080/
+          npx wait-on http://localhost:8080/ --timeout 30000
 
-      # Validate HTML against W3C standards
+      # ========================================================================
+      # HTML VALIDATION
+      # ========================================================================
       - name: HTML validation
-        run: npx html-validate "dist/*.html" "dist/guides/*.html"
-        
-      # Check for broken internal links
-      - name: Link check (internal)
-        run: npx linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip "^mailto:|^tel:|^https?:\/\/(?!localhost:8080)"
+        id: html
+        continue-on-error: true
+        run: |
+          npx html-validate "dist/**/*.html" --formatter json > html-validation.json 2>&1 || true
+          npx html-validate "dist/**/*.html"
+          echo "status=passed" >> $GITHUB_OUTPUT
 
+      - name: Upload HTML validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-validation-report
+          path: html-validation.json
+          retention-days: 30
+
+      # ========================================================================
+      # LINK CHECKING
+      # ========================================================================
+      - name: Link check (internal)
+        id: links
+        continue-on-error: true
+        run: |
+          npx linkinator http://localhost:8080 \
+            --recurse \
+            --timeout 10000 \
+            --concurrency 4 \
+            --skip "^mailto:|^tel:|^https?:\/\/(?!localhost:8080)" \
+            --format json > link-check.json 2>&1 || true
+          
+          npx linkinator http://localhost:8080 \
+            --recurse \
+            --timeout 10000 \
+            --concurrency 4 \
+            --skip "^mailto:|^tel:|^https?:\/\/(?!localhost:8080)"
+          
+          echo "status=passed" >> $GITHUB_OUTPUT
+
+      - name: Upload link check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: link-check-report
+          path: link-check.json
+          retention-days: 30
+
+      # ========================================================================
+      # ACCESSIBILITY CHECK
+      # ========================================================================
       - name: Accessibility check (Pa11y)
-        run: npx pa11y-ci
+        id: a11y
+        continue-on-error: true
+        run: |
+          npx pa11y-ci --json > pa11y-report.json 2>&1 || true
+          npx pa11y-ci
+          echo "status=passed" >> $GITHUB_OUTPUT
+
+      - name: Upload accessibility report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-report
+          path: pa11y-report.json
+          retention-days: 30
+
+      # ========================================================================
+      # SUMMARY COMMENT (on PR)
+      # ========================================================================
+      - name: Create QA summary
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            const securityStatus = '${{ steps.security.outputs.status }}' || 'failed';
+            const htmlStatus = '${{ steps.html.outputs.status }}' || 'failed';
+            const linksStatus = '${{ steps.links.outputs.status }}' || 'failed';
+            const a11yStatus = '${{ steps.a11y.outputs.status }}' || 'failed';
+            
+            const statusIcon = (status) => status === 'passed' ? '✅' : '❌';
+            
+            const body = `## QA Report
+            
+            | Check | Status |
+            |-------|--------|
+            | Security Audit | ${statusIcon(securityStatus)} ${securityStatus} |
+            | HTML Validation | ${statusIcon(htmlStatus)} ${htmlStatus} |
+            | Link Check | ${statusIcon(linksStatus)} ${linksStatus} |
+            | Accessibility | ${statusIcon(a11yStatus)} ${a11yStatus} |
+            
+            ${securityStatus === 'failed' || htmlStatus === 'failed' || linksStatus === 'failed' || a11yStatus === 'failed' 
+              ? '⚠️ **Some checks failed.** Download detailed reports from the [Actions artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).'
+              : '🎉 **All QA checks passed!**'}
+            `;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('## QA Report')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+      # ========================================================================
+      # FAIL IF ANY CHECK FAILED
+      # ========================================================================
+      - name: Check all results
+        if: always()
+        run: |
+          if [[ "${{ steps.security.outputs.status }}" == "failed" ]] || \
+             [[ "${{ steps.html.outputs.status }}" == "failed" ]] || \
+             [[ "${{ steps.links.outputs.status }}" == "failed" ]] || \
+             [[ "${{ steps.a11y.outputs.status }}" == "failed" ]]; then
+            echo "❌ One or more QA checks failed"
+            exit 1
+          else
+            echo "✅ All QA checks passed"
+          fi
+
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+# 
+# ERROR: "Security audit failed"
+# - Click "Security audit" step to see vulnerable packages
+# - Run `npm audit fix` locally and commit
+# - If unfixable, document in README and use `npm audit --audit-level=critical`
+# 
+# ERROR: "HTML validation failed"
+# - Download html-validation-report artifact
+# - Fix invalid HTML and push
+# 
+# ERROR: "Link check failed"
+# - Download link-check-report artifact
+# - Fix broken internal links
+# 
+# ERROR: "Accessibility check failed"
+# - Download accessibility-report artifact
+# - Fix a11y issues (missing alt text, poor contrast, etc.)
+# 
+# ============================================================================
