@@ -101,3 +101,327 @@
 .po-arcade.po-dark .po-stat { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.10); }
 .po-arcade.po-dark .po-tab { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: #e5e7eb; }
 .po-arcade.po-dark .po-tab[aria-selected="true"] { background: #eab308; color: #0f172a; border-color: #eab308; }
+
+
+/* === Odyssey Motion System === */
+
+@keyframes fade-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-gold {
+  0% { box-shadow: 0 0 0 rgba(234,179,8,0); }
+  50% { box-shadow: 0 0 24px rgba(234,179,8,0.45); }
+  100% { box-shadow: 0 0 0 rgba(234,179,8,0); }
+}
+
+@keyframes tremor {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  50% { transform: translateX(2px); }
+  75% { transform: translateX(-1px); }
+  100% { transform: translateX(0); }
+}
+
+.po-animate-in {
+  animation: fade-rise 420ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.po-victory {
+  animation: pulse-gold 1.2s ease-out;
+}
+
+.po-failure {
+  animation: tremor 280ms ease-in-out;
+}
+
+.po-victory .po-arcade-status {
+  color: #eab308;
+  font-weight: 900;
+}
+
+.po-failure .po-arcade-status {
+  color: #ef4444;
+}
+
+.po-game-frame {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.po-game-header h3 {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.po-game-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.po-game-body {
+  display: flex;
+  justify-content: center;
+}
+
+.po-game-status {
+  text-align: center;
+  font-weight: 600;
+}
+
+.po-ch-board,
+.po-ttt-grid,
+.po-sd-board {
+  max-width: 360px;
+  width: 100%;
+}
+
+/* ===========================
+   GAME SHELL (used by games)
+   =========================== */
+
+.po-arcade-head { display: grid; gap: 4px; margin-bottom: 8px; }
+.po-arcade-title { font-size: 20px; font-weight: 900; letter-spacing: -0.01em; }
+.po-arcade-subtitle { color: rgba(15,23,42,0.65); font-weight: 600; }
+
+.po-arcade-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 8px;
+}
+
+.po-arcade-control { display: grid; gap: 6px; }
+.po-arcade-label { font-size: 12px; color: rgba(15,23,42,0.55); font-weight: 700; }
+
+.po-arcade-status {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(15,23,42,0.04);
+  border: 1px solid rgba(15,23,42,0.08);
+  font-weight: 700;
+}
+
+.po-arcade-hint,
+.po-arcade-mistakes {
+  color: rgba(15,23,42,0.70);
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.po-arcade-btn {
+  appearance: none;
+  border: 1px solid rgba(15,23,42,0.12);
+  background: rgba(255,255,255,0.85);
+  color: #0f172a;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.po-arcade-btn:hover { background: rgba(255,255,255,1); }
+.po-arcade-btn:focus { outline: 3px solid rgba(234,179,8,0.45); outline-offset: 2px; }
+
+.po-arcade-btn-ghost {
+  background: rgba(15,23,42,0.04);
+  border-color: rgba(15,23,42,0.10);
+}
+.po-arcade-btn-ghost:hover { background: rgba(15,23,42,0.06); }
+
+.po-arcade-select {
+  appearance: none;
+  border: 1px solid rgba(15,23,42,0.14);
+  background: rgba(255,255,255,0.9);
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+/* ===========================
+   CONTAINMENT / CENTERING
+   =========================== */
+
+.po-stage > * { max-width: 720px; margin: 0 auto; }
+.po-stage { overflow: hidden; } /* prevents board spill */
+
+/* ===========================
+   CHESS
+   =========================== */
+
+.po-ch-board {
+  width: fit-content;
+  max-width: 100%;
+  margin: 12px auto 0;
+  display: grid;
+  grid-template-columns: repeat(8, 44px);
+  grid-auto-rows: 44px;
+  gap: 6px;
+}
+
+@media (max-width: 420px) {
+  .po-ch-board { grid-template-columns: repeat(8, 38px); grid-auto-rows: 38px; gap: 5px; }
+}
+
+.po-ch-square {
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,0.16);
+  font-size: 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 120ms ease, box-shadow 180ms ease;
+}
+
+.po-ch-square.is-light { background: rgba(255,255,255,0.95); }
+.po-ch-square.is-dark  { background: rgba(15,23,42,0.06); }
+
+.po-ch-square:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(15,23,42,0.10); }
+
+.po-ch-square.is-selected {
+  outline: 3px solid rgba(234,179,8,0.55);
+  outline-offset: 2px;
+}
+
+.po-ch-square.is-legal {
+  box-shadow: inset 0 0 0 2px rgba(34,197,94,0.45);
+}
+
+/* ===========================
+   TIC TAC TOE
+   =========================== */
+
+.po-ttt-grid {
+  width: fit-content;
+  margin: 12px auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, 96px);
+  grid-auto-rows: 96px;
+  gap: 10px;
+}
+
+@media (max-width: 420px) {
+  .po-ttt-grid { grid-template-columns: repeat(3, 84px); grid-auto-rows: 84px; gap: 8px; }
+}
+
+.po-ttt-cell {
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,0.14);
+  background: rgba(255,255,255,0.9);
+  font-size: 34px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 180ms ease;
+}
+.po-ttt-cell:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(15,23,42,0.10); }
+.po-ttt-cell:disabled { opacity: 0.75; cursor: not-allowed; }
+
+/* ===========================
+   HANGMAN
+   =========================== */
+
+.po-hm-word {
+  margin: 10px 0 6px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-align: center;
+}
+
+.po-hm-letters {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@media (max-width: 540px) {
+  .po-hm-letters { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+}
+
+.po-hm-letter {
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,0.12);
+  background: rgba(255,255,255,0.9);
+  font-weight: 900;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.po-hm-letter.is-used { opacity: 0.6; cursor: not-allowed; }
+.po-hm-letter.is-right { box-shadow: inset 0 0 0 2px rgba(34,197,94,0.45); }
+.po-hm-letter.is-wrong { box-shadow: inset 0 0 0 2px rgba(239,68,68,0.45); }
+
+/* ===========================
+   SUDOKU
+   =========================== */
+
+.po-sd-board {
+  width: fit-content;
+  max-width: 100%;
+  margin: 12px auto 0;
+  display: grid;
+  grid-template-columns: repeat(9, 38px);
+  grid-auto-rows: 38px;
+  gap: 6px;
+}
+
+@media (max-width: 420px) {
+  .po-sd-board { grid-template-columns: repeat(9, 34px); grid-auto-rows: 34px; gap: 5px; }
+}
+
+.po-sd-cell {
+  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,0.14);
+  background: rgba(255,255,255,0.92);
+  font-weight: 900;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.po-sd-cell.is-given { background: rgba(15,23,42,0.05); }
+.po-sd-cell.is-selected { outline: 3px solid rgba(234,179,8,0.50); outline-offset: 2px; }
+.po-sd-cell.is-same { box-shadow: inset 0 0 0 2px rgba(59,130,246,0.30); }
+.po-sd-cell.is-conflict { box-shadow: inset 0 0 0 2px rgba(239,68,68,0.35); }
+.po-sd-cell.is-notes { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; }
+
+.po-sd-pad {
+  margin: 12px auto 0;
+  width: min(520px, 100%);
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 520px) {
+  .po-sd-pad { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+.po-sd-pad-btn {
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,0.14);
+  background: rgba(255,255,255,0.92);
+  padding: 12px 0;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.po-sd-pad-btn-ghost {
+  background: rgba(15,23,42,0.04);
+  border-color: rgba(15,23,42,0.10);
+}
+
+/* Sudoku thick borders (your JS adds bL/bT/bR/bB classes) */
+.po-sd-cell.bL { border-left-width: 3px; }
+.po-sd-cell.bT { border-top-width: 3px; }
+.po-sd-cell.bR { border-right-width: 3px; }
+.po-sd-cell.bB { border-bottom-width: 3px; }
+
+
