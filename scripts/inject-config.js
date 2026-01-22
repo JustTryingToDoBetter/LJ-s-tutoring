@@ -48,12 +48,14 @@ require('dotenv').config();
 // __dirname = directory containing this script (scripts/)
 // '..' = go up one level to project root
 // 'dist', 'assets' = navigate to dist/assets/
+const distDir = path.join(__dirname, '..', 'dist');
 const distAssetsDir = path.join(__dirname, '..', 'dist', 'assets');
+
+
 
 // Construct absolute path to the target file to modify
 // This is the built JavaScript file that will be deployed
 const appCriticalPath = path.join(distAssetsDir, 'app-critical.js');
-
 // ============================================================================
 // VALIDATION: Check if target file exists
 // ============================================================================
@@ -100,6 +102,9 @@ const countdownDate = new Date(countdownDateStr);
 // 
 // TEMPLATE LITERAL: Uses ${} to interpolate environment variables
 // FALLBACK PATTERN: process.env.VAR || 'default' ensures build never fails
+const errorMonitorEndpoint = process.env.ERROR_MONITOR_ENDPOINT || '';
+const errorMonitorSampleRate = Number(process.env.ERROR_MONITOR_SAMPLE_RATE || 1);
+
 const configReplacement = `  const CONFIG = {
     // WhatsApp contact number in format: country_code + number (no + or spaces)
     // Example: '27679327754' for South Africa number +27 67 932 7754
