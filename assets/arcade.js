@@ -1,170 +1,341 @@
 /**
- * arcade.js
- * Main entry: loads state, mounts games, handles tabs, daily voyage, theme, offline.
+ * Project Odysseus — Arcade Shell (Frontend-only)
+ * - Loads game modules (IIFE registry) on demand
+ * - Mounts selected game into #po-stage
+ * - Saves light progress locally (no backend)
  */
 
-import { loadState, saveState, resetState } from "./lib/storage.js";
-import { dayKey, hashStringToSeed } from "./lib/rng.js";
-import { clear } from "./lib/ui.js";
+(() => {
+  "use strict";
 
-import { mountQuickMath, runDailyQuickMath } from "./games/quickmath.js";
-import { mountWordle, runDailyWordle } from "./games/wordle.js";
-import { mountSudoku } from "./games/sudoku.js";
-import { mountTicTacToe } from "./games/tictactoe.js";
-import { mountHangman } from "./games/hangman.js";
-import { mountChess } from "./games/chess.js";
+  // ----------------------------
+  // DOM helpers
+  // ----------------------------
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-const stage = document.getElementById("po-stage");
-const streakEl = document.getElementById("po-streak");
-const completedEl = document.getElementById("po-completed");
-const seedEl = document.getElementById("po-seed");
+  // ----------------------------
+  // Local progress (device-only)
+  // ----------------------------
+  const PROFILE_KEY = "po_arcade_profile_v1";
 
-const themeBtn = document.getElementById("po-theme");
-const dailyBtn = document.getElementById("po-play-daily");
-const resetBtn = document.getElementById("po-reset-profile");
+  function startOfLocalDay(ts = Date.now()) {
+    const d = new Date(ts);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
 
-const tabs = Array.from(document.querySelectorAll(".po-tab"));
+  function todaysSeed() {
+    // stable per day (local time)
+    const day = startOfLocalDay();
+    // simple deterministic seed
+    let x = day ^ 0x9e3779b9;
+    x ^= x << 13; x ^= x >>> 17; x ^= x << 5;
+    return (x >>> 0).toString(16).slice(0, 8).toUpperCase();
+  }
 
-let state = loadState();
-
-initTheme();
-renderTopStats();
-initTabs();
-initDaily();
-initOffline();
-
-// Default game on load
-selectGame("quickmath");
-
-function renderTopStats() {
-  const key = dayKey();
-  const seed = hashStringToSeed(`po-daily-${key}`);
-
-  streakEl.textContent = String(state.profile.streak || 0);
-  completedEl.textContent = String(state.profile.completed || 0);
-  seedEl.textContent = String(seed).slice(0, 8);
-}
-
-function initTheme() {
-  const isDark = state.profile.theme === "dark";
-  document.body.classList.toggle("po-dark", isDark);
-  themeBtn.setAttribute("aria-pressed", String(isDark));
-
-  themeBtn.addEventListener("click", () => {
-    const next = document.body.classList.toggle("po-dark");
-    state.profile.theme = next ? "dark" : "light";
-    themeBtn.setAttribute("aria-pressed", String(next));
-    saveState(state);
-  });
-}
-
-function initTabs() {
-  // Click navigation
-  tabs.forEach((btn) => {
-    btn.addEventListener("click", () => selectGame(btn.dataset.game));
-  });
-
-  // Keyboard navigation (left/right)
-  document.addEventListener("keydown", (e) => {
-    const activeIdx = tabs.findIndex((t) => t.getAttribute("aria-selected") === "true");
-    if (activeIdx < 0) return;
-
-    if (e.key === "ArrowRight") {
-      e.preventDefault();
-      tabs[(activeIdx + 1) % tabs.length].click();
+  function loadProfile() {
+    try {
+      const raw = localStorage.getItem(PROFILE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch {
+      return null;
     }
-    if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      tabs[(activeIdx - 1 + tabs.length) % tabs.length].click();
+  }
+
+  function saveProfile(p) {
+    try {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+    } catch {
+      // ignore
     }
-  });
-}
+  }
 
-function selectGame(gameId) {
-  // Update tab states
-  tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.game === gameId)));
+  function freshProfile() {
+    return {
+      lastDayStart: startOfLocalDay(),
+      seed: todaysSeed(),
+      streak: 0,
+      completed: 0,
+      // track if daily voyage done today
+      dailyDoneDayStart: null
+    };
+  }
 
-  clear(stage);
+  function getProfile() {
+    const p = loadProfile() || freshProfile();
 
-  // Mount chosen game with shared state + safe persistence
-  const ctx = {
-    getState: () => state,
-    setState: (next) => { state = next; saveState(state); renderTopStats(); },
-    onQuestComplete: (meta) => {
-      // meta: { gameId, points?, won?, dailyKey? }
-      state.profile.completed += 1;
-      saveState(state);
-      renderTopStats();
-    },
+    // new day rollover
+    const today = startOfLocalDay();
+    if (p.lastDayStart !== today) {
+      // only increment streak if they completed daily yesterday
+      const didDailyYesterday = p.dailyDoneDayStart === p.lastDayStart;
+      p.streak = didDailyYesterday ? (p.streak + 1) : 0;
+
+      p.lastDayStart = today;
+      p.seed = todaysSeed();
+      p.dailyDoneDayStart = null;
+      // completed can be lifetime; keep it
+    }
+
+    saveProfile(p);
+    return p;
+  }
+
+  function resetProfile() {
+    saveProfile(freshProfile());
+  }
+
+  // ----------------------------
+  // Game registry + loader
+  // Your game files push objects to window.PO_ARCADE_GAMES
+  // ----------------------------
+  const GAME_MODULES = {
+    quickmath: "/assets/games/quickmath.js",
+    wordle: "/assets/games/wordle.js",
+    sudoku: "/assets/games/sudoku.js",
+    tictactoe: "/assets/games/tictactoe.js",
+    hangman: "/assets/games/hangman.js",
+    chess: "/assets/games/chess.js",
   };
 
-  switch (gameId) {
-    case "quickmath": mountQuickMath(stage, ctx); break;
-    case "wordle": mountWordle(stage, ctx); break;
-    case "sudoku": mountSudoku(stage, ctx); break;
-    case "tictactoe": mountTicTacToe(stage, ctx); break;
-    case "hangman": mountHangman(stage, ctx); break;
-    case "chess": mountChess(stage, ctx); break;
-    default: mountQuickMath(stage, ctx);
+  function getRegisteredGame(id) {
+    const list = window.PO_ARCADE_GAMES || [];
+    return list.find((g) => g && g.id === id) || null;
   }
-}
 
-function initDaily() {
-  dailyBtn.addEventListener("click", async () => {
-    // Daily voyage: Quick Math + Wordle variant back-to-back
-    const key = dayKey();
-    const dailyAlready = !!state.daily.history[key];
+  async function ensureGameLoaded(id) {
+    // already registered
+    if (getRegisteredGame(id)) return;
 
-    clear(stage);
+    const src = GAME_MODULES[id];
+    if (!src) throw new Error(`No module mapping for game "${id}"`);
 
-    // Run quick math daily
-    const qmResult = await runDailyQuickMath(stage, {
-      getState: () => state,
-      setState: (next) => { state = next; saveState(state); renderTopStats(); },
-    });
+    // Dynamically import so:
+    // - no named export required
+    // - module just runs and registers itself
+    await import(src);
 
-    // Run wordle daily
-    const wResult = await runDailyWordle(stage, {
-      getState: () => state,
-      setState: (next) => { state = next; saveState(state); renderTopStats(); },
-    });
+    if (!getRegisteredGame(id)) {
+      throw new Error(`Game "${id}" loaded but did not register itself.`);
+    }
+  }
 
-    // Mark daily completion + streak handling
-    if (qmResult.completed && wResult.completed) {
-      state.daily.history[key] = true;
+  // ----------------------------
+  // UI rendering
+  // ----------------------------
+  function renderProfile(p) {
+    const streakEl = $("#po-streak");
+    const completedEl = $("#po-completed");
+    const seedEl = $("#po-seed");
 
-      if (!dailyAlready) {
-        const prevKey = state.profile.lastDailyKey;
-        // Streak increments if yesterday was completed; else resets to 1
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yKey = dayKey(yesterday);
+    if (streakEl) streakEl.textContent = String(p.streak);
+    if (completedEl) completedEl.textContent = String(p.completed);
+    if (seedEl) seedEl.textContent = p.seed || "—";
+  }
 
-        state.profile.streak = prevKey === yKey ? (state.profile.streak + 1) : 1;
-        state.profile.lastDailyKey = key;
-        state.profile.completed += 1;
+  function setTheme(isDark) {
+    document.documentElement.classList.toggle("dark", !!isDark);
+    const btn = $("#po-theme");
+    if (btn) btn.setAttribute("aria-pressed", String(!!isDark));
+    try { localStorage.setItem("po_arcade_theme", isDark ? "dark" : "light"); } catch {}
+  }
+
+  function initTheme() {
+    let stored = null;
+    try { stored = localStorage.getItem("po_arcade_theme"); } catch {}
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    setTheme(stored ? stored === "dark" : prefersDark);
+
+    const btn = $("#po-theme");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const isDark = document.documentElement.classList.contains("dark");
+        setTheme(!isDark);
+      });
+    }
+  }
+
+  function showError(msg) {
+    const stage = $("#po-stage");
+    if (!stage) return;
+    stage.innerHTML = `
+      <div class="po-arcade-error">
+        <h3 class="po-arcade-error-title">Arcade module failed to load</h3>
+        <p class="po-arcade-error-msg">${escapeHtml(msg)}</p>
+        <p class="po-arcade-error-hint">Check that dist/assets/games and dist/assets/lib were built and deployed.</p>
+      </div>
+    `;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  // ----------------------------
+  // Mount logic
+  // ----------------------------
+  let currentGameId = null;
+
+  async function mountGame(id) {
+    const stage = $("#po-stage");
+    if (!stage) return;
+
+    currentGameId = id;
+
+    // loading state (fast feedback)
+    stage.innerHTML = `
+      <div class="po-arcade-loading">
+        <div class="po-arcade-loading-title">Loading ${escapeHtml(id)}…</div>
+        <div class="po-arcade-loading-sub">Preparing your next quest.</div>
+      </div>
+    `;
+
+    try {
+      await ensureGameLoaded(id);
+
+      const game = getRegisteredGame(id);
+      if (!game || typeof game.mount !== "function") {
+        throw new Error(`Game "${id}" is missing a valid mount(root) function.`);
       }
 
-      saveState(state);
-      renderTopStats();
+      // mount
+      game.mount(stage);
+    } catch (err) {
+      showError(err && err.message ? err.message : String(err));
     }
-  });
+  }
 
-  resetBtn.addEventListener("click", () => {
-    // Hard reset: wipes local arcade progress
-    resetState();
-    state = loadState();
-    initTheme();
-    renderTopStats();
-    selectGame("quickmath");
-  });
-}
+  function initTabs() {
+    const tabs = $$(".po-tab");
+    if (!tabs.length) return;
 
-function initOffline() {
-  // Offline caching (safe for static sites)
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/assets/sw-arcade.js").catch(() => {
-      // If SW fails, arcade still works online. No action needed.
+    function selectTab(btn) {
+      tabs.forEach((t) => t.setAttribute("aria-selected", "false"));
+      btn.setAttribute("aria-selected", "true");
+
+      const id = btn.getAttribute("data-game");
+      if (id) mountGame(id);
+    }
+
+    tabs.forEach((btn) => {
+      btn.addEventListener("click", () => selectTab(btn));
+      btn.addEventListener("keydown", (e) => {
+        // simple keyboard navigation
+        const idx = tabs.indexOf(btn);
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          (tabs[idx + 1] || tabs[0]).focus();
+        }
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          (tabs[idx - 1] || tabs[tabs.length - 1]).focus();
+        }
+      });
+    });
+
+    // mount default selected
+    const initial = tabs.find((t) => t.getAttribute("aria-selected") === "true") || tabs[0];
+    selectTab(initial);
+  }
+
+  // ----------------------------
+  // Daily Voyage (Quick Math + Word Voyage)
+  // Frontend-only flow: after you finish, you can click “Complete Daily”
+  // (We can later wire actual completion events from games.)
+  // ----------------------------
+  function initDailyVoyage() {
+    const playBtn = $("#po-play-daily");
+    const resetBtn = $("#po-reset-profile");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", () => {
+        resetProfile();
+        const p = getProfile();
+        renderProfile(p);
+        mountGame("quickmath");
+      });
+    }
+
+    if (!playBtn) return;
+
+    playBtn.addEventListener("click", async () => {
+      // step 1: quick math
+      await mountGame("quickmath");
+
+      // lightweight UX: after mounting quickmath, show a mini prompt to continue
+      const stage = $("#po-stage");
+      if (!stage) return;
+
+      const nudge = document.createElement("div");
+      nudge.className = "po-daily-nudge";
+      nudge.innerHTML = `
+        <div class="po-daily-nudge-card">
+          <div class="po-daily-nudge-title">Daily Voyage</div>
+          <div class="po-daily-nudge-sub">When you're done, continue to the word puzzle.</div>
+          <div class="po-daily-nudge-actions">
+            <button class="po-btn po-btn-primary" type="button" id="po-daily-next">Continue</button>
+            <button class="po-btn po-btn-ghost" type="button" id="po-daily-complete">Mark Daily Complete</button>
+          </div>
+        </div>
+      `;
+      stage.prepend(nudge);
+
+      $("#po-daily-next")?.addEventListener("click", async () => {
+        await mountGame("wordle");
+      });
+
+      $("#po-daily-complete")?.addEventListener("click", () => {
+        const p = getProfile();
+        const today = startOfLocalDay();
+
+        // only count once per day
+        if (p.dailyDoneDayStart !== today) {
+          p.dailyDoneDayStart = today;
+          p.completed = (p.completed || 0) + 1;
+          saveProfile(p);
+        }
+
+        renderProfile(getProfile());
+        // small confirmation
+        nudge.remove();
+      });
     });
   }
-}
+
+  // ----------------------------
+  // Service worker (offline after first load)
+  // ----------------------------
+  function initServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    // only try if the file exists in production; harmless if it fails
+    navigator.serviceWorker.register("/assets/sw-arcade.js").catch(() => {});
+  }
+
+
+
+  // ----------------------------
+  // Boot
+  // ----------------------------
+  function boot() {
+    initTheme();
+    initServiceWorker();
+
+    const profile = getProfile();
+    renderProfile(profile);
+
+    initTabs();
+    initDailyVoyage();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
