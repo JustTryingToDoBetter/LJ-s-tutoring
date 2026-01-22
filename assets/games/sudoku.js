@@ -91,7 +91,9 @@
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
         const v = grid[idx(r, c)];
-        if (conflictsAt(grid, r, c, v)) return false;
+        if (conflictsAt(grid, r, c, v)) 
+          cell.classList.add("po-failure")
+          return false;
       }
     }
     // givens should not be changed
