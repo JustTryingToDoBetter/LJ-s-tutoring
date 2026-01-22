@@ -19,9 +19,33 @@ export function clear(node) {
   while (node.firstChild) node.removeChild(node.firstChild);
 }
 
+
 export function sectionTitle(title, subtitle) {
-  return el("div", {}, [
+  const wrap = el("div", { class: "po-animate-in" }, [
     el("div", { class: "po-game-title" }, [title]),
     el("div", { class: "po-game-sub" }, [subtitle]),
   ]);
+  return wrap;
+}
+
+export function gameFrame({ title, subtitle, controls, status, body }) {
+  const frame = document.createElement("section");
+  frame.className = "po-game-frame po-animate-in";
+
+  frame.innerHTML = `
+    <header class="po-game-header">
+      <h3>${title}</h3>
+      <p>${subtitle}</p>
+    </header>
+
+    <div class="po-game-controls"></div>
+    <div class="po-game-body"></div>
+    <div class="po-game-status"></div>
+  `;
+
+  frame.querySelector(".po-game-controls").append(...controls);
+  frame.querySelector(".po-game-body").append(body);
+  frame.querySelector(".po-game-status").append(status);
+
+  return frame;
 }
