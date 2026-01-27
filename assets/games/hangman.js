@@ -1,36 +1,15 @@
-/* ============================================================================
-  Project Odysseus Arcade — Hangman ("Gallows of Ithaca")
-  - Odyssey-themed word bank + hint
-  - Keyboard input + on-screen letters
-  - Saves: current word, guesses, mistakes
-============================================================================ */
-
+/* Hangman (upgraded) — Gallows of Ithaca
+   - Words loaded from /arcade/packs/hangman-words.json
+   - Deterministic daily word (same on device/day)
+   - Dynamic difficulty: maxWrong scales with word length + mode
+*/
 (() => {
   "use strict";
 
   const GAME_ID = "hangman";
-  const STORAGE_KEY = "po_arcade_hangman_v1";
+  const STORAGE_KEY = "po_arcade_hangman_v2";
+  const PACK_URL = "/arcade/packs/hangman-words.json";
 
-  // --- Odyssey word bank (edit freely) --------------------------------------
-  // Keep words uppercase A-Z only for predictable keyboard handling.
-  const WORDS = [
-    { w: "ODYSSEY", hint: "A long voyage home." },
-    { w: "ITHACA", hint: "The home you return to." },
-    { w: "NAVIGATOR", hint: "One who charts the course." },
-    { w: "TRIREME", hint: "Ancient Greek warship." },
-    { w: "SIRENS", hint: "Voices that lure sailors." },
-    { w: "CYCLOPS", hint: "One-eyed giant." },
-    { w: "AEOLUS", hint: "Keeper of the winds." },
-    { w: "POSEIDON", hint: "God of the sea." },
-    { w: "TELEMACHUS", hint: "Odysseus’ son." },
-    { w: "PENELOPE", hint: "Odysseus’ wife." },
-    { w: "ANCHOR", hint: "Stops a ship from drifting." },
-    { w: "COMPASS", hint: "Points the way." },
-    { w: "STORM", hint: "Sea’s fury." },
-    { w: "HARBOR", hint: "Safe water near land." },
-  ];
-
-  // --- Helpers --------------------------------------------------------------
   const el = (tag, attrs = {}, children = []) => {
     const node = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
@@ -43,159 +22,228 @@
     return node;
   };
 
-  const randInt = (n) => Math.floor(Math.random() * n);
-
-  const load = () => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; }
-  };
+  const load = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; } };
   const save = (s) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} };
   const clearSave = () => { try { localStorage.removeItem(STORAGE_KEY); } catch {} };
 
-  // --- UI mount -------------------------------------------------------------
+  function dayKeyLocal() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+  function hashSeed(str) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function seededRng(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  async function loadPack() {
+    // network -> localStorage cache
+    const cacheKey = "po_pack_hangman_v1";
+    try {
+      const res = await fetch(PACK_URL, { cache: "no-cache" });
+      if (res.ok) {
+        const data = await res.json();
+        try { localStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), data })); } catch {}
+        return data;
+      }
+    } catch {}
+    try {
+      const raw = localStorage.getItem(cacheKey);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (parsed?.data) return parsed.data;
+    } catch {}
+    throw new Error("Pack missing");
+  }
+
+  function normalizeEntries(pack) {
+    const entries = Array.isArray(pack?.entries) ? pack.entries : [];
+    return entries
+      .map(x => ({ w: String(x.w || "").toUpperCase().replace(/[^A-Z]/g, ""), hint: String(x.hint || "") }))
+      .filter(x => x.w.length >= 4);
+  }
+
+  function maxWrongFor(word, mode) {
+    // longer words get a little more slack; “daily” is slightly tighter
+    const base = 5 + Math.min(3, Math.floor(word.length / 4));
+    return mode === "daily" ? Math.max(5, base - 1) : base;
+  }
+
+  function newGameState(entries, mode) {
+    const key = dayKeyLocal();
+    const rng = seededRng(hashSeed(`po-hangman-${mode}-${key}`));
+    const pick = entries[Math.floor(rng() * entries.length)];
+    return {
+      mode,
+      day: key,
+      word: pick.w,
+      hint: pick.hint,
+      guessed: [],
+      wrong: 0,
+      maxWrong: maxWrongFor(pick.w, mode),
+      revealUsed: false, // one “reveal a letter” power-up
+      done: false,
+      won: false,
+    };
+  }
+
   function mount(root) {
     root.innerHTML = "";
 
-    const restored = load();
-    let state = restored && restored.word ? restored : newGameState();
-
     const head = el("div", { class: "po-arcade-head" }, [
       el("div", { class: "po-arcade-title", text: "Hangman" }),
-      el("div", { class: "po-arcade-subtitle", text: "Save the crew. Guess the word." }),
+      el("div", { class: "po-arcade-subtitle", text: "Save the crew. Generated voyages." }),
     ]);
 
-    const hint = el("div", { class: "po-arcade-hint" });
-    const status = el("div", { class: "po-arcade-status" });
+    const status = el("div", { class: "po-arcade-status" }, ["Loading word pack…"]);
+    root.append(head, status);
 
-    const mistakes = el("div", { class: "po-arcade-mistakes" });
-    const wordRow = el("div", { class: "po-hm-word", "aria-label": "Current word" });
+    (async () => {
+      let entries;
+      try {
+        entries = normalizeEntries(await loadPack());
+      } catch {
+        status.textContent = `Word pack missing: ${PACK_URL}`;
+        return;
+      }
+      if (!entries.length) { status.textContent = "Hangman pack has no valid entries."; return; }
 
-    const letters = el("div", { class: "po-hm-letters", role: "group", "aria-label": "Letter buttons" });
+      const restored = load();
+      const today = dayKeyLocal();
 
-    const resetBtn = el("button", {
-      class: "po-arcade-btn",
-      type: "button",
-      onclick: () => {
-        state = newGameState();
+      let state =
+        restored && restored.word && restored.day === today
+          ? restored
+          : newGameState(entries, "daily");
+
+      const hint = el("div", { class: "po-arcade-hint" });
+      const mistakes = el("div", { class: "po-arcade-mistakes" });
+      const wordRow = el("div", { class: "po-hm-word", "aria-label": "Current word" });
+      const letters = el("div", { class: "po-hm-letters", role: "group", "aria-label": "Letter buttons" });
+
+      const modeSelect = el("select", {
+        class: "po-arcade-select",
+        "aria-label": "Select hangman mode",
+        onchange: () => {
+          state = newGameState(entries, modeSelect.value);
+          save(state);
+          render();
+        },
+      }, [
+        el("option", { value: "daily", text: "Daily Word" }),
+        el("option", { value: "endless", text: "Endless" }),
+      ]);
+      modeSelect.value = state.mode || "daily";
+
+      const newBtn = el("button", {
+        class: "po-arcade-btn",
+        type: "button",
+        onclick: () => {
+          state = newGameState(entries, state.mode || "daily");
+          save(state);
+          render();
+        },
+      }, [document.createTextNode("New Word")]);
+
+      const revealBtn = el("button", {
+        class: "po-arcade-btn",
+        type: "button",
+        onclick: () => {
+          if (state.done || state.revealUsed) return;
+          state.revealUsed = true;
+          // reveal one unguessed letter
+          const hidden = state.word.split("").filter(ch => !state.guessed.includes(ch));
+          if (hidden.length) state.guessed.push(hidden[0]);
+          save(state);
+          render();
+        },
+      }, [document.createTextNode("Reveal (1x)")]);
+
+      const clearBtn = el("button", {
+        class: "po-arcade-btn po-arcade-btn-ghost",
+        type: "button",
+        onclick: () => { clearSave(); status.textContent = "Save cleared."; },
+      }, [document.createTextNode("Clear Save")]);
+
+      const controls = el("div", { class: "po-arcade-controls" }, [
+        el("div", { class: "po-arcade-control" }, [ el("span", { class: "po-arcade-label", text: "Mode" }), modeSelect ]),
+        newBtn, revealBtn, clearBtn,
+      ]);
+
+      root.innerHTML = "";
+      root.append(head, controls, hint, status, mistakes, wordRow, letters);
+
+      const buttons = {};
+      for (let i = 65; i <= 90; i++) {
+        const ch = String.fromCharCode(i);
+        const btn = el("button", {
+          class: "po-hm-letter",
+          type: "button",
+          "aria-label": `Guess letter ${ch}`,
+          onclick: () => guess(ch),
+        }, [document.createTextNode(ch)]);
+        buttons[ch] = btn;
+        letters.appendChild(btn);
+      }
+
+      const onKeyDown = (e) => {
+        const key = (e.key || "").toUpperCase();
+        if (key.length === 1 && key >= "A" && key <= "Z") guess(key);
+      };
+      window.addEventListener("keydown", onKeyDown);
+
+      function computeMasked() {
+        const set = new Set(state.guessed);
+        return state.word.split("").map(ch => (set.has(ch) ? ch : "•")).join(" ");
+      }
+
+      function guess(ch) {
+        if (state.done) return;
+        if (state.guessed.includes(ch)) return;
+
+        state.guessed.push(ch);
+        if (!state.word.includes(ch)) state.wrong += 1;
+
+        const allRevealed = state.word.split("").every(c => state.guessed.includes(c));
+        if (allRevealed) { state.done = true; state.won = true; }
+        if (state.wrong >= state.maxWrong) { state.done = true; state.won = false; }
+
         save(state);
         render();
-      },
-    }, [document.createTextNode("New Word")]);
-
-    const clearBtn = el("button", {
-      class: "po-arcade-btn po-arcade-btn-ghost",
-      type: "button",
-      onclick: () => { clearSave(); state = newGameState(); render(); },
-    }, [document.createTextNode("Clear Save")]);
-
-    const controls = el("div", { class: "po-arcade-controls" }, [
-      resetBtn,
-      clearBtn,
-    ]);
-
-    root.append(head, controls, hint, status, mistakes, wordRow, letters);
-
-    // Build letter buttons A-Z once
-    const buttons = {};
-    for (let i = 65; i <= 90; i++) {
-      const ch = String.fromCharCode(i);
-      const btn = el("button", {
-        class: "po-hm-letter",
-        type: "button",
-        "aria-label": `Guess letter ${ch}`,
-        onclick: () => guess(ch),
-      }, [document.createTextNode(ch)]);
-      buttons[ch] = btn;
-      letters.appendChild(btn);
-    }
-
-    // Keyboard input (only while mounted)
-    const onKeyDown = (e) => {
-      const key = (e.key || "").toUpperCase();
-      if (key.length === 1 && key >= "A" && key <= "Z") guess(key);
-    };
-    window.addEventListener("keydown", onKeyDown);
-
-    // Ensure cleanup if your arcade swaps games by replacing DOM:
-    // (If you implement unmount hooks later, remove this listener there.)
-    // For now, it’s acceptable; only one arcade page is active.
-
-    function newGameState() {
-      const pick = WORDS[randInt(WORDS.length)];
-      return {
-        word: pick.w,
-        hint: pick.hint,
-        guessed: [],     // letters guessed
-        wrong: 0,
-        maxWrong: 6,
-        done: false,
-        won: false,
-      };
-    }
-
-    function computeMasked() {
-      const set = new Set(state.guessed);
-      return state.word.split("").map(ch => (set.has(ch) ? ch : "•")).join(" ");
-    }
-
-    function guess(ch) {
-      if (state.done) return;
-      if (state.guessed.includes(ch)) return;
-
-      state.guessed.push(ch);
-
-      if (!state.word.includes(ch)) state.wrong += 1;
-
-      // Win check
-      const allRevealed = state.word.split("").every(c => state.guessed.includes(c));
-      if (allRevealed) {
-        state.done = true;
-        state.won = true;
       }
 
-      // Lose check
-      if (state.wrong >= state.maxWrong) {
-        state.done = true;
-        state.won = false;
+      function render() {
+        hint.textContent = state.hint ? `Hint: ${state.hint}` : "Hint: (none)";
+        mistakes.textContent = `Storm damage: ${state.wrong}/${state.maxWrong}`;
+        wordRow.textContent = computeMasked();
+
+        revealBtn.disabled = state.revealUsed || state.done;
+
+        for (const [ch, btn] of Object.entries(buttons)) {
+          const used = state.guessed.includes(ch);
+          btn.disabled = used || state.done;
+          btn.classList.toggle("is-used", used);
+          btn.classList.toggle("is-wrong", used && !state.word.includes(ch));
+          btn.classList.toggle("is-right", used && state.word.includes(ch));
+        }
+
+        if (!state.done) status.textContent = "Choose wisely, Navigator.";
+        else if (state.won) status.textContent = "Victory — the crew survives!";
+        else status.textContent = `Lost at sea… The word was ${state.word}.`;
       }
 
-      save(state);
       render();
-    }
-
-    function render() {
-      hint.textContent = `Hint: ${state.hint}`;
-      mistakes.textContent = `Storm damage: ${state.wrong}/${state.maxWrong}`;
-
-      wordRow.textContent = computeMasked();
-
-      // Button states
-      for (const [ch, btn] of Object.entries(buttons)) {
-        const used = state.guessed.includes(ch);
-        btn.disabled = used || state.done;
-        btn.classList.toggle("is-used", used);
-        btn.classList.toggle("is-wrong", used && !state.word.includes(ch));
-        btn.classList.toggle("is-right", used && state.word.includes(ch));
-      }
-
-      if (!state.done) {
-        status.textContent = "Choose wisely, Navigator.";
-      } else if (state.won) {
-        status.textContent = "Victory — the crew survives!";
-      } else {
-        status.textContent = `Lost at sea… The word was ${state.word}.`;
-      }
-    }
-
-    render();
+    })();
   }
 
-  // --- Register game --------------------------------------------------------
   window.PO_ARCADE_GAMES = window.PO_ARCADE_GAMES || [];
-  window.PO_ARCADE_GAMES.push({
-    id: GAME_ID,
-    title: "Hangman",
-    subtitle: "Save the crew.",
-    icon: "🪢",
-    mount,
-  });
+  window.PO_ARCADE_GAMES.push({ id: GAME_ID, title: "Hangman", subtitle: "Generated voyages.", icon: "🪢", mount });
 })();
