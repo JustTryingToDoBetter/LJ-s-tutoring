@@ -5,7 +5,16 @@
 (function () {
   "use strict";
 
-  if (!("serviceWorker" in navigator)) return;
+  if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try {
+      await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+      console.log("[SW] registered");
+    } catch (err) {
+      console.error("[SW] registration failed:", err);
+    }
+  });
+}
 
   // Adjust if your SW lives elsewhere; best is root: /sw.js
   const SW_URL = "/sw.js";
