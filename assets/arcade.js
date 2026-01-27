@@ -370,16 +370,11 @@
     );
   }
 
-  function registerArcadeSW() {
-    if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker
-      .register("/assets/sw-arcade.js", { scope: "/arcade/" })
-      .catch(() => {});
-  }
+
 
   // Boot
   document.addEventListener("DOMContentLoaded", () => {
-    registerArcadeSW();
+    
     initHome();
     initPlay();
   });
