@@ -37,6 +37,7 @@
     "build:assets": "cpy \"assets/*.js\" \"assets/*.css\" dist/assets --flat",
     "build:games": "cpy \"assets/games/*.js\" dist/assets/games",
     "build:lib": "cpy \"assets/lib/*.js\" dist/assets/lib",
+    "build:sw": "cpy \"sw.js\" dist --flat",
 
     "inject:config": "node scripts/inject-config.js",
 
