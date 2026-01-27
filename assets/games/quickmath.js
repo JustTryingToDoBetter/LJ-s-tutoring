@@ -1,45 +1,58 @@
 /**
- * quickmath.js
- * Odyssey flavor: "Storm Sprint" timed arithmetic.
- * Production notes:
- * - No external deps
- * - Keyboard friendly
- * - Saves best score locally
+ * quickmath.js — Storm Sprint (upgraded)
+ * - Loads rules from JSON pack (no hardcoded ops/ranges in code)
+ * - Seeded RNG (daily + run)
+ * - Dynamic difficulty: streak increases range + points multiplier
  */
-
 import { el, clear, sectionTitle } from "../lib/ui.js";
 import { dayKey, hashStringToSeed, seededRng } from "../lib/rng.js";
+import { loadJsonPack } from "../lib/packs.js";
 
-export function mountQuickMath(root, ctx) {
+const RULES_URL = "/arcade/packs/quickmath-rules.json";
+
+export async function mountQuickMath(root, ctx) {
   const state = ctx.getState();
   const best = state.games.quickmath.best || 0;
 
   const wrap = el("div", {}, [
     sectionTitle("Storm Sprint (Quick Math)", "Answer fast. Build a streak. Beat your best."),
-    el("div", { class: "mt-3" }, [
-      el("div", { class: "po-muted" }, [`Best score: ${best}`]),
-    ]),
+    el("div", { class: "mt-3" }, [ el("div", { class: "po-muted" }, [`Best score: ${best}`]) ]),
   ]);
 
   const panel = el("div", { class: "mt-4" }, []);
   const startBtn = el("button", { class: "po-btn po-btn-primary", type: "button" }, ["Start Sprint"]);
-  startBtn.addEventListener("click", () => runSprint(panel, ctx));
+  startBtn.addEventListener("click", async () => {
+    clear(panel);
+    panel.append(el("div", { class: "po-muted" }, ["Loading rules…"]));
+    try {
+      const rules = await loadJsonPack(RULES_URL);
+      runSprint(panel, ctx, rules, { mode: "run" });
+    } catch {
+      clear(panel);
+      panel.append(el("div", { class: "po-muted" }, [`Rules pack missing: ${RULES_URL}`]));
+    }
+  });
 
   wrap.append(startBtn, panel);
   root.append(wrap);
 }
 
-function runSprint(panel, ctx) {
+function runSprint(panel, ctx, rules, { mode = "run" } = {}) {
   clear(panel);
 
-  const DURATION_MS = 45_000; // 45 seconds
-  const state = ctx.getState();
+  const DURATION_MS = 45_000;
+  const seed = hashStringToSeed(`po-qm-${mode}-${Date.now()}`);
+  const rng = seededRng(seed);
 
   let score = 0;
-  let q = nextQuestion(Math.random);
+  let streak = 0;
+  let answered = 0;
 
   const timerEl = el("div", { class: "po-stat-value", "aria-live": "polite" }, ["45"]);
   const scoreEl = el("div", { class: "po-stat-value" }, ["0"]);
+  const streakEl = el("div", { class: "po-stat-value", style: "font-size:14px;" }, ["0"]);
+
+  let q = nextQuestion(rules, rng, { streak });
 
   const questionEl = el("div", { style: "font-size:28px;font-weight:900;margin-top:10px;" }, [q.text]);
   const input = el("input", {
@@ -54,7 +67,7 @@ function runSprint(panel, ctx) {
   const stats = el("div", { class: "po-stats", style: "margin-top:12px;" }, [
     statBox("Time", timerEl),
     statBox("Score", scoreEl),
-    statBox("Tip", el("div", { class: "po-stat-value", style: "font-size:14px;" }, ["Accuracy > speed"])),
+    statBox("Streak", streakEl),
   ]);
 
   const done = el("button", { class: "po-btn po-btn-ghost", type: "button", style: "margin-top:12px;" }, ["End run"]);
@@ -75,19 +88,26 @@ function runSprint(panel, ctx) {
     const val = input.value.trim();
     if (!val) return;
 
-    // Validate integer input
     const n = Number(val);
     if (!Number.isFinite(n)) return;
 
+    answered++;
+
     if (n === q.answer) {
-      score += q.points;
-      scoreEl.textContent = String(score);
-      msg.textContent = "✅ Clean strike. Next!";
+      streak++;
+      const mult = 1 + Math.min(2.5, streak * 0.08);
+      const gained = Math.floor(q.points * mult);
+      score += gained;
+      msg.textContent = `✅ Clean strike (+${gained}).`;
     } else {
       msg.textContent = `❌ Miss. Correct was ${q.answer}.`;
+      streak = Math.max(0, Math.floor(streak * 0.4));
     }
 
-    q = nextQuestion(Math.random);
+    scoreEl.textContent = String(score);
+    streakEl.textContent = String(streak);
+
+    q = nextQuestion(rules, rng, { streak });
     questionEl.textContent = q.text;
     input.value = "";
   });
@@ -97,15 +117,12 @@ function runSprint(panel, ctx) {
     input.disabled = true;
     done.disabled = true;
 
-    // Save best score
     const next = ctx.getState();
     next.games.quickmath.best = Math.max(next.games.quickmath.best || 0, score);
-    next.games.quickmath.last = { score, at: Date.now() };
+    next.games.quickmath.last = { score, streak, answered, at: Date.now() };
     ctx.setState(next);
 
-    // Mark quest completion
-    ctx.onQuestComplete({ gameId: "quickmath", points: score });
-
+    ctx.onQuestComplete?.({ gameId: "quickmath", points: score });
     msg.textContent = `Run complete. Score: ${score}.`;
   }
 }
@@ -117,51 +134,73 @@ function statBox(label, valueNode) {
   ]);
 }
 
-function nextQuestion(rand) {
-  // Slightly adaptive question difficulty
-  const ops = ["+", "-", "×"];
-  const op = ops[Math.floor(rand() * ops.length)];
+function nextQuestion(rules, rng, { streak = 0 } = {}) {
+  const ops = Array.isArray(rules?.ops) ? rules.ops : [];
+  if (!ops.length) return { text: "0 + 0 = ?", answer: 0, points: 1 };
 
+  // difficulty scales with streak: widen ranges + bias toward harder ops
+  const d = Math.min(1, streak / 25);
+  const pick = weightedPick(ops.map(o => ({
+    item: o,
+    w: (o.op === "÷" ? 0.6 : 1) + (o.points || 1) * d
+  })), rng);
+
+  const op = pick.op;
   let a = 0, b = 0, ans = 0, text = "";
-  let points = 1;
+  let points = pick.points || 1;
 
   if (op === "+") {
-    a = int(rand, 5, 60);
-    b = int(rand, 5, 60);
+    a = int(rng, lerp(pick.minA, pick.maxA, d), pick.maxA);
+    b = int(rng, lerp(pick.minB, pick.maxB, d), pick.maxB);
     ans = a + b;
-    points = 1;
     text = `${a} + ${b} = ?`;
   } else if (op === "-") {
-    a = int(rand, 10, 90);
-    b = int(rand, 1, a);
+    a = int(rng, lerp(pick.minA, pick.maxA, d), pick.maxA);
+    b = int(rng, pick.minB, Math.min(a, pick.maxB));
     ans = a - b;
-    points = 2;
     text = `${a} − ${b} = ?`;
-  } else {
-    a = int(rand, 2, 12);
-    b = int(rand, 2, 12);
+  } else if (op === "×") {
+    a = int(rng, lerp(pick.minA, pick.maxA, d), pick.maxA);
+    b = int(rng, lerp(pick.minB, pick.maxB, d), pick.maxB);
     ans = a * b;
-    points = 3;
     text = `${a} × ${b} = ?`;
+  } else {
+    // division with integer answer: a = b*q
+    b = int(rng, pick.minB, pick.maxB);
+    const q = int(rng, pick.minQ, pick.maxQ);
+    a = b * q;
+    ans = q;
+    text = `${a} ÷ ${b} = ?`;
   }
 
   return { text, answer: ans, points };
 }
 
-function int(rand, min, max) {
-  return Math.floor(rand() * (max - min + 1)) + min;
+function int(rng, min, max) {
+  min = Math.floor(min); max = Math.floor(max);
+  return Math.floor(rng() * (max - min + 1)) + min;
+}
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function weightedPick(table, rng) {
+  const total = table.reduce((s, x) => s + (x.w ?? 1), 0);
+  let r = rng() * total;
+  for (const x of table) {
+    r -= (x.w ?? 1);
+    if (r <= 0) return x.item;
+  }
+  return table[table.length - 1].item;
 }
 
-/**
- * Daily runner for "Daily Voyage"
- * Mounts a shorter version with deterministic questions.
- */
+/** Daily runner */
 export async function runDailyQuickMath(root, ctx) {
   clear(root);
 
   const key = dayKey();
   const seed = hashStringToSeed(`po-daily-qm-${key}`);
   const rng = seededRng(seed);
+
+  const rules = await loadJsonPack(RULES_URL);
 
   const wrap = el("div", {}, [
     sectionTitle("Daily Voyage — Storm Sprint", "Short run. Deterministic. One attempt is enough."),
@@ -171,11 +210,11 @@ export async function runDailyQuickMath(root, ctx) {
   wrap.append(panel);
   root.append(wrap);
 
-  // Shorter daily: 12 questions max, no timer
   const QUESTIONS = 12;
   let score = 0;
+  let streak = 0;
   let i = 0;
-  let q = nextQuestion(rng);
+  let q = nextQuestion(rules, rng, { streak });
 
   const questionEl = el("div", { style: "font-size:28px;font-weight:900;margin-top:10px;" }, [q.text]);
   const input = el("input", {
@@ -200,21 +239,24 @@ export async function runDailyQuickMath(root, ctx) {
       const n = Number(val);
       if (!Number.isFinite(n)) return;
 
-      if (n === q.answer) score += q.points;
+      if (n === q.answer) {
+        streak++;
+        score += Math.floor(q.points * (1 + Math.min(2, streak * 0.08)));
+      } else {
+        streak = Math.max(0, Math.floor(streak * 0.4));
+      }
 
       i++;
       if (i >= QUESTIONS) {
         input.disabled = true;
-
         const next = ctx.getState();
         next.games.quickmath.best = Math.max(next.games.quickmath.best || 0, score);
         ctx.setState(next);
-
         resolve({ completed: true, score });
         return;
       }
 
-      q = nextQuestion(rng);
+      q = nextQuestion(rules, rng, { streak });
       questionEl.textContent = q.text;
       input.value = "";
       meter.textContent = `Question ${i + 1} / ${QUESTIONS}`;
