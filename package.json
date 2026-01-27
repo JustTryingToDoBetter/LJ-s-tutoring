@@ -24,35 +24,40 @@
     "wait-on": "^7.2.0"
   },
   "scripts": {
+    "clean": "rimraf dist",
+
+    "prebuild": "npm run clean && mkdirp dist/assets dist/assets/games dist/assets/lib dist/guides dist/images dist/arcade",
+
     "build:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --minify",
     "build:html": "cpy \"*.html\" dist --flat",
     "build:static": "cpy \"favicon.svg\" \"robots.txt\" \"sitemap.xml\" dist --flat",
-    "build:guides": "cpy \"guides/*.html\" \"dist/guides\"",
-    "build:images": "cpy \"images/*\" \"dist/images\"",
-    "build:arcade": "cpy \"arcade/**/*\" \"dist/arcade\"",
+    "build:guides": "cpy \"guides/*.html\" dist/guides",
+    "build:images": "cpy \"images/*\" dist/images",
+    "build:arcade": "cpy \"arcade/**/*\" dist/arcade",
     "build:assets": "cpy \"assets/*.js\" \"assets/*.css\" dist/assets --flat",
     "build:games": "cpy \"assets/games/*.js\" dist/assets/games",
     "build:lib": "cpy \"assets/lib/*.js\" dist/assets/lib",
-    "clean": "npx rimraf dist",
-    "prebuild": "npm run clean && mkdir -p dist/assets dist/assets/games dist/assets/lib dist/guides dist/images dist/arcade",
-    "build": "npm run prebuild && npm-run-all --parallel build:css build:html build:static build:guides build:images build:arcade && npm-run-all build:assets build:games build:lib inject:config",
-    "dev": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --watch",
-    "dev:full": "npm run prebuild && npm run build:html && npm run build:static && npm run build:guides && npm run build:images && npm run build:assets && npm run dev",
-    "dev:serve": "npm-run-all --parallel dev:full serve",
-    "ci:smoke": "npm-run-all build qa:html",
+
+    "inject:config": "node scripts/inject-config.js",
+
+    "build": "npm-run-all --parallel build:css build:html build:static build:guides build:images build:arcade build:assets build:games build:lib && npm run inject:config",
+
     "serve": "http-server dist -p 8080 -c-1",
     "start": "http-server dist -a 0.0.0.0 -p ${PORT:-8080} -c-1",
-    "lint:js": "eslint assets/*.js",
+
+    "dev:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --watch",
+    "dev:full": "npm-run-all prebuild build:html build:static build:guides build:images build:arcade build:assets build:games build:lib inject:config",
+    "dev": "npm-run-all --parallel dev:css serve",
+
+    "lint:js": "eslint \"assets/**/*.js\" \"scripts/**/*.js\"",
     "lint:html": "html-validate \"*.html\" \"guides/*.html\"",
     "lint": "npm-run-all --parallel lint:js lint:html",
+
     "qa:html": "html-validate \"dist/*.html\" \"dist/guides/*.html\"",
     "qa:links": "linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip \"^mailto:|^tel:|^https?:\\/\\/(?!localhost:8080)\"",
     "qa:a11y": "pa11y-ci",
-    "qa:quick": "npm run qa:html && npm run qa:links",
-    "preqa": "npm run build",
-    "qa": "npm run serve --silent & npx wait-on http://localhost:8080 && npm-run-all --parallel qa:html qa:links qa:a11y",
-    "prepare": "husky || true",
-    "inject:config": "node scripts/inject-config.js"
+    "qa": "npm-run-all build && (npm run serve --silent & wait-on http://localhost:8080) && npm-run-all --parallel qa:html qa:links qa:a11y",
 
+    "prepare": "husky || true"
   }
 }
