@@ -1,0 +1,212 @@
+/* ============================================================================
+  Project Odysseus — Game UI Kit (mobile-first)
+============================================================================ */
+:root{
+  --po-surface: rgba(20,20,24,.72);
+  --po-surface-2: rgba(0,0,0,.35);
+  --po-border: rgba(255,255,255,.12);
+  --po-border-2: rgba(255,255,255,.18);
+  --po-text: rgba(255,255,255,.92);
+  --po-subtext: rgba(255,255,255,.72);
+  --po-shadow: 0 10px 30px rgba(0,0,0,.30);
+  --po-radius: 16px;
+  --po-radius-sm: 12px;
+  --po-gap: 12px;
+  --po-hit: 44px;
+}
+
+.po-game-shell{
+  min-height: 100%;
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  display: grid;
+  gap: var(--po-gap);
+}
+
+.po-game-topbar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.po-game-titleblock{ min-width: 0; }
+.po-game-title{
+  font-weight: 900;
+  letter-spacing: .2px;
+  font-size: 15px;
+  line-height: 1.15;
+  color: var(--po-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.po-game-sub{
+  font-size: 12px;
+  color: var(--po-subtext);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.po-game-actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.po-btn{
+  height: var(--po-hit);
+  min-width: var(--po-hit);
+  padding: 0 12px;
+  border-radius: var(--po-radius-sm);
+  border: 1px solid var(--po-border-2);
+  background: rgba(255,255,255,.10);
+  color: var(--po-text);
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.po-btn:active{ transform: translateY(1px); }
+.po-btn--primary{ background: rgba(255,255,255,.18); }
+.po-btn--ghost{ background: transparent; }
+
+.po-panel{
+  border-radius: var(--po-radius);
+  border: 1px solid var(--po-border);
+  background: var(--po-surface);
+  box-shadow: var(--po-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.po-hud{
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+.po-hud-row{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.po-chip{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--po-border);
+  background: rgba(255,255,255,.08);
+  font-size: 12px;
+  color: var(--po-text);
+}
+.po-chip__k{ opacity: .75; font-weight: 800; }
+.po-chip__v{ font-weight: 900; }
+
+.po-stage{
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--po-radius);
+  border: 1px solid var(--po-border);
+  background: rgba(0,0,0,.25);
+  min-height: 280px;
+}
+
+.po-stage-inner{
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* Touch controls dock (optional) */
+.po-controls{
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+.po-controls-grid{
+  display: grid;
+  grid-template-columns: repeat(3, var(--po-hit));
+  grid-auto-rows: var(--po-hit);
+  gap: 10px;
+  justify-content: center;
+}
+.po-dpad-spacer{ visibility: hidden; }
+.po-pillrow{
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Modal */
+.po-modal-backdrop{
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: grid;
+  place-items: end center;
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+.po-modal{
+  width: min(560px, 100%);
+  border-radius: 18px;
+  border: 1px solid var(--po-border);
+  background: rgba(20,20,24,.84);
+  box-shadow: var(--po-shadow);
+  padding: 14px;
+}
+.po-modal h3{
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: var(--po-text);
+}
+.po-modal p{
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--po-subtext);
+  line-height: 1.35;
+}
+.po-modal-actions{
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* Toast */
+.po-toast{
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 9999;
+  max-width: min(560px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--po-border);
+  background: rgba(20,20,24,.78);
+  color: var(--po-text);
+  box-shadow: var(--po-shadow);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* Desktop tweaks */
+@media (min-width: 860px){
+  .po-game-shell{ padding: 16px; }
+  .po-stage{ min-height: 420px; }
+  .po-modal-backdrop{ place-items: center; }
+}
