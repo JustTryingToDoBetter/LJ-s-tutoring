@@ -84,22 +84,18 @@
   };
 
   const isSolved = (grid, givens) => {
-    for (let i = 0; i < 81; i++) {
-      if (grid[i] < 1 || grid[i] > 9) return false;
+  for (let i = 0; i < 81; i++) {
+    if (grid[i] < 1 || grid[i] > 9) return false;
+  }
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const v = grid[idx(r, c)];
+      if (conflictsAt(grid, r, c, v)) return false;
     }
-    // validate all filled cells
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        const v = grid[idx(r, c)];
-        if (conflictsAt(grid, r, c, v)) 
-          cell.classList.add("po-failure")
-          return false;
-      }
-    }
-    // givens should not be changed
-    for (let i = 0; i < 81; i++) if (givens[i] && grid[i] !== givens[i]) return false;
-    return true;
-  };
+  }
+  for (let i = 0; i < 81; i++) if (givens[i] && grid[i] !== givens[i]) return false;
+  return true;
+};
 
   // --- UI mount -------------------------------------------------------------
   function mount(root) {

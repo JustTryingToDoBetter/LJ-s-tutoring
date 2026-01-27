@@ -38,37 +38,24 @@ function pickDailyWord(key) {
 
 function renderGrid(gridNode, guesses, target) {
   clear(gridNode);
+  gridNode.className = "po-wd-grid";
 
   const rows = 6;
   for (let r = 0; r < rows; r++) {
     const guess = guesses[r] || "";
-    const row = el("div", { style: "display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0;" }, []);
+    const row = el("div", { class: "po-wd-row" }, []);
+
     for (let c = 0; c < 5; c++) {
       const ch = guess[c] || "";
-      const box = el("div", {
-        style:
-          "height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;" +
-          "font-weight:900;font-size:18px;border:1px solid rgba(15,23,42,0.14);background:rgba(255,255,255,0.8);",
-      }, [ch]);
+      const box = el("div", { class: "po-wd-cell" }, [ch]);
 
-      // Color feedback for submitted guesses only
       if (guess.length === 5) {
-        const t = target;
-        const isCorrect = ch === t[c];
+        const isCorrect = ch === target[c];
+        const present = !isCorrect && target.includes(ch);
 
-        // Count letters for simple present logic
-        const present = !isCorrect && t.includes(ch);
-
-        if (isCorrect) {
-          box.style.background = "rgba(34,197,94,0.20)";   // green tint
-          box.style.borderColor = "rgba(34,197,94,0.55)";
-        } else if (present) {
-          box.style.background = "rgba(234,179,8,0.20)";   // gold tint
-          box.style.borderColor = "rgba(234,179,8,0.55)";
-        } else {
-          box.style.background = "rgba(148,163,184,0.18)"; // gray tint
-          box.style.borderColor = "rgba(148,163,184,0.40)";
-        }
+        if (isCorrect) box.classList.add("is-correct");
+        else if (present) box.classList.add("is-present");
+        else box.classList.add("is-absent");
       }
 
       row.append(box);
@@ -90,13 +77,13 @@ async function runToday(panel, ctx, isDaily) {
   let guesses = savedSameDay ? [...saved.lastGrid] : [];
   let done = false;
 
-  const grid = el("div", {});
+  const grid = el("div", { class: "po-wd-grid" });
   const msg = el("div", { class: "po-muted", style: "margin-top:10px;" }, ["Type a 5-letter word, then Enter."]);
   const input = el("input", {
     type: "text",
     maxlength: "5",
     autocomplete: "off",
-    class: "mt-3 w-full px-4 py-3 rounded-xl border border-slate-200",
+    class: "po-input mt-3",
     "aria-label": "Type a 5-letter word guess",
   });
 
