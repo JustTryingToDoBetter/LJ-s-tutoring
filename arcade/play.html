@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Play | Odyssey Arcade</title>
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/assets/tailwind.css" />
+  <link rel="stylesheet" href="/assets/site.css" />
+  <link rel="stylesheet" href="/assets/arcade.css" />
+
+  <script defer src="/assets/arcade.js"></script>
+</head>
+
+<body class="po-arcade po-arcade--play">
+  <header class="po-arcade__topbar" role="banner">
+    <div class="po-arcade__topbar-inner">
+      <a class="po-arcade__iconbtn" href="/arcade/" aria-label="Back to Arcade">
+        <span aria-hidden="true">←</span>
+      </a>
+
+      <div class="po-arcade__playtitle">
+        <div class="po-arcade__playname" id="play-title">Loading…</div>
+        <div class="po-arcade__playsub" id="play-sub">Odyssey Arcade</div>
+      </div>
+
+      <div class="po-arcade__topbar-actions">
+        <button class="po-arcade__iconbtn" type="button" id="play-restart" aria-label="Restart game">
+          <span aria-hidden="true">⟲</span>
+        </button>
+        <button class="po-arcade__iconbtn" type="button" id="play-exit" aria-label="Exit to Arcade home">
+          <span aria-hidden="true">⨯</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="po-arcade__playwrap" id="play-root" aria-live="polite">
+    <div class="po-arcade__loading" id="play-loading">
+      <div class="po-arcade__spinner" aria-hidden="true"></div>
+      <p class="po-arcade__muted">Loading game…</p>
+    </div>
+
+    <!-- Game scripts mount into this area (best-effort) -->
+    <div id="game-mount" class="po-arcade__gamemount"></div>
+  </main>
+</body>
+</html>
