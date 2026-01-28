@@ -374,7 +374,6 @@
 
   // Boot
   document.addEventListener("DOMContentLoaded", () => {
-    
     initHome();
     initPlay();
   });
