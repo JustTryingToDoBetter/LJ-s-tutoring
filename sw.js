@@ -22,10 +22,10 @@ const PRECACHE_URLS = [
   `/arcade/index.html?v=${VERSION}`,
 
   // Core styles/scripts (examples — adjust to YOUR actual paths)
-  `/assets/styles.css?v=${VERSION}`,
+  `/assets/site.css?v=${VERSION}`,
   `/assets/app-critical.js?v=${VERSION}`,
   `/assets/arcade.js?v=${VERSION}`,
-  `/assets/ui.js?v=${VERSION}`,
+  `/assets/lib/ui.js?v=${VERSION}`,
 
   // If you have game bundles with stable names, include them too:
   // `/assets/games/chess.js?v=${VERSION}`,

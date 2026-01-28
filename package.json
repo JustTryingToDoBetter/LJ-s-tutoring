@@ -28,7 +28,7 @@
 
     "prebuild": "npm run clean && mkdirp dist/assets dist/assets/games dist/assets/lib dist/guides dist/images dist/arcade",
 
-    "build:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --minify",
+    "build:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind-input.css --minify",
     "build:html": "cpy \"*.html\" dist --flat",
     "build:static": "cpy \"favicon.svg\" \"robots.txt\" \"sitemap.xml\" dist --flat",
     "build:guides": "cpy \"guides/*.html\" dist/guides",
@@ -46,7 +46,7 @@
     "serve": "http-server dist -p 8080 -c-1",
     "start": "http-server dist -a 0.0.0.0 -p ${PORT:-8080} -c-1",
 
-    "dev:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --watch",
+    "dev:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind-input.css --watch",
     "dev:full": "npm-run-all prebuild build:html build:static build:guides build:images build:arcade build:assets build:games build:lib inject:config",
     "dev": "npm-run-all --parallel dev:css serve",
 

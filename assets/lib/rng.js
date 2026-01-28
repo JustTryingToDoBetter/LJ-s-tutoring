@@ -1,33 +1,31 @@
-/**
- * rng.js
- * Deterministic RNG (seeded) so "Daily Voyage" is consistent per day.
- */
-
-// Mulberry32 RNG
-export function seededRng(seed) {
-  let t = seed >>> 0;
-  return function rand() {
-    t += 0x6D2B79F5;
-    let x = Math.imul(t ^ (t >>> 15), 1 | t);
-    x ^= x + Math.imul(x ^ (x >>> 7), 61 | x);
-    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-export function dayKey(date = new Date()) {
-  // Local midnight-based key: YYYY-MM-DD
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-export function hashStringToSeed(str) {
-  // Simple stable hash to 32-bit int
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
+// Seeded RNG (fast, deterministic). Good for procedural generation and repeatable runs.
+export function createRNG(seedStr = "po-default") {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    h ^= seedStr.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
-  return h >>> 0;
+
+  // Mulberry32 PRNG
+  let a = h >>> 0;
+  const next = () => {
+    a |= 0;
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a); 
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); 
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  const int = (min, max) => Math.floor(next() * (max - min + 1)) + min; // inclusive
+  const pick = (arr) => arr[int(0, arr.length - 1)]; // pick random element
+  const shuffle = (arr) => {
+    const a2 = arr.slice();
+    for (let i = a2.length - 1; i > 0; i--) {
+      const j = int(0, i);
+      [a2[i], a2[j]] = [a2[j], a2[i]];
+    }
+    return a2;
+  };
+
+  return { next, int, pick, shuffle, seed: seedStr };
 }
