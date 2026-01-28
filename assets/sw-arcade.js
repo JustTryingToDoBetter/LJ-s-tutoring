@@ -29,6 +29,8 @@ const PRECACHE = [
   "/assets/games/tictactoe.js",
   "/assets/games/hangman.js",
   "/assets/games/chess.js",
+  "/assets/games/pong.js",
+  "/assets/games/snake.js",
 
   "/favicon.svg",
 ];
