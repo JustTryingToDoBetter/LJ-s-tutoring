@@ -1,272 +1,413 @@
 /**
- * wordle.js — Word Voyage (upgraded)
- * - Words loaded from JSON pack (no hardcoded list in code)
- * - Correct Wordle coloring (handles repeated letters)
- * - On-screen keyboard + typing
- * - Deterministic daily word via dayKey + seeded RNG
+ * Wordle — "Oracle Word" (Module lifecycle version)
+ * - Shared Game Frame (ctx.ui)
+ * - AbortController cleanup (events)
+ * - Deterministic Daily word + Endless mode
+ * - Mobile-first grid + on-screen keyboard
+ *
+ * Pack format (example):
+ * {
+ *   "answers": ["ODYSSEUS", "ATHENA", ...],   // 5-letter only preferred, but we filter anyway
+ *   "allowed": ["..."]                       // optional; if missing, answers are allowed guesses
+ * }
  */
-import { el, clear, sectionTitle } from "../lib/ui.js";
+
+import { el, clear } from "../lib/ui.js";
 import { dayKey, hashStringToSeed, seededRng } from "../lib/rng.js";
-import { loadJsonPack } from "../lib/packs.js";
 
+const STORAGE_KEY = "po_arcade_wordle_v3";
 const PACK_URL = "/arcade/packs/wordle-words.json";
+const PACK_CACHE_KEY = "po_pack_wordle_v1";
 
-export function mountWordle(root, ctx) {
-  const wrap = el("div", {}, [
-    sectionTitle("Word Voyage", "Guess the 5-letter word. Each guess is a step closer to Ithaca."),
-  ]);
+const load = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; } };
+const save = (s) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} };
+const clearSave = () => { try { localStorage.removeItem(STORAGE_KEY); } catch {} };
 
-  const panel = el("div", { class: "mt-4" }, []);
-  const playBtn = el("button", { class: "po-btn po-btn-primary", type: "button" }, ["Play today"]);
-  playBtn.addEventListener("click", async () => {
-    clear(panel);
-    const loading = el("div", { class: "po-muted" }, ["Loading voyage…"]);
-    panel.append(loading);
-    try {
-      const pack = await loadJsonPack(PACK_URL);
-      await runToday(panel, ctx, pack);
-    } catch (e) {
-      clear(panel);
-      panel.append(el("div", { class: "po-muted" }, [`Word pack missing: ${PACK_URL}`]));
+function toWord(s) {
+  return String(s || "").toUpperCase().replace(/[^A-Z]/g, "");
+}
+function isFive(s) {
+  return typeof s === "string" && s.length === 5 && /^[A-Z]{5}$/.test(s);
+}
+
+async function loadPack(signal) {
+  try {
+    const res = await fetch(PACK_URL, { cache: "no-cache", signal });
+    if (res.ok) {
+      const data = await res.json();
+      try { localStorage.setItem(PACK_CACHE_KEY, JSON.stringify({ at: Date.now(), data })); } catch {}
+      return data;
     }
-  });
-
-  wrap.append(playBtn, panel);
-  root.append(wrap);
+  } catch {}
+  try {
+    const raw = localStorage.getItem(PACK_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (parsed?.data) return parsed.data;
+  } catch {}
+  throw new Error("Pack missing");
 }
 
-function pickDailyWord(words, key) {
-  const seed = hashStringToSeed(`po-daily-word-${key}`);
-  const rng = seededRng(seed);
-  return words[Math.floor(rng() * words.length)];
+function normalizePack(pack) {
+  const answers = Array.isArray(pack?.answers) ? pack.answers.map(toWord).filter(isFive) : [];
+  const allowedRaw = Array.isArray(pack?.allowed) ? pack.allowed : [];
+  const allowed = allowedRaw.map(toWord).filter(isFive);
+
+  // If no allowed list, allow answers as guesses.
+  const allowedSet = new Set((allowed.length ? allowed : answers));
+  const answerSet = new Set(answers);
+
+  return { answers, allowedSet, answerSet };
 }
 
-function scoreGuess(guess, target) {
-  // returns array of "correct" | "present" | "absent"
-  const res = Array(5).fill("absent");
-  const t = target.split("");
+function pickDaily(answers) {
+  const rng = seededRng(hashStringToSeed(`po-wordle-daily-${dayKey()}`));
+  return answers[Math.floor(rng() * answers.length)];
+}
+
+function pickEndless(answers) {
+  const seed = `${Date.now()}-${Math.random()}`;
+  const rng = seededRng(hashStringToSeed(`po-wordle-endless-${seed}`));
+  return answers[Math.floor(rng() * answers.length)];
+}
+
+function freshState(mode, answer) {
+  return {
+    v: 3,
+    mode,            // daily | endless
+    day: dayKey(),
+    answer,          // 5 letters
+    rows: [],        // [{ guess:"", marks:[0..2] }]
+    current: "",     // typing buffer
+    maxRows: 6,
+    done: false,
+    won: false,
+    status: "Type a 5-letter word.",
+  };
+}
+
+// marks: 2=correct, 1=present, 0=absent
+function scoreGuess(guess, answer) {
   const g = guess.split("");
+  const a = answer.split("");
+  const marks = Array(5).fill(0);
 
-  // first pass: correct
-  const used = Array(5).fill(false);
+  // pass 1: exact
+  const freq = {};
   for (let i = 0; i < 5; i++) {
-    if (g[i] === t[i]) {
-      res[i] = "correct";
-      used[i] = true;
-      t[i] = null;
+    if (g[i] === a[i]) {
+      marks[i] = 2;
+    } else {
+      freq[a[i]] = (freq[a[i]] || 0) + 1;
     }
   }
 
-  // second pass: present (respect counts)
+  // pass 2: present elsewhere
   for (let i = 0; i < 5; i++) {
-    if (res[i] === "correct") continue;
-    const idx = t.indexOf(g[i]);
-    if (idx !== -1) {
-      res[i] = "present";
-      t[idx] = null;
+    if (marks[i] === 2) continue;
+    const ch = g[i];
+    if (freq[ch] > 0) {
+      marks[i] = 1;
+      freq[ch]--;
     }
   }
 
-  return res;
+  return marks;
 }
 
-function renderGrid(gridNode, guesses, target, revealedCount) {
-  clear(gridNode);
-  const rows = 6;
-
-  for (let r = 0; r < rows; r++) {
-    const guess = guesses[r] || "";
-    const submitted = r < revealedCount && guess.length === 5;
-    const scores = submitted ? scoreGuess(guess, target) : null;
-
-    const row = el("div", { style: "display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0;" }, []);
-    for (let c = 0; c < 5; c++) {
-      const ch = guess[c] || "";
-      const box = el("div", {
-        style:
-          "height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;" +
-          "font-weight:900;font-size:18px;border:1px solid rgba(15,23,42,0.14);background:rgba(255,255,255,0.8);",
-      }, [ch]);
-
-      if (submitted) {
-        const s = scores[c];
-        if (s === "correct") {
-          box.style.background = "rgba(34,197,94,0.20)";
-          box.style.borderColor = "rgba(34,197,94,0.55)";
-        } else if (s === "present") {
-          box.style.background = "rgba(234,179,8,0.20)";
-          box.style.borderColor = "rgba(234,179,8,0.55)";
-        } else {
-          box.style.background = "rgba(148,163,184,0.18)";
-          box.style.borderColor = "rgba(148,163,184,0.40)";
-        }
-      }
-
-      row.append(box);
-    }
-    gridNode.append(row);
+function mergeKeyState(map, guess, marks) {
+  // map[ch] = 0|1|2 best-known
+  for (let i = 0; i < 5; i++) {
+    const ch = guess[i];
+    const m = marks[i];
+    const prev = map.get(ch) ?? -1;
+    if (m > prev) map.set(ch, m);
   }
 }
 
-function keyboardLayout() {
-  return ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
-}
+export default {
+  _ac: null,
+  _root: null,
+  _ctx: null,
+  _pack: null,
 
-function computeKeyState(guesses, target) {
-  // priority: correct > present > absent
-  const map = new Map();
-  for (const g of guesses) {
-    if (g.length !== 5) continue;
-    const s = scoreGuess(g, target);
-    for (let i = 0; i < 5; i++) {
-      const ch = g[i];
-      const v = s[i];
-      const cur = map.get(ch);
-      const rank = (x) => (x === "correct" ? 3 : x === "present" ? 2 : x === "absent" ? 1 : 0);
-      if (!cur || rank(v) > rank(cur)) map.set(ch, v);
-    }
-  }
-  return map;
-}
+  async mount(root, ctx) {
+    this._root = root;
+    this._ctx = ctx;
 
-async function runToday(panel, ctx, pack) {
-  clear(panel);
+    clear(root);
 
-  const words = (pack?.words || []).map(w => String(w).slice(0, 5).toUpperCase()).filter(w => /^[A-Z]{5}$/.test(w));
-  if (!words.length) {
-    panel.append(el("div", { class: "po-muted" }, ["Word pack has no valid 5-letter words."]));
-    return;
-  }
+    this._ac = new AbortController();
+    const { signal } = this._ac;
 
-  const key = dayKey();
-  const target = pickDailyWord(words, key);
-  const valid = new Set(words);
+    const ui = ctx.ui;
 
-  const state = ctx.getState();
-  const saved = state.games.wordle;
-  const savedSameDay = saved.lastKey === key && Array.isArray(saved.lastGrid) && typeof saved.revealedCount === "number";
+    ui?.setHUD?.([{ k: "Mode", v: "…" }, { k: "Row", v: "…" }, { k: "Pack", v: "Loading" }]);
+    ui?.setStatus?.("Loading word pack…");
 
-  let guesses = savedSameDay ? [...saved.lastGrid] : [];
-  let revealedCount = savedSameDay ? saved.revealedCount : 0;
-  let done = false;
-
-  const grid = el("div", {});
-  const msg = el("div", { class: "po-muted", style: "margin-top:10px;" }, ["Type a 5-letter word, then Enter."]);
-  const input = el("input", {
-    type: "text",
-    maxlength: "5",
-    autocomplete: "off",
-    class: "mt-3 w-full px-4 py-3 rounded-xl border border-slate-200",
-    "aria-label": "Type a 5-letter word guess",
-  });
-
-  const kb = el("div", { style: "margin-top:12px;display:grid;gap:8px;" }, []);
-  const kbButtons = new Map();
-
-  function renderKeyboard() {
-    clear(kb);
-    const ks = computeKeyState(guesses.slice(0, revealedCount), target);
-    for (const row of keyboardLayout()) {
-      const rowEl = el("div", { style: "display:flex;gap:8px;justify-content:center;flex-wrap:wrap;" }, []);
-      for (const ch of row.split("")) {
-        const st = ks.get(ch);
-        const b = el("button", {
-          type: "button",
-          class: "po-btn",
-          style: "height:40px;min-width:40px;padding:0 10px;",
-        }, [ch]);
-
-        if (st === "correct") b.style.background = "rgba(34,197,94,0.22)";
-        if (st === "present") b.style.background = "rgba(234,179,8,0.22)";
-        if (st === "absent") b.style.opacity = "0.55";
-
-        b.addEventListener("click", () => {
-          if (done) return;
-          if ((input.value || "").length >= 5) return;
-          input.value = (input.value || "") + ch;
-          input.focus();
-        });
-
-        kbButtons.set(ch, b);
-        rowEl.append(b);
-      }
-      kb.append(rowEl);
+    let pack;
+    try {
+      pack = normalizePack(await loadPack(signal));
+    } catch {
+      ui?.setHUD?.([{ k: "Pack", v: "Missing" }]);
+      ui?.setStatus?.(`Word pack missing: ${PACK_URL}`);
+      return;
     }
 
-    const actions = el("div", { style: "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;" }, [
-      el("button", { type: "button", class: "po-btn po-btn-ghost", onClick: () => { if (!done) input.value = (input.value || "").slice(0, -1); } }, ["⌫"]),
-      el("button", { type: "button", class: "po-btn po-btn-primary", onClick: () => submit() }, ["Enter"]),
+    if (!pack.answers.length) {
+      ui?.setHUD?.([{ k: "Pack", v: "Empty" }]);
+      ui?.setStatus?.("Wordle pack has no valid 5-letter answers.");
+      return;
+    }
+
+    this._pack = pack;
+
+    // Restore or create state
+    const restored = load();
+    let state =
+      restored?.v === 3 && isFive(restored?.answer)
+        ? restored
+        : freshState("daily", pickDaily(pack.answers));
+
+    // Ensure daily resets per day
+    if (state.mode === "daily" && state.day !== dayKey()) {
+      state = freshState("daily", pickDaily(pack.answers));
+    }
+
+    // Controls
+    const modeSelect = el("select", { class: "po-select", "aria-label": "Select Wordle mode" }, [
+      el("option", { value: "daily", text: "Daily" }),
+      el("option", { value: "endless", text: "Endless" }),
     ]);
-    kb.append(actions);
-  }
+    modeSelect.value = state.mode;
 
-  function persist() {
-    const next = ctx.getState();
-    next.games.wordle.lastKey = key;
-    next.games.wordle.lastGrid = guesses;
-    next.games.wordle.revealedCount = revealedCount;
-    ctx.setState(next);
-  }
+    const enterBtn = el("button", { class: "po-btn po-btn--primary", type: "button" }, ["Enter"]);
+    const backBtn = el("button", { class: "po-btn", type: "button" }, ["Back"]);
+    const newBtn = el("button", { class: "po-btn", type: "button" }, ["New Word"]);
+    const clearBtn = el("button", { class: "po-btn po-btn--ghost", type: "button" }, ["Clear Save"]);
 
-  function submit() {
-    if (done) return;
-    const g = (input.value || "").trim().toUpperCase();
-    if (g.length !== 5) { msg.textContent = "Needs 5 letters."; return; }
-    if (!valid.has(g)) { msg.textContent = "Not in the voyage lexicon."; return; }
+    const controlsRow = el("div", { class: "po-pillrow" }, [modeSelect, enterBtn, backBtn, newBtn, clearBtn]);
+    ui?.setControls?.(controlsRow);
 
-    // Save guess in next slot (if user edits earlier, keep it simple: append)
-    guesses.push(g);
-    revealedCount = guesses.length;
-    input.value = "";
+    // Stage
+    const wrap = el("div", { class: "po-wd-wrap" });
+    const grid = el("div", { class: "po-wd-grid", role: "grid", "aria-label": "Wordle grid" });
+    const kb = el("div", { class: "po-wd-kb", role: "group", "aria-label": "Wordle keyboard" });
 
-    renderGrid(grid, guesses, target, revealedCount);
-    renderKeyboard();
-    persist();
+    wrap.append(grid, kb);
+    root.append(wrap);
 
-    if (g === target) {
-      done = true;
-      msg.textContent = "🏛️ You reached Ithaca. Victory.";
-      const s2 = ctx.getState();
-      s2.games.wordle.wins += 1;
-      s2.games.wordle.plays += 1;
-      ctx.setState(s2);
-      return;
+    // Keyboard layout
+    const rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+    const btns = new Map();
+    const keyState = new Map(); // ch -> 0|1|2
+
+    const mkKey = (label, cls = "") => el("button", { class: `po-btn po-wd-key ${cls}`.trim(), type: "button" }, [label]);
+
+    const topRow = el("div", { class: "po-wd-kbrow" });
+    const midRow = el("div", { class: "po-wd-kbrow" });
+    const botRow = el("div", { class: "po-wd-kbrow" });
+
+    const rowEls = [topRow, midRow, botRow];
+
+    rows.forEach((letters, r) => {
+      for (const ch of letters) {
+        const b = mkKey(ch);
+        b.setAttribute("aria-label", `Type ${ch}`);
+        b.addEventListener("click", () => typeChar(ch), { signal });
+        btns.set(ch, b);
+        rowEls[r].append(b);
+      }
+    });
+
+    const enterKey = mkKey("Enter", "po-wd-key--wide");
+    const backKey = mkKey("⌫", "po-wd-key--wide");
+    enterKey.addEventListener("click", () => commit(), { signal });
+    backKey.addEventListener("click", () => backspace(), { signal });
+
+    botRow.prepend(enterKey);
+    botRow.append(backKey);
+
+    kb.append(topRow, midRow, botRow);
+
+    const persist = () => save(state);
+
+    const setHud = () => {
+      ui?.setHUD?.([
+        { k: "Mode", v: state.mode === "daily" ? "Daily" : "Endless" },
+        { k: "Row", v: `${Math.min(state.rows.length + 1, state.maxRows)}/${state.maxRows}` },
+        { k: "Left", v: String(Math.max(0, state.maxRows - state.rows.length)) },
+      ]);
+    };
+
+    const setStatus = (t) => ui?.setStatus?.(t);
+
+    const renderGrid = () => {
+      clear(grid);
+
+      for (let r = 0; r < state.maxRows; r++) {
+        const row = el("div", { class: "po-wd-row", role: "row" });
+        const entry = state.rows[r];
+
+        const guess = entry?.guess || (r === state.rows.length ? state.current : "");
+        const marks = entry?.marks || null;
+
+        for (let i = 0; i < 5; i++) {
+          const ch = guess[i] || "";
+          const tile = el("div", { class: "po-wd-tile", role: "gridcell" }, [ch]);
+          if (marks) tile.setAttribute("data-m", String(marks[i])); // 0|1|2
+          row.append(tile);
+        }
+        grid.append(row);
+      }
+    };
+
+    const renderKeyboard = () => {
+      for (const [ch, b] of btns.entries()) {
+        const m = keyState.get(ch);
+        b.removeAttribute("data-m");
+        if (m != null) b.setAttribute("data-m", String(m));
+        b.disabled = state.done;
+      }
+      enterKey.disabled = state.done;
+      backKey.disabled = state.done;
+    };
+
+    const renderAll = () => {
+      setHud();
+      setStatus(state.status);
+      renderGrid();
+      renderKeyboard();
+      persist();
+    };
+
+    const resetKeyStateFromRows = () => {
+      keyState.clear();
+      for (const row of state.rows) mergeKeyState(keyState, row.guess, row.marks);
+    };
+
+    const finishIfNeeded = () => {
+      if (state.done) return;
+
+      const last = state.rows[state.rows.length - 1];
+      if (last?.guess === state.answer) {
+        state.done = true;
+        state.won = true;
+        state.status = "Victory — the Oracle yields.";
+        return;
+      }
+      if (state.rows.length >= state.maxRows) {
+        state.done = true;
+        state.won = false;
+        state.status = `Defeat — the word was ${state.answer}.`;
+      }
+    };
+
+    const typeChar = (ch) => {
+      if (state.done) return;
+      if (state.current.length >= 5) return;
+      state.current += ch;
+      state.status = "Keep going…";
+      renderAll();
+    };
+
+    const backspace = () => {
+      if (state.done) return;
+      if (!state.current.length) return;
+      state.current = state.current.slice(0, -1);
+      state.status = "Edit your guess.";
+      renderAll();
+    };
+
+    const commit = () => {
+      if (state.done) return;
+      if (state.current.length !== 5) {
+        state.status = "Need 5 letters.";
+        renderAll();
+        return;
+      }
+
+      const guess = state.current;
+      if (!pack.allowedSet.has(guess)) {
+        state.status = "Not in word list.";
+        renderAll();
+        return;
+      }
+
+      const marks = scoreGuess(guess, state.answer);
+      state.rows.push({ guess, marks });
+      state.current = "";
+
+      mergeKeyState(keyState, guess, marks);
+
+      state.status = guess === state.answer ? "Perfect." : "Next guess.";
+      finishIfNeeded();
+      renderAll();
+    };
+
+    // Buttons
+    modeSelect.addEventListener("change", () => {
+      const mode = modeSelect.value;
+      state = freshState(mode, mode === "daily" ? pickDaily(pack.answers) : pickEndless(pack.answers));
+      resetKeyStateFromRows();
+      renderAll();
+    }, { signal });
+
+    enterBtn.addEventListener("click", () => commit(), { signal });
+    backBtn.addEventListener("click", () => backspace(), { signal });
+
+    newBtn.addEventListener("click", () => {
+      if (state.mode === "daily") {
+        state = freshState("daily", pickDaily(pack.answers));
+      } else {
+        state = freshState("endless", pickEndless(pack.answers));
+      }
+      resetKeyStateFromRows();
+      renderAll();
+    }, { signal });
+
+    clearBtn.addEventListener("click", () => {
+      clearSave();
+      state = freshState("daily", pickDaily(pack.answers));
+      modeSelect.value = "daily";
+      resetKeyStateFromRows();
+      renderAll();
+    }, { signal });
+
+    // Physical keyboard
+    window.addEventListener("keydown", (e) => {
+      if (state.done) return;
+
+      const k = String(e.key || "");
+      if (k === "Enter") { commit(); return; }
+      if (k === "Backspace") { backspace(); return; }
+
+      const ch = k.toUpperCase();
+      if (ch.length === 1 && ch >= "A" && ch <= "Z") typeChar(ch);
+    }, { signal });
+
+    // Initial render
+    resetKeyStateFromRows();
+    renderAll();
+  },
+
+  destroy() {
+    try { this._ac?.abort?.(); } catch {}
+    this._ac = null;
+
+    try { this._ctx?.ui?.setControls?.(null); } catch {}
+    try { this._ctx?.ui?.setStatus?.(""); } catch {}
+    try { this._ctx?.ui?.setHUD?.([]); } catch {}
+
+    if (this._root) {
+      try { clear(this._root); } catch {}
     }
 
-    if (guesses.length >= 6) {
-      done = true;
-      msg.textContent = `Voyage ended. The word was ${target}.`;
-      const s2 = ctx.getState();
-      s2.games.wordle.plays += 1;
-      ctx.setState(s2);
-      return;
-    }
+    this._pack = null;
+    this._root = null;
+    this._ctx = null;
+  },
 
-    msg.textContent = "Next step…";
-  }
-
-  renderGrid(grid, guesses, target, revealedCount);
-  renderKeyboard();
-
-  panel.append(grid, input, msg, kb);
-  input.focus();
-
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") submit();
-  });
-}
-
-/** Daily runner */
-export async function runDailyWordle(root, ctx) {
-  const panel = document.createElement("div");
-  root.append(
-    el("div", {}, [
-      sectionTitle("Daily Voyage — Word Voyage", "Same word for everyone, per day (on this device)."),
-      panel,
-    ])
-  );
-
-  const pack = await loadJsonPack(PACK_URL);
-  await runToday(panel, ctx, pack);
-  return { completed: true };
-}
+  resize() {},
+  pause() {},
+  resume() {},
+};
