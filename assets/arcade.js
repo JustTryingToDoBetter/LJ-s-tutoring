@@ -17,57 +17,74 @@
     sound: "po_arcade_sound",
   };
 
-  const GAMES = [
-    {
-      id: "quickmath",
-      title: "Quick Math",
-      desc: "60-second drills for speed + accuracy.",
-      icon: "⚡",
-      lane: ["quick", "daily"],
-      tags: ["~1 min", "Daily", "Math"],
-    },
-    {
-      id: "sudoku",
-      title: "Sudoku",
-      desc: "Pattern recognition + logic focus.",
-      icon: "🧩",
-      lane: ["daily"],
-      tags: ["~3–8 min", "Daily", "Logic"],
-    },
-    {
-      id: "wordle",
-      title: "Word Voyage",
-      desc: "Word puzzle for consistency + focus.",
-      icon: "🗺️",
-      lane: ["daily"],
-      tags: ["~2–5 min", "Daily", "Puzzle"],
-    },
-    {
-      id: "hangman",
-      title: "Hangman",
-      desc: "Light puzzle for vocab + reasoning.",
-      icon: "🪢",
-      lane: ["quick"],
-      tags: ["~2 min", "Quick", "Puzzle"],
-    },
-    {
-      id: "tictactoe",
-      title: "Tic Tac Toe",
-      desc: "Simple strategy. Great for quick battles.",
-      icon: "⭕",
-      lane: ["quick", "two"],
-      tags: ["~1–2 min", "2 Player", "Strategy"],
-    },
-    {
-      id: "chess",
-      title: "Aegean Chess",
-      desc: "Local 2-player chess. Clean and fast.",
-      icon: "♟️",
-      lane: ["strategy", "two"],
-      tags: ["Strategy", "2 Player", "Classic"],
-    },
-  ];
+const GAMES = [
+  {
+    id: "quickmath",
+    title: "Quick Math",
+    desc: "60-second drills for speed + accuracy.",
+    icon: "⚡",
+    lane: ["quick", "daily"],
+    tags: ["~1 min", "Daily", "Math"],
+  },
+  {
+    id: "sudoku",
+    title: "Sudoku",
+    desc: "Pattern recognition + logic focus.",
+    icon: "🧩",
+    lane: ["daily"],
+    tags: ["~3–8 min", "Daily", "Logic"],
+  },
+  {
+    id: "wordle",
+    title: "Word Voyage",
+    desc: "Word puzzle for consistency + focus.",
+    icon: "🗺️",
+    lane: ["daily"],
+    tags: ["~2–5 min", "Daily", "Puzzle"],
+  },
+  {
+    id: "hangman",
+    title: "Hangman",
+    desc: "Light puzzle for vocab + reasoning.",
+    icon: "🪢",
+    lane: ["quick"],
+    tags: ["~2 min", "Quick", "Puzzle"],
+  },
+  {
+    id: "tictactoe",
+    title: "Tic Tac Toe",
+    desc: "Simple strategy. Great for quick battles.",
+    icon: "⭕",
+    lane: ["quick", "two"],
+    tags: ["~1–2 min", "2 Player", "Strategy"],
+  },
+  {
+    id: "chess",
+    title: "Aegean Chess",
+    desc: "Local 2-player chess. Clean and fast.",
+    icon: "♟️",
+    lane: ["strategy", "two"],
+    tags: ["Strategy", "2 Player", "Classic"],
+  },
 
+  // ✅ NEW
+  {
+    id: "snake",
+    title: "Serpent of Scylla",
+    desc: "Swipe + d-pad snake. Speed tiers and local best.",
+    icon: "🐍",
+    lane: ["quick", "daily"],
+    tags: ["~2–6 min", "Arcade", "Reflex"],
+  },
+  {
+    id: "pong",
+    title: "Aegean Rally",
+    desc: "Pong with 1P vs AI or 2P local. Drag to move.",
+    icon: "🏓",
+    lane: ["quick", "two", "strategy"],
+    tags: ["~2–8 min", "Arcade", "2 Player"],
+  },
+];
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
@@ -253,66 +270,84 @@
     safeText($("#play-title"), meta ? meta.title : "Game");
     safeText($("#play-sub"), meta ? meta.desc : "Odyssey Arcade");
 
-    // restart/exit
-    $("#play-exit")?.addEventListener("click", () =>
-      window.location.assign("/arcade/")
-    );
-    $("#play-restart")?.addEventListener("click", () =>
-      window.location.reload()
-    );
+    $("#play-exit")?.addEventListener("click", () => window.location.assign("/arcade/"));
+    $("#play-restart")?.addEventListener("click", () => window.location.reload());
+
     $("#play-loading")?.remove();
 
     if (!gameId) {
-      $("#play-loading")?.remove();
-      mount.innerHTML = `<div style="padding:16px;color:rgba(226,232,240,.72)">No game selected.</div>`;
+      mount.innerHTML = `<div class="po-arcade__muted" style="padding:16px">No game selected.</div>`;
       return;
     }
 
-    // persist "last played"
     localStorage.setItem(LS.lastGame, gameId);
 
-    // Reset mount each run
-    mount.innerHTML = "";
-    window.PO_ARCADE_MOUNT = mount;
-
-    // Tiny app context
+    // Create frame + tiny app context
     const ctx = createArcadeCtx();
 
-    const MODULE_GAMES = new Set(["wordle", "quickmath"]);
+    let frame = null;
+    let activeGame = null; // lifecycle object
 
     try {
-      // Module games
-      if (MODULE_GAMES.has(gameId)) {
-        const mod = await import(`/assets/games/${encodeURIComponent(gameId)}.js`);
+      const [{ createGameFrame }, mod] = await Promise.all([
+        import("assets/arcade/frame.js"),
+        import(`assets/games/${encodeURIComponent(gameId)}.js`),
+      ]);
 
-        if (gameId === "wordle" && typeof mod.mountWordle === "function") {
-          mod.mountWordle(mount, ctx);
-        } else if (gameId === "quickmath" && typeof mod.mountQuickMath === "function") {
-          mod.mountQuickMath(mount, ctx);
-        } else {
-          throw new Error(`Module loaded but no mount export found for ${gameId}.`);
-        }
-        return;
+      frame = createGameFrame({
+        mount,
+        title: meta ? meta.title : "Game",
+        subtitle: meta ? meta.desc : "Odyssey Arcade",
+      });
+
+      // expose frame API to games
+      ctx.ui = frame;
+
+      // Preferred path: module default export lifecycle
+      if (mod?.default && typeof mod.default.mount === "function") {
+        activeGame = mod.default;
+        await activeGame.mount(frame.stageInner, ctx);
+      }
+      // Compatibility: old module exports (wordle/quickmath)
+      else if (gameId === "wordle" && typeof mod.mountWordle === "function") {
+        frame.setControls(null);
+        frame.setHUD([]);
+        frame.setStatus("");
+        mod.mountWordle(frame.stageInner, ctx);
+      } else if (gameId === "quickmath" && typeof mod.mountQuickMath === "function") {
+        frame.setControls(null);
+        frame.setHUD([]);
+        frame.setStatus("");
+        mod.mountQuickMath(frame.stageInner, ctx);
+      } else {
+        throw new Error(`Game module has no valid mount export for "${gameId}".`);
       }
 
-      // IIFE games
-      await loadScript(`/assets/games/${encodeURIComponent(gameId)}.js`);
-      const reg = (window.PO_ARCADE_GAMES || []).find((g) => g.id === gameId);
+      // Lifecycle hooks (mobile + reliability)
+      const onResize = () => activeGame?.resize?.();
+      window.addEventListener("resize", onResize, { passive: true, signal: frame.signal });
 
-      if (!reg || typeof reg.mount !== "function") {
-        throw new Error(`Game registered incorrectly (missing mount) for ${gameId}.`);
-      }
-
-      reg.mount(mount);
+      document.addEventListener(
+        "visibilitychange",
+        () => {
+          if (!activeGame) return;
+          if (document.hidden) activeGame.pause?.();
+          else activeGame.resume?.();
+        },
+        { signal: frame.signal }
+      );
     } catch (e) {
+      // Fall back to a clean, styled error surface (no inline soup)
+      const msg = String(e?.message || e);
+
       mount.innerHTML = `
-        <div style="padding:16px;color:rgba(226,232,240,.82)">
-          <div style="font-weight:800;margin-bottom:6px">Game failed to start.</div>
-          <div style="color:rgba(226,232,240,.65);font-size:13px">${escapeHtml(
-            String(e?.message || e)
-          )}</div>
-        </div>
+        <section class="po-arcade__panel po-animate-in" style="padding:14px">
+          <div style="font-weight:900;margin-bottom:6px;color:rgba(226,232,240,.95)">Game failed to start</div>
+          <div class="po-muted" style="font-size:12px">${escapeHtml(msg)}</div>
+        </section>
       `;
+      try { frame?.destroy?.(); } catch {}
+      try { activeGame?.destroy?.(); } catch {}
     }
   }
 
