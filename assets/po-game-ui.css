@@ -77,6 +77,33 @@
 .po-btn--primary{ background: rgba(255,255,255,.18); }
 .po-btn--ghost{ background: transparent; }
 
+/* Form controls (for game controls dock) */
+.po-select{
+  height: var(--po-hit);
+  padding: 0 12px;
+  border-radius: var(--po-radius-sm);
+  border: 1px solid var(--po-border-2);
+  background: rgba(255,255,255,.08);
+  color: var(--po-text);
+  font-weight: 900;
+  font-size: 12px;
+  outline: none;
+}
+.po-select:focus{
+  box-shadow: 0 0 0 3px rgba(56,189,248,.18);
+}
+
+/* Status panel */
+.po-status{
+  padding: 12px;
+}
+.po-status__text{
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--po-subtext);
+  line-height: 1.35;
+}
+
 .po-panel{
   border-radius: var(--po-radius);
   border: 1px solid var(--po-border);
