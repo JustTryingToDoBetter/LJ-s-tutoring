@@ -17,22 +17,17 @@ const PRECACHE_URLS = [
   `/?v=${VERSION}`,
   `/index.html?v=${VERSION}`,
 
-  // If arcade has its own page:
   `/arcade/?v=${VERSION}`,
   `/arcade/index.html?v=${VERSION}`,
+  `/arcade/play.html?v=${VERSION}`,
 
-  // Core styles/scripts (examples — adjust to YOUR actual paths)
   `/assets/site.css?v=${VERSION}`,
+  `/assets/arcade.css?v=${VERSION}`,
+  `/assets/po-game-ui.css?v=${VERSION}`,
+
   `/assets/app-critical.js?v=${VERSION}`,
   `/assets/arcade.js?v=${VERSION}`,
-  `/assets/lib/ui.js?v=${VERSION}`,
 
-  // If you have game bundles with stable names, include them too:
-  // `/assets/games/chess.js?v=${VERSION}`,
-  // `/assets/games/snake.js?v=${VERSION}`,
-
-  // Icons / manifest (optional but recommended)
-  `/manifest.webmanifest?v=${VERSION}`,
   `/favicon.svg?v=${VERSION}`,
 ];
 
