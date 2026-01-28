@@ -513,7 +513,107 @@
 .po-wd-cell.is-correct { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.55); }
 .po-wd-cell.is-present { background: rgba(234,179,8,0.18); border-color: rgba(234,179,8,0.55); }
 .po-wd-cell.is-absent  { background: rgba(148,163,184,0.12); border-color: rgba(148,163,184,0.30); }
+/* Wordle keyboard (shared) */
+.po-kb { display: grid; gap: 8px; margin-top: 12px; }
+.po-kb-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 
+.po-kb-key{
+  height: 44px;
+  min-width: 40px;
+  padding: 0 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,.16);
+  background: rgba(2,6,23,.28);
+  color: rgba(226,232,240,.92);
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.po-kb-key:active { transform: translateY(1px); }
+.po-kb-key.is-correct { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.55); }
+.po-kb-key.is-present { background: rgba(234,179,8,0.18); border-color: rgba(234,179,8,0.55); }
+.po-kb-key.is-absent  { opacity: .55; }
+
+/* ============================================================================
+  Wordle — "Oracle Word" (Game Frame UI)
+============================================================================ */
+.po-wd-wrap{
+  width: min(720px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+  padding: 12px;
+}
+
+.po-wd-grid{
+  display: grid;
+  gap: 8px;
+  justify-content: center;
+}
+
+.po-wd-row{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.po-wd-tile{
+  width: min(64px, 16vw);
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid var(--po-border);
+  background: rgba(255,255,255,.06);
+  color: var(--po-text);
+  font-weight: 950;
+  font-size: clamp(18px, 5vw, 26px);
+  line-height: 1;
+  user-select: none;
+}
+
+.po-wd-tile[data-m="2"]{ background: rgba(255,255,255,.14); }
+.po-wd-tile[data-m="1"]{ background: rgba(255,255,255,.10); }
+.po-wd-tile[data-m="0"]{ opacity: .72; }
+
+.po-wd-kb{
+  display: grid;
+  gap: 8px;
+}
+
+.po-wd-kbrow{
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.po-wd-key{
+  padding: 0;
+  height: 44px;
+  min-width: 34px;
+  flex: 1 1 0;
+}
+
+.po-wd-key--wide{
+  flex: 1.35 1 0;
+}
+
+.po-wd-key[data-m="2"]{ background: rgba(255,255,255,.14); }
+.po-wd-key[data-m="1"]{ background: rgba(255,255,255,.10); }
+.po-wd-key[data-m="0"]{ opacity: .70; }
+
+@media (min-width: 520px){
+  .po-wd-key{ height: 48px; min-width: 42px; }
+}
+/* QuickMath question */
+.po-qm-question{
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: .2px;
+  color: rgba(226,232,240,.95);
+}
 /* Sudoku */
 .po-sd-board {
   display: grid;
@@ -536,6 +636,63 @@
 .po-sd-cell.is-selected { outline: 3px solid rgba(56,189,248,.25); }
 .po-sd-cell.is-conflict { border-color: rgba(239,68,68,.55); background: rgba(239,68,68,.10); }
 .po-sd-cell.is-notes { font-weight: 700; font-size: 11px; letter-spacing: .2em; }
+
+/* ============================================================================
+  Hangman — "Gallows of Ithaca" (Game Frame UI)
+============================================================================ */
+.po-hm-wrap{
+  width: min(820px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.po-hm-hint{
+  text-align: center;
+  font-size: 12px;
+  color: var(--po-subtext);
+}
+
+.po-hm-word{
+  text-align: center;
+  font-weight: 950;
+  letter-spacing: 2px;
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--po-text);
+  padding: 8px 6px;
+  border-radius: 14px;
+  border: 1px solid var(--po-border);
+  background: rgba(255,255,255,.06);
+}
+
+.po-hm-meta{
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.po-hm-letters{
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.po-hm-letter{
+  width: 100%;
+  padding: 0;
+}
+
+.po-hm-letter[data-used="1"]{
+  opacity: .55;
+}
+
+@media (min-width: 520px){
+  .po-hm-word{ font-size: 30px; }
+  .po-hm-letters{ grid-template-columns: repeat(9, minmax(0, 1fr)); }
+}
 
 /* TTT */
 .po-ttt-grid {
@@ -583,4 +740,92 @@
   .po-ttt-cell { height: 82px; font-size: 32px; }
   .po-ch-square { height: 46px; }
   .po-wd-cell { height: 46px; }
+}
+
+/* ============================================================================
+  Snake — "Serpent of Scylla" (Game Frame UI)
+============================================================================ */
+.po-sn-wrap{
+  width: min(820px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.po-sn-stage{
+  width: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px solid var(--po-border);
+  background: rgba(255,255,255,.05);
+  padding: 10px;
+  overflow: hidden;
+}
+
+.po-sn-canvas{
+  display: block;
+  border-radius: 14px;
+}
+
+.po-sn-dpad{
+  display: grid;
+  gap: 8px;
+  justify-content: center;
+}
+
+.po-sn-dmid{
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.po-sn-dbtn{
+  width: 56px;
+  height: 48px;
+  padding: 0;
+}
+
+.po-sn-hint{
+  text-align: center;
+  font-size: 12px;
+  color: var(--po-subtext);
+}
+
+@media (min-width: 520px){
+  .po-sn-dbtn{ width: 64px; height: 52px; }
+}
+
+/* ============================================================================
+  Pong — "Aegean Rally" (Game Frame UI)
+============================================================================ */
+.po-pg-wrap{
+  width: min(860px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.po-pg-stage{
+  width: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px solid var(--po-border);
+  background: rgba(255,255,255,.05);
+  padding: 10px;
+  overflow: hidden;
+}
+
+.po-pg-canvas{
+  display: block;
+  border-radius: 14px;
+}
+
+.po-pg-hint{
+  text-align: center;
+  font-size: 12px;
+  color: var(--po-subtext);
 }
