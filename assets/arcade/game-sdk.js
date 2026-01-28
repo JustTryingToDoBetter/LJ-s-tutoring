@@ -1,4 +1,4 @@
-import { createRNG } from "./rng.js";
+import { createRNG } from "../lib/rng.js";
 import { dailySeed, newRunSeed } from "./run-seed.js";
 
 export function createGameSDK(ctx, {
