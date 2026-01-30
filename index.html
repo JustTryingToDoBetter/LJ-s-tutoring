@@ -859,47 +859,116 @@ connect-src 'self' https://www.google-analytics.com https://stats.g.doubleclick.
                 </div>
             </div>
             
-            <!-- Before/After Results -->
-            <div class="mt-16 bg-gradient-to-r from-brand-dark to-slate-800 p-8 rounded-2xl text-white fade-up">
-                <h3 class="text-2xl font-bold text-center mb-8">Real Grade Improvements (School Codes)</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white/5 border border-white/10 rounded-xl p-6 text-center">
-                        <div class="flex items-center justify-center gap-4 mb-3">
-                            <span class="text-3xl font-bold text-red-300">Code 2</span>
-                            <i class="fas fa-arrow-right text-brand-gold" aria-hidden="true"></i>
-                            <span class="text-3xl font-bold text-green-300">Code 7</span>
-                        </div>
-                        <p class="text-slate-300">In one year • Now averaging high 70s • Not below Code 5</p>
-                    </div>
-
-                    <div class="bg-white/5 border border-white/10 rounded-xl p-6 text-center">
-                        <div class="flex items-center justify-center gap-4 mb-3">
-                            <span class="text-3xl font-bold text-red-300">Code 3</span>
-                            <i class="fas fa-arrow-right text-brand-gold" aria-hidden="true"></i>
-                            <span class="text-3xl font-bold text-green-300">Code 7</span>
-                        </div>
-                        <p class="text-slate-300">Grade 9 • Term 1 to Term 4 improvement</p>
-                    </div>
-
-                    <div class="bg-white/5 border border-white/10 rounded-xl p-6 text-center">
-                        <div class="flex items-center justify-center gap-4 mb-3">
-                            <span class="text-3xl font-bold text-red-300">Term 2</span>
-                            <i class="fas fa-arrow-right text-brand-gold" aria-hidden="true"></i>
-                            <span class="text-3xl font-bold text-green-300">Term 3</span>
-                        </div>
-                        <p class="text-slate-300">Noticeable improvement between terms</p>
-                    </div>
-
-                    <div class="bg-white/5 border border-white/10 rounded-xl p-6 text-center">
-                        <div class="flex items-center justify-center gap-4 mb-3">
-                            <span class="text-3xl font-bold text-red-300">Code 1</span>
-                            <i class="fas fa-arrow-right text-brand-gold" aria-hidden="true"></i>
-                            <span class="text-3xl font-bold text-green-300">Code 3</span>
-                        </div>
-                        <p class="text-slate-300">Term 2 to Term 3 (and held in Term 4)</p>
-                    </div>
-                </div>
+        <!-- Grade Improvements — Carousel (replaces block grid) -->
+        <div class="mt-16 bg-gradient-to-r from-brand-dark to-slate-800 p-8 rounded-2xl text-white fade-up">
+        <div class="flex items-center justify-between gap-4 mb-6">
+            <div>
+            <h3 class="text-2xl font-bold">Real Grade Improvements</h3>
+            <p class="text-slate-300 text-sm mt-1">Swipe for outcomes • Percent ranges are approximate</p>
             </div>
+
+            <div class="hidden sm:flex items-center gap-2">
+            <button class="po-carousel-btn" type="button" data-po-prev aria-label="Previous result">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            </button>
+            <button class="po-carousel-btn" type="button" data-po-next aria-label="Next result">
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </button>
+            </div>
+        </div>
+
+        <div class="po-results" data-po-carousel>
+            <div class="po-results-track" data-po-track tabindex="0" aria-label="Grade improvement carousel">
+            <!-- Slide 1 -->
+            <article class="po-result-card" data-po-slide>
+                <div class="po-result-top">
+                <span class="po-pill po-pill-red">~30–39%</span>
+                <span class="po-arrow" aria-hidden="true">→</span>
+                <span class="po-pill po-pill-green">~80–100%</span>
+                </div>
+                <h4 class="po-result-title">From “just passing” to top-band performance</h4>
+                <p class="po-result-sub">Sustained results • Averaging high 70s • No longer dropping below ~60–69%</p>
+                <div class="po-result-meta">
+                <span class="po-chip"><i class="fas fa-chart-line" aria-hidden="true"></i> 1 year</span>
+                <span class="po-chip"><i class="fas fa-shield-alt" aria-hidden="true"></i> Consistent</span>
+                </div>
+            </article>
+
+            <!-- Slide 2 -->
+            <article class="po-result-card" data-po-slide>
+                <div class="po-result-top">
+                <span class="po-pill po-pill-red">~40–49%</span>
+                <span class="po-arrow" aria-hidden="true">→</span>
+                <span class="po-pill po-pill-green">~80–100%</span>
+                </div>
+                <h4 class="po-result-title">Steady climb into distinction territory</h4>
+                <p class="po-result-sub">Grade 9 improvement across the year • Confidence + routine</p>
+                <div class="po-result-meta">
+                <span class="po-chip"><i class="fas fa-graduation-cap" aria-hidden="true"></i> Grade 9</span>
+                <span class="po-chip"><i class="fas fa-route" aria-hidden="true"></i> Year trend</span>
+                </div>
+            </article>
+
+            <!-- Slide 3 -->
+            <article class="po-result-card" data-po-slide>
+                <div class="po-result-top">
+                <span class="po-pill po-pill-red">20%</span>
+                <span class="po-arrow" aria-hidden="true">→</span>
+                <span class="po-pill po-pill-green">43%</span>
+                </div>
+                <h4 class="po-result-title">Clear short-term lift</h4>
+                <p class="po-result-sub">Improved test performance after targeted support</p>
+                <div class="po-result-meta">
+                <span class="po-chip"><i class="fas fa-bullseye" aria-hidden="true"></i> Targeted</span>
+                <span class="po-chip"><i class="fas fa-stopwatch" aria-hidden="true"></i> Fast gains</span>
+                </div>
+            </article>
+
+            <!-- Slide 4 -->
+            <article class="po-result-card" data-po-slide>
+                <div class="po-result-top">
+                <span class="po-pill po-pill-red">10%</span>
+                <span class="po-arrow" aria-hidden="true">→</span>
+                <span class="po-pill po-pill-green">~40%</span>
+                </div>
+                <h4 class="po-result-title">Large turnaround from a low baseline</h4>
+                <p class="po-result-sub">Big jump after fixing fundamentals + adding practice structure</p>
+                <div class="po-result-meta">
+                <span class="po-chip"><i class="fas fa-layer-group" aria-hidden="true"></i> Fundamentals</span>
+                <span class="po-chip"><i class="fas fa-dumbbell" aria-hidden="true"></i> Practice</span>
+                </div>
+            </article>
+
+            <!-- Slide 5 -->
+            <article class="po-result-card" data-po-slide>
+                <div class="po-result-top">
+                <span class="po-pill po-pill-red">Failing</span>
+                <span class="po-arrow" aria-hidden="true">→</span>
+                <span class="po-pill po-pill-green">60%</span>
+                </div>
+                <h4 class="po-result-title">From fail to solid pass</h4>
+                <p class="po-result-sub">Stabilised marks through consistent weekly support</p>
+                <div class="po-result-meta">
+                <span class="po-chip"><i class="fas fa-calendar-check" aria-hidden="true"></i> Weekly</span>
+                <span class="po-chip"><i class="fas fa-hands-helping" aria-hidden="true"></i> Support</span>
+                </div>
+            </article>
+            </div>
+
+            <div class="po-results-ui">
+            <div class="po-dots" data-po-dots aria-label="Carousel pagination"></div>
+            <div class="sm:hidden flex items-center justify-center gap-2 mt-4">
+                <button class="po-carousel-btn" type="button" data-po-prev aria-label="Previous result">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                </button>
+                <button class="po-carousel-btn" type="button" data-po-next aria-label="Next result">
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                </button>
+            </div>
+            </div>
+        </div>
+        </div>
+
         </div>
     </section>
 
