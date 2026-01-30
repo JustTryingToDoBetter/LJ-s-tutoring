@@ -466,3 +466,142 @@ main {
     padding-bottom: 28px !important;
   }
 }
+
+
+/* ==========================================================================
+   Project Odysseus — Grade Results Carousel
+   ========================================================================== */
+
+.po-results { position: relative; }
+
+.po-results-track{
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(280px, 1fr);
+  gap: 16px;
+  overflow-x: auto;
+  padding: 6px 4px 10px;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  outline: none;
+}
+.po-results-track::-webkit-scrollbar{ display:none; }
+
+.po-result-card{
+  scroll-snap-align: start;
+  border-radius: 16px;
+  padding: 18px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  backdrop-filter: blur(10px);
+  min-height: 180px;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.po-result-card:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.30);
+}
+
+.po-result-top{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.po-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.po-pill-red{ color: #fecaca; background: rgba(239,68,68,0.12); }
+.po-pill-green{ color: #bbf7d0; background: rgba(34,197,94,0.12); }
+
+.po-arrow{
+  color: rgba(245, 158, 11, 0.95); /* brand gold vibe */
+  font-weight: 900;
+  font-size: 18px;
+}
+
+.po-result-title{
+  text-align:center;
+  font-weight: 800;
+  font-size: 16px;
+  margin: 2px 0 6px;
+}
+.po-result-sub{
+  text-align:center;
+  color: rgba(226,232,240,0.85);
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0 0 12px;
+}
+
+.po-result-meta{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content:center;
+}
+.po-chip{
+  display:inline-flex;
+  gap: 8px;
+  align-items:center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: rgba(226,232,240,0.9);
+  font-size: 12px;
+}
+
+.po-results-ui{ margin-top: 10px; }
+
+.po-dots{
+  display:flex;
+  justify-content:center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.po-dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.10);
+  transition: transform .15s ease, background .15s ease;
+}
+.po-dot[aria-current="true"]{
+  background: rgba(245,158,11,0.9);
+  border-color: rgba(245,158,11,1);
+  transform: scale(1.08);
+}
+
+.po-carousel-btn{
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.95);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition: transform .15s ease, background .15s ease;
+}
+.po-carousel-btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.12); }
+.po-carousel-btn:active{ transform: translateY(0); }
+
+@media (min-width: 768px){
+  .po-results-track{ grid-auto-columns: minmax(320px, 420px); }
+}
