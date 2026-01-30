@@ -1,0 +1,831 @@
+/* ==========================================================================
+   Odyssey Arcade — Neon Minimal Theme
+   Scoped to .po-arcade so it won’t touch the main site
+========================================================================== */
+
+.po-arcade {
+  --bg: #070a12;
+  --panel: rgba(255, 255, 255, 0.06);
+  --panel2: rgba(255, 255, 255, 0.04);
+  --stroke: rgba(255, 255, 255, 0.10);
+  --text: #e5e7eb;
+  --muted: rgba(226, 232, 240, 0.72);
+  --gold: #d7a63a;              /* matches your brand-gold vibe */
+  --neon: #48ffd2;              /* subtle neon secondary */
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+
+  background:
+    radial-gradient(1200px 700px at 20% -10%, rgba(72, 255, 210, 0.10), transparent 60%),
+    radial-gradient(900px 600px at 110% 10%, rgba(215, 166, 58, 0.10), transparent 55%),
+    radial-gradient(900px 800px at 50% 120%, rgba(72, 255, 210, 0.06), transparent 60%),
+    linear-gradient(180deg, #070a12, #050711);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.po-arcade__topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(14px);
+  background: linear-gradient(180deg, rgba(7,10,18,0.92), rgba(7,10,18,0.70));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.po-arcade__topbar-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.po-arcade__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+}
+.po-arcade__brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(215, 166, 58, 0.12);
+  border: 1px solid rgba(215, 166, 58, 0.25);
+  box-shadow: 0 0 0 4px rgba(215, 166, 58, 0.06);
+}
+.po-arcade__brand-text {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.po-arcade__topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.po-arcade__iconbtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  text-decoration: none;
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+.po-arcade__iconbtn:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12); }
+.po-arcade__iconbtn:active { transform: translateY(1px) scale(0.99); }
+
+.po-arcade__main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 18px 16px 40px;
+}
+
+.po-arcade__hero-card {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  border-radius: 26px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 14px;
+}
+@media (min-width: 860px) {
+  .po-arcade__hero-card { grid-template-columns: 1.25fr 0.75fr; padding: 22px; }
+}
+
+.po-arcade__eyebrow {
+  color: rgba(72, 255, 210, 0.85);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.po-arcade__title {
+  font-size: 34px;
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  margin-top: 6px;
+}
+.po-arcade__sub {
+  margin-top: 10px;
+  color: var(--muted);
+  max-width: 52ch;
+}
+
+.po-arcade__hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.po-arcade__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  text-decoration: none;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  font-weight: 800;
+}
+.po-arcade__btn:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.14); }
+.po-arcade__btn:active { transform: translateY(1px) scale(0.99); }
+
+.po-arcade__btn--primary {
+  background: linear-gradient(180deg, rgba(215, 166, 58, 0.95), rgba(215, 166, 58, 0.80));
+  color: #0b1020;
+  border-color: rgba(215, 166, 58, 0.45);
+  box-shadow: 0 16px 30px rgba(215, 166, 58, 0.16);
+}
+.po-arcade__btn--primary:hover {
+  box-shadow: 0 18px 40px rgba(215, 166, 58, 0.22);
+}
+
+.po-arcade__btn--ghost {
+  border-color: rgba(72, 255, 210, 0.22);
+}
+
+.po-arcade__hero-right {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-content: start;
+}
+.po-arcade__stat {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px;
+}
+.po-arcade__stat-num {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+.po-arcade__stat-label {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.po-arcade__continue {
+  margin-top: 12px;
+  border-radius: 22px;
+  border: 1px solid rgba(72, 255, 210, 0.20);
+  background: linear-gradient(180deg, rgba(72, 255, 210, 0.10), rgba(255, 255, 255, 0.03));
+}
+.po-arcade__continue-inner {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.po-arcade__continue-title {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+.po-arcade__continue-sub {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.po-arcade__filters {
+  margin-top: 16px;
+}
+.po-arcade__filters-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+@media (min-width: 860px) {
+  .po-arcade__filters-inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.po-arcade__chiprow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.po-arcade__chip {
+  padding: 9px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font-weight: 800;
+  font-size: 13px;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+.po-arcade__chip:hover { background: rgba(255, 255, 255, 0.05); }
+.po-arcade__chip:active { transform: translateY(1px); }
+.po-arcade__chip.is-active {
+  background: rgba(72, 255, 210, 0.12);
+  border-color: rgba(72, 255, 210, 0.26);
+}
+
+.po-arcade__search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 18px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.03);
+  max-width: 420px;
+}
+.po-arcade__search input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text);
+}
+.po-arcade__search input::placeholder { color: rgba(226, 232, 240, 0.50); }
+.po-arcade__search-ico { color: rgba(226, 232, 240, 0.80); }
+
+.po-arcade__section {
+  margin-top: 18px;
+}
+.po-arcade__section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.po-arcade__h2 {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+.po-arcade__muted { color: var(--muted); }
+
+.po-arcade__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 680px) {
+  .po-arcade__grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 980px) {
+  .po-arcade__grid { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+/* Game card */
+.po-arcade__card {
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  padding: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.30);
+  transition: transform 170ms ease, border-color 170ms ease, background 170ms ease;
+}
+.po-arcade__card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(72, 255, 210, 0.18);
+  background: linear-gradient(180deg, rgba(72,255,210,0.08), rgba(255,255,255,0.02));
+}
+.po-arcade__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.po-arcade__card-ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: rgba(215, 166, 58, 0.12);
+  border: 1px solid rgba(215, 166, 58, 0.22);
+}
+.po-arcade__card-title {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  font-size: 16px;
+}
+.po-arcade__card-desc {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.po-arcade__card-chips {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.po-arcade__tag {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.po-arcade__card-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+}
+.po-arcade__card-actions .po-arcade__btn { width: 100%; }
+
+.po-arcade__footer {
+  margin-top: 26px;
+  padding: 18px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(226, 232, 240, 0.55);
+  font-size: 13px;
+}
+
+/* Play page */
+.po-arcade__playwrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.po-arcade__playtitle { flex: 1; text-align: center; }
+.po-arcade__playname { font-weight: 900; letter-spacing: -0.02em; }
+.po-arcade__playsub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+.po-arcade__loading {
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+}
+.po-arcade__spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 3px solid rgba(255,255,255,0.18);
+  border-top-color: rgba(72,255,210,0.75);
+  animation: poSpin 900ms linear infinite;
+}
+@keyframes poSpin { to { transform: rotate(360deg); } }
+
+.po-arcade__gamemount {
+  margin-top: 12px;
+  min-height: 60vh;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .po-arcade__card,
+  .po-arcade__btn,
+  .po-arcade__iconbtn,
+  .po-arcade__chip { transition: none !important; }
+  .po-arcade__spinner { animation: none !important; }
+}
+/* =========================
+   Arcade Game UI Kit
+========================= */
+
+/* A consistent game surface */
+.po-game {
+  width: 100%;
+  display: grid;
+  gap: 14px;
+}
+
+.po-game__panel {
+  background: rgba(2, 6, 23, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+}
+
+.po-game__status {
+  color: rgba(226,232,240,.78);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.po-game__controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Inputs (match your site) */
+.po-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,.18);
+  background: rgba(2,6,23,.25);
+  color: rgba(226,232,240,.92);
+  outline: none;
+}
+.po-input:focus {
+  border-color: rgba(56,189,248,.45);
+  box-shadow: 0 0 0 4px rgba(56,189,248,.10);
+}
+
+/* Buttons (bridge for module games using po-btn) */
+.po-btn, .po-arcade-btn {
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,.16);
+  background: rgba(2,6,23,.28);
+  color: rgba(226,232,240,.92);
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.po-btn:hover, .po-arcade-btn:hover { border-color: rgba(148,163,184,.28); }
+.po-btn:disabled, .po-arcade-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.po-btn-primary {
+  background: linear-gradient(135deg, rgba(56,189,248,.22), rgba(167,139,250,.18));
+  border-color: rgba(56,189,248,.30);
+}
+.po-btn-ghost, .po-arcade-btn-ghost {
+  background: transparent;
+}
+
+/* Shared stat boxes (used by quickmath) */
+.po-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.po-stat {
+  border: 1px solid rgba(148,163,184,.12);
+  background: rgba(2,6,23,.22);
+  border-radius: 16px;
+  padding: 10px 12px;
+}
+.po-stat-label { color: rgba(226,232,240,.55); font-size: 12px; }
+.po-stat-value { color: rgba(226,232,240,.94); font-weight: 900; font-size: 20px; }
+
+/* Wordle grid */
+.po-wd-grid { display: grid; gap: 10px; }
+.po-wd-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.po-wd-cell {
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-weight: 950;
+  font-size: 18px;
+  border: 1px solid rgba(148,163,184,0.14);
+  background: rgba(2,6,23,0.18);
+  color: rgba(226,232,240,.95);
+}
+.po-wd-cell.is-correct { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.55); }
+.po-wd-cell.is-present { background: rgba(234,179,8,0.18); border-color: rgba(234,179,8,0.55); }
+.po-wd-cell.is-absent  { background: rgba(148,163,184,0.12); border-color: rgba(148,163,184,0.30); }
+/* Wordle keyboard (shared) */
+.po-kb { display: grid; gap: 8px; margin-top: 12px; }
+.po-kb-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+.po-kb-key{
+  height: 44px;
+  min-width: 40px;
+  padding: 0 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,.16);
+  background: rgba(2,6,23,.28);
+  color: rgba(226,232,240,.92);
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.po-kb-key:active { transform: translateY(1px); }
+.po-kb-key.is-correct { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.55); }
+.po-kb-key.is-present { background: rgba(234,179,8,0.18); border-color: rgba(234,179,8,0.55); }
+.po-kb-key.is-absent  { opacity: .55; }
+
+/* ============================================================================
+  Wordle — "Oracle Word" (Game Frame UI)
+============================================================================ */
+.po-wd-wrap{
+  width: min(720px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+  padding: 12px;
+}
+
+.po-wd-grid{
+  display: grid;
+  gap: 8px;
+  justify-content: center;
+}
+
+.po-wd-row{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.po-wd-tile{
+  width: min(64px, 16vw);
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid var(--po-border);
+  background: rgba(255,255,255,.06);
+  color: var(--po-text);
+  font-weight: 950;
+  font-size: clamp(18px, 5vw, 26px);
+  line-height: 1;
+  user-select: none;
+}
+
+.po-wd-tile[data-m="2"]{ background: rgba(255,255,255,.14); }
+.po-wd-tile[data-m="1"]{ background: rgba(255,255,255,.10); }
+.po-wd-tile[data-m="0"]{ opacity: .72; }
+
+.po-wd-kb{
+  display: grid;
+  gap: 8px;
+}
+
+.po-wd-kbrow{
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.po-wd-key{
+  padding: 0;
+  height: 44px;
+  min-width: 34px;
+  flex: 1 1 0;
+}
+
+.po-wd-key--wide{
+  flex: 1.35 1 0;
+}
+
+.po-wd-key[data-m="2"]{ background: rgba(255,255,255,.14); }
+.po-wd-key[data-m="1"]{ background: rgba(255,255,255,.10); }
+.po-wd-key[data-m="0"]{ opacity: .70; }
+
+@media (min-width: 520px){
+  .po-wd-key{ height: 48px; min-width: 42px; }
+}
+/* QuickMath question */
+.po-qm-question{
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: .2px;
+  color: rgba(226,232,240,.95);
+}
+/* Sudoku */
+.po-sd-board {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 6px;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(148,163,184,.12);
+  background: rgba(2,6,23,.22);
+}
+.po-sd-cell {
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,.14);
+  background: rgba(2,6,23,.18);
+  color: rgba(226,232,240,.92);
+  font-weight: 900;
+}
+.po-sd-cell.is-given { background: rgba(2,6,23,.30); border-color: rgba(148,163,184,.22); }
+.po-sd-cell.is-selected { outline: 3px solid rgba(56,189,248,.25); }
+.po-sd-cell.is-conflict { border-color: rgba(239,68,68,.55); background: rgba(239,68,68,.10); }
+.po-sd-cell.is-notes { font-weight: 700; font-size: 11px; letter-spacing: .2em; }
+
+/* ============================================================================
+  Hangman — "Gallows of Ithaca" (Game Frame UI)
+============================================================================ */
+.po-hm-wrap{
+  width: min(820px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.po-hm-hint{
+  text-align: center;
+  font-size: 12px;
+  color: var(--po-subtext);
+}
+
+.po-hm-word{
+  text-align: center;
+  font-weight: 950;
+  letter-spacing: 2px;
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--po-text);
+  padding: 8px 6px;
+  border-radius: 14px;
+  border: 1px solid var(--po-border);
+  background: rgba(255,255,255,.06);
+}
+
+.po-hm-meta{
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.po-hm-letters{
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.po-hm-letter{
+  width: 100%;
+  padding: 0;
+}
+
+.po-hm-letter[data-used="1"]{
+  opacity: .55;
+}
+
+@media (min-width: 520px){
+  .po-hm-word{ font-size: 30px; }
+  .po-hm-letters{ grid-template-columns: repeat(9, minmax(0, 1fr)); }
+}
+
+/* TTT */
+.po-ttt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 420px;
+}
+.po-ttt-cell {
+  height: 92px;
+  border-radius: 18px;
+  border: 1px solid rgba(148,163,184,.14);
+  background: rgba(2,6,23,.18);
+  color: rgba(226,232,240,.95);
+  font-weight: 950;
+  font-size: 34px;
+}
+
+/* Chess */
+.po-ch-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(148,163,184,.12);
+  background: rgba(2,6,23,.22);
+}
+.po-ch-square {
+  height: 52px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,.12);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  background: rgba(2,6,23,.18);
+  color: rgba(226,232,240,.95);
+}
+.po-ch-square.is-selected { outline: 3px solid rgba(56,189,248,.22); }
+.po-ch-square.is-legal { border-color: rgba(56,189,248,.35); box-shadow: inset 0 0 0 2px rgba(56,189,248,.12); }
+
+/* Mobile tweaks */
+@media (max-width: 420px) {
+  .po-stats { grid-template-columns: 1fr 1fr; }
+  .po-ttt-cell { height: 82px; font-size: 32px; }
+  .po-ch-square { height: 46px; }
+  .po-wd-cell { height: 46px; }
+}
+
+/* ============================================================================
+  Snake — "Serpent of Scylla" (Game Frame UI)
+============================================================================ */
+.po-sn-wrap{
+  width: min(820px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.po-sn-stage{
+  width: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px solid var(--po-border);
+  background: rgba(255,255,255,.05);
+  padding: 10px;
+  overflow: hidden;
+}
+
+.po-sn-canvas{
+  display: block;
+  border-radius: 14px;
+}
+
+.po-sn-dpad{
+  display: grid;
+  gap: 8px;
+  justify-content: center;
+}
+
+.po-sn-dmid{
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.po-sn-dbtn{
+  width: 56px;
+  height: 48px;
+  padding: 0;
+}
+
+.po-sn-hint{
+  text-align: center;
+  font-size: 12px;
+  color: var(--po-subtext);
+}
+
+@media (min-width: 520px){
+  .po-sn-dbtn{ width: 64px; height: 52px; }
+}
+
+/* ============================================================================
+  Pong — "Aegean Rally" (Game Frame UI)
+============================================================================ */
+.po-pg-wrap{
+  width: min(860px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.po-pg-stage{
+  width: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px solid var(--po-border);
+  background: rgba(255,255,255,.05);
+  padding: 10px;
+  overflow: hidden;
+}
+
+.po-pg-canvas{
+  display: block;
+  border-radius: 14px;
+}
+
+.po-pg-hint{
+  text-align: center;
+  font-size: 12px;
+  color: var(--po-subtext);
+}

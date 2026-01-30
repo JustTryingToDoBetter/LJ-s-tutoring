@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Odyssey Arcade | Project Odysseus</title>
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/assets/tailwind-input.css" />
+  <link rel="stylesheet" href="/assets/site.css" />
+  <link rel="stylesheet" href="/assets/arcade.css" />
+  <link rel="stylesheet" href="/assets/po-game-ui.css">
+
+  <script defer src="/assets/arcade.js"></script>
+  <script src="/assets/sw-register.js"></script>
+</head>
+
+<body class="po-arcade">
+  <a class="skip-link" href="#arcade-main">Skip to main content</a>
+
+  <!-- Top App Bar -->
+  <header class="po-arcade__topbar" role="banner">
+    <div class="po-arcade__topbar-inner">
+      <a class="po-arcade__brand" href="/" aria-label="Back to Project Odysseus home">
+        <span class="po-arcade__brand-mark" aria-hidden="true">⌁</span>
+        <span class="po-arcade__brand-text">Odyssey Arcade</span>
+      </a>
+
+      <div class="po-arcade__topbar-actions">
+        <button class="po-arcade__iconbtn" type="button" id="arcade-sound-toggle" aria-pressed="false" aria-label="Toggle sound effects">
+          <span aria-hidden="true">🔈</span>
+        </button>
+
+        <button class="po-arcade__iconbtn" type="button" id="arcade-settings" aria-label="Arcade settings">
+          <span aria-hidden="true">⚙️</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="arcade-main" class="po-arcade__main">
+    <!-- Hero / Mission Control -->
+    <section class="po-arcade__hero" aria-label="Arcade overview">
+      <div class="po-arcade__hero-card">
+        <div class="po-arcade__hero-left">
+          <p class="po-arcade__eyebrow">Practice that feels like play</p>
+          <h1 class="po-arcade__title">Pick a quest.</h1>
+          <p class="po-arcade__sub">
+            Fast sessions, clean UI, saved progress on this device.
+          </p>
+
+          <div class="po-arcade__hero-cta">
+            <a class="po-arcade__btn po-arcade__btn--primary" href="#games">
+              Browse games
+            </a>
+            <a class="po-arcade__btn po-arcade__btn--ghost" href="/" aria-label="Return to main site">
+              Back to tutoring
+            </a>
+          </div>
+        </div>
+
+        <div class="po-arcade__hero-right" aria-hidden="true">
+          <div class="po-arcade__stat">
+            <div class="po-arcade__stat-num" id="arcade-stat-sessions">0</div>
+            <div class="po-arcade__stat-label">sessions</div>
+          </div>
+          <div class="po-arcade__stat">
+            <div class="po-arcade__stat-num" id="arcade-stat-best">—</div>
+            <div class="po-arcade__stat-label">best today</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Continue row -->
+      <div class="po-arcade__continue" id="arcade-continue" hidden>
+        <div class="po-arcade__continue-inner">
+          <div>
+            <p class="po-arcade__continue-title">Continue</p>
+            <p class="po-arcade__continue-sub" id="arcade-continue-sub">Last played</p>
+          </div>
+          <a class="po-arcade__btn po-arcade__btn--primary" id="arcade-continue-btn" href="/arcade/play.html">
+            Resume
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="po-arcade__filters" aria-label="Game filters">
+      <div class="po-arcade__filters-inner">
+        <div class="po-arcade__chiprow" role="tablist" aria-label="Filter games">
+          <button class="po-arcade__chip is-active" type="button" data-filter="all" role="tab" aria-selected="true">All</button>
+          <button class="po-arcade__chip" type="button" data-filter="quick" role="tab" aria-selected="false">Quick</button>
+          <button class="po-arcade__chip" type="button" data-filter="daily" role="tab" aria-selected="false">Daily</button>
+          <button class="po-arcade__chip" type="button" data-filter="strategy" role="tab" aria-selected="false">Strategy</button>
+          <button class="po-arcade__chip" type="button" data-filter="two" role="tab" aria-selected="false">2 Player</button>
+        </div>
+
+        <label class="po-arcade__search">
+          <span class="po-arcade__search-ico" aria-hidden="true">⌕</span>
+          <input id="arcade-search" type="search" placeholder="Search games…" autocomplete="off" />
+        </label>
+      </div>
+    </section>
+
+    <!-- Games -->
+    <section id="games" class="po-arcade__section" aria-label="Games list">
+      <div class="po-arcade__section-head">
+        <h2 class="po-arcade__h2">Games</h2>
+        <p class="po-arcade__muted">Tap Play — loads instantly, no clutter.</p>
+      </div>
+
+      <div class="po-arcade__grid" id="arcade-grid">
+        <!-- Cards injected by arcade.js -->
+        <noscript>
+          <p style="color: #cbd5e1;">Enable JavaScript to view and launch games.</p>
+        </noscript>
+      </div>
+    </section>
+
+    <footer class="po-arcade__footer" role="contentinfo">
+      <p>© <span id="arcade-year"></span> Project Odysseus — Odyssey Arcade</p>
+    </footer>
+  </main>
+</body>
+</html>

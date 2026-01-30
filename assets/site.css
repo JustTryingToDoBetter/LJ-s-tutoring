@@ -427,3 +427,42 @@ html {
 .dark .comparison-row:nth-child(odd) {
   background-color: rgba(251, 191, 36, 0.1);
 }
+
+
+/* ============================================================================
+   Odysseus Single-Page (Minimal Scroll) — Additions
+   Keep this at the bottom of site.css
+============================================================================ */
+
+/* Prevent content from hiding behind the fixed nav */
+:root {
+  --nav-h: 64px; /* matches h-16 */
+}
+
+html {
+  scroll-padding-top: calc(var(--nav-h) + 12px);
+}
+
+/* Make in-page section jumps land cleanly below the fixed nav */
+section[id], footer[id] {
+  scroll-margin-top: calc(var(--nav-h) + 12px);
+}
+
+/* Mobile sticky CTA can cover content at the bottom — add breathing room */
+main {
+  padding-bottom: 92px; /* room for sticky CTA on mobile */
+}
+
+/* Only show sticky CTA on mobile, and only when JS toggles .visible */
+@media (min-width: 768px) {
+  #mobile-sticky-cta {
+    display: none !important;
+  }
+}
+
+/* (Optional) Tighter “single-screen” hero on small devices */
+@media (max-width: 420px) {
+  .hero-pattern {
+    padding-bottom: 28px !important;
+  }
+}

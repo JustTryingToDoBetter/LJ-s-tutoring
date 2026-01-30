@@ -148,6 +148,18 @@ module.exports = {
   // ============================================================================
   // REASON: These are generated/external files we don't control
   ignorePatterns: ['dist/', 'node_modules/'],
+
+  // ============================================================================
+  // FILE OVERRIDES - Targeted parser/setting tweaks for specific files
+  // ============================================================================
+  overrides: [
+    {
+      files: ['assets/arcade.js'],
+      parserOptions: {
+        sourceType: 'module',
+      },
+    },
+  ],
 };
 
 /**
