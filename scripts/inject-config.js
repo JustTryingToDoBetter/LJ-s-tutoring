@@ -176,132 +176,145 @@ function escapeJsString(value) {
     .replace(/\r/g, '')
     .replace(/\n/g, '');
 }
+(function () {
+  "use strict";
 
-function injectErrorMonitorConfigIntoHtmlFile(filePath) {
-  let html;
-  try {
-    html = fs.readFileSync(filePath, 'utf8');
-  } catch (e) {
-    console.warn(`⚠️  Warning: Could not read HTML file: ${filePath}`);
-    return;
+  const DEFAULTS = {
+    endpoint: "", // set in HTML: window.PO_ERROR_MONITOR.endpoint
+    sampleRate: 1,
+    timeoutMs: 4000,
+    dedupeWindowMs: 30000,
+  };
+
+  const cfg = (() => {
+    const c = (window && window.PO_ERROR_MONITOR) || {};
+    return {
+      endpoint: typeof c.endpoint === "string" ? c.endpoint : DEFAULTS.endpoint,
+      sampleRate:
+        typeof c.sampleRate === "number" && isFinite(c.sampleRate)
+          ? Math.max(0, Math.min(1, c.sampleRate))
+          : DEFAULTS.sampleRate,
+    };
+  })();
+
+  function shouldSend() {
+    if (!cfg.endpoint) return false;
+    if (cfg.sampleRate >= 1) return true;
+    if (cfg.sampleRate <= 0) return false;
+    return Math.random() < cfg.sampleRate;
   }
 
-  const replacement = `window.PO_ERROR_MONITOR = { endpoint: '${escapeJsString(errorMonitorEndpoint)}', sampleRate: ${errorMonitorSampleRate} };`;
-  const pattern = /window\.PO_ERROR_MONITOR\s*=\s*\{[\s\S]*?\};/;
-
-  if (pattern.test(html)) {
-    html = html.replace(pattern, replacement);
-  } else if (/<\/head>/i.test(html)) {
-    // If the snippet isn't present, insert a minimal config block in <head>
-    html = html.replace(
-      /<\/head>/i,
-      `  <script>\n    ${replacement}\n  </script>\n</head>`
-    );
-  } else {
-    return;
+  function nowIso() {
+    try { return new Date().toISOString(); } catch { return ""; }
   }
 
-  try {
-    fs.writeFileSync(filePath, html, 'utf8');
-  } catch (e) {
-    console.warn(`⚠️  Warning: Could not write HTML file: ${filePath}`);
-  }
-}
-
-function injectErrorMonitorConfigIntoHtml() {
-  if (!fs.existsSync(distDir)) {return;}
-
-  function walk(dir) {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    entries.forEach((entry) => {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        walk(full);
-      } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.html')) {
-        injectErrorMonitorConfigIntoHtmlFile(full);
-      }
-    });
+  function short(s, n) {
+    s = String(s || "");
+    return s.length > n ? s.slice(0, n) + "…" : s;
   }
 
-  walk(distDir);
-}
+  function hash32(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = (h * 16777619) >>> 0;
+    }
+    return h.toString(16);
+  }
 
-injectErrorMonitorConfigIntoHtml();
+  const lastSeen = new Map();
+  function dedup(key) {
+    const t = Date.now();
+    const prev = lastSeen.get(key);
+    if (prev && t - prev < DEFAULTS.dedupeWindowMs) return true;
+    lastSeen.set(key, t);
+    // prune
+    if (lastSeen.size > 100) {
+      const first = lastSeen.keys().next().value;
+      lastSeen.delete(first);
+    }
+    return false;
+  }
 
-if (errorMonitorEndpoint) {
-  console.log('✅ Injected ERROR_MONITOR_* config into dist HTML');
-  console.log(`   - Error monitor endpoint: ${errorMonitorEndpoint}`);
-  console.log(`   - Error monitor sample rate: ${errorMonitorSampleRate}`);
-} else {
-  console.log('ℹ️  ERROR_MONITOR_ENDPOINT not set; frontend error reporting will be disabled');
-}
+  function context() {
+    const loc = window.location;
+    const nav = window.navigator;
+    return {
+      url: loc?.href || "",
+      path: loc?.pathname || "",
+      referrer: document?.referrer || "",
+      userAgent: nav?.userAgent || "",
+      language: nav?.language || "",
+      viewport: { w: window.innerWidth || 0, h: window.innerHeight || 0, dpr: window.devicePixelRatio || 1 },
+    };
+  }
 
+  function normalizeError(e) {
+    if (!e) return { name: "", message: "Unknown error", stack: "" };
+    return {
+      name: short(e.name || "", 120),
+      message: short(e.message || String(e), 600),
+      stack: short(e.stack || "", 2000),
+    };
+  }
 
-/**
- * ============================================================================
- * INTEGRATION WITH BUILD SYSTEM
- * ============================================================================
- * 
- * BUILD PIPELINE (package.json scripts):
- * 
- * 1. npm run clean
- *    → rimraf dist/ (remove old build)
- * 
- * 2. npm run prebuild  
- *    → mkdirp dist/assets (create directories)
- * 
- * 3. npm run build:html
- *    → cpy "*.html" dist/ (copy HTML files)
- *    → node scripts/inject-config.js ← YOU ARE HERE
- * 
- * 4. npm run build:assets
- *    → cpy "assets/*.js" dist/assets/ (copy JS, including already-modified app-critical.js)
- * 
- * 5. npm run build (parent command)
- *    → Runs all build:* commands in parallel
- * 
- * 6. Deploy dist/ to production
- *    → All config values injected and ready
- * 
- * ============================================================================
- * ENVIRONMENT-SPECIFIC BUILDS
- * ============================================================================
- * 
- * LOCAL DEVELOPMENT:
- * 1. Create .env from .env.example
- * 2. npm run build
- * 3. npm run serve
- * Result: Dev configuration with test values
- * 
- * CI/CD PRODUCTION:
- * 1. CI system provides environment variables (GitHub Secrets, Netlify Env Vars)
- * 2. npm run build (reads from system environment)
- * 3. Deploy dist/
- * Result: Production configuration with real values
- * 
- * STAGING ENVIRONMENT:
- * 1. Create .env.staging with staging values
- * 2. cp .env.staging .env && npm run build
- * 3. Deploy to staging server
- * Result: Staging configuration with test endpoints
- * 
- * ============================================================================
- * FALLBACK STRATEGY
- * ============================================================================
- * 
- * This script uses FAIL-SAFE approach (with defaults) rather than FAIL-FAST.
- * 
- * WHY: Allows builds to succeed even if .env is missing, using hardcoded defaults.
- * This is appropriate because:
- * 1. Config values are not security-sensitive (all end up in public JS)
- * 2. Defaults are valid working values
- * 3. Prevents broken builds during development
- * 
- * ALTERNATIVE: For stricter enforcement, could check for missing env vars and:
- *   if (!process.env.WHATSAPP_NUMBER) {
- *     console.error('ERROR: WHATSAPP_NUMBER not set!');
- *     process.exit(1);
- *   }
- * 
- * ============================================================================
- */
+  function post(payload) {
+    if (!shouldSend()) return;
+
+    const body = JSON.stringify(payload);
+
+    // best effort, never break the page
+    try {
+      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => { try { ctrl.abort(); } catch {} }, DEFAULTS.timeoutMs) : null;
+
+      fetch(cfg.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+        signal: ctrl ? ctrl.signal : undefined,
+      }).catch(() => {}).finally(() => {
+        if (timer) clearTimeout(timer);
+      });
+    } catch {}
+  }
+
+  function capture(type, data, fingerprintParts) {
+    const payload = {
+      v: 1,
+      ts: nowIso(),
+      type,
+      ctx: context(),
+      ...data,
+    };
+
+    const fp = hash32([type, ...(fingerprintParts || [])].join("|"));
+    payload.fingerprint = fp;
+
+    if (dedup(fp)) return;
+    post(payload);
+  }
+
+  window.addEventListener("error", function (event) {
+    try {
+      const err = normalizeError(event?.error);
+      const src = short(event?.filename || "", 400);
+      const line = typeof event?.lineno === "number" ? event.lineno : null;
+      const col = typeof event?.colno === "number" ? event.colno : null;
+
+      capture(
+        "error",
+        { error: err, source: { file: src, line, col } },
+        [err.name, err.message, src, String(line), String(col)]
+      );
+    } catch {}
+  });
+
+  window.addEventListener("unhandledrejection", function (event) {
+    try {
+      const err = normalizeError(event?.reason);
+      capture("unhandledrejection", { error: err }, [err.name, err.message]);
+    } catch {}
+  });
+})();
