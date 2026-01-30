@@ -187,7 +187,7 @@ function escapeJsString(value) {
   };
 
   const cfg = (() => {
-    const c = (window && window.PO_ERROR_MONITOR) || {};
+    const c = (typeof globalThis !== "undefined" && globalThis.PO_ERROR_MONITOR) || {};
     return {
       endpoint: typeof c.endpoint === "string" ? c.endpoint : DEFAULTS.endpoint,
       sampleRate:
