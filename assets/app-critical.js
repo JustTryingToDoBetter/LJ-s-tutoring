@@ -603,6 +603,85 @@
     }
   }
 
+  /* ==========================================================================
+   Grade Results Carousel
+   ========================================================================== */
+(function initGradeResultsCarousel() {
+  const root = document.querySelector("[data-po-carousel]");
+  if (!root) return;
+
+  const track = root.querySelector("[data-po-track]");
+  const slides = Array.from(root.querySelectorAll("[data-po-slide]"));
+  const dotsWrap = root.querySelector("[data-po-dots]");
+  const prevBtns = Array.from(root.querySelectorAll("[data-po-prev]"));
+  const nextBtns = Array.from(root.querySelectorAll("[data-po-next]"));
+
+  if (!track || slides.length === 0 || !dotsWrap) return;
+
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+
+  // Build dots
+  dotsWrap.innerHTML = "";
+  const dots = slides.map((_, i) => {
+    const b = document.createElement("button");
+    b.className = "po-dot";
+    b.type = "button";
+    b.setAttribute("aria-label", `Go to result ${i + 1}`);
+    b.addEventListener("click", () => scrollToIndex(i));
+    dotsWrap.appendChild(b);
+    return b;
+  });
+
+  const slideLeft = (el) => el.getBoundingClientRect().left;
+  const trackLeft = () => track.getBoundingClientRect().left;
+
+  function nearestIndex() {
+    const tL = trackLeft();
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < slides.length; i++) {
+      const d = Math.abs(slideLeft(slides[i]) - tL);
+      if (d < bestDist) { bestDist = d; best = i; }
+    }
+    return best;
+  }
+
+  function setActive(i) {
+    dots.forEach((d, idx) => d.setAttribute("aria-current", idx === i ? "true" : "false"));
+  }
+
+  function scrollToIndex(i) {
+    i = clamp(i, 0, slides.length - 1);
+    slides[i].scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+    setActive(i);
+  }
+
+  function step(dir) {
+    const i = nearestIndex();
+    scrollToIndex(i + dir);
+  }
+
+  prevBtns.forEach((b) => b.addEventListener("click", () => step(-1)));
+  nextBtns.forEach((b) => b.addEventListener("click", () => step(+1)));
+
+  // Keyboard support on the track
+  track.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
+    if (e.key === "ArrowRight") { e.preventDefault(); step(+1); }
+  });
+
+  // Update active dot while user scrolls
+  let raf = 0;
+  track.addEventListener("scroll", () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => setActive(nearestIndex()));
+  });
+
+  // Initialize
+  setActive(0);
+})();
+
+
   function initCritical() {
     updateAllWhatsAppLinks();
     initDarkMode();
