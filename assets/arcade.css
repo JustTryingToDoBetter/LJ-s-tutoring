@@ -23,6 +23,10 @@
   min-height: 100vh;
 }
 
+.po-arcade__noscript {
+  color: #cbd5e1;
+}
+
 .po-arcade__topbar {
   position: sticky;
   top: 0;
