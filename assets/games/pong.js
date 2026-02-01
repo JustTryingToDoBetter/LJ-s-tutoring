@@ -39,7 +39,7 @@ function freshState() {
     bestWins: 0,     // local best wins (player1)
     wins1: 0,
     wins2: 0,
-    status: "Drag to move. First to 7 wins.",
+    status: "Drag to move. Tap to serve. First to 7 wins.",
   };
 }
 
@@ -188,7 +188,7 @@ export default {
 
       pauseBtn.textContent = "Pause";
       setHud();
-      state.status = "Ready. Press Serve.";
+      state.status = "Ready. Tap to serve (or press Enter).";
       setStatus(state.status);
       persist();
     };
@@ -265,6 +265,9 @@ export default {
       const wy = stageToWorldY(e.clientY);
       if (state.mode === "ai" && dragging === "p2") dragging = "p1";
       setPaddleY(dragging, wy);
+
+      // Make starting the rally frictionless on touch/mouse.
+      if (!state.paused && !sim.inPlay) resetRally("p1");
     }, { signal });
 
     stage.addEventListener("pointermove", (e) => {
@@ -292,7 +295,7 @@ export default {
     // Frame control wiring
     modeSelect.addEventListener("change", () => {
       state.mode = modeSelect.value === "friend" ? "friend" : "ai";
-      state.status = state.mode === "ai" ? "1P vs AI. Press Serve." : "2P local. Press Serve.";
+      state.status = state.mode === "ai" ? "1P vs AI. Tap to serve." : "2P local. Tap to serve.";
       setHud();
       setStatus(state.status);
       resetMatch();
@@ -429,7 +432,7 @@ export default {
         g.font = "700 18px system-ui, -apple-system, Segoe UI, Roboto, Arial";
         g.textAlign = "center";
         g.textBaseline = "middle";
-        g.fillText("Press Serve", cw / 2, ch / 2);
+          g.fillText("Tap to Serve", cw / 2, ch / 2);
       }
     };
 
