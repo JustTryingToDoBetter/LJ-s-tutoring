@@ -1,220 +1,304 @@
-/**
- * quickmath.js — Storm Sprint (Quick Math)
- * - Uses shared UI classes (po-stats / po-input / po-btn)
- * - No inline layout styling besides small spacing
- */
-import { el, clear } from "../lib/ui.js";
-import { hashStringToSeed, seededRng, dayKey } from "../lib/rng.js";
-import { loadJsonPack } from "../lib/packs.js";
+/* =========================================================
+   Quick Math — Odyssey Arcade v1
+   Premium, calm, deterministic
+   ========================================================= */
 
-const RULES_URL = "/arcade/packs/quickmath-rules.json";
+export function initGame(container, config = {}) {
+  /* ---------- Config ---------- */
+  const ROUND_TIME = 60; // seconds
+  const STORAGE_KEY = "odyssey_quickmath";
 
-export async function mountQuickMath(root, ctx) {
-  clear(root);
+  const difficulty =
+    config.difficulty ||
+    loadState().lastDifficulty ||
+    "normal";
 
-  const state = ctx.getState();
-  const best = state.games.quickmath.best || 0;
-
-  const panel = el("section", { class: "po-arcade__panel po-animate-in" }, [
-    el("div", { class: "po-muted", text: "Answer fast. Build a streak. Beat your best." }),
-    el("div", { class: "po-game__status", style: "margin-top:8px;" }, [`Best score: ${best}`]),
-  ]);
-
-  const actions = el("div", { class: "po-game__controls", style: "margin-top:12px;" }, []);
-  const startBtn = el("button", { class: "po-btn po-btn-primary", type: "button" }, ["Start Sprint"]);
-  actions.append(startBtn);
-
-  const body = el("div", { style: "margin-top:12px;" }, []);
-  panel.append(actions, body);
-  root.append(panel);
-
-  startBtn.addEventListener("click", async () => {
-    clear(body);
-    body.append(el("div", { class: "po-muted", text: "Loading rules…" }));
-
-    try {
-      const rules = await loadJsonPack(RULES_URL);
-      runSprint(body, ctx, rules, { mode: "run" });
-    } catch {
-      clear(body);
-      body.append(el("div", { class: "po-muted", text: `Rules pack missing: ${RULES_URL}` }));
-    }
-  });
-}
-
-function runSprint(mount, ctx, rules, { mode = "run" } = {}) {
-  clear(mount);
-
-  const DURATION_MS = 45_000;
-
-  // “run” is intentionally non-deterministic; “daily” below is deterministic
-  const seed = hashStringToSeed(`po-qm-${mode}-${Date.now()}`);
-  const rng = seededRng(seed);
-
+  /* ---------- State ---------- */
+  let timeLeft = ROUND_TIME;
   let score = 0;
   let streak = 0;
-  let answered = 0;
+  let correct = 0;
+  let total = 0;
+  let currentQuestion = null;
+  let input = "";
+  let timerId = null;
+  let paused = false;
 
-  const timerEl = el("div", { class: "po-stat-value", "aria-live": "polite" }, ["45"]);
-  const scoreEl = el("div", { class: "po-stat-value" }, ["0"]);
-  const streakEl = el("div", { class: "po-stat-value" }, ["0"]);
+  /* ---------- Layout ---------- */
+  container.innerHTML = `
+    <div class="qm-frame">
+      <header class="qm-hud">
+        <span class="qm-title">Quick Math</span>
+        <span class="qm-difficulty">${difficulty.toUpperCase()}</span>
+        <span class="qm-timer">01:00</span>
+      </header>
 
-  let q = nextQuestion(rules, rng, { streak });
+      <main class="qm-stage">
+        <div class="qm-question">—</div>
+        <div class="qm-input">0</div>
+      </main>
 
-  const stats = el("div", { class: "po-stats" }, [
-    statBox("Time", timerEl),
-    statBox("Score", scoreEl),
-    statBox("Streak", streakEl),
-  ]);
+      <footer class="qm-keypad">
+        ${[1,2,3,4,5,6,7,8,9].map(n => `<button>${n}</button>`).join("")}
+        <button class="qm-back">⌫</button>
+        <button>0</button>
+        <button class="qm-submit">↵</button>
+      </footer>
+    </div>
+  `;
 
-  const questionEl = el("div", { class: "po-qm-question", text: q.text });
-  const input = el("input", {
-    type: "text",
-    inputmode: "numeric",
-    autocomplete: "off",
-    class: "po-input",
-    "aria-label": "Type your answer",
-  });
+  /* ---------- Elements ---------- */
+  const elQuestion = container.querySelector(".qm-question");
+  const elInput = container.querySelector(".qm-input");
+  const elTimer = container.querySelector(".qm-timer");
+  const keypad = container.querySelector(".qm-keypad");
 
-  const msg = el("div", { class: "po-game__status", style: "margin-top:10px;" }, ["Press Enter to submit."]);
-  const endBtn = el("button", { class: "po-btn po-btn-ghost", type: "button" }, ["End run"]);
+  if (!elQuestion || !elInput || !elTimer || !keypad) {
+    container.innerHTML = "<div class=\"po-arcade__muted\">Quick Math failed to mount.</div>";
+    return {
+      pause() {},
+      resume() {},
+      destroy() {},
+    };
+  }
 
-  mount.append(stats, el("div", { style: "margin-top:12px;" }, [questionEl]), input, msg, el("div", { style: "margin-top:12px;" }, [endBtn]));
-  input.focus();
+  /* ---------- Game Flow ---------- */
+  nextQuestion();
+  startTimer();
 
-  const start = performance.now();
-  const tick = setInterval(() => {
-    const left = Math.max(0, DURATION_MS - (performance.now() - start));
-    timerEl.textContent = String(Math.ceil(left / 1000));
-    if (left <= 0) finish();
-  }, 250);
+  keypad.addEventListener("click", onKeyPress);
 
-  endBtn.addEventListener("click", finish);
+  return {
+    pause() {
+      paused = true;
+    },
+    resume() {
+      paused = false;
+    },
+    destroy() {
+      try {
+        clearInterval(timerId);
+      } catch {}
+      try {
+        keypad.removeEventListener("click", onKeyPress);
+      } catch {}
+    },
+  };
 
-  input.addEventListener("keydown", (e) => {
-    if (e.key !== "Enter") return;
+  /* ---------- Functions ---------- */
 
-    const val = input.value.trim();
-    if (!val) return;
+  function startTimer() {
+    timerId = setInterval(() => {
+      if (paused) return;
+      timeLeft--;
+      updateTimer();
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+  }
 
-    const n = Number(val);
-    if (!Number.isFinite(n)) return;
+  function updateTimer() {
+    const m = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+    const s = String(timeLeft % 60).padStart(2, "0");
+    elTimer.textContent = `${m}:${s}`;
+  }
 
-    answered++;
+  function nextQuestion() {
+    currentQuestion = generateQuestion(difficulty);
+    elQuestion.textContent = currentQuestion.text;
+    input = "";
+    renderInput();
+  }
 
-    if (n === q.answer) {
-      streak++;
-      const mult = 1 + Math.min(2.5, streak * 0.08);
-      const gained = Math.floor(q.points * mult);
-      score += gained;
-      msg.textContent = `✅ Clean strike (+${gained}).`;
-    } else {
-      msg.textContent = `❌ Miss. Correct was ${q.answer}.`;
-      streak = Math.max(0, Math.floor(streak * 0.4));
+  function onKeyPress(e) {
+    if (!e.target.matches("button")) return;
+
+    if (e.target.classList.contains("qm-submit")) {
+      submitAnswer();
+      return;
     }
 
-    scoreEl.textContent = String(score);
-    streakEl.textContent = String(streak);
+    if (e.target.classList.contains("qm-back")) {
+      input = input.slice(0, -1);
+      renderInput();
+      return;
+    }
 
-    q = nextQuestion(rules, rng, { streak });
-    questionEl.textContent = q.text;
-    input.value = "";
+    if (input.length < 6) {
+      input += e.target.textContent;
+      renderInput();
+    }
+  }
+
+  function renderInput() {
+    elInput.textContent = input || "0";
+  }
+
+  function submitAnswer() {
+    if (input === "") return;
+
+    total++;
+    const value = Number(input);
+
+    if (value === currentQuestion.answer) {
+      correct++;
+      streak++;
+      score += 10 + Math.min(streak * 2, 10);
+    } else {
+      streak = 0;
+    }
+
+    nextQuestion();
+  }
+
+  function endGame() {
+    clearInterval(timerId);
+
+    try {
+      keypad.removeEventListener("click", onKeyPress);
+    } catch {}
+
+    const accuracy = total ? correct / total : 0;
+    const finalScore = Math.round(score * accuracyMultiplier(accuracy));
+
+    saveResult(finalScore, accuracy);
+
+    // Best-effort integrate with Arcade state (ctx) if provided.
+    try {
+      const ctx = config.ctx;
+      if (ctx && typeof ctx.getState === "function" && typeof ctx.setState === "function") {
+        const state = ctx.getState();
+        state.games = state.games && typeof state.games === "object" ? state.games : {};
+        state.games.quickmath = state.games.quickmath || { best: 0, last: null };
+        state.games.quickmath.best = Math.max(state.games.quickmath.best || 0, finalScore);
+        state.games.quickmath.last = {
+          score: finalScore,
+          accuracy,
+          difficulty,
+          at: Date.now(),
+        };
+        ctx.setState(state);
+      }
+      config.ctx?.onQuestComplete?.({ gameId: "quickmath", points: finalScore });
+    } catch {}
+
+    container.innerHTML = `
+      <div class="qm-results">
+        <h2>Round Complete</h2>
+        <p class="qm-score">${finalScore}</p>
+        <p>Accuracy: ${(accuracy * 100).toFixed(1)}%</p>
+
+        <div class="qm-actions">
+          <button class="qm-replay">Play Again</button>
+          <button class="qm-exit">Exit</button>
+        </div>
+      </div>
+    `;
+
+    container.querySelector(".qm-replay").onclick = () =>
+      initGame(container, { difficulty });
+
+    container.querySelector(".qm-exit").onclick = () =>
+      config.onExit && config.onExit();
+  }
+
+  /* ---------- Helpers ---------- */
+
+  function generateQuestion(level) {
+    let ops, max;
+
+    if (level === "easy") {
+      ops = ["+"];
+      max = 10;
+    } else if (level === "normal") {
+      ops = ["+", "-"];
+      max = 25;
+    } else {
+      ops = ["+", "-", "×", "÷"];
+      max = 50;
+    }
+
+    let a, b, op, answer;
+
+    do {
+      a = rand(1, max);
+      b = rand(1, max);
+      op = ops[Math.floor(Math.random() * ops.length)];
+
+      if (op === "+") answer = a + b;
+      if (op === "-") answer = a - b;
+      if (op === "×") answer = a * b;
+      if (op === "÷") {
+        answer = a / b;
+      }
+    } while (op === "÷" && (!Number.isInteger(answer)));
+
+    return {
+      text: `${a} ${op} ${b}`,
+      answer
+    };
+  }
+
+  function accuracyMultiplier(a) {
+    if (a >= 0.95) return 1.15;
+    if (a >= 0.85) return 1.05;
+    return 1;
+  }
+
+  function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function loadState() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    } catch {
+      return {};
+    }
+  }
+
+  function saveResult(score, accuracy) {
+    const today = new Date().toDateString();
+    const state = loadState();
+
+    if (state.date !== today) {
+      state.bestToday = 0;
+      state.date = today;
+    }
+
+    state.bestToday = Math.max(state.bestToday || 0, score);
+    state.bestAllTime = Math.max(state.bestAllTime || 0, score);
+    state.lastDifficulty = difficulty;
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+}
+
+// Arcade loader compatibility: legacy named export.
+export function mountQuickMath(root, ctx) {
+  return initGame(root, {
+    ctx,
+    onExit: () => {
+      try {
+        window.location.assign("/arcade/");
+      } catch {}
+    },
   });
-
-  function finish() {
-    clearInterval(tick);
-    input.disabled = true;
-    endBtn.disabled = true;
-
-    const next = ctx.getState();
-    next.games.quickmath.best = Math.max(next.games.quickmath.best || 0, score);
-    next.games.quickmath.last = { score, streak, answered, at: Date.now() };
-    ctx.setState(next);
-
-    ctx.onQuestComplete?.({ gameId: "quickmath", points: score });
-    msg.textContent = `Run complete. Score: ${score}.`;
-  }
 }
 
-function statBox(label, valueNode) {
-  return el("div", { class: "po-stat" }, [
-    el("div", { class: "po-stat-label", text: label }),
-    valueNode,
-  ]);
-}
-
-function nextQuestion(rules, rng, { streak = 0 } = {}) {
-  const ops = Array.isArray(rules?.ops) ? rules.ops : [];
-  if (!ops.length) return { text: "0 + 0 = ?", answer: 0, points: 1 };
-
-  const d = Math.min(1, streak / 25);
-
-  const pick = weightedPick(
-    ops.map((o) => ({
-      item: o,
-      w: (o.op === "÷" ? 0.6 : 1) + (o.points || 1) * d,
-    })),
-    rng
-  );
-
-  const op = pick.op;
-  let a = 0, b = 0, ans = 0, text = "";
-  const points = pick.points || 1;
-
-  if (op === "+") {
-    a = int(rng, lerp(pick.minA, pick.maxA, d), pick.maxA);
-    b = int(rng, lerp(pick.minB, pick.maxB, d), pick.maxB);
-    ans = a + b;
-    text = `${a} + ${b} = ?`;
-  } else if (op === "-") {
-    a = int(rng, lerp(pick.minA, pick.maxA, d), pick.maxA);
-    b = int(rng, pick.minB, Math.min(a, pick.maxB));
-    ans = a - b;
-    text = `${a} − ${b} = ?`;
-  } else if (op === "×") {
-    a = int(rng, lerp(pick.minA, pick.maxA, d), pick.maxA);
-    b = int(rng, lerp(pick.minB, pick.maxB, d), pick.maxB);
-    ans = a * b;
-    text = `${a} × ${b} = ?`;
-  } else {
-    b = int(rng, pick.minB, pick.maxB);
-    const q = int(rng, pick.minQ, pick.maxQ);
-    a = b * q;
-    ans = q;
-    text = `${a} ÷ ${b} = ?`;
-  }
-
-  return { text, answer: ans, points };
-}
-
-function int(rng, min, max) {
-  const a = Math.floor(min);
-  const b = Math.floor(max);
-  return Math.floor(rng() * (b - a + 1)) + a;
-}
-function lerp(a, b, t) { return a + (b - a) * t; }
-
-function weightedPick(table, rng) {
-  const total = table.reduce((s, x) => s + (x.w ?? 1), 0);
-  let r = rng() * total;
-  for (const x of table) {
-    r -= (x.w ?? 1);
-    if (r <= 0) return x.item;
-  }
-  return table[table.length - 1].item;
-}
-
-/** Daily runner (kept deterministic) */
-export async function runDailyQuickMath(root, ctx) {
-  clear(root);
-
-  const key = dayKey();
-  const seed = hashStringToSeed(`po-daily-qm-${key}`);
-  const rng = seededRng(seed);
-  const rules = await loadJsonPack(RULES_URL);
-
-  // Keep it simple: just run the same sprint logic with deterministic rng & capped duration
-  runSprint(root, ctx, rules, { mode: "daily" });
-
-  return { completed: true };
-}
+// Preferred: lifecycle default export.
+export default {
+  _game: null,
+  async mount(root, ctx) {
+    this._game = mountQuickMath(root, ctx);
+  },
+  pause() {
+    this._game?.pause?.();
+  },
+  resume() {
+    this._game?.resume?.();
+  },
+  destroy() {
+    this._game?.destroy?.();
+    this._game = null;
+  },
+};
