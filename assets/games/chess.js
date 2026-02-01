@@ -533,6 +533,12 @@
         const dark = (r + c) % 2 === 1;
         cell.className = "po-chess-cell " + (dark ? "is-dark" : "is-light");
 
+        const sq = sqToHuman(bi);
+        cell.dataset.sq = sq;
+        cell.dataset.file = sq[0];
+        cell.dataset.rank = sq[1];
+        cell.setAttribute("aria-label", `Square ${sq}`);
+
         const p = state.board[bi];
         cell.textContent = p ? (PIECE_UNICODE[p] || p) : "";
 
