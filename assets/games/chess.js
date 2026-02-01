@@ -43,9 +43,87 @@
 
   // --- Chess core -----------------------------------------------------------
   // Pieces: "wP","wN","wB","wR","wQ","wK" and black "b*"
-  const PIECE_UNICODE = {
-    wK: "♔", wQ: "♕", wR: "♖", wB: "♗", wN: "♘", wP: "♙",
-    bK: "♚", bQ: "♛", bR: "♜", bB: "♝", bN: "♞", bP: "♟",
+  // Custom SVG set (simple, original geometry; no external assets).
+  const pieceSvg = (piece) => {
+    if (!piece || piece.length < 2) return "";
+    const side = piece[0] === "b" ? "b" : "w";
+    const t = piece[1];
+
+    const cls = `po-chess-piece ${side === "w" ? "is-white" : "is-black"}`;
+    const common = `class="${cls}" viewBox="0 0 48 48" width="48" height="48" aria-hidden="true" focusable="false"`;
+
+    // A consistent base stand used by most pieces
+    const base = `
+      <path d="M14 40h20c2.5 0 4-1.4 4-3.2 0-1.3-.7-2.5-1.8-3.3l-2.4-1.7H14l-2.4 1.7A4.1 4.1 0 0 0 9.8 36.8C9.8 38.6 11.5 40 14 40Z"/>
+      <path d="M16 31.8h16l-1.4-4.2H17.4L16 31.8Z" opacity=".22"/>
+    `;
+
+    if (t === "P") {
+      return `
+        <svg ${common}>
+          <path d="M24 9.2c4.2 0 7.6 3.4 7.6 7.6S28.2 24.4 24 24.4s-7.6-3.4-7.6-7.6 3.4-7.6 7.6-7.6Z"/>
+          <path d="M18.2 26.2h11.6c1.8 2.1 2.9 4.5 2.9 7.1 0 2.2-.7 4.1-1.6 5.7H16.9c-.9-1.6-1.6-3.5-1.6-5.7 0-2.6 1.1-5 2.9-7.1Z"/>
+          ${base}
+        </svg>
+      `;
+    }
+
+    if (t === "R") {
+      return `
+        <svg ${common}>
+          <path d="M14 10h20v8H14v-8Z"/>
+          <path d="M16 10V8h4v2h4V8h4v2h4V8h4v2" opacity=".25"/>
+          <path d="M17 18h14l2 4v13H15V22l2-4Z"/>
+          ${base}
+        </svg>
+      `;
+    }
+
+    if (t === "B") {
+      return `
+        <svg ${common}>
+          <path d="M24 10c4.8 0 8.6 3.8 8.6 8.6 0 3.2-1.7 6-4.3 7.5l1 3.3H19.7l1-3.3c-2.6-1.5-4.3-4.3-4.3-7.5C16.4 13.8 19.2 10 24 10Z"/>
+          <path d="M24 13.8c-1.8 1.5-2.6 3.2-2.6 5.2 0 1.7.6 3.1 1.6 4.2" opacity=".22"/>
+          <path d="M26.8 15.3 21.2 20.9" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" opacity=".65"/>
+          <path d="M18 29.4h12c1.6 2.1 2.5 4.2 2.5 6.5 0 1.2-.2 2.2-.5 3.1H16c-.3-.9-.5-1.9-.5-3.1 0-2.3.9-4.4 2.5-6.5Z"/>
+          ${base}
+        </svg>
+      `;
+    }
+
+    if (t === "N") {
+      return `
+        <svg ${common}>
+          <path d="M31.8 38.8H16.3c-.9-1.2-1.3-2.7-1.3-4.4 0-4.7 2.7-8.3 6-10.9l-1.7-2.6c-1.4-2.1-.9-4.8 1.1-6.3 1.8-1.3 4.3-1.1 5.9.5l2.8 2.8c2.6 2.6 4.1 5.7 4.1 9.1 0 1.8-.5 3.6-1.4 5.2l1 2.4c.6 1.4.3 3.1-.9 4.2Z"/>
+          <path d="M20.6 17.9c2.2-.4 4.1 0 5.6 1.5" opacity=".22"/>
+          <circle cx="27.2" cy="22.7" r="1.5" opacity=".35"/>
+          <path d="M18 29.6h12c1.8 2.1 2.8 4.4 2.8 6.9 0 .9-.1 1.7-.3 2.3H15.5c-.2-.6-.3-1.4-.3-2.3 0-2.5 1-4.8 2.8-6.9Z"/>
+          ${base}
+        </svg>
+      `;
+    }
+
+    if (t === "Q") {
+      return `
+        <svg ${common}>
+          <path d="M14 19.5 18 13l6 6 6-6 4 6.5-3 2.3L32.2 27H15.8L17 21.8l-3-2.3Z"/>
+          <circle cx="18" cy="12" r="2.1"/>
+          <circle cx="24" cy="11" r="2.1"/>
+          <circle cx="30" cy="12" r="2.1"/>
+          <path d="M18.2 27h11.6c1.8 2.1 2.9 4.5 2.9 7.1 0 2.2-.7 4.1-1.6 5.7H16.9c-.9-1.6-1.6-3.5-1.6-5.7 0-2.6 1.1-5 2.9-7.1Z"/>
+          ${base}
+        </svg>
+      `;
+    }
+
+    // King (default)
+    return `
+      <svg ${common}>
+        <path d="M22.2 10h3.6v5.4H31v3.6h-5.2V24h-3.6v-5H17v-3.6h5.2V10Z"/>
+        <path d="M18.2 24.8h11.6c2.3 2.7 3.8 5.7 3.8 9 0 2.0-.5 3.8-1.1 5.2H15.5c-.6-1.4-1.1-3.2-1.1-5.2 0-3.3 1.5-6.3 3.8-9Z"/>
+        ${base}
+      </svg>
+    `;
   };
 
   const colorOf = (p) => (p ? p[0] : null); // 'w'|'b'|null
@@ -540,7 +618,13 @@
         cell.setAttribute("aria-label", `Square ${sq}`);
 
         const p = state.board[bi];
-        cell.textContent = p ? (PIECE_UNICODE[p] || p) : "";
+        if (p) {
+          cell.classList.add("has-piece");
+          cell.innerHTML = pieceSvg(p) || "";
+        } else {
+          cell.classList.remove("has-piece");
+          cell.innerHTML = "";
+        }
 
         if (state.last && (bi === state.last.from || bi === state.last.to)) cell.classList.add("is-last");
       }
