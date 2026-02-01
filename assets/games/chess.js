@@ -50,7 +50,7 @@
     const t = piece[1];
 
     const cls = `po-chess-piece ${side === "w" ? "is-white" : "is-black"}`;
-    const common = `class="${cls}" viewBox="0 0 48 48" width="48" height="48" aria-hidden="true" focusable="false"`;
+    const common = `class="${cls}" viewBox="0 0 48 48" aria-hidden="true" focusable="false"`;
 
     // A consistent base stand used by most pieces
     const base = `
