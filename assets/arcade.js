@@ -10,6 +10,8 @@
 (() => {
   "use strict";
 
+  const ASSET_BASE = "/assets";
+
   const LS = {
     lastGame: "po_arcade_last_game",
     sessions: "po_arcade_sessions",
@@ -157,6 +159,13 @@ const GAMES = [
     play.className = "po-arcade__btn po-arcade__btn--primary";
     play.href = `/arcade/play.html?g=${encodeURIComponent(game.id)}`;
     play.textContent = "Play";
+
+    // Performance: warm the module cache on intent.
+    play.addEventListener("pointerenter", () => preloadModule(`${ASSET_BASE}/games/${game.id}.js`), { passive: true });
+    play.addEventListener("focus", () => preloadModule(`${ASSET_BASE}/games/${game.id}.js`));
+    play.addEventListener("pointerenter", () => preloadModule(`${ASSET_BASE}/arcade/frame.js`), { passive: true });
+    play.addEventListener("focus", () => preloadModule(`${ASSET_BASE}/arcade/frame.js`));
+
     play.addEventListener("click", () => {
       localStorage.setItem(LS.lastGame, game.id);
       const sessions = Number(localStorage.getItem(LS.sessions) || "0") + 1;
@@ -258,6 +267,18 @@ const GAMES = [
     });
   }
 
+  const _preloaded = new Set();
+  function preloadModule(href) {
+    if (!href || _preloaded.has(href)) return;
+    _preloaded.add(href);
+
+    // If modulepreload isn't supported, just skip.
+    const link = document.createElement("link");
+    link.rel = "modulepreload";
+    link.href = href;
+    document.head.appendChild(link);
+  }
+
   async function initPlay() {
     const mount = $("#game-mount");
     if (!mount) return;
@@ -269,9 +290,6 @@ const GAMES = [
 
     safeText($("#play-title"), meta ? meta.title : "Game");
     safeText($("#play-sub"), meta ? meta.desc : "Odyssey Arcade");
-
-    $("#play-exit")?.addEventListener("click", () => window.location.assign("/arcade/"));
-    $("#play-restart")?.addEventListener("click", () => window.location.reload());
 
     $("#play-loading")?.remove();
 
@@ -288,10 +306,29 @@ const GAMES = [
     let frame = null;
     let activeGame = null; // lifecycle object
 
+    const cleanup = () => {
+      try { activeGame?.destroy?.(); } catch {}
+      try { frame?.destroy?.(); } catch {}
+      activeGame = null;
+      frame = null;
+    };
+
+    $("#play-exit")?.addEventListener("click", () => {
+      cleanup();
+      window.location.assign("/arcade/");
+    });
+    $("#play-restart")?.addEventListener("click", () => {
+      cleanup();
+      window.location.reload();
+    });
+
     try {
+      const frameUrl = `${ASSET_BASE}/arcade/frame.js`;
+      const gameUrl = `${ASSET_BASE}/games/${encodeURIComponent(gameId)}.js`;
+
       const [{ createGameFrame }, mod] = await Promise.all([
-        import("assets/arcade/frame.js"),
-        import(`assets/games/${encodeURIComponent(gameId)}.js`),
+        import(frameUrl),
+        import(gameUrl),
       ]);
 
       frame = createGameFrame({
@@ -309,18 +346,31 @@ const GAMES = [
         await activeGame.mount(frame.stageInner, ctx);
       }
       // Compatibility: old module exports (wordle/quickmath)
-      else if (gameId === "wordle" && typeof mod.mountWordle === "function") {
+      else if (typeof mod.mountWordle === "function") {
         frame.setControls(null);
         frame.setHUD([]);
         frame.setStatus("");
         mod.mountWordle(frame.stageInner, ctx);
-      } else if (gameId === "quickmath" && typeof mod.mountQuickMath === "function") {
+        activeGame = { destroy() {} };
+      } else if (typeof mod.mountQuickMath === "function") {
         frame.setControls(null);
         frame.setHUD([]);
         frame.setStatus("");
         mod.mountQuickMath(frame.stageInner, ctx);
-      } else {
-        throw new Error(`Game module has no valid mount export for "${gameId}".`);
+        activeGame = { destroy() {} };
+      }
+      // Compatibility: legacy global registry games (chess/sudoku)
+      else {
+        const legacy = (window.PO_ARCADE_GAMES || []).find((g) => g && g.id === gameId);
+        if (legacy && typeof legacy.mount === "function") {
+          frame.setControls(null);
+          frame.setHUD([]);
+          frame.setStatus("");
+          legacy.mount(frame.stageInner);
+          activeGame = { destroy() {} };
+        } else {
+          throw new Error(`Game module has no valid mount export for "${gameId}".`);
+        }
       }
 
       // Lifecycle hooks (mobile + reliability)
@@ -346,8 +396,7 @@ const GAMES = [
           <div class="po-muted" style="font-size:12px">${escapeHtml(msg)}</div>
         </section>
       `;
-      try { frame?.destroy?.(); } catch {}
-      try { activeGame?.destroy?.(); } catch {}
+      cleanup();
     }
   }
 
