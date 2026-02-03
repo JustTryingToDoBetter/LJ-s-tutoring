@@ -14,10 +14,10 @@
 
 import { el, clear } from "../lib/ui.js";
 import { dayKey, hashStringToSeed, seededRng } from "../lib/rng.js";
+import { loadJsonPack } from "../lib/packs.js";
 
 const STORAGE_KEY = "po_arcade_wordle_v3";
-const PACK_URL = "/arcade/packs/wordle-words.json";
-const PACK_CACHE_KEY = "po_pack_wordle_v1";
+const PACK_URL = "/assets/data/words-5.json";
 
 const load = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; } };
 const save = (s) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} };
@@ -31,24 +31,12 @@ function isFive(s) {
 }
 
 async function loadPack(signal) {
-  try {
-    const res = await fetch(PACK_URL, { cache: "no-cache", signal });
-    if (res.ok) {
-      const data = await res.json();
-      try { localStorage.setItem(PACK_CACHE_KEY, JSON.stringify({ at: Date.now(), data })); } catch {}
-      return data;
-    }
-  } catch {}
-  try {
-    const raw = localStorage.getItem(PACK_CACHE_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    if (parsed?.data) return parsed.data;
-  } catch {}
-  throw new Error("Pack missing");
+  return loadJsonPack(PACK_URL, { signal });
 }
 
 function normalizePack(pack) {
-  const answers = Array.isArray(pack?.answers) ? pack.answers.map(toWord).filter(isFive) : [];
+  const rawAnswers = Array.isArray(pack?.answers) ? pack.answers : Array.isArray(pack?.words) ? pack.words : [];
+  const answers = rawAnswers.map(toWord).filter(isFive);
   const allowedRaw = Array.isArray(pack?.allowed) ? pack.allowed : [];
   const allowed = allowedRaw.map(toWord).filter(isFive);
 
