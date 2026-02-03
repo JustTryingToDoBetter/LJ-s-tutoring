@@ -146,13 +146,15 @@
   background: rgba(0,0,0,.25);
   min-height: 280px;
   touch-action: none;
+  padding: 12px;
 }
 
 .po-stage-inner{
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 /* Touch controls dock (optional) */
@@ -286,6 +288,6 @@
 /* Desktop tweaks */
 @media (min-width: 860px){
   .po-game-shell{ padding: 16px; }
-  .po-stage{ min-height: 420px; }
+  .po-stage{ padding: 16px; }
   .po-modal-backdrop{ place-items: center; }
 }

@@ -79,14 +79,14 @@ jobs:
       # ========================================================================
       - name: Run Lighthouse CI
         id: lighthouse
+        continue-on-error: true
         env:
           LHCI_CHROME_PATH: ${{ env.CHROME_PATH }}
-        continue-on-error: true
         run: |
           set +e
           npx lhci autorun --config=./lighthouserc.js
-          status=$?
-          if [ $status -eq 0 ]; then
+          code=$?
+          if [ "$code" -eq 0 ]; then
             echo "status=passed" >> $GITHUB_OUTPUT
           else
             echo "status=failed" >> $GITHUB_OUTPUT

@@ -23,14 +23,14 @@ const PRECACHE = [
   "/assets/lib/ui.js",
 
   // games (optional to precache; keeps first play instant)
+  "/assets/games/chess.js",
+  "/assets/games/hangman.js",
+  "/assets/games/pong.js",
   "/assets/games/quickmath.js",
-  "/assets/games/wordle.js",
+  "/assets/games/snake.js",
   "/assets/games/sudoku.js",
   "/assets/games/tictactoe.js",
-  "/assets/games/hangman.js",
-  "/assets/games/chess.js",
-  "/assets/games/pong.js",
-  "/assets/games/snake.js",
+  "/assets/games/wordle.js",
 
   "/favicon.svg",
 ];

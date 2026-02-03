@@ -9,7 +9,7 @@ The build system transforms source files into production-ready artifacts in the 
 ### Core Build Commands
 
 #### `npm run build`
-Full production build. Runs all build steps in parallel for maximum speed.
+Full production build. Runs all build steps in a defined order (currently sequential).
 
 **Sequence:**
 1. `prebuild` - Clean and create directory structure
@@ -24,6 +24,7 @@ Full production build. Runs all build steps in parallel for maximum speed.
    - `build:games` - Copy game modules
    - `build:lib` - Copy shared library modules
    - `build:sw` - Copy service worker
+3. `inject:config` - Inject `.env` configuration into built assets (and built HTML error monitor config)
 
 **Output:** `dist/` folder ready for deployment
 
@@ -52,7 +53,7 @@ Prepares the build environment.
 
 **Command:** `npm run clean && mkdirp dist/assets dist/assets/arcade dist/assets/games dist/assets/lib dist/guides dist/images dist/arcade`
 
-**Note:** These directories MUST exist before parallel build steps run, otherwise file copies fail silently.
+**Note:** These directories MUST exist before copy/build steps run, otherwise file copies can fail.
 
 ---
 
@@ -81,7 +82,8 @@ Copies HTML files.
 
 **Steps:**
 1. Copies all `.html` files from root to `dist/` (preserves file names, removes paths)
-2. Config injection runs later via `npm run inject:config`
+
+
 
 **Files copied:**
 - `index.html` → `dist/index.html`
@@ -91,9 +93,24 @@ Copies HTML files.
 - `404.html` → `dist/404.html`
 - `og-image-placeholder.html` → `dist/og-image-placeholder.html`
 
-**Config injection:** See `scripts/inject-config.js` documentation
+**Config injection:** Run separately via `npm run inject:config`
 
 **Flag explanation:** `--flat` removes directory structure (all files go to `dist/` root)
+
+---
+
+#### `npm run inject:config`
+Injects environment configuration into the built site.
+
+**Command:** `node scripts/inject-config.js`
+
+**What it does:**
+- Rewrites the `const CONFIG = { ... }` block in `dist/assets/app-critical.js` using values from `.env`
+- Injects `window.PO_ERROR_MONITOR = { ... }` into built HTML pages in `dist/`
+
+**Notes:**
+- `ERROR_MONITOR_ENDPOINT` and `ERROR_MONITOR_SAMPLE_RATE` are optional; leaving the endpoint blank disables sending.
+- `.env` is gitignored; use `.env.example` as the committed template.
 
 ---
 
@@ -183,9 +200,9 @@ npm run serve     # Start local server
 ---
 
 #### `npm run dev:full`
-Complete development build with CSS watch mode.
+Complete development build (one-off build of all assets, including config injection).
 
-**Command:** `npm run prebuild && npm run build:html && npm run build:static && npm run build:guides && npm run build:images && npm run build:arcade && npm run build:assets && npm run build:arcade-modules && npm run build:games && npm run build:lib && npm run build:sw && npm run inject:config`
+**Command:** `npm run dev:full`
 
 **When to use:** Starting development session
 
@@ -326,7 +343,7 @@ ls dist/images/  # Should show all images
 "prebuild": "npm run clean && mkdirp dist/assets dist/assets/arcade dist/assets/games dist/assets/lib dist/guides dist/images dist/arcade"
 ```
 
-**Why this matters:** `npm-run-all --parallel` runs build steps simultaneously. If directories don't exist when parallel steps start, file copies fail.
+**Why this matters:** If directories don't exist when copy/build steps run, file copies can fail.
 
 ---
 
@@ -348,8 +365,8 @@ ls dist/images/  # Should show all images
 
 ## Performance Optimization
 
-### Parallel Builds
-The `build` script uses `npm-run-all --parallel` to run independent tasks simultaneously:
+### Parallel Builds (Optional)
+The current `build` script runs in a defined order (sequential). It could be changed to use `npm-run-all --parallel` for independent steps if you want faster builds.
 
 **Sequential (slow):**
 ```
@@ -470,6 +487,7 @@ DEBUG=* npm run build
 npm run prebuild          # Create directories
 npm run build:css         # Just CSS
 npm run build:html        # Just HTML
+npm run inject:config     # Inject .env into built assets / HTML
 npm run build:guides      # Just guides
 npm run build:images      # Just images
 npm run build:assets      # Just JS/CSS
@@ -508,6 +526,6 @@ diff <(ls images/) <(ls dist/images/)
 - Updated cpy commands to use explicit destination paths
 
 **v1.0.0** (Initial)
-- Basic build system with parallel execution
+- Basic build system with scripted build pipeline
 - Tailwind CSS compilation
 - Config injection system

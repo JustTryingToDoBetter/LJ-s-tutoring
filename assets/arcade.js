@@ -10,6 +10,8 @@
 (() => {
   "use strict";
 
+  const ASSET_BASE = "/assets";
+
   const LS = {
     lastGame: "po_arcade_last_game",
     sessions: "po_arcade_sessions",
@@ -213,6 +215,13 @@ const GAMES = [
     play.className = "po-arcade__btn po-arcade__btn--primary";
     play.href = `/arcade/play.html?g=${encodeURIComponent(game.id)}`;
     play.textContent = "Play";
+
+    // Performance: warm the module cache on intent.
+    play.addEventListener("pointerenter", () => preloadModule(`${ASSET_BASE}/games/${game.id}.js`), { passive: true });
+    play.addEventListener("focus", () => preloadModule(`${ASSET_BASE}/games/${game.id}.js`));
+    play.addEventListener("pointerenter", () => preloadModule(`${ASSET_BASE}/arcade/frame.js`), { passive: true });
+    play.addEventListener("focus", () => preloadModule(`${ASSET_BASE}/arcade/frame.js`));
+
     play.addEventListener("click", () => {
       localStorage.setItem(LS.lastGame, game.id);
       const sessions = Number(localStorage.getItem(LS.sessions) || "0") + 1;
@@ -314,6 +323,18 @@ const GAMES = [
     });
   }
 
+  const _preloaded = new Set();
+  function preloadModule(href) {
+    if (!href || _preloaded.has(href)) return;
+    _preloaded.add(href);
+
+    // If modulepreload isn't supported, just skip.
+    const link = document.createElement("link");
+    link.rel = "modulepreload";
+    link.href = href;
+    document.head.appendChild(link);
+  }
+
   async function initPlay() {
     const mount = $("#game-mount");
     if (!mount) return;
@@ -326,13 +347,7 @@ const GAMES = [
     safeText($("#play-title"), meta ? meta.title : "Game");
     safeText($("#play-sub"), meta ? meta.desc : "Odyssey Arcade");
 
-    const pauseBtn = $("#play-pause");
-    const howToBtn = $("#play-howto");
-    const settingsBtn = $("#play-settings");
-    const restartBtn = $("#play-restart");
-    const exitBtn = $("#play-exit");
 
-    exitBtn?.addEventListener("click", () => window.location.assign("/arcade/"));
 
     $("#play-loading")?.remove();
 
@@ -353,11 +368,31 @@ const GAMES = [
     let isPaused = false;
     let keyGuardOff = null;
 
+    const cleanup = () => {
+      try { activeGame?.destroy?.(); } catch {}
+      try { frame?.destroy?.(); } catch {}
+      activeGame = null;
+      frame = null;
+    };
+
+    $("#play-exit")?.addEventListener("click", () => {
+      cleanup();
+      window.location.assign("/arcade/");
+    });
+    $("#play-restart")?.addEventListener("click", () => {
+      cleanup();
+      window.location.reload();
+    });
+
     try {
+      const frameUrl = `${ASSET_BASE}/arcade/frame.js`;
+      const gameUrl = `${ASSET_BASE}/games/${encodeURIComponent(gameId)}.js`;
+      const sdkUrl = `${ASSET_BASE}/arcade/sdk-core.js`;
+
       const [{ createGameFrame }, mod, sdkCore] = await Promise.all([
-        import("./arcade/frame.js"),
-        import(`./games/${encodeURIComponent(gameId)}.js`),
-        import("./arcade/sdk-core.js"),
+        import(frameUrl),
+        import(gameUrl),
+        import(sdkUrl),
       ]);
 
       frame = createGameFrame({
@@ -368,6 +403,7 @@ const GAMES = [
 
       // expose frame API to games
       ctx.ui = frame;
+
 
       const normalizeGameModule = (gameId, mod) => {
         const candidate = mod?.default ?? mod?.game ?? null;
@@ -487,6 +523,8 @@ const GAMES = [
       if (!localStorage.getItem(howKey)) {
         openHowTo();
         localStorage.setItem(howKey, "1");
+
+
       }
 
       howToBtn?.addEventListener("click", () => openHowTo());
@@ -559,8 +597,7 @@ const GAMES = [
           <div class="po-muted" style="font-size:12px">${escapeHtml(msg)}</div>
         </section>
       `;
-      try { frame?.destroy?.(); } catch {}
-      try { activeGame?.destroy?.(); } catch {}
+      cleanup();
     }
   }
 

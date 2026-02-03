@@ -69,10 +69,9 @@ jobs:
         continue-on-error: true
         run: |
           set +e
-          set -o pipefail
-          npm audit --audit-level=high --omit=dev | tee security-report.txt
-          status=$?
-          if [ $status -eq 0 ]; then
+          npm audit --audit-level=high --omit=dev > security-report.txt 2>&1
+          code=$?
+          if [ "$code" -eq 0 ]; then
             echo "status=passed" >> $GITHUB_OUTPUT
           else
             echo "status=failed" >> $GITHUB_OUTPUT
@@ -116,10 +115,9 @@ jobs:
         continue-on-error: true
         run: |
           set +e
-          set -o pipefail
-          npx html-validate "dist/**/*.html" --formatter json | tee html-validation.json
-          status=$?
-          if [ $status -eq 0 ]; then
+          npx html-validate "dist/**/*.html" --formatter json > html-validation.json
+          code=$?
+          if [ "$code" -eq 0 ]; then
             echo "status=passed" >> $GITHUB_OUTPUT
           else
             echo "status=failed" >> $GITHUB_OUTPUT
@@ -142,15 +140,16 @@ jobs:
         continue-on-error: true
         run: |
           set +e
-          set -o pipefail
+
+
           npx linkinator http://localhost:8080 \
             --recurse \
             --timeout 10000 \
             --concurrency 4 \
             --skip "^mailto:|^tel:|^https?:\/\/(?!localhost:8080)" \
-            --format json | tee link-check.json
-          status=$?
-          if [ $status -eq 0 ]; then
+            --format json > link-check.json
+          code=$?
+          if [ "$code" -eq 0 ]; then
             echo "status=passed" >> $GITHUB_OUTPUT
           else
             echo "status=failed" >> $GITHUB_OUTPUT
@@ -175,9 +174,9 @@ jobs:
           PUPPETEER_EXECUTABLE_PATH: ${{ env.CHROME_PATH }}
         run: |
           set +e
-          npx pa11y-ci
-          status=$?
-          if [ $status -eq 0 ]; then
+          npx pa11y-ci --json > pa11y-report.json
+          code=$?
+          if [ "$code" -eq 0 ]; then
             echo "status=passed" >> $GITHUB_OUTPUT
           else
             echo "status=failed" >> $GITHUB_OUTPUT
@@ -191,6 +190,7 @@ jobs:
           name: accessibility-report
           path: pa11y-report.json
           retention-days: 30
+
 
       # ========================================================================
       # SUMMARY COMMENT (on PR)

@@ -1,0 +1,39 @@
+
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    container_name: lms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lms
+    ports:
+      - "5432:5432"
+    volumes:
+      - lms_db_data:/var/lib/postgresql/data
+
+  api:
+    image: node:20-alpine
+    container_name: lms_api
+    working_dir: /app/lms-api
+    volumes:
+      - ./:/app
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+      TRUST_PROXY: 1
+      CORS_ORIGIN: http://localhost:8080
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/lms
+      JWT_SECRET: change_me_to_a_long_random_string
+      JWT_EXPIRES_IN: 15m
+      ADMIN_BOOTSTRAP_TOKEN: change_me
+    depends_on:
+      - db
+    command: sh -c "npm ci && npm run migrate && npm run dev"
+    ports:
+      - "3001:3001"
+
+volumes:
+  lms_db_data:
