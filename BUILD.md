@@ -9,17 +9,22 @@ The build system transforms source files into production-ready artifacts in the 
 ### Core Build Commands
 
 #### `npm run build`
-Full production build. Runs all build steps in parallel for maximum speed.
+Full production build. Runs all build steps in a defined order (currently sequential).
 
 **Sequence:**
 1. `prebuild` - Clean and create directory structure
-2. Parallel execution:
-   - `build:css` - Compile and minify Tailwind CSS
-   - `build:html` - Copy HTML files and inject config
-   - `build:static` - Copy static files (favicon, robots.txt, sitemap.xml)
-   - `build:guides` - Copy guides folder with subdirectory structure
-   - `build:images` - Copy images folder with subdirectory structure
-   - `build:assets` - Copy JavaScript and CSS assets
+2. `build:css` - Compile and minify Tailwind CSS
+3. `build:html` - Copy HTML files
+4. `build:static` - Copy static files (favicon, robots.txt, sitemap.xml)
+5. `build:guides` - Copy guides folder with subdirectory structure
+6. `build:images` - Copy images folder with subdirectory structure
+7. `build:arcade` - Copy `arcade/` pages
+8. `build:assets` - Copy root `assets/*` JS/CSS
+9. `build:games` - Copy `assets/games/*`
+10. `build:lib` - Copy `assets/lib/*`
+11. `build:arcade-mod` - Copy `assets/arcade/*`
+12. `build:sw` - Copy `sw.js`
+13. `inject:config` - Inject `.env` configuration into built assets (and built HTML error monitor config)
 
 **Output:** `dist/` folder ready for deployment
 
@@ -48,17 +53,17 @@ Prepares the build environment.
 
 **Command:** `npm run clean && mkdirp dist/assets dist/guides dist/images`
 
-**Note:** These directories MUST exist before parallel build steps run, otherwise file copies fail silently.
+**Note:** These directories MUST exist before copy/build steps run, otherwise file copies can fail.
 
 ---
 
 #### `npm run build:css`
 Compiles Tailwind CSS to production-optimized CSS.
 
-**Command:** `tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --minify`
+**Command:** `tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind-input.css --minify`
 
 **Input:** `assets/tailwind-input.css`  
-**Output:** `dist/assets/tailwind.css` (minified)
+**Output:** `dist/assets/tailwind-input.css` (minified)
 
 **What it does:**
 - Reads `tailwind.config.js` for configuration
@@ -71,13 +76,12 @@ Compiles Tailwind CSS to production-optimized CSS.
 ---
 
 #### `npm run build:html`
-Copies HTML files and injects environment configuration.
+Copies HTML files.
 
-**Command:** `cpy "*.html" dist --flat && node scripts/inject-config.js`
+**Command:** `cpy "*.html" dist --flat`
 
 **Steps:**
 1. Copies all `.html` files from root to `dist/` (preserves file names, removes paths)
-2. Runs config injection script
 
 **Files copied:**
 - `index.html` → `dist/index.html`
@@ -87,9 +91,24 @@ Copies HTML files and injects environment configuration.
 - `404.html` → `dist/404.html`
 - `og-image-placeholder.html` → `dist/og-image-placeholder.html`
 
-**Config injection:** See `scripts/inject-config.js` documentation
+**Config injection:** Run separately via `npm run inject:config`
 
 **Flag explanation:** `--flat` removes directory structure (all files go to `dist/` root)
+
+---
+
+#### `npm run inject:config`
+Injects environment configuration into the built site.
+
+**Command:** `node scripts/inject-config.js`
+
+**What it does:**
+- Rewrites the `const CONFIG = { ... }` block in `dist/assets/app-critical.js` using values from `.env`
+- Injects `window.PO_ERROR_MONITOR = { ... }` into built HTML pages in `dist/`
+
+**Notes:**
+- `ERROR_MONITOR_ENDPOINT` and `ERROR_MONITOR_SAMPLE_RATE` are optional; leaving the endpoint blank disables sending.
+- `.env` is gitignored; use `.env.example` as the committed template.
 
 ---
 
@@ -159,7 +178,7 @@ Copies JavaScript and CSS assets.
 #### `npm run dev`
 Watch mode for CSS development.
 
-**Command:** `tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --watch`
+**Command:** `tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind-input.css --watch`
 
 **What it does:**
 - Monitors HTML files for Tailwind class changes
@@ -179,9 +198,9 @@ npm run serve     # Start local server
 ---
 
 #### `npm run dev:full`
-Complete development build with CSS watch mode.
+Complete development build (one-off build of all assets, including config injection).
 
-**Command:** `npm run prebuild && npm run build:html && npm run build:static && npm run build:guides && npm run build:images && npm run build:assets && npm run dev`
+**Command:** `npm run dev:full`
 
 **When to use:** Starting development session
 
@@ -238,7 +257,7 @@ dist/
 ├── assets/             # Compiled assets
 │   ├── *.js           # (copied from source)
 │   ├── site.css       # (copied from source)
-│   └── tailwind.css   # (COMPILED from tailwind-input.css)
+│   └── tailwind-input.css   # (COMPILED from tailwind-input.css)
 ├── guides/             # Content (preserves structure)
 │   └── *.html
 ├── images/             # Images (preserves structure)
@@ -299,7 +318,7 @@ ls dist/images/  # Should show all images
 
 **Symptom:** WhatsApp/Formspree links show placeholder values
 
-**Cause:** `.env` file missing or `build:html` not running
+**Cause:** `.env` file missing or `inject:config` not running
 
 **Fix:**
 1. Verify `.env` exists: `ls .env`
@@ -322,7 +341,7 @@ ls dist/images/  # Should show all images
 "prebuild": "npm run clean && mkdirp dist/assets dist/guides dist/images"
 ```
 
-**Why this matters:** `npm-run-all --parallel` runs build steps simultaneously. If directories don't exist when parallel steps start, file copies fail.
+**Why this matters:** If directories don't exist when copy/build steps run, file copies can fail.
 
 ---
 
@@ -344,8 +363,8 @@ ls dist/images/  # Should show all images
 
 ## Performance Optimization
 
-### Parallel Builds
-The `build` script uses `npm-run-all --parallel` to run independent tasks simultaneously:
+### Parallel Builds (Optional)
+The current `build` script runs in a defined order (sequential). It could be changed to use `npm-run-all --parallel` for independent steps if you want faster builds.
 
 **Sequential (slow):**
 ```
@@ -396,7 +415,9 @@ Set in Netlify dashboard → Site settings → Environment variables:
 - `WHATSAPP_NUMBER`
 - `FORMSPREE_ENDPOINT`
 - `CONTACT_EMAIL`
-- `COUNTDOWN_TARGET`
+- `COUNTDOWN_DATE`
+- `ERROR_MONITOR_ENDPOINT` (optional)
+- `ERROR_MONITOR_SAMPLE_RATE` (optional)
 
 **Deploy trigger:** Automatic on git push to `main` branch
 
@@ -457,7 +478,8 @@ DEBUG=* npm run build
 ```bash
 npm run prebuild          # Create directories
 npm run build:css         # Just CSS
-npm run build:html        # Just HTML + config
+npm run build:html        # Just HTML
+npm run inject:config     # Inject .env into built assets / HTML
 npm run build:guides      # Just guides
 npm run build:images      # Just images
 npm run build:assets      # Just JS/CSS
@@ -496,6 +518,6 @@ diff <(ls images/) <(ls dist/images/)
 - Updated cpy commands to use explicit destination paths
 
 **v1.0.0** (Initial)
-- Basic build system with parallel execution
+- Basic build system with scripted build pipeline
 - Tailwind CSS compilation
 - Config injection system

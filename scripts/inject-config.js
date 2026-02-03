@@ -5,6 +5,25 @@
  * ============================================================================
  *
  * PURPOSE:
+ * This script reads environment variables from .env file and injects them into
+ * the CONFIG object in the built app-critical.js file. This enables environment-
+ * specific builds (dev/staging/production) without hardcoding sensitive data.
+ * 
+ * HOW IT FITS IN THE SYSTEM:
+ * - Runs during build process AFTER JS files are copied to dist/assets/
+ * - Called by: npm run inject:config (part of npm run build)
+ * - Sequence: prebuild → build:* (copy/compile) → inject:config
+ * - Modifies dist/assets/app-critical.js (CONFIG) and built HTML (PO_ERROR_MONITOR)
+ * 
+ * RULES ENFORCED:
+ * - Configuration centralized in .env file (single source of truth)
+ * - Fallback to safe defaults if .env missing (fail-safe, not fail-fast)
+ * - Same source code can produce different builds for different environments
+ * 
+ * DEPENDENCIES:
+ * - dotenv: Loads .env file into process.env
+ * - fs: Node.js file system module for reading/writing files
+ * - path: Node.js path utilities for cross-platform file paths
  * - Inject env vars into dist/assets/app-critical.js at build time (Node).
  * - Contains a browser-only error monitor snippet; MUST NOT execute in Node.
  */
@@ -55,6 +74,17 @@ if (configPattern.test(content)) {
   console.warn("    Expected: const CONFIG = { ... };");
 }
 
+// ============================================================================
+// Inject error-monitor config into built HTML
+// ============================================================================
+
+function escapeJsString(value) {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, '')
+    .replace(/\n/g, '');
+}
 /**
  * ============================================================================
  * Browser-only Error Monitor Snippet
@@ -99,24 +129,33 @@ if (configPattern.test(content)) {
     return Math.random() < cfg.sampleRate;
   }
 
-  function nowIso() {
-    try { return new Date().toISOString(); } catch { return ""; }
-  }
+function clamp01(n) {
+  if (!Number.isFinite(n)) return 1;
+  return Math.max(0, Math.min(1, n));
+}
 
-  function short(s, n) {
-    s = String(s || "");
-    return s.length > n ? s.slice(0, n) + "…" : s;
+function listHtmlFiles(dir) {
+  /** @type {string[]} */
+  const out = [];
+  if (!fs.existsSync(dir)) return out;
+  const items = fs.readdirSync(dir, { withFileTypes: true });
+  for (const it of items) {
+    const p = path.join(dir, it.name);
+    if (it.isDirectory()) out.push(...listHtmlFiles(p));
+    else if (it.isFile() && p.endsWith('.html')) out.push(p);
   }
+  return out;
+}
 
-  function hash32(str) {
-    let h = 2166136261;
-    for (let i = 0; i < str.length; i++) {
-      h ^= str.charCodeAt(i);
-      h = (h * 16777619) >>> 0;
-    }
-    return h.toString(16);
-  }
+function injectErrorMonitorConfigIntoHtml() {
+  const endpoint = escapeJsString(errorMonitorEndpoint);
+  const sampleRate = clamp01(errorMonitorSampleRate);
 
+  const files = listHtmlFiles(distDir);
+  if (!files.length) return;
+
+  const assignPattern = /window\.PO_ERROR_MONITOR\s*=\s*\{[\s\S]*?\};/g;
+  const replacement = `window.PO_ERROR_MONITOR = { endpoint: '${endpoint}', sampleRate: ${sampleRate} };`;
   const lastSeen = new Map();
   function dedup(key) {
     const t = Date.now();
@@ -147,15 +186,20 @@ if (configPattern.test(content)) {
     };
   }
 
-  function normalizeError(e) {
-    if (!e) return { name: "", message: "Unknown error", stack: "" };
-    return {
-      name: short(e.name || "", 120),
-      message: short(e.message || String(e), 600),
-      stack: short(e.stack || "", 2000),
-    };
+  let touched = 0;
+  for (const f of files) {
+    const html = fs.readFileSync(f, 'utf8');
+    if (!assignPattern.test(html)) continue;
+
+    const next = html.replace(assignPattern, replacement);
+    if (next !== html) {
+      fs.writeFileSync(f, next, 'utf8');
+      touched++;
+    }
   }
 
+  if (touched) {
+    console.log(`✅ Injected PO_ERROR_MONITOR config into ${touched} HTML file(s)`);
   function post(payload) {
     if (!shouldSend()) return;
 
@@ -185,7 +229,9 @@ if (configPattern.test(content)) {
     if (dedup(fp)) return;
     post(payload);
   }
+}
 
+injectErrorMonitorConfigIntoHtml();
   globalThis.addEventListener("error", function (event) {
     try {
       const err = normalizeError(event?.error);
