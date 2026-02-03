@@ -426,61 +426,65 @@ const clearLegacy = () => { try { localStorage.removeItem(STORAGE_KEY); } catch 
     return { done: false, text: (side === "w" ? "White to move." : "Black to move.") };
   }
 
-  // --- UI -------------------------------------------------------------------
-  function mount(root) {
-    root.innerHTML = "";
-    const signal = makeLifecycleSignal(root);
+// --- UI -------------------------------------------------------------------
+function mount(root, ctx) {
+  root.innerHTML = "";
 
-    const head = el("div", { class: "po-arcade-head" }, [
-      el("div", { class: "po-arcade-title", text: "Aegean Chess" }),
-      el("div", { class: "po-arcade-subtitle", text: "Local 2-player — legal moves, castling, promotion." }),
-    ]);
+  const ui = ctx.ui;
+  const storage = ctx.storage;
 
-    const status = el("div", { class: "po-arcade-status", text: "Loading the board…" });
+  const resetBtn = el("button", { class: "po-btn po-btn--primary", type: "button" }, ["New Game"]);
+  const undoBtn  = el("button", { class: "po-btn", type: "button" }, ["Undo"]);
+  const flipBtn  = el("button", { class: "po-btn", type: "button" }, ["Flip"]);
+  const clearBtn = el("button", { class: "po-btn po-btn--ghost", type: "button" }, ["Clear Save"]);
 
-    const resetBtn = el("button", { class: "po-arcade-btn", type: "button" }, ["New Game"]);
-    const undoBtn  = el("button", { class: "po-arcade-btn", type: "button" }, ["Undo"]);
-    const flipBtn  = el("button", { class: "po-arcade-btn po-arcade-btn-ghost", type: "button" }, ["Flip"]);
-    const clearBtn = el("button", { class: "po-arcade-btn po-arcade-btn-ghost", type: "button" }, ["Clear Save"]);
+  const controls = el("div", { class: "po-pillrow" }, [
+    resetBtn, undoBtn, flipBtn, clearBtn,
+  ]);
 
-    const controls = el("div", { class: "po-arcade-controls" }, [
-      resetBtn, undoBtn, flipBtn, clearBtn,
-    ]);
+  ui?.setControls?.(controls);
+  ui?.setHUD?.([
+    { k: "Mode", v: "2P" },
+    { k: "Rules", v: "Legal" },
+  ]);
 
-    const boardWrap = el("div", { class: "po-chess-wrap" });
-    const board = el("div", { class: "po-chess-board", role: "grid", "aria-label": "Chess board" });
-    boardWrap.appendChild(board);
+  const board = el("div", { class: "po-ch-board", role: "grid", "aria-label": "Chess board" });
+  root.append(board);
 
-    root.append(head, controls, status, boardWrap);
+  // Build 64 cells
+  const cells = [];
+  for (let i = 0; i < 64; i++) {
+    const btn = el("button", {
+      class: "po-ch-square",
+      type: "button",
+      role: "gridcell",
+      "aria-label": `Square ${i + 1}`,
+    });
+    cells.push(btn);
+    board.appendChild(btn);
+  }
 
-    // Build 64 cells
-    const cells = [];
-    for (let i = 0; i < 64; i++) {
-      const btn = el("button", {
-        class: "po-chess-cell",
-        type: "button",
-        role: "gridcell",
-        "aria-label": `Square ${i + 1}`,
-      });
-      cells.push(btn);
-      board.appendChild(btn);
-    }
+  const restored = storage?.get?.("state", null) || loadLegacy();
+  const state = (restored && restored.v === 1 && Array.isArray(restored.board) && restored.board.length === 64)
+    ? restored
+    : {
+        v: 1,
+        board: initialBoard(),
+        turn: "w",
+        selected: -1,
+        flipped: false,
+        castle: { wK: true, wQ: true, bK: true, bQ: true },
+        last: null,
+        history: [],
+        done: false,
+      };
 
-    const restored = load();
-    const state = (restored && restored.v === 1 && Array.isArray(restored.board) && restored.board.length === 64)
-      ? restored
-      : {
-          v: 1,
-          board: initialBoard(),
-          turn: "w",
-          selected: -1,
-          flipped: false,
-          castle: { wK: true, wQ: true, bK: true, bQ: true },
-          last: null,
-          history: [],
-        };
+  if (state.done == null) state.done = false;
 
-    function persist() { save(state); }
+  function persist() {
+    storage?.set?.("state", state);
+    saveLegacy(state);
+  }
 
     function sqToHuman(i) {
       const [r, c] = rcFrom(i);
@@ -504,7 +508,7 @@ const clearLegacy = () => { try { localStorage.removeItem(STORAGE_KEY); } catch 
       return idx(7 - r, 7 - c);
     }
 
-    function setStatus(msg) { status.textContent = msg; }
+    function setStatus(msg) { ui?.setStatus?.(msg); }
 
     function clearHighlights() {
       for (const cell of cells) {
@@ -524,7 +528,7 @@ const clearLegacy = () => { try { localStorage.removeItem(STORAGE_KEY); } catch 
         // base coloring via classes (you can style .is-dark/.is-light in CSS)
         const [r, c] = rcFrom(di);
         const dark = (r + c) % 2 === 1;
-        cell.className = "po-chess-cell " + (dark ? "is-dark" : "is-light");
+        cell.className = "po-ch-square " + (dark ? "is-dark" : "is-light");
 
         const p = state.board[bi];
         cell.textContent = p ? (PIECE_UNICODE[p] || p) : "";
@@ -556,6 +560,17 @@ const clearLegacy = () => { try { localStorage.removeItem(STORAGE_KEY); } catch 
 
       const out = outcomeText(state);
       setStatus(out.text);
+
+      if (out.done && !state.done) {
+        state.done = true;
+        ui?.showModal?.({
+          title: "Game Over",
+          body: out.text,
+          actions: [
+            { label: "New Game", primary: true, onClick: () => resetBoard() },
+          ],
+        });
+      }
       persist();
     }
 
@@ -583,6 +598,7 @@ const clearLegacy = () => { try { localStorage.removeItem(STORAGE_KEY); } catch 
       state.castle = { ...h.castle };
       state.last = h.last ? { ...h.last } : null;
       state.selected = -1;
+      state.done = false;
       render();
     }
 
@@ -612,6 +628,7 @@ const clearLegacy = () => { try { localStorage.removeItem(STORAGE_KEY); } catch 
     }
 
     function onSquareClick(boardIndex) {
+      if (state.done) return;
       const side = state.turn;
       const p = state.board[boardIndex];
 
@@ -643,51 +660,44 @@ const clearLegacy = () => { try { localStorage.removeItem(STORAGE_KEY); } catch 
     }
 
     // Wire board clicks
-    cells.forEach((cell, di) => {
-      cell.addEventListener("click", () => {
-        const bi = orientIndex(di);
-        onSquareClick(bi);
-      }, { signal });
-    });
-
-    resetBtn.addEventListener("click", () => {
+    function resetBoard() {
       state.board = initialBoard();
       state.turn = "w";
       state.selected = -1;
       state.castle = { wK: true, wQ: true, bK: true, bQ: true };
       state.last = null;
       state.history = [];
+      state.done = false;
       render();
-    }, { signal });
+    }
 
-    undoBtn.addEventListener("click", () => doUndo(), { signal });
+    cells.forEach((cell, di) => {
+      ctx.addEvent(cell, "click", () => {
+        const bi = orientIndex(di);
+        onSquareClick(bi);
+      });
+    });
 
-    flipBtn.addEventListener("click", () => {
+    ctx.addEvent(resetBtn, "click", () => resetBoard());
+    ctx.addEvent(undoBtn, "click", () => doUndo());
+    ctx.addEvent(flipBtn, "click", () => {
       state.flipped = !state.flipped;
       state.selected = -1;
       render();
-    }, { signal });
-
-    clearBtn.addEventListener("click", () => {
-      clearSave();
-      state.board = initialBoard();
-      state.turn = "w";
-      state.selected = -1;
-      state.flipped = false;
-      state.castle = { wK: true, wQ: true, bK: true, bQ: true };
-      state.last = null;
-      state.history = [];
-      render();
-    }, { signal });
+    });
+    ctx.addEvent(clearBtn, "click", () => {
+      clearLegacy();
+      storage?.del?.("state");
+      resetBoard();
+    });
 
     // Keyboard: Escape deselect, U undo, F flip
-    window.addEventListener("keydown", (e) => {
-      if (!root.isConnected) return;
+    ctx.addEvent(window, "keydown", (e) => {
       const k = e.key;
       if (k === "Escape") { state.selected = -1; render(); }
       if (k === "u" || k === "U") doUndo();
       if (k === "f" || k === "F") { state.flipped = !state.flipped; state.selected = -1; render(); }
-    }, { signal });
+    });
 
     // Initial render + sanitize restored state
     if (!state.castle || typeof state.castle !== "object") state.castle = { wK: true, wQ: true, bK: true, bQ: true };
@@ -700,13 +710,8 @@ const clearLegacy = () => { try { localStorage.removeItem(STORAGE_KEY); } catch 
     render();
   }
 
-  // --- Register game --------------------------------------------------------
-  window.PO_ARCADE_GAMES = window.PO_ARCADE_GAMES || [];
-  window.PO_ARCADE_GAMES.push({
-    id: GAME_ID,
-    title: "Chess",
-    subtitle: "Aegean Chess (local 2-player).",
-    icon: "♟️",
-    mount,
-  });
-})();
+export default {
+  init(ctx) {
+    return mount(ctx.root, ctx);
+  },
+};
