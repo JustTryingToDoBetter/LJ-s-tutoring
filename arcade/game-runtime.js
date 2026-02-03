@@ -128,7 +128,7 @@ export function createGameContext({ root, gameId }) {
   };
 }
 
-export function createGameRuntime({ mountEl, onStateChange } = {}) {
+export function createGameRuntime({ mountEl, onStateChange, createContext } = {}) {
   if (!mountEl) throw new Error("createGameRuntime: mountEl is required");
 
   let active = null; // { game, ctx, id }
@@ -188,6 +188,10 @@ export function createGameRuntime({ mountEl, onStateChange } = {}) {
     }
 
     const ctx = createGameContext({ root, gameId: id });
+    if (typeof createContext === "function") {
+      const extra = createContext(ctx);
+      if (extra && typeof extra === "object") Object.assign(ctx, extra);
+    }
 
     active = { id, game, ctx };
     setState({ status: "running", gameId: id });
