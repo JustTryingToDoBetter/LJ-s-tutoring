@@ -15,11 +15,15 @@ Full production build. Runs all build steps in parallel for maximum speed.
 1. `prebuild` - Clean and create directory structure
 2. Parallel execution:
    - `build:css` - Compile and minify Tailwind CSS
-   - `build:html` - Copy HTML files and inject config
+   - `build:html` - Copy HTML files
    - `build:static` - Copy static files (favicon, robots.txt, sitemap.xml)
    - `build:guides` - Copy guides folder with subdirectory structure
    - `build:images` - Copy images folder with subdirectory structure
    - `build:assets` - Copy JavaScript and CSS assets
+   - `build:arcade-modules` - Copy arcade module assets
+   - `build:games` - Copy game modules
+   - `build:lib` - Copy shared library modules
+   - `build:sw` - Copy service worker
 
 **Output:** `dist/` folder ready for deployment
 
@@ -46,7 +50,7 @@ Prepares the build environment.
    - `dist/guides/` - For blog/guide content
    - `dist/images/` - For image files
 
-**Command:** `npm run clean && mkdirp dist/assets dist/guides dist/images`
+**Command:** `npm run clean && mkdirp dist/assets dist/assets/arcade dist/assets/games dist/assets/lib dist/guides dist/images dist/arcade`
 
 **Note:** These directories MUST exist before parallel build steps run, otherwise file copies fail silently.
 
@@ -55,10 +59,10 @@ Prepares the build environment.
 #### `npm run build:css`
 Compiles Tailwind CSS to production-optimized CSS.
 
-**Command:** `tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --minify`
+**Command:** `tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind-input.css --minify`
 
 **Input:** `assets/tailwind-input.css`  
-**Output:** `dist/assets/tailwind.css` (minified)
+**Output:** `dist/assets/tailwind-input.css` (minified)
 
 **What it does:**
 - Reads `tailwind.config.js` for configuration
@@ -71,13 +75,13 @@ Compiles Tailwind CSS to production-optimized CSS.
 ---
 
 #### `npm run build:html`
-Copies HTML files and injects environment configuration.
+Copies HTML files.
 
-**Command:** `cpy "*.html" dist --flat && node scripts/inject-config.js`
+**Command:** `cpy "*.html" dist --flat`
 
 **Steps:**
 1. Copies all `.html` files from root to `dist/` (preserves file names, removes paths)
-2. Runs config injection script
+2. Config injection runs later via `npm run inject:config`
 
 **Files copied:**
 - `index.html` → `dist/index.html`
@@ -141,14 +145,14 @@ Copies image files with subdirectory structure preserved.
 #### `npm run build:assets`
 Copies JavaScript and CSS assets.
 
-**Command:** `cpy "assets/*.js" "assets/site.css" "assets/tailwind-input.css" dist/assets --flat`
+**Command:** `cpy "assets/*.js" "assets/*.css" dist/assets --flat`
 
 **Files copied:**
 - `assets/app-critical.js` → `dist/assets/app-critical.js`
 - `assets/app-noncritical.js` → `dist/assets/app-noncritical.js`
 - `assets/analytics.js` → `dist/assets/analytics.js`
 - `assets/site.css` → `dist/assets/site.css`
-- `assets/tailwind-input.css` → `dist/assets/tailwind-input.css` (for source maps)
+- `assets/tailwind-input.css` → `dist/assets/tailwind-input.css`
 
 **Why `--flat`:** Assets are already in `assets/` folder, maintain same structure in `dist/assets/`
 
@@ -159,7 +163,7 @@ Copies JavaScript and CSS assets.
 #### `npm run dev`
 Watch mode for CSS development.
 
-**Command:** `tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind.css --watch`
+**Command:** `tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind-input.css --watch`
 
 **What it does:**
 - Monitors HTML files for Tailwind class changes
@@ -181,7 +185,7 @@ npm run serve     # Start local server
 #### `npm run dev:full`
 Complete development build with CSS watch mode.
 
-**Command:** `npm run prebuild && npm run build:html && npm run build:static && npm run build:guides && npm run build:images && npm run build:assets && npm run dev`
+**Command:** `npm run prebuild && npm run build:html && npm run build:static && npm run build:guides && npm run build:images && npm run build:arcade && npm run build:assets && npm run build:arcade-modules && npm run build:games && npm run build:lib && npm run build:sw && npm run inject:config`
 
 **When to use:** Starting development session
 
@@ -238,7 +242,7 @@ dist/
 ├── assets/             # Compiled assets
 │   ├── *.js           # (copied from source)
 │   ├── site.css       # (copied from source)
-│   └── tailwind.css   # (COMPILED from tailwind-input.css)
+│   └── tailwind-input.css   # (COMPILED from tailwind-input.css)
 ├── guides/             # Content (preserves structure)
 │   └── *.html
 ├── images/             # Images (preserves structure)
@@ -299,10 +303,10 @@ ls dist/images/  # Should show all images
 
 **Symptom:** WhatsApp/Formspree links show placeholder values
 
-**Cause:** `.env` file missing or `build:html` not running
+**Cause:** `.env` file missing or `inject:config` not running
 
 **Fix:**
-1. Verify `.env` exists: `ls .env`
+1. Verify `.env` exists (copy from `.env.example`): `ls .env`
 2. Check values: `cat .env`
 3. Rebuild: `npm run build`
 4. Check injection: `grep WHATSAPP_NUMBER dist/assets/app-critical.js`
@@ -319,7 +323,7 @@ ls dist/images/  # Should show all images
 
 **Fix:** Ensure `prebuild` creates all necessary directories:
 ```json
-"prebuild": "npm run clean && mkdirp dist/assets dist/guides dist/images"
+"prebuild": "npm run clean && mkdirp dist/assets dist/assets/arcade dist/assets/games dist/assets/lib dist/guides dist/images dist/arcade"
 ```
 
 **Why this matters:** `npm-run-all --parallel` runs build steps simultaneously. If directories don't exist when parallel steps start, file copies fail.
@@ -359,12 +363,18 @@ Total: 5 seconds
 
 **Parallel (fast):**
 ```
-build:css    ─┐
-build:html   ─┤
-build:guides ─┼→ All run together
-build:images ─┤
-build:assets ─┘
-Total: 2 seconds (longest individual task)
+build:css             ─┐
+build:html            ─┤
+build:static          ─┤
+build:guides          ─┤
+build:images          ─┤
+build:arcade          ─┤
+build:assets          ─┤
+build:arcade-modules  ─┤→ All run together
+build:games           ─┤
+build:lib             ─┤
+build:sw              ─┘
+Total: bounded by the longest individual task
 ```
 
 **Trade-off:** Parallel builds require more CPU but finish faster
@@ -396,7 +406,9 @@ Set in Netlify dashboard → Site settings → Environment variables:
 - `WHATSAPP_NUMBER`
 - `FORMSPREE_ENDPOINT`
 - `CONTACT_EMAIL`
-- `COUNTDOWN_TARGET`
+- `COUNTDOWN_DATE`
+- `ERROR_MONITOR_ENDPOINT` (optional)
+- `ERROR_MONITOR_SAMPLE_RATE` (optional)
 
 **Deploy trigger:** Automatic on git push to `main` branch
 
@@ -457,7 +469,7 @@ DEBUG=* npm run build
 ```bash
 npm run prebuild          # Create directories
 npm run build:css         # Just CSS
-npm run build:html        # Just HTML + config
+npm run build:html        # Just HTML
 npm run build:guides      # Just guides
 npm run build:images      # Just images
 npm run build:assets      # Just JS/CSS
