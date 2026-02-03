@@ -6,6 +6,8 @@
     "node": "20.x"
   },
   "dependencies": {
+    "argon2": "^0.44.0",
+    "fastify": "^5.7.2",
     "http-server": "^14.1.1"
   },
   "devDependencies": {
@@ -25,9 +27,7 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-
     "prebuild": "npm run clean && mkdirp dist/assets dist/assets/games dist/assets/lib dist/guides dist/images dist/arcade",
-
     "build:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind-input.css --minify",
     "build:html": "cpy \"*.html\" dist --flat",
     "build:static": "cpy \"favicon.svg\" \"robots.txt\" \"sitemap.xml\" dist --flat",
@@ -38,27 +38,21 @@
     "build:games": "cpy \"assets/games/*.js\" dist/assets/games",
     "build:lib": "cpy \"assets/lib/*.js\" dist/assets/lib",
     "build:sw": "cpy \"sw.js\" dist --flat",
-
     "inject:config": "node scripts/inject-config.js",
-
     "build": "npm-run-all --parallel build:css build:html build:static build:guides build:images build:arcade build:assets build:games build:lib && npm run inject:config",
-
     "serve": "http-server dist -p 8080 -c-1",
     "start": "http-server dist -a 0.0.0.0 -p ${PORT:-8080} -c-1",
-
     "dev:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind-input.css --watch",
     "dev:full": "npm-run-all prebuild build:html build:static build:guides build:images build:arcade build:assets build:games build:lib inject:config",
     "dev": "npm-run-all --parallel dev:css serve",
-
     "lint:js": "eslint \"assets/**/*.js\" \"scripts/**/*.js\"",
     "lint:html": "html-validate \"*.html\" \"guides/*.html\"",
     "lint": "npm-run-all --parallel lint:js lint:html",
-
     "qa:html": "html-validate \"dist/*.html\" \"dist/guides/*.html\"",
     "qa:links": "linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip \"^mailto:|^tel:|^https?:\\/\\/(?!localhost:8080)\"",
+    "qa:arcade": "node scripts/qa-arcade.js",
     "qa:a11y": "pa11y-ci",
-    "qa": "npm-run-all build && (npm run serve --silent & wait-on http://localhost:8080) && npm-run-all --parallel qa:html qa:links qa:a11y",
-
+    "qa": "npm-run-all build && (npm run serve --silent & wait-on http://localhost:8080) && npm-run-all --parallel qa:html qa:links qa:a11y qa:arcade",
     "prepare": "husky || true"
   }
 }
