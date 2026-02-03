@@ -32,6 +32,18 @@ const GAMES = [
     icon: "🧩",
     lane: ["daily"],
     tags: ["~3–8 min", "Daily", "Logic"],
+    howTo: {
+      subtitle: "Complete the grid so every row, column, and 3×3 box has 1–9.",
+      steps: [
+        "Tap a cell to select it.",
+        "Fill numbers so no row, column, or box repeats.",
+        "Use notes mode for possibilities. Hints are limited — use wisely.",
+      ],
+      controls: [
+        "Keyboard: 1–9 to fill, Backspace to clear, N for notes, H for hint.",
+        "Touch: tap a cell, then use the number pad.",
+      ],
+    },
   },
   {
     id: "wordle",
@@ -74,6 +86,18 @@ const GAMES = [
     icon: "🐍",
     lane: ["quick", "daily"],
     tags: ["~2–6 min", "Arcade", "Reflex"],
+    howTo: {
+      subtitle: "Eat to grow. Avoid walls and your own tail.",
+      steps: [
+        "Collect food to score and grow longer.",
+        "Don’t collide with yourself (or walls if wrap is off).",
+        "Speed ramps up as you get better.",
+      ],
+      controls: [
+        "Keyboard: Arrow keys or WASD.",
+        "Touch: swipe or use the on-screen d-pad.",
+      ],
+    },
   },
   {
     id: "pong",
@@ -82,6 +106,18 @@ const GAMES = [
     icon: "🏓",
     lane: ["quick", "two", "strategy"],
     tags: ["~2–8 min", "Arcade", "2 Player"],
+    howTo: {
+      subtitle: "First to 7 wins. Keep the rally alive.",
+      steps: [
+        "Move your paddle to bounce the ball back.",
+        "Score when the ball passes your opponent.",
+        "Switch to 2P for local head-to-head.",
+      ],
+      controls: [
+        "Keyboard: W/S (P1) and ↑/↓ (P2).",
+        "Touch: drag on your side to move the paddle.",
+      ],
+    },
   },
 ];
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -290,8 +326,13 @@ const GAMES = [
     safeText($("#play-title"), meta ? meta.title : "Game");
     safeText($("#play-sub"), meta ? meta.desc : "Odyssey Arcade");
 
-    $("#play-exit")?.addEventListener("click", () => window.location.assign("/arcade/"));
-    $("#play-restart")?.addEventListener("click", () => window.location.reload());
+    const pauseBtn = $("#play-pause");
+    const howToBtn = $("#play-howto");
+    const settingsBtn = $("#play-settings");
+    const restartBtn = $("#play-restart");
+    const exitBtn = $("#play-exit");
+
+    exitBtn?.addEventListener("click", () => window.location.assign("/arcade/"));
 
     $("#play-loading")?.remove();
 
@@ -307,11 +348,16 @@ const GAMES = [
 
     let frame = null;
     let activeGame = null; // lifecycle object
+    let runtime = null;
+    let moduleLoader = null;
+    let isPaused = false;
+    let keyGuardOff = null;
 
     try {
-      const [{ createGameFrame }, mod] = await Promise.all([
+      const [{ createGameFrame }, mod, sdkCore] = await Promise.all([
         import("./arcade/frame.js"),
         import(`./games/${encodeURIComponent(gameId)}.js`),
+        import("./arcade/sdk-core.js"),
       ]);
 
       frame = createGameFrame({
@@ -323,57 +369,167 @@ const GAMES = [
       // expose frame API to games
       ctx.ui = frame;
 
-      const game = mod?.default ?? mod?.game;
+      const normalizeGameModule = (gameId, mod) => {
+        const candidate = mod?.default ?? mod?.game ?? null;
+        if (candidate?.init && typeof candidate.init === "function") return candidate;
+        if (candidate?.mount && typeof candidate.mount === "function") {
+          return { ...candidate, init: (ctx) => candidate.mount(ctx.root, ctx) };
+        }
+        if (gameId === "wordle" && typeof mod.mountWordle === "function") {
+          return { init: (ctx) => mod.mountWordle(ctx.root, ctx) };
+        }
+        if (gameId === "quickmath" && typeof mod.mountQuickMath === "function") {
+          return { init: (ctx) => mod.mountQuickMath(ctx.root, ctx) };
+        }
+        return null;
+      };
 
-      // New contract: default export with init()
-      if (game?.init && typeof game.init === "function") {
-        const [{ createGameRuntime }, { createArcadeStore, createAudioManager, createInputManager, prefersReducedMotion }] = await Promise.all([
-          import("/arcade/game-runtime.js"),
-          import("./arcade/sdk-core.js"),
-        ]);
+      const game = normalizeGameModule(gameId, mod);
 
-        const store = createArcadeStore();
-        const audio = createAudioManager();
+      const setPauseUI = (paused) => {
+        isPaused = paused;
+        if (pauseBtn) pauseBtn.setAttribute("aria-pressed", paused ? "true" : "false");
+        if (pauseBtn) pauseBtn.innerHTML = paused
+          ? "<span aria-hidden='true'>▶</span>"
+          : "<span aria-hidden='true'>⏸</span>";
+      };
 
-        const runtime = createGameRuntime({
-          mountEl: frame.stageInner,
-          createContext: (base) => ({
-            ui: frame,
-            store,
-            audio,
-            input: createInputManager(base),
-            prefs: { reducedMotion: prefersReducedMotion() },
-          }),
+      setPauseUI(false);
+
+      const openHowTo = () => {
+        const how = meta?.howTo || {};
+        frame?.showHowTo?.({
+          title: meta?.title || "How to Play",
+          subtitle: how.subtitle,
+          steps: how.steps || [],
+          controls: how.controls || [],
         });
+      };
 
-        activeGame = {
-          resize: runtime.resize,
-          pause: runtime.pause,
-          resume: runtime.resume,
-          destroy: runtime.destroyActive,
+      const { createArcadeStore, createAudioManager, createInputManager, prefersReducedMotion, createSettingsStore, createStorageManager } = sdkCore;
+      const settingsStore = createSettingsStore();
+      const audio = createAudioManager(settingsStore);
+
+      if (!game) throw new Error(`Game module has no valid mount export for "${gameId}".`);
+
+      const [{ createGameRuntime }] = await Promise.all([
+        import("/arcade/game-runtime.js"),
+      ]);
+
+      const store = createArcadeStore();
+      const storage = createStorageManager(store, gameId, {
+        legacyKeys: [
+          `po_arcade_${gameId}_v1`,
+          `po_arcade_${gameId}_v2`,
+          `po_arcade_${gameId}_v3`,
+          `po_arcade_${gameId}_v4`,
+          `po_arcade_${gameId}`,
+        ],
+      });
+
+      runtime = createGameRuntime({
+        mountEl: frame.stageInner,
+        createContext: (base) => ({
+          ui: frame,
+          store,
+          audio,
+          input: createInputManager(base),
+          storage,
+          settings: settingsStore,
+          prefs: { reducedMotion: settingsStore.get().reducedMotion ?? prefersReducedMotion() },
+        }),
+      });
+
+      moduleLoader = async () => ({ default: game });
+
+      const mountWithRuntime = async () => {
+        await runtime.mountGame({ id: gameId, moduleLoader });
+      };
+
+      activeGame = {
+        resize: runtime.resize,
+        pause: () => { runtime.pause(); setPauseUI(true); },
+        resume: () => { runtime.resume(); setPauseUI(false); },
+        destroy: runtime.destroyActive,
+        restart: async () => {
+          await runtime.destroyActive();
+          await mountWithRuntime();
+          setPauseUI(false);
+          frame?.focusStage?.();
+        },
+        audio,
+        settings: settingsStore,
+      };
+
+      await mountWithRuntime();
+      setPauseUI(false);
+      frame?.focusStage?.();
+
+      const openSettings = () => {
+        if (!frame?.showSettings) return;
+        const getSettings = () => settingsStore.get();
+        const apply = (patch) => {
+          if (Object.prototype.hasOwnProperty.call(patch, "mute")) audio.setMute(patch.mute);
+          if (Object.prototype.hasOwnProperty.call(patch, "sfxVolume")) audio.setSfxVolume(patch.sfxVolume);
+          if (Object.prototype.hasOwnProperty.call(patch, "musicVolume")) audio.setMusicVolume(patch.musicVolume);
+          if (Object.prototype.hasOwnProperty.call(patch, "reducedMotion")) {
+            settingsStore.set({ reducedMotion: patch.reducedMotion });
+          }
         };
 
-        await runtime.mountGame({ id: gameId, moduleLoader: async () => mod });
+        frame.showSettings({
+          settings: getSettings(),
+          onChange: apply,
+        });
+      };
+
+      const howKey = `po_arcade_howto_${gameId}`;
+      if (!localStorage.getItem(howKey)) {
+        openHowTo();
+        localStorage.setItem(howKey, "1");
       }
-      // Legacy path: module default export with mount()
-      else if (game?.mount && typeof game.mount === "function") {
-        activeGame = game;
-        await activeGame.mount(frame.stageInner, ctx);
-      }
-      // Compatibility: old module exports (wordle/quickmath)
-      else if (gameId === "wordle" && typeof mod.mountWordle === "function") {
-        frame.setControls(null);
-        frame.setHUD([]);
-        frame.setStatus("");
-        mod.mountWordle(frame.stageInner, ctx);
-      } else if (gameId === "quickmath" && typeof mod.mountQuickMath === "function") {
-        frame.setControls(null);
-        frame.setHUD([]);
-        frame.setStatus("");
-        mod.mountQuickMath(frame.stageInner, ctx);
-      } else {
-        throw new Error(`Game module has no valid mount export for "${gameId}".`);
-      }
+
+      howToBtn?.addEventListener("click", () => openHowTo());
+      settingsBtn?.addEventListener("click", () => openSettings());
+
+      const preventScrollKeys = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Spacebar", "PageUp", "PageDown", "Home", "End"]);
+      const isEditable = (el) => {
+        if (!el) return false;
+        if (el.isContentEditable) return true;
+        const tag = el.tagName?.toLowerCase();
+        return tag === "input" || tag === "textarea" || tag === "select";
+      };
+
+      const onKeyDown = (e) => {
+        if (!preventScrollKeys.has(e.key)) return;
+        const target = e.target;
+        if (isEditable(target)) return;
+        if (!mount.contains(target) && !mount.contains(document.activeElement)) return;
+        e.preventDefault();
+      };
+
+      window.addEventListener("keydown", onKeyDown, { passive: false, signal: frame.signal });
+      keyGuardOff = () => window.removeEventListener("keydown", onKeyDown);
+
+      pauseBtn?.addEventListener("click", () => {
+        if (!activeGame) return;
+        if (isPaused) {
+          activeGame.resume?.();
+          setPauseUI(false);
+          frame?.closeModal?.();
+          return;
+        }
+        activeGame.pause?.();
+        setPauseUI(true);
+        frame?.showPause?.({
+          onResume: () => { activeGame.resume?.(); setPauseUI(false); },
+          onRestart: () => activeGame.restart?.() || window.location.reload(),
+          onSettings: () => openSettings(),
+          onQuit: () => window.location.assign("/arcade/"),
+        });
+      });
+
+      restartBtn?.addEventListener("click", () => activeGame?.restart?.() || window.location.reload());
 
       // Lifecycle hooks (mobile + reliability)
       const onResize = () => activeGame?.resize?.();
@@ -383,8 +539,13 @@ const GAMES = [
         "visibilitychange",
         () => {
           if (!activeGame) return;
-          if (document.hidden) activeGame.pause?.();
-          else activeGame.resume?.();
+          if (document.hidden) {
+            activeGame.pause?.();
+            setPauseUI(true);
+          } else {
+            activeGame.resume?.();
+            setPauseUI(false);
+          }
         },
         { signal: frame.signal }
       );
