@@ -50,8 +50,9 @@
     "lint": "npm-run-all --parallel lint:js lint:html",
     "qa:html": "html-validate \"dist/*.html\" \"dist/guides/*.html\"",
     "qa:links": "linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip \"^mailto:|^tel:|^https?:\\/\\/(?!localhost:8080)\"",
+    "qa:arcade": "node scripts/qa-arcade.js",
     "qa:a11y": "pa11y-ci",
-    "qa": "npm-run-all build && (npm run serve --silent & wait-on http://localhost:8080) && npm-run-all --parallel qa:html qa:links qa:a11y",
+    "qa": "npm-run-all build && (npm run serve --silent & wait-on http://localhost:8080) && npm-run-all --parallel qa:html qa:links qa:a11y qa:arcade",
     "prepare": "husky || true"
   }
 }
