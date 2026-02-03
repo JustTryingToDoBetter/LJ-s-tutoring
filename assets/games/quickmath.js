@@ -270,6 +270,12 @@ export function initGame(container, config = {}) {
     state.lastDifficulty = difficulty;
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    // Keep the arcade home "best today" chip in sync.
+    // Canonical key is defined in assets/arcade.js (LS.bestToday).
+    try {
+      localStorage.setItem("po_arcade_best_today", String(state.bestToday));
+    } catch {}
   }
 }
 
