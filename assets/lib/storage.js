@@ -5,18 +5,19 @@
  */
 
 const KEY = "po_arcade_v1";
+const LEGACY_KEY = "po_arcade_state_v1";
 
 export function loadState() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return freshState();
+    if (!raw) return migrateLegacy(freshState());
     const parsed = JSON.parse(raw);
 
     // Minimal schema validation (avoid breaking on corrupt storage)
-    if (!parsed || typeof parsed !== "object") return freshState();
-    return { ...freshState(), ...parsed };
+    if (!parsed || typeof parsed !== "object") return migrateLegacy(freshState());
+    return migrateLegacy({ ...freshState(), ...parsed });
   } catch {
-    return freshState();
+    return migrateLegacy(freshState());
   }
 }
 
@@ -49,7 +50,13 @@ function freshState() {
       history: {},
     },
     games: {
-      quickmath: { best: 0, last: null },
+      // quickmath schema:
+      // - best: number (all-time)
+      // - dailyBest: { dayKey: "YYYY-MM-DD", score: number } | null
+      // - plays: number
+      // - lastPlayed: timestamp
+      // - last: { score, streak, answered, at }
+      quickmath: { best: 0, dailyBest: null, plays: 0, lastPlayed: null, last: null },
       wordle: { wins: 0, plays: 0, lastKey: null, lastGrid: null },
       sudoku: { saves: {} },
       tictactoe: { winsX: 0, winsO: 0, draws: 0 },
@@ -57,4 +64,23 @@ function freshState() {
       chess: { winsW: 0, winsB: 0, draws: 0, last: null },
     },
   };
+}
+
+function migrateLegacy(state) {
+  try {
+    const raw = localStorage.getItem(LEGACY_KEY);
+    if (!raw) return state;
+    const legacy = JSON.parse(raw);
+    const legacyQuickmath = legacy?.games?.quickmath;
+    if (legacyQuickmath && state?.games?.quickmath) {
+      state.games.quickmath.best = Number.isFinite(legacyQuickmath.best)
+        ? legacyQuickmath.best
+        : state.games.quickmath.best;
+      state.games.quickmath.dailyBest = legacyQuickmath.dailyBest || state.games.quickmath.dailyBest;
+      state.games.quickmath.last = legacyQuickmath.last || state.games.quickmath.last;
+    }
+    return state;
+  } catch {
+    return state;
+  }
 }

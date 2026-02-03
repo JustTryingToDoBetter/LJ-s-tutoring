@@ -323,9 +323,41 @@ const GAMES = [
       // expose frame API to games
       ctx.ui = frame;
 
-      // Preferred path: module default export lifecycle
-      if (mod?.default && typeof mod.default.mount === "function") {
-        activeGame = mod.default;
+      const game = mod?.default ?? mod?.game;
+
+      // New contract: default export with init()
+      if (game?.init && typeof game.init === "function") {
+        const [{ createGameRuntime }, { createArcadeStore, createAudioManager, createInputManager, prefersReducedMotion }] = await Promise.all([
+          import("/arcade/game-runtime.js"),
+          import("./arcade/sdk-core.js"),
+        ]);
+
+        const store = createArcadeStore();
+        const audio = createAudioManager();
+
+        const runtime = createGameRuntime({
+          mountEl: frame.stageInner,
+          createContext: (base) => ({
+            ui: frame,
+            store,
+            audio,
+            input: createInputManager(base),
+            prefs: { reducedMotion: prefersReducedMotion() },
+          }),
+        });
+
+        activeGame = {
+          resize: runtime.resize,
+          pause: runtime.pause,
+          resume: runtime.resume,
+          destroy: runtime.destroyActive,
+        };
+
+        await runtime.mountGame({ id: gameId, moduleLoader: async () => mod });
+      }
+      // Legacy path: module default export with mount()
+      else if (game?.mount && typeof game.mount === "function") {
+        activeGame = game;
         await activeGame.mount(frame.stageInner, ctx);
       }
       // Compatibility: old module exports (wordle/quickmath)
