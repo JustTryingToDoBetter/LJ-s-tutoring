@@ -11,9 +11,9 @@
  * 
  * HOW IT FITS IN THE SYSTEM:
  * - Runs during build process AFTER JS files are copied to dist/assets/
- * - Called by: npm run build:html (see package.json line 30)
- * - Sequence: prebuild → build:html → inject-config.js → build:assets
- * - Modifies dist/assets/app-critical.js with runtime configuration
+ * - Called by: npm run inject:config (part of npm run build)
+ * - Sequence: prebuild → build:* (copy/compile) → inject:config
+ * - Modifies dist/assets/app-critical.js (CONFIG) and built HTML (PO_ERROR_MONITOR)
  * 
  * RULES ENFORCED:
  * - Configuration centralized in .env file (single source of truth)

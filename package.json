@@ -50,6 +50,7 @@
     "qa:html": "html-validate \"dist/*.html\" \"dist/guides/*.html\" \"dist/arcade/**/*.html\"",
     "qa:links": "linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip \"^mailto:|^tel:|^https?:\\/\\/(?!localhost:8080)\"",
     "qa:a11y": "pa11y-ci",
+    "qa:quick": "npm-run-all build && (npm run serve --silent & wait-on http://localhost:8080) && npm-run-all --parallel qa:html qa:links",
     "qa": "npm-run-all build && (npm run serve --silent & wait-on http://localhost:8080) && npm-run-all --parallel qa:html qa:links qa:a11y",
     "prepare": "husky || true"
   }
