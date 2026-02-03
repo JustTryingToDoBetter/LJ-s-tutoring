@@ -8,11 +8,9 @@
   - Lifecycle cleanup: AbortController auto-aborts when root is removed
 ============================================================================ */
 
-(() => {
-  "use strict";
+"use strict";
 
-  const GAME_ID = "sudoku";
-  const STORAGE_KEY = "po_arcade_sudoku_v2";
+const STORAGE_KEY = "po_arcade_sudoku_v2";
 
   // --- Helpers --------------------------------------------------------------
   const el = (tag, attrs = {}, children = []) => {
@@ -54,16 +52,6 @@
       t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
-  }
-
-  function makeLifecycleSignal(root) {
-    const ac = new AbortController();
-    const tick = () => {
-      if (!root.isConnected) { try { ac.abort(); } catch {} return; }
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    return ac.signal;
   }
 
   // --- Sudoku core ----------------------------------------------------------
@@ -273,9 +261,9 @@
   }
 
   // --- UI mount -------------------------------------------------------------
-  function mount(root) {
+  function mount(root, ctx) {
     root.innerHTML = "";
-    const signal = makeLifecycleSignal(root);
+    const ui = ctx.ui;
 
     const head = el("div", { class: "po-arcade-head" }, [
       el("div", { class: "po-arcade-title", text: "Sudoku" }),
@@ -288,6 +276,18 @@
     let mode = restored?.mode || "daily"; // daily | endless
 
     const status = el("div", { class: "po-arcade-status", text: "Generating chart…" });
+    const setFrameStatus = (t) => ui?.setStatus?.(t);
+    const setHud = () => {
+      ui?.setHUD?.([
+        { k: "Mode", v: mode === "daily" ? "Daily" : "Endless" },
+        { k: "Level", v: level },
+        { k: "Hints", v: String(state?.hintsUsed ?? 0) },
+      ]);
+    };
+    const setStatus = (t) => {
+      status.textContent = t;
+      setFrameStatus(t);
+    };
 
     const levelSelect = el("select", {
       class: "po-arcade-select",
@@ -370,13 +370,13 @@
       if (!keepMode) modeSelect.value = mode;
       if (!keepLevel) levelSelect.value = level;
 
-      status.textContent = "Generating chart…";
+      setStatus("Generating chart…");
 
       const seed = seedFor({ mode, level });
       const dailyKey = mode === "daily" ? dayKeyUTC() : null;
 
       const gen = generatePuzzle({ seed, level });
-      if (!gen) { status.textContent = "Generation failed. Tap New again."; return; }
+      if (!gen) { setStatus("Generation failed. Tap New again."); return; }
 
       solution = gen.solved.slice();
       const givens = gen.puzzle.slice();
@@ -399,7 +399,7 @@
 
       persist();
       render();
-      status.textContent = `Chart ready — ${mode === "daily" ? "Daily" : "Endless"} • ${level} • ${gen.clues} clues`;
+      setStatus(`Chart ready — ${mode === "daily" ? "Daily" : "Endless"} • ${level} • ${gen.clues} clues`);
     }
 
     function restoreOrNew() {
@@ -432,7 +432,7 @@
         solution = gen.solved.slice();
         notesSets = (r.notes || Array.from({ length: 81 }, () => [])).map(arr => new Set(arr || []));
 
-        status.textContent = `Resumed — ${mode === "daily" ? "Daily" : "Endless"} • ${level}`;
+        setStatus(`Resumed — ${mode === "daily" ? "Daily" : "Endless"} • ${level}`);
         render();
         return;
       }
@@ -458,7 +458,7 @@
       render();
 
       if (isSolved(state.grid, state.givens)) {
-        status.textContent = `Perfect chart — mastered. Hints used: ${state.hintsUsed}.`;
+        setStatus(`Perfect chart — mastered. Hints used: ${state.hintsUsed}.`);
       }
     }
 
@@ -483,7 +483,7 @@
 
       persist();
       render();
-      status.textContent = `Hint placed. Total hints: ${state.hintsUsed}.`;
+      setStatus(`Hint placed. Total hints: ${state.hintsUsed}.`);
     }
 
     function render() {
@@ -522,68 +522,69 @@
       }
 
       notesBtn.classList.toggle("is-active", !!state.notesMode);
+      setHud();
     }
 
     // --- Wire UI -------------------------------------------------------------
 
-    modeSelect.addEventListener("change", () => {
+    ctx.addEvent(modeSelect, "change", () => {
       mode = modeSelect.value;
       startNew({ keepMode: true, keepLevel: true });
-    }, { signal });
+    });
 
-    levelSelect.addEventListener("change", () => {
+    ctx.addEvent(levelSelect, "change", () => {
       level = levelSelect.value;
       startNew({ keepMode: true, keepLevel: true });
-    }, { signal });
+    });
 
     cells.forEach((cell, i) => {
-      cell.addEventListener("click", () => {
+      ctx.addEvent(cell, "click", () => {
         if (!state) return;
         state.selected = i;
         persist();
         render();
-      }, { signal });
+      });
     });
 
     Array.from(pad.querySelectorAll("button")).forEach((btn) => {
       const t = btn.textContent;
-      if (t === "⌫") btn.addEventListener("click", () => applyNumber(0), { signal });
-      else btn.addEventListener("click", () => applyNumber(Number(t)), { signal });
+      if (t === "⌫") ctx.addEvent(btn, "click", () => applyNumber(0));
+      else ctx.addEvent(btn, "click", () => applyNumber(Number(t)));
     });
 
-    notesBtn.addEventListener("click", () => {
+    ctx.addEvent(notesBtn, "click", () => {
       if (!state) return;
       state.notesMode = !state.notesMode;
       persist();
       render();
-      status.textContent = state.notesMode ? "Notes mode: ON" : "Notes mode: OFF";
-    }, { signal });
+      setStatus(state.notesMode ? "Notes mode: ON" : "Notes mode: OFF");
+    });
 
-    hintBtn.addEventListener("click", () => doHint(), { signal });
+    ctx.addEvent(hintBtn, "click", () => doHint());
 
-    resetBtn.addEventListener("click", () => {
+    ctx.addEvent(resetBtn, "click", () => {
       if (!state) return;
       state.grid = state.givens.slice();
       notesSets = Array.from({ length: 81 }, () => new Set());
       state.hintsUsed = 0;
       persist();
       render();
-      status.textContent = "Reset to chart start.";
-    }, { signal });
+      setStatus("Reset to chart start.");
+    });
 
-    newBtn.addEventListener("click", () => startNew({ keepMode: true, keepLevel: true }), { signal });
+    ctx.addEvent(newBtn, "click", () => startNew({ keepMode: true, keepLevel: true }));
 
-    clearBtn.addEventListener("click", () => {
+    ctx.addEvent(clearBtn, "click", () => {
       clearSave();
-      status.textContent = "Save cleared.";
+      setStatus("Save cleared.");
       startNew({ keepMode: true, keepLevel: true });
-    }, { signal });
+    });
 
-    window.addEventListener("keydown", (e) => {
+    ctx.addEvent(window, "keydown", (e) => {
       if (!state) return;
       const k = e.key;
 
-      if (k === "n" || k === "N") { state.notesMode = !state.notesMode; persist(); render(); status.textContent = state.notesMode ? "Notes mode: ON" : "Notes mode: OFF"; return; }
+      if (k === "n" || k === "N") { state.notesMode = !state.notesMode; persist(); render(); setStatus(state.notesMode ? "Notes mode: ON" : "Notes mode: OFF"); return; }
       if (k === "h" || k === "H") { doHint(); return; }
       if (k >= "1" && k <= "9") { applyNumber(Number(k)); return; }
       if (k === "Backspace" || k === "Delete") { applyNumber(0); return; }
@@ -597,18 +598,13 @@
       if (k === "ArrowRight") state.selected = idx(r, (c + 1) % 9);
 
       if (k.startsWith("Arrow")) { persist(); render(); }
-    }, { signal });
+    });
 
     restoreOrNew();
   }
 
-  // --- Register game --------------------------------------------------------
-  window.PO_ARCADE_GAMES = window.PO_ARCADE_GAMES || [];
-  window.PO_ARCADE_GAMES.push({
-    id: GAME_ID,
-    title: "Sudoku",
-    subtitle: "The Nine Seas (generated).",
-    icon: "🧩",
-    mount,
-  });
-})();
+export default {
+  init(ctx) {
+    return mount(ctx.root, ctx);
+  },
+};
