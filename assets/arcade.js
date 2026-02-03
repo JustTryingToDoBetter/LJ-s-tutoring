@@ -13,7 +13,6 @@
   const LS = {
     lastGame: "po_arcade_last_game",
     sessions: "po_arcade_sessions",
-    bestToday: "po_arcade_best_today",
     sound: "po_arcade_sound",
   };
 
@@ -95,6 +94,27 @@ const GAMES = [
   function getQueryParam(name) {
     const url = new URL(window.location.href);
     return url.searchParams.get(name);
+  }
+
+  // Shared day key (YYYY-MM-DD) for “best today” stats.
+  function dayKey(date = new Date()) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  function getBestTodayScore() {
+    try {
+      const raw = localStorage.getItem("po_arcade_state_v1");
+      if (!raw) return "—";
+      const state = JSON.parse(raw);
+      const daily = state?.games?.quickmath?.dailyBest;
+      if (!daily || daily.dayKey !== dayKey()) return "—";
+      return typeof daily.score === "number" ? String(daily.score) : "—";
+    } catch {
+      return "—";
+    }
   }
 
   function setSoundUI(btn, on) {
@@ -191,7 +211,7 @@ const GAMES = [
 
     // stats
     safeText($("#arcade-stat-sessions"), localStorage.getItem(LS.sessions) || "0");
-    safeText($("#arcade-stat-best"), localStorage.getItem(LS.bestToday) || "—");
+    safeText($("#arcade-stat-best"), getBestTodayScore());
 
     // build cards
     grid.innerHTML = "";
@@ -290,8 +310,8 @@ const GAMES = [
 
     try {
       const [{ createGameFrame }, mod] = await Promise.all([
-        import("assets/arcade/frame.js"),
-        import(`assets/games/${encodeURIComponent(gameId)}.js`),
+        import("./arcade/frame.js"),
+        import(`./games/${encodeURIComponent(gameId)}.js`),
       ]);
 
       frame = createGameFrame({
@@ -374,7 +394,11 @@ const GAMES = [
         lastKey: "",
         lastGrid: [],
       };
-      state.games.quickmath = state.games.quickmath || { best: 0, last: null };
+      // quickmath schema:
+      // - best: number (all-time)
+      // - dailyBest: { dayKey: "YYYY-MM-DD", score: number }
+      // - last: { score, streak, answered, at }
+      state.games.quickmath = state.games.quickmath || { best: 0, dailyBest: null, last: null };
 
       return state;
     };

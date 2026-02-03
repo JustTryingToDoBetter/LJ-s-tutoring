@@ -128,6 +128,11 @@ function runSprint(mount, ctx, rules, { mode = "run" } = {}) {
 
     const next = ctx.getState();
     next.games.quickmath.best = Math.max(next.games.quickmath.best || 0, score);
+    const todayKey = dayKey();
+    const daily = next.games.quickmath.dailyBest;
+    if (!daily || daily.dayKey !== todayKey || score > (daily.score || 0)) {
+      next.games.quickmath.dailyBest = { dayKey: todayKey, score };
+    }
     next.games.quickmath.last = { score, streak, answered, at: Date.now() };
     ctx.setState(next);
 

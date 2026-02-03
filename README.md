@@ -31,17 +31,17 @@ npm run serve
 
 1. **Clean**: Removes old `dist/` folder
 2. **Create directories**: Sets up `dist/` and `dist/assets/`
-3. **Build CSS**: Compiles Tailwind from `assets/tailwind-input.css` → `dist/assets/tailwind.css`
+3. **Build CSS**: Compiles Tailwind from `assets/tailwind-input.css` → `dist/assets/tailwind-input.css`
 4. **Build HTML**: Copies `*.html` to `dist/` 
 5. **Inject Config**: Reads `.env` and injects values into `dist/assets/app-critical.js`
 6. **Copy Assets**: Copies JavaScript, CSS, images, guides to `dist/`
 7. **Deploy**: The `dist/` directory contains the production-ready site
 
-**Key Point**: Configuration is managed via `.env` file and injected at build time.
+**Key Point**: Configuration is managed via `.env` (from `.env.example`) and injected at build time.
 
 ## ⚙️ Configuration (Environment Variables)
 
-**All configuration is managed through the `.env` file.**
+**All configuration is managed through the `.env` file (copy from `.env.example`).**
 
 ### Setup Instructions
 
@@ -56,6 +56,8 @@ npm run serve
    FORMSPREE_ENDPOINT=https://formspree.io/f/YOUR_FORM_ID
    CONTACT_EMAIL=your-email@example.com
    COUNTDOWN_DATE=2026-02-15T17:00:00   # ISO 8601 format
+   ERROR_MONITOR_ENDPOINT=             # Optional
+   ERROR_MONITOR_SAMPLE_RATE=1         # Optional
    ```
 
 3. **Never commit `.env`** (already in `.gitignore`)
@@ -68,13 +70,15 @@ npm run serve
 | `FORMSPREE_ENDPOINT` | Form submission URL | `https://formspree.io/f/xxxxx` | `app-critical.js` |
 | `CONTACT_EMAIL` | Contact email address | `email@example.com` | `app-critical.js` |
 | `COUNTDOWN_DATE` | Registration countdown target | `YYYY-MM-DDTHH:mm:ss` | `app-critical.js` |
+| `ERROR_MONITOR_ENDPOINT` | Optional error monitor endpoint | URL or empty | `error-monitor.js` (optional) |
+| `ERROR_MONITOR_SAMPLE_RATE` | Optional error sample rate | `0`–`1` | `error-monitor.js` (optional) |
 
 ### How Config Injection Works
 
 - **Source**: `.env` file (gitignored, local/CI-specific)
 - **Injection Script**: `scripts/inject-config.js`
 - **Target**: `dist/assets/app-critical.js` (CONFIG object)
-- **When**: During `npm run build:html` step
+- **When**: During `npm run build` (post-copy inject step)
 - **Fallback**: Uses defaults if `.env` missing (fail-safe approach)
 
 ### Google Analytics Setup
@@ -181,9 +185,6 @@ npm run serve
 # Run linters (or let pre-commit hook do it automatically)
 npm run lint
 
-# Run quick QA checks
-npm run qa:quick
-
 # Full QA suite (HTML, links, accessibility)
 npm run qa
 ```
@@ -199,7 +200,6 @@ npm run qa
 | `npm run lint:js` | Lint JavaScript files only |
 | `npm run lint:html` | Validate HTML files only |
 | `npm run qa` | Full QA suite (validation, links, accessibility) |
-| `npm run qa:quick` | Fast QA (HTML + links, skip accessibility) |
 | `npm run clean` | Remove dist/ folder |
 
 ## ✅ Quality Assurance
@@ -216,9 +216,13 @@ Every PR/push triggers:
 ### Pre-Commit Hooks
 
 Husky automatically runs before every commit:
-- Lints all staged JavaScript files
-- Validates HTML syntax
+- Runs `npm run lint`
 - Blocks commit if errors found
+
+If hooks aren’t installed after `npm install`, run:
+```bash
+npx husky install
+```
 
 ### Manual Testing Checklist
 

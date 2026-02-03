@@ -68,12 +68,16 @@ jobs:
         id: security
         continue-on-error: true
         run: |
-          npm audit --audit-level=high --omit=dev > security-report.txt 2>&1 || true
-          if npm audit --audit-level=high --omit=dev; then
+          set +e
+          set -o pipefail
+          npm audit --audit-level=high --omit=dev | tee security-report.txt
+          status=$?
+          if [ $status -eq 0 ]; then
             echo "status=passed" >> $GITHUB_OUTPUT
           else
             echo "status=failed" >> $GITHUB_OUTPUT
           fi
+          exit 0
 
       - name: Upload security report
         if: always()
@@ -111,9 +115,16 @@ jobs:
         id: html
         continue-on-error: true
         run: |
-          npx html-validate "dist/**/*.html" --formatter json > html-validation.json 2>&1 || true
-          npx html-validate "dist/**/*.html"
-          echo "status=passed" >> $GITHUB_OUTPUT
+          set +e
+          set -o pipefail
+          npx html-validate "dist/**/*.html" --formatter json | tee html-validation.json
+          status=$?
+          if [ $status -eq 0 ]; then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+          exit 0
 
       - name: Upload HTML validation report
         if: always()
@@ -130,20 +141,21 @@ jobs:
         id: links
         continue-on-error: true
         run: |
+          set +e
+          set -o pipefail
           npx linkinator http://localhost:8080 \
             --recurse \
             --timeout 10000 \
             --concurrency 4 \
             --skip "^mailto:|^tel:|^https?:\/\/(?!localhost:8080)" \
-            --format json > link-check.json 2>&1 || true
-          
-          npx linkinator http://localhost:8080 \
-            --recurse \
-            --timeout 10000 \
-            --concurrency 4 \
-            --skip "^mailto:|^tel:|^https?:\/\/(?!localhost:8080)"
-          
-          echo "status=passed" >> $GITHUB_OUTPUT
+            --format json | tee link-check.json
+          status=$?
+          if [ $status -eq 0 ]; then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+          exit 0
 
       - name: Upload link check report
         if: always()
@@ -157,9 +169,20 @@ jobs:
       # ACCESSIBILITY CHECK
       # ========================================================================
       - name: Accessibility check (Pa11y)
+        id: a11y
+        continue-on-error: true
         env:
           PUPPETEER_EXECUTABLE_PATH: ${{ env.CHROME_PATH }}
-        run: npx pa11y-ci
+        run: |
+          set +e
+          npx pa11y-ci
+          status=$?
+          if [ $status -eq 0 ]; then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+          exit 0
 
       - name: Upload accessibility report
         if: always()

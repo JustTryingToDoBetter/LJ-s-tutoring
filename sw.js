@@ -6,7 +6,7 @@
    - Offline: Works for arcade + games after first visit
 */
 
-const VERSION = "po-v2026-01-27-01"; // bump on every deploy
+const VERSION = "po-v2026-02-03-01"; // bump on every deploy
 const CACHE_APP = `po-app-${VERSION}`;
 const CACHE_MEDIA = `po-media-${VERSION}`;
 const CACHE_DOCS = `po-docs-${VERSION}`;
@@ -27,6 +27,12 @@ const PRECACHE_URLS = [
 
   `/assets/app-critical.js?v=${VERSION}`,
   `/assets/arcade.js?v=${VERSION}`,
+
+  // Arcade dynamic-imported modules
+  `/assets/arcade/frame.js?v=${VERSION}`,
+  `/assets/arcade/game-sdk.js?v=${VERSION}`,
+  `/assets/arcade/difficulty.js?v=${VERSION}`,
+  `/assets/arcade/run-seed.js?v=${VERSION}`,
 
   `/favicon.svg?v=${VERSION}`,
 ];
