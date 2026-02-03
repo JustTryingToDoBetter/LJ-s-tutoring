@@ -172,7 +172,7 @@ jobs:
           PUPPETEER_EXECUTABLE_PATH: ${{ env.CHROME_PATH }}
         run: |
           set +e
-          npx pa11y-ci --reporter json > pa11y-report.json
+          npx pa11y-ci --json > pa11y-report.json
           code=$?
           if [ "$code" -eq 0 ]; then
             echo "status=passed" >> $GITHUB_OUTPUT
