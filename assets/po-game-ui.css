@@ -21,6 +21,7 @@
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
   display: grid;
   gap: var(--po-gap);
+  animation: po-fade-in .28s ease-out;
 }
 
 .po-game-topbar{
@@ -144,6 +145,7 @@
   border: 1px solid var(--po-border);
   background: rgba(0,0,0,.25);
   min-height: 280px;
+  touch-action: none;
 }
 
 .po-stage-inner{
@@ -195,6 +197,9 @@
   box-shadow: var(--po-shadow);
   padding: 14px;
 }
+.po-modal{
+  animation: po-slide-up .24s ease-out;
+}
 .po-modal h3{
   margin: 0 0 6px;
   font-size: 14px;
@@ -206,11 +211,48 @@
   color: var(--po-subtext);
   line-height: 1.35;
 }
+.po-modal-body{
+  display: grid;
+  gap: 12px;
+  color: var(--po-subtext);
+  font-size: 12px;
+}
+.po-modal-section{
+  display: grid;
+  gap: 6px;
+}
+.po-modal-label{
+  font-weight: 900;
+  color: var(--po-text);
+  font-size: 12px;
+}
+.po-modal-list{
+  padding-left: 16px;
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
 .po-modal-actions{
   display: flex;
   gap: 10px;
   justify-content: flex-end;
   flex-wrap: wrap;
+}
+
+.po-settings-row{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+.po-settings-label{
+  color: var(--po-text);
+  font-weight: 800;
+  font-size: 12px;
+}
+.po-range{
+  width: min(220px, 60vw);
+  accent-color: rgba(56,189,248,.85);
 }
 
 /* Toast */
@@ -229,6 +271,16 @@
   box-shadow: var(--po-shadow);
   font-size: 12px;
   font-weight: 800;
+}
+
+@keyframes po-fade-in{
+  from{ opacity: 0; transform: translateY(6px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+
+@keyframes po-slide-up{
+  from{ opacity: 0; transform: translateY(8px) scale(.98); }
+  to{ opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Desktop tweaks */
