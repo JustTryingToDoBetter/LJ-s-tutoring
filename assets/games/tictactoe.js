@@ -50,6 +50,17 @@ function winnerOf(board, lines) {
   return board.every(Boolean) ? "draw" : null;
 }
 
+function winningLine(board, lines) {
+  for (const L of lines) {
+    const a = board[L[0]];
+    if (!a) continue;
+    let ok = true;
+    for (let i = 1; i < L.length; i++) if (board[L[i]] !== a) { ok = false; break; }
+    if (ok) return L;
+  }
+  return null;
+}
+
 // 3x3 minimax (O is AI)
 function minimax3(board, lines, isAiTurn, depth) {
   const out = winnerOf(board, lines);
@@ -157,7 +168,10 @@ export default {
       turn: "X",
       status: "Your move, Navigator.",
       lastKey: dayKey(),
+      lastMove: null,
     };
+
+    if (typeof state.lastMove !== "number") state.lastMove = null;
 
     const specFromSize = (sz) => (sz === 4 ? { size: 4, winLen: 4 } : { size: 3, winLen: 3 });
     const persist = () => save(state);
@@ -190,8 +204,12 @@ export default {
     ui?.setControls?.(controlsRow);
 
     // Stage (board)
+    const wrap = el("div", { class: "po-ttt-wrap" });
+    const indicator = el("div", { class: "po-ttt-indicator", text: "" });
+    const sub = el("div", { class: "po-ttt-sub", text: "Tap a square to place your mark." });
     const grid = el("div", { class: "po-ttt-grid", role: "grid", "aria-label": "Tic Tac Toe board" });
-    root.append(grid);
+    wrap.append(indicator, sub, grid);
+    root.append(wrap);
 
     const setStatus = (t) => ui?.setStatus?.(t);
 
@@ -219,10 +237,22 @@ export default {
     function render(lines) {
       const cells = Array.from(grid.querySelectorAll("button"));
       const out = winnerOf(state.board, lines);
+      const winLine = out && out !== "draw" ? winningLine(state.board, lines) : null;
+      const winSet = new Set(winLine || []);
+
+      indicator.textContent = out
+        ? (out === "draw" ? "Stalemate" : `Winner: ${out}`)
+        : `Turn: ${state.turn}`;
 
       for (let i = 0; i < cells.length; i++) {
-        cells[i].textContent = state.board[i] || "";
-        cells[i].disabled = Boolean(state.board[i]) || Boolean(out);
+        const cell = cells[i];
+        const value = state.board[i] || "";
+        cell.textContent = value;
+        cell.disabled = Boolean(state.board[i]) || Boolean(out);
+        cell.classList.toggle("is-x", value === "X");
+        cell.classList.toggle("is-o", value === "O");
+        cell.classList.toggle("is-last", state.lastMove === i);
+        cell.classList.toggle("is-win", winSet.has(i));
       }
     }
 
@@ -245,7 +275,10 @@ export default {
 
       if (state.size === 3) {
         const best = minimax3(state.board, lines, true, 0);
-        if (typeof best.idx === "number") state.board[best.idx] = "O";
+        if (typeof best.idx === "number") {
+          state.board[best.idx] = "O";
+          state.lastMove = best.idx;
+        }
       } else {
         const depth = personality.depth4;
         const b = state.board.slice();
@@ -255,7 +288,10 @@ export default {
         if (pick == null) {
           for (let i = 0; i < state.board.length; i++) if (!state.board[i]) { pick = i; break; }
         }
-        if (pick != null) state.board[pick] = "O";
+        if (pick != null) {
+          state.board[pick] = "O";
+          state.lastMove = pick;
+        }
       }
 
       state.turn = "X";
@@ -273,6 +309,7 @@ export default {
       state.board = Array(size * size).fill(null);
       state.turn = "X";
       state.status = state.mode === "ai" ? "Your move, Navigator." : "Player X begins the voyage.";
+      state.lastMove = null;
 
       ui?.setHUD?.([
         { k: "Mode", v: state.mode === "ai" ? "Cyclops" : "Friend" },
@@ -289,6 +326,7 @@ export default {
       if (state.board[i] || winnerOf(state.board, lines)) return;
 
       state.board[i] = state.turn;
+      state.lastMove = i;
 
       if (state.mode === "friend") {
         state.turn = state.turn === "X" ? "O" : "X";
