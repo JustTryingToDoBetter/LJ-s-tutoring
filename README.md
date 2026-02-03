@@ -31,9 +31,9 @@ npm run serve
 
 1. **Clean**: Removes old `dist/` folder
 2. **Create directories**: Sets up `dist/` and `dist/assets/`
-3. **Build CSS**: Compiles Tailwind from `assets/tailwind-input.css` → `dist/assets/tailwind.css`
-4. **Build HTML**: Copies `*.html` to `dist/` 
-5. **Inject Config**: Reads `.env` and injects values into `dist/assets/app-critical.js`
+3. **Build CSS**: Compiles Tailwind from `assets/tailwind-input.css` → `dist/assets/tailwind-input.css`
+4. **Build HTML**: Copies `*.html` to `dist/`
+5. **Inject Config**: Reads `.env` and injects values into `dist/assets/app-critical.js` (and injects `window.PO_ERROR_MONITOR` into built HTML)
 6. **Copy Assets**: Copies JavaScript, CSS, images, guides to `dist/`
 7. **Deploy**: The `dist/` directory contains the production-ready site
 
@@ -56,6 +56,9 @@ npm run serve
    FORMSPREE_ENDPOINT=https://formspree.io/f/YOUR_FORM_ID
    CONTACT_EMAIL=your-email@example.com
    COUNTDOWN_DATE=2026-02-15T17:00:00   # ISO 8601 format
+   # Optional: frontend error monitoring (leave blank to disable)
+   ERROR_MONITOR_ENDPOINT=
+   ERROR_MONITOR_SAMPLE_RATE=1
    ```
 
 3. **Never commit `.env`** (already in `.gitignore`)
@@ -68,13 +71,15 @@ npm run serve
 | `FORMSPREE_ENDPOINT` | Form submission URL | `https://formspree.io/f/xxxxx` | `app-critical.js` |
 | `CONTACT_EMAIL` | Contact email address | `email@example.com` | `app-critical.js` |
 | `COUNTDOWN_DATE` | Registration countdown target | `YYYY-MM-DDTHH:mm:ss` | `app-critical.js` |
+| `ERROR_MONITOR_ENDPOINT` | Error monitor endpoint (optional) | `https://.../api/errors` | HTML `window.PO_ERROR_MONITOR` |
+| `ERROR_MONITOR_SAMPLE_RATE` | Error monitor sample rate (optional) | `0..1` | HTML `window.PO_ERROR_MONITOR` |
 
 ### How Config Injection Works
 
 - **Source**: `.env` file (gitignored, local/CI-specific)
 - **Injection Script**: `scripts/inject-config.js`
 - **Target**: `dist/assets/app-critical.js` (CONFIG object)
-- **When**: During `npm run build:html` step
+- **When**: During `npm run inject:config` (part of `npm run build`)
 - **Fallback**: Uses defaults if `.env` missing (fail-safe approach)
 
 ### Google Analytics Setup
