@@ -6,13 +6,13 @@
 
 const LS_PREFIX = "po_pack_v1:";
 
-export async function loadJsonPack(url, { ttlMs = 7 * 24 * 3600_000 } = {}) {
+export async function loadJsonPack(url, { ttlMs = 7 * 24 * 3600_000, signal } = {}) {
   const key = LS_PREFIX + url;
   const now = Date.now();
 
   // Try fresh network first (fast when online; SW may serve cached anyway)
   try {
-    const res = await fetch(url, { cache: "no-cache" });
+    const res = await fetch(url, { cache: "no-cache", signal });
     if (res.ok) {
       const data = await res.json();
       safeSet(key, { at: now, data });
