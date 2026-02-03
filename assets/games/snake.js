@@ -112,6 +112,10 @@ export default {
   _rng: null,
   _state: null,
 
+  init(ctx) {
+    return this.mount(ctx.root, ctx);
+  },
+
   async mount(root, ctx) {
     this._root = root;
     this._ctx = ctx;
