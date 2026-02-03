@@ -8,14 +8,13 @@
   - Lifecycle cleanup: AbortController auto-aborts when root is removed
 ============================================================================ */
 
-(() => {
-  "use strict";
+"use strict";
 
-  const GAME_ID = "chess";
-  const STORAGE_KEY = "po_arcade_chess_v1";
+const GAME_ID = "chess";
+const STORAGE_KEY = "po_arcade_chess_v1";
 
   // --- Tiny DOM helper ------------------------------------------------------
-  const el = (tag, attrs = {}, children = []) => {
+const el = (tag, attrs = {}, children = []) => {
     const node = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
       if (k === "class") node.className = v;
@@ -27,19 +26,9 @@
     return node;
   };
 
-  const load = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; } };
-  const save = (s) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} };
-  const clearSave = () => { try { localStorage.removeItem(STORAGE_KEY); } catch {} };
-
-  function makeLifecycleSignal(root) {
-    const ac = new AbortController();
-    const tick = () => {
-      if (!root.isConnected) { try { ac.abort(); } catch {} return; }
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    return ac.signal;
-  }
+const loadLegacy = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; } };
+const saveLegacy = (s) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} };
+const clearLegacy = () => { try { localStorage.removeItem(STORAGE_KEY); } catch {} };
 
   // --- Chess core -----------------------------------------------------------
   // Pieces: "wP","wN","wB","wR","wQ","wK" and black "b*"
@@ -391,6 +380,7 @@
 
   function legalMovesForSquare(state, from) {
     const side = state.turn;
+    const opp = side === "w" ? "b" : "w";
     const p = state.board[from];
     if (!p || colorOf(p) !== side) return [];
 
@@ -398,6 +388,7 @@
     const legals = [];
 
     for (const m of pseudos) {
+      if (state.board[m.to] === opp + "K") continue;
       const res = applyMove(state.board, m, side, state.castle);
       if (!inCheck(res.board, side)) legals.push(m);
     }
@@ -406,11 +397,13 @@
 
   function allLegalMoves(state, side) {
     const moves = [];
+    const opp = side === "w" ? "b" : "w";
     for (let i = 0; i < 64; i++) {
       const p = state.board[i];
       if (!p || colorOf(p) !== side) continue;
       const pseudos = pseudoMovesFor(state.board, i, side, state.castle);
       for (const m of pseudos) {
+        if (state.board[m.to] === opp + "K") continue;
         const res = applyMove(state.board, m, side, state.castle);
         if (!inCheck(res.board, side)) moves.push(m);
       }
