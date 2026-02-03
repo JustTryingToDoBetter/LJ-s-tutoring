@@ -760,6 +760,8 @@
   border-radius: 18px;
   border: 1px solid rgba(148,163,184,.12);
   background: rgba(2,6,23,.22);
+  max-width: min(520px, 100%);
+  margin: 0 auto;
 }
 .po-ch-square {
   height: 52px;
@@ -771,6 +773,11 @@
   background: rgba(2,6,23,.18);
   color: rgba(226,232,240,.95);
 }
+.po-ch-square.is-light{ background: rgba(30,41,59,.38); }
+.po-ch-square.is-dark{ background: rgba(15,23,42,.55); }
+.po-ch-square.is-last{ box-shadow: inset 0 0 0 2px rgba(56,189,248,.22); }
+.po-ch-square.is-capture{ border-color: rgba(244,114,182,.45); }
+.po-ch-square.is-check{ box-shadow: 0 0 0 2px rgba(244,63,94,.45); }
 .po-ch-square.is-selected { outline: 3px solid rgba(56,189,248,.22); }
 .po-ch-square.is-legal { border-color: rgba(56,189,248,.35); box-shadow: inset 0 0 0 2px rgba(56,189,248,.12); }
 
