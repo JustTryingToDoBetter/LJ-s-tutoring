@@ -3,7 +3,7 @@
  * ============================================================================
  * CONFIG INJECTION SCRIPT
  * ============================================================================
- * 
+ *
  * PURPOSE:
  * This script reads environment variables from .env file and injects them into
  * the CONFIG object in the built app-critical.js file. This enables environment-
@@ -24,145 +24,54 @@
  * - dotenv: Loads .env file into process.env
  * - fs: Node.js file system module for reading/writing files
  * - path: Node.js path utilities for cross-platform file paths
+ * - Inject env vars into dist/assets/app-critical.js at build time (Node).
+ * - Contains a browser-only error monitor snippet; MUST NOT execute in Node.
  */
 
-// ============================================================================
-// IMPORTS
-// ============================================================================
+const fs = require("fs");
+const path = require("path");
+require("dotenv").config();
 
-// Node.js built-in file system module - provides methods to interact with files
-const fs = require('fs');
+// Paths
+const distAssetsDir = path.join(__dirname, "..", "dist", "assets");
+const appCriticalPath = path.join(distAssetsDir, "app-critical.js");
 
-// Node.js built-in path module - handles cross-platform file paths (Windows/Unix)
-const path = require('path');
-
-// Load environment variables from .env file into process.env
-// Must be called before accessing any process.env values
-require('dotenv').config();
-
-// ============================================================================
-// PATH RESOLUTION
-// ============================================================================
-
-// Construct absolute path to dist/assets directory
-// __dirname = directory containing this script (scripts/)
-// '..' = go up one level to project root
-// 'dist', 'assets' = navigate to dist/assets/
-const distDir = path.join(__dirname, '..', 'dist');
-const distAssetsDir = path.join(__dirname, '..', 'dist', 'assets');
-
-
-
-// Construct absolute path to the target file to modify
-// This is the built JavaScript file that will be deployed
-const appCriticalPath = path.join(distAssetsDir, 'app-critical.js');
-// ============================================================================
-// VALIDATION: Check if target file exists
-// ============================================================================
-
-// Verify that app-critical.js has been copied to dist/assets/
-// If not, either build order is wrong or build:assets hasn't run yet
+// Validate target exists
 if (!fs.existsSync(appCriticalPath)) {
-  // WARNING (not error): File not found, but don't fail the build
-  // This allows the script to run even if build order changes slightly
-  console.warn('⚠️  Warning: app-critical.js not found in dist/assets/');
-  console.warn('    Config injection skipped. Build may use hardcoded values.');
-  
-  // Exit with success code (0) to not break the build pipeline
+  console.warn("⚠️  Warning: app-critical.js not found in dist/assets/");
+  console.warn("    Config injection skipped. Build may use hardcoded values.");
   process.exit(0);
 }
 
-// ============================================================================
-// FILE READING
-// ============================================================================
+// Read file
+let content = fs.readFileSync(appCriticalPath, "utf8");
 
-// Read the entire content of app-critical.js as UTF-8 text
-// Synchronous operation is appropriate here (build-time, not runtime)
-let content = fs.readFileSync(appCriticalPath, 'utf8');
-
-// ============================================================================
-// CONFIGURATION PARSING
-// ============================================================================
-
-// Read countdown date from environment variable
-// FORMAT: ISO 8601 (YYYY-MM-DDTHH:mm:ss) - e.g., "2026-02-15T17:00:00"
-// FALLBACK: Default to Feb 15, 2026 at 5pm if not specified in .env
-const countdownDateStr = process.env.COUNTDOWN_DATE || '2026-02-15T17:00:00';
-
-// Parse ISO string into JavaScript Date object
-// This allows us to extract year, month, day, hour, minute components
+// Countdown
+const countdownDateStr = process.env.COUNTDOWN_DATE || "2026-02-15T17:00:00";
 const countdownDate = new Date(countdownDateStr);
 
-// ============================================================================
-// CONFIG OBJECT CONSTRUCTION
-// ============================================================================
-
-// Build the replacement CONFIG object as a string
-// This string will be injected into the JavaScript file
-// 
-// TEMPLATE LITERAL: Uses ${} to interpolate environment variables
-// FALLBACK PATTERN: process.env.VAR || 'default' ensures build never fails
-const errorMonitorEndpoint = process.env.ERROR_MONITOR_ENDPOINT || '';
-const errorMonitorSampleRate = Number(process.env.ERROR_MONITOR_SAMPLE_RATE || 1);
-
+// Build CONFIG replacement
 const configReplacement = `  const CONFIG = {
-    // WhatsApp contact number in format: country_code + number (no + or spaces)
-    // Example: '27679327754' for South Africa number +27 67 932 7754
-    // Used by: WhatsApp link generation in updateAllWhatsAppLinks()
-    whatsappNumber: '${process.env.WHATSAPP_NUMBER || '27679327754'}',
-
-    // Formspree form submission endpoint URL
-    // Formspree is a form backend service that handles form submissions
-    // Get your endpoint from: https://formspree.io/forms/YOUR_FORM_ID
-    // Used by: Contact form submission in initForm()
-    formspreeEndpoint: '${process.env.FORMSPREE_ENDPOINT || 'https://formspree.io/f/xreebzqa'}',
-
-    // Primary contact email address for mailto: links and display
-    // Used by: Email links, contact information sections
-    email: '${process.env.CONTACT_EMAIL || 'projectodysseus10@gmail.com'}',
-
-    // Countdown timer target date in JavaScript Date constructor format
-    // IMPORTANT: JavaScript months are 0-indexed (0=Jan, 1=Feb, ..., 11=Dec)
-    // getMonth() returns 0-11, so no adjustment needed when reconstructing
-    // Used by: initCountdown() function to calculate days/hours/mins/secs remaining
+    whatsappNumber: '${process.env.WHATSAPP_NUMBER || "27679327754"}',
+    formspreeEndpoint: '${process.env.FORMSPREE_ENDPOINT || "https://formspree.io/f/xreebzqa"}',
+    email: '${process.env.CONTACT_EMAIL || "projectodysseus10@gmail.com"}',
     countdownDate: new Date(${countdownDate.getFullYear()}, ${countdownDate.getMonth()}, ${countdownDate.getDate()}, ${countdownDate.getHours()}, ${countdownDate.getMinutes()}, 0),
   };`;
 
-// ============================================================================
-// REGEX PATTERN MATCHING & REPLACEMENT
-// ============================================================================
-
-// Define regex pattern to find the CONFIG object in app-critical.js
-// PATTERN BREAKDOWN:
-// - var CONFIG = \{  : Matches "var CONFIG = {"
-// - [\s\S]*?         : Matches any character (including newlines), non-greedy
-// - \};              : Matches closing "};"
-// 
-// This captures the ENTIRE CONFIG object regardless of formatting/whitespace
+// Replace CONFIG
 const configPattern = /const CONFIG = \{[\s\S]*?\};/;
-
-// Check if the pattern exists in the file content
 if (configPattern.test(content)) {
-  // REPLACE: Swap the original CONFIG object with our injected version
   content = content.replace(configPattern, configReplacement);
-  
-  // WRITE: Save the modified content back to the same file
-  // This overwrites the original file with environment-specific config
-  fs.writeFileSync(appCriticalPath, content, 'utf8');
+  fs.writeFileSync(appCriticalPath, content, "utf8");
 
-  
-  // FEEDBACK: Log success message to build output
-  console.log('✅ Injected environment configuration into app-critical.js');
-  console.log(`   - WhatsApp: ${process.env.WHATSAPP_NUMBER || '(default)'}`);
-  console.log(`   - Formspree: ${process.env.FORMSPREE_ENDPOINT || '(default)'}`);
-  console.log(`   - Email: ${process.env.CONTACT_EMAIL || '(default)'}`);
+  console.log("✅ Injected environment configuration into app-critical.js");
+  console.log(`   - WhatsApp: ${process.env.WHATSAPP_NUMBER || "(default)"}`);
+  console.log(`   - Formspree: ${process.env.FORMSPREE_ENDPOINT || "(default)"}`);
+  console.log(`   - Email: ${process.env.CONTACT_EMAIL || "(default)"}`);
   console.log(`   - Countdown: ${countdownDateStr}`);
 } else {
-  // WARNING: Pattern not found - CONFIG object structure may have changed
-  // This prevents silent failures where injection doesn't happen
-  console.warn('⚠️  Warning: Could not find CONFIG object pattern in app-critical.js');
-  console.warn('    The file structure may have changed. Check that CONFIG is defined as:');
-  console.warn('    const CONFIG = { ... };');
+  console.warn("⚠️  Warning: Could not find CONFIG object pattern in app-critical.js");
+  console.warn("    Expected: const CONFIG = { ... };");
 }
 
 // ============================================================================
@@ -176,6 +85,49 @@ function escapeJsString(value) {
     .replace(/\r/g, '')
     .replace(/\n/g, '');
 }
+/**
+ * ============================================================================
+ * Browser-only Error Monitor Snippet
+ * ============================================================================
+ * This block is SAFE in Node because it bails immediately unless it’s a browser.
+ * (It’s fine for it to exist in the script file; it just must not execute.)
+ */
+(function () {
+  "use strict";
+
+  // ✅ Critical guard: never run in Node/build.
+  const isBrowser =
+    typeof window !== "undefined" &&
+    typeof document !== "undefined" &&
+    typeof globalThis !== "undefined" &&
+    typeof globalThis.addEventListener === "function";
+
+  if (!isBrowser) return;
+
+  const DEFAULTS = {
+    endpoint: "",
+    sampleRate: 1,
+    timeoutMs: 4000,
+    dedupeWindowMs: 30000,
+  };
+
+  const cfg = (() => {
+    const c = globalThis.PO_ERROR_MONITOR || {};
+    return {
+      endpoint: typeof c.endpoint === "string" ? c.endpoint : DEFAULTS.endpoint,
+      sampleRate:
+        typeof c.sampleRate === "number" && Number.isFinite(c.sampleRate)
+          ? Math.max(0, Math.min(1, c.sampleRate))
+          : DEFAULTS.sampleRate,
+    };
+  })();
+
+  function shouldSend() {
+    if (!cfg.endpoint) return false;
+    if (cfg.sampleRate >= 1) return true;
+    if (cfg.sampleRate <= 0) return false;
+    return Math.random() < cfg.sampleRate;
+  }
 
 function clamp01(n) {
   if (!Number.isFinite(n)) return 1;
@@ -204,6 +156,35 @@ function injectErrorMonitorConfigIntoHtml() {
 
   const assignPattern = /window\.PO_ERROR_MONITOR\s*=\s*\{[\s\S]*?\};/g;
   const replacement = `window.PO_ERROR_MONITOR = { endpoint: '${endpoint}', sampleRate: ${sampleRate} };`;
+  const lastSeen = new Map();
+  function dedup(key) {
+    const t = Date.now();
+    const prev = lastSeen.get(key);
+    if (prev && t - prev < DEFAULTS.dedupeWindowMs) return true;
+    lastSeen.set(key, t);
+    if (lastSeen.size > 100) {
+      const first = lastSeen.keys().next().value;
+      lastSeen.delete(first);
+    }
+    return false;
+  }
+
+  function context() {
+    const loc = globalThis.location;
+    const nav = globalThis.navigator;
+    return {
+      url: loc?.href || "",
+      path: loc?.pathname || "",
+      referrer: document.referrer || "",
+      userAgent: nav?.userAgent || "",
+      language: nav?.language || "",
+      viewport: {
+        w: globalThis.innerWidth || 0,
+        h: globalThis.innerHeight || 0,
+        dpr: globalThis.devicePixelRatio || 1,
+      },
+    };
+  }
 
   let touched = 0;
   for (const f of files) {
@@ -219,7 +200,57 @@ function injectErrorMonitorConfigIntoHtml() {
 
   if (touched) {
     console.log(`✅ Injected PO_ERROR_MONITOR config into ${touched} HTML file(s)`);
+  function post(payload) {
+    if (!shouldSend()) return;
+
+    const body = JSON.stringify(payload);
+    try {
+      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ctrl
+        ? setTimeout(() => { try { ctrl.abort(); } catch {} }, DEFAULTS.timeoutMs)
+        : null;
+
+      fetch(cfg.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+        signal: ctrl ? ctrl.signal : undefined,
+      })
+        .catch(() => {})
+        .finally(() => { if (timer) clearTimeout(timer); });
+    } catch {}
+  }
+
+  function capture(type, data, fingerprintParts) {
+    const payload = { v: 1, ts: nowIso(), type, ctx: context(), ...data };
+    const fp = hash32([type, ...(fingerprintParts || [])].join("|"));
+    payload.fingerprint = fp;
+    if (dedup(fp)) return;
+    post(payload);
   }
 }
 
 injectErrorMonitorConfigIntoHtml();
+  globalThis.addEventListener("error", function (event) {
+    try {
+      const err = normalizeError(event?.error);
+      const src = short(event?.filename || "", 400);
+      const line = typeof event?.lineno === "number" ? event.lineno : null;
+      const col = typeof event?.colno === "number" ? event.colno : null;
+
+      capture(
+        "error",
+        { error: err, source: { file: src, line, col } },
+        [err.name, err.message, src, String(line), String(col)]
+      );
+    } catch {}
+  });
+
+  globalThis.addEventListener("unhandledrejection", function (event) {
+    try {
+      const err = normalizeError(event?.reason);
+      capture("unhandledrejection", { error: err }, [err.name, err.message]);
+    } catch {}
+  });
+})();
