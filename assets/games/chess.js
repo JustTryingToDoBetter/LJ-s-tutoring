@@ -431,7 +431,7 @@ function mount(root, ctx) {
   root.innerHTML = "";
 
   const ui = ctx.ui;
-  const storage = ctx.storage;
+  const store = ctx.store;
 
   const resetBtn = el("button", { class: "po-btn po-btn--primary", type: "button" }, ["New Game"]);
   const undoBtn  = el("button", { class: "po-btn", type: "button" }, ["Undo"]);
@@ -464,7 +464,7 @@ function mount(root, ctx) {
     board.appendChild(btn);
   }
 
-  const restored = storage?.get?.("state", null) || loadLegacy();
+  const restored = store?.get?.()?.games?.[GAME_ID]?.save || loadLegacy();
   const state = (restored && restored.v === 1 && Array.isArray(restored.board) && restored.board.length === 64)
     ? restored
     : {
@@ -482,7 +482,7 @@ function mount(root, ctx) {
   if (state.done == null) state.done = false;
 
   function persist() {
-    storage?.set?.("state", state);
+    store?.updateGame?.(GAME_ID, () => ({ save: state }));
     saveLegacy(state);
   }
 
@@ -687,7 +687,7 @@ function mount(root, ctx) {
     });
     ctx.addEvent(clearBtn, "click", () => {
       clearLegacy();
-      storage?.del?.("state");
+      store?.updateGame?.(GAME_ID, () => ({ save: null }));
       resetBoard();
     });
 
