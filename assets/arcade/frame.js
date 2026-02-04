@@ -9,24 +9,31 @@
  * This file is an ES module and is loaded via dynamic import() from assets/arcade.js.
  */
 
-import { el, clear } from "../lib/ui.js";
+import { el } from "./ui/dom.js";
+import { createModal } from "./ui/Modal.js";
+import { createToastManager } from "./ui/Toast.js";
+import { createHUD } from "./ui/HUD.js";
+import { createSettingsPanel } from "./ui/SettingsPanel.js";
+import { createHowTo } from "./ui/HowTo.js";
 
 export function createGameFrame({ mount, title = "Game", subtitle = "Odyssey Arcade" }) {
+  const clear = (node) => {
+    if (!node) return;
+    if (node.replaceChildren) node.replaceChildren();
+    else while (node.firstChild) node.removeChild(node.firstChild);
+  };
+
   clear(mount);
 
   const ac = new AbortController();
   const { signal } = ac;
 
-  let modalEl = null;
-  let toastEl = null;
-  let toastTimer = null;
+  let modal = null;
 
-  const shell = el("section", { class: "po-game-shell" });
+  const shell = el("section", { class: "po-game-shell arcade-shell" });
 
   // HUD (optional)
-  const hudPanel = el("div", { class: "po-panel po-hud", hidden: true });
-  const hudRow = el("div", { class: "po-hud-row" });
-  hudPanel.append(hudRow);
+  const hudSlot = el("div", { class: "po-panel po-hud", hidden: true });
 
   // Stage
   const stage = el("div", { class: "po-stage po-panel", role: "region", "aria-label": `${title} stage`, tabindex: "0" });
@@ -43,26 +50,23 @@ export function createGameFrame({ mount, title = "Game", subtitle = "Odyssey Arc
   const statusText = el("div", { class: "po-status__text", text: "" });
   statusPanel.append(statusText);
 
-  shell.append(hudPanel, stage, controlsPanel, statusPanel);
+  const overlay = el("div", { class: "arc-overlay" });
+  const toastManager = createToastManager(overlay);
+
+  shell.append(hudSlot, stage, controlsPanel, statusPanel, overlay);
   mount.append(shell);
 
   function setHUD(chips = []) {
-    clear(hudRow);
+    clear(hudSlot);
 
     if (!chips || chips.length === 0) {
-      hudPanel.hidden = true;
+      hudSlot.hidden = true;
       return;
     }
 
-    for (const { k, v } of chips) {
-      hudRow.append(
-        el("span", { class: "po-chip" }, [
-          el("span", { class: "po-chip__k", text: k }),
-          el("span", { class: "po-chip__v", text: v }),
-        ])
-      );
-    }
-    hudPanel.hidden = false;
+    const hud = createHUD({ leftStats: chips, title });
+    hudSlot.append(hud);
+    hudSlot.hidden = false;
   }
 
   function setControls(nodeOrNodes) {
@@ -101,54 +105,33 @@ export function createGameFrame({ mount, title = "Game", subtitle = "Odyssey Arc
     ac.abort();
     // mount is about to be navigated away or re-mounted; keep it tidy
     clear(mount);
-    try { modalEl?.remove(); } catch {}
-    try { toastEl?.remove(); } catch {}
+    try { modal?.close?.(); } catch {}
+    try { toastManager?.destroy?.(); } catch {}
   }
 
   function closeModal() {
-    if (!modalEl) return;
-    modalEl.remove();
-    modalEl = null;
+    if (!modal) return;
+    modal.close?.();
+    modal = null;
   }
 
-  function showModal({ title: header, body, content, actions = [] } = {}) {
+  function showModal({ title: header, body, content, actions = [], onClose, closeOnBackdrop } = {}) {
     closeModal();
 
-    const bodyNode = content
-      ? content
-      : el("p", { text: String(body || "") });
+    modal = createModal({
+      title: String(header || ""),
+      body,
+      content,
+      actions,
+      onClose,
+      closeOnBackdrop,
+    });
 
-    modalEl = el("div", { class: "po-modal-backdrop", role: "presentation" }, [
-      el("div", { class: "po-modal", role: "dialog", "aria-modal": "true" }, [
-        el("h3", { text: String(header || "") }),
-        bodyNode,
-        el("div", { class: "po-modal-actions" }, actions.map(a =>
-          el("button", {
-            class: `po-btn ${a.primary ? "po-btn--primary" : ""}`,
-            type: "button",
-            onClick: () => { a.onClick?.(); if (!a.keepOpen) closeModal(); },
-          }, [a.label])
-        )),
-      ]),
-    ]);
-
-    modalEl.addEventListener("click", (e) => {
-      if (e.target === modalEl) closeModal();
-    }, { signal });
-
-    document.body.appendChild(modalEl);
+    overlay.append(modal.root);
   }
 
   function showToast(message, ms = 1600) {
-    if (toastEl) toastEl.remove();
-    toastEl = el("div", { class: "po-toast", role: "status", "aria-live": "polite", text: String(message) });
-    document.body.appendChild(toastEl);
-
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-      try { toastEl?.remove(); } catch {}
-      toastEl = null;
-    }, ms);
+    toastManager.show(String(message), ms);
   }
 
   function showPause({ onResume, onRestart, onSettings, onQuit } = {}) {
@@ -164,79 +147,26 @@ export function createGameFrame({ mount, title = "Game", subtitle = "Odyssey Arc
     });
   }
 
-  function showHowTo({ title: howTitle, subtitle: howSub, steps = [], controls = [] } = {}) {
-    const body = el("div", { class: "po-modal-body" }, [
-      howSub ? el("p", { text: String(howSub) }) : null,
-      steps?.length
-        ? el("div", { class: "po-modal-section" }, [
-            el("div", { class: "po-modal-label", text: "Goals" }),
-            el("ul", { class: "po-modal-list" }, steps.map(s => el("li", { text: s }))),
-          ])
-        : null,
-      controls?.length
-        ? el("div", { class: "po-modal-section" }, [
-            el("div", { class: "po-modal-label", text: "Controls" }),
-            el("ul", { class: "po-modal-list" }, controls.map(s => el("li", { text: s }))),
-          ])
-        : null,
-    ].filter(Boolean));
+  function showHowTo({ gameId, title: howTitle, subtitle: howSub, steps = [], controls = [], auto = false } = {}) {
+    const how = createHowTo({ gameId, title: howTitle, subtitle: howSub, steps, controls });
+    if (auto && !how.shouldShow()) return;
 
     showModal({
-      title: howTitle || "How to Play",
-      content: body,
+      title: how.title || "How to Play",
+      content: how.content,
+      onClose: () => how.onClose?.(),
       actions: [
-        { label: "Got it", primary: true },
+        { label: "Got it", primary: true, onClick: () => how.onClose?.() },
       ],
     });
   }
 
   function showSettings({ settings, onChange } = {}) {
-    const state = { ...settings };
-
-    const muteBtn = el("button", { class: "po-btn", type: "button" }, [state.mute ? "Unmute" : "Mute"]);
-    const sfxRange = el("input", { class: "po-range", type: "range", min: "0", max: "1", step: "0.05", value: String(state.sfxVolume ?? 0.7) });
-    const musicRange = el("input", { class: "po-range", type: "range", min: "0", max: "1", step: "0.05", value: String(state.musicVolume ?? 0.5) });
-    const motionToggle = el("button", { class: "po-btn", type: "button" }, [state.reducedMotion ? "Reduced Motion: On" : "Reduced Motion: Off"]);
-
-    const body = el("div", { class: "po-modal-body" }, [
-      el("div", { class: "po-settings-row" }, [
-        el("div", { class: "po-settings-label", text: "Mute" }),
-        muteBtn,
-      ]),
-      el("div", { class: "po-settings-row" }, [
-        el("div", { class: "po-settings-label", text: "SFX Volume" }),
-        sfxRange,
-      ]),
-      el("div", { class: "po-settings-row" }, [
-        el("div", { class: "po-settings-label", text: "Music Volume" }),
-        musicRange,
-      ]),
-      el("div", { class: "po-settings-row" }, [
-        el("div", { class: "po-settings-label", text: "Reduced Motion" }),
-        motionToggle,
-      ]),
-    ]);
-
-    const emit = (patch) => onChange?.(patch);
-
-    muteBtn.addEventListener("click", () => {
-      state.mute = !state.mute;
-      muteBtn.textContent = state.mute ? "Unmute" : "Mute";
-      emit({ mute: state.mute });
-    }, { signal });
-
-    sfxRange.addEventListener("input", () => emit({ sfxVolume: Number(sfxRange.value) }), { signal });
-    musicRange.addEventListener("input", () => emit({ musicVolume: Number(musicRange.value) }), { signal });
-
-    motionToggle.addEventListener("click", () => {
-      state.reducedMotion = !state.reducedMotion;
-      motionToggle.textContent = state.reducedMotion ? "Reduced Motion: On" : "Reduced Motion: Off";
-      emit({ reducedMotion: state.reducedMotion });
-    }, { signal });
+    const { panel } = createSettingsPanel({ settings, onChange });
 
     showModal({
       title: "Settings",
-      content: body,
+      content: panel,
       actions: [
         { label: "Done", primary: true },
       ],

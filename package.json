@@ -35,7 +35,7 @@
     "build:images": "cpy \"images/*\" dist/images",
     "build:arcade": "cpy \"arcade/**/*\" dist/arcade",
     "build:assets": "cpy \"assets/*.js\" \"assets/*.css\" dist/assets --flat",
-    "build:arcade-modules": "cpy \"assets/arcade/**/*.js\" dist/assets/arcade",
+    "build:arcade-modules": "cpy \"assets/arcade/**/*.js\" \"assets/arcade/**/*.css\" \"assets/arcade/**/*.svg\" \"assets/arcade/**/*.png\" dist/assets/arcade",
     "build:games": "cpy \"assets/games/*.js\" dist/assets/games",
     "build:lib": "cpy \"assets/lib/*.js\" dist/assets/lib",
     "build:data": "cpy \"assets/data/*.json\" dist/assets/data",

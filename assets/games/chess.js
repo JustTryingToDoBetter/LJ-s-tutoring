@@ -8,10 +8,58 @@
   - Lifecycle cleanup: AbortController auto-aborts when root is removed
 ============================================================================ */
 
+import { preloadSprites } from "../arcade/spriteLoader.js";
+
 "use strict";
 
 const GAME_ID = "chess";
 const STORAGE_KEY = "po_arcade_chess_v1";
+const STATS_KEY = "odyssey_stats_chess_v1";
+
+const SPRITE_MANIFEST = {
+  wP: new URL("../arcade/sprites/chess/wp.svg", import.meta.url).href,
+  wN: new URL("../arcade/sprites/chess/wn.svg", import.meta.url).href,
+  wB: new URL("../arcade/sprites/chess/wb.svg", import.meta.url).href,
+  wR: new URL("../arcade/sprites/chess/wr.svg", import.meta.url).href,
+  wQ: new URL("../arcade/sprites/chess/wq.svg", import.meta.url).href,
+  wK: new URL("../arcade/sprites/chess/wk.svg", import.meta.url).href,
+  bP: new URL("../arcade/sprites/chess/bp.svg", import.meta.url).href,
+  bN: new URL("../arcade/sprites/chess/bn.svg", import.meta.url).href,
+  bB: new URL("../arcade/sprites/chess/bb.svg", import.meta.url).href,
+  bR: new URL("../arcade/sprites/chess/br.svg", import.meta.url).href,
+  bQ: new URL("../arcade/sprites/chess/bq.svg", import.meta.url).href,
+  bK: new URL("../arcade/sprites/chess/bk.svg", import.meta.url).href,
+};
+
+const UNICODE_PIECES = {
+  wK: "♔",
+  wQ: "♕",
+  wR: "♖",
+  wB: "♗",
+  wN: "♘",
+  wP: "♙",
+  bK: "♚",
+  bQ: "♛",
+  bR: "♜",
+  bB: "♝",
+  bN: "♞",
+  bP: "♟",
+};
+
+const PIECE_LABELS = {
+  wK: "White king",
+  wQ: "White queen",
+  wR: "White rook",
+  wB: "White bishop",
+  wN: "White knight",
+  wP: "White pawn",
+  bK: "Black king",
+  bQ: "Black queen",
+  bR: "Black rook",
+  bB: "Black bishop",
+  bN: "Black knight",
+  bP: "Black pawn",
+};
 
   // --- Tiny DOM helper ------------------------------------------------------
 const el = (tag, attrs = {}, children = []) => {
@@ -30,90 +78,42 @@ const loadLegacy = () => { try { return JSON.parse(localStorage.getItem(STORAGE_
 const saveLegacy = (s) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} };
 const clearLegacy = () => { try { localStorage.removeItem(STORAGE_KEY); } catch {} };
 
+const defaultStats = {
+  plays: 0,
+  wins: 0,
+  losses: 0,
+  draws: 0,
+  lastPlayed: null,
+  currentStreak: 0,
+  bestStreak: 0,
+};
+
+const loadStats = (store) => {
+  let stats = null;
+  try { stats = JSON.parse(localStorage.getItem(STATS_KEY) || "null"); } catch { stats = null; }
+
+  if (!stats || typeof stats !== "object") stats = { ...defaultStats };
+
+  const hasAny = stats.plays || stats.wins || stats.losses || stats.draws;
+  if (!hasAny && store?.get) {
+    const legacy = store.get()?.games?.chess;
+    if (legacy) {
+      const wins = Number(legacy.winsW || 0);
+      const losses = Number(legacy.winsB || 0);
+      const draws = Number(legacy.draws || 0);
+      const plays = wins + losses + draws;
+      stats = { ...stats, wins, losses, draws, plays };
+    }
+  }
+
+  return { ...defaultStats, ...stats };
+};
+
+const saveStats = (stats) => {
+  try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch {}
+};
+
   // --- Chess core -----------------------------------------------------------
-  // Pieces: "wP","wN","wB","wR","wQ","wK" and black "b*"
-  // Custom SVG set (simple, original geometry; no external assets).
-  const pieceSvg = (piece) => {
-    if (!piece || piece.length < 2) return "";
-    const side = piece[0] === "b" ? "b" : "w";
-    const t = piece[1];
-
-    const cls = `po-chess-piece ${side === "w" ? "is-white" : "is-black"}`;
-    const common = `class="${cls}" viewBox="0 0 48 48" aria-hidden="true" focusable="false"`;
-
-    // A consistent base stand used by most pieces
-    const base = `
-      <path d="M14 40h20c2.5 0 4-1.4 4-3.2 0-1.3-.7-2.5-1.8-3.3l-2.4-1.7H14l-2.4 1.7A4.1 4.1 0 0 0 9.8 36.8C9.8 38.6 11.5 40 14 40Z"/>
-      <path d="M16 31.8h16l-1.4-4.2H17.4L16 31.8Z" opacity=".22"/>
-    `;
-
-    if (t === "P") {
-      return `
-        <svg ${common}>
-          <path d="M24 9.2c4.2 0 7.6 3.4 7.6 7.6S28.2 24.4 24 24.4s-7.6-3.4-7.6-7.6 3.4-7.6 7.6-7.6Z"/>
-          <path d="M18.2 26.2h11.6c1.8 2.1 2.9 4.5 2.9 7.1 0 2.2-.7 4.1-1.6 5.7H16.9c-.9-1.6-1.6-3.5-1.6-5.7 0-2.6 1.1-5 2.9-7.1Z"/>
-          ${base}
-        </svg>
-      `;
-    }
-
-    if (t === "R") {
-      return `
-        <svg ${common}>
-          <path d="M14 10h20v8H14v-8Z"/>
-          <path d="M16 10V8h4v2h4V8h4v2h4V8h4v2" opacity=".25"/>
-          <path d="M17 18h14l2 4v13H15V22l2-4Z"/>
-          ${base}
-        </svg>
-      `;
-    }
-
-    if (t === "B") {
-      return `
-        <svg ${common}>
-          <path d="M24 10c4.8 0 8.6 3.8 8.6 8.6 0 3.2-1.7 6-4.3 7.5l1 3.3H19.7l1-3.3c-2.6-1.5-4.3-4.3-4.3-7.5C16.4 13.8 19.2 10 24 10Z"/>
-          <path d="M24 13.8c-1.8 1.5-2.6 3.2-2.6 5.2 0 1.7.6 3.1 1.6 4.2" opacity=".22"/>
-          <path d="M26.8 15.3 21.2 20.9" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" opacity=".65"/>
-          <path d="M18 29.4h12c1.6 2.1 2.5 4.2 2.5 6.5 0 1.2-.2 2.2-.5 3.1H16c-.3-.9-.5-1.9-.5-3.1 0-2.3.9-4.4 2.5-6.5Z"/>
-          ${base}
-        </svg>
-      `;
-    }
-
-    if (t === "N") {
-      return `
-        <svg ${common}>
-          <path d="M31.8 38.8H16.3c-.9-1.2-1.3-2.7-1.3-4.4 0-4.7 2.7-8.3 6-10.9l-1.7-2.6c-1.4-2.1-.9-4.8 1.1-6.3 1.8-1.3 4.3-1.1 5.9.5l2.8 2.8c2.6 2.6 4.1 5.7 4.1 9.1 0 1.8-.5 3.6-1.4 5.2l1 2.4c.6 1.4.3 3.1-.9 4.2Z"/>
-          <path d="M20.6 17.9c2.2-.4 4.1 0 5.6 1.5" opacity=".22"/>
-          <circle cx="27.2" cy="22.7" r="1.5" opacity=".35"/>
-          <path d="M18 29.6h12c1.8 2.1 2.8 4.4 2.8 6.9 0 .9-.1 1.7-.3 2.3H15.5c-.2-.6-.3-1.4-.3-2.3 0-2.5 1-4.8 2.8-6.9Z"/>
-          ${base}
-        </svg>
-      `;
-    }
-
-    if (t === "Q") {
-      return `
-        <svg ${common}>
-          <path d="M14 19.5 18 13l6 6 6-6 4 6.5-3 2.3L32.2 27H15.8L17 21.8l-3-2.3Z"/>
-          <circle cx="18" cy="12" r="2.1"/>
-          <circle cx="24" cy="11" r="2.1"/>
-          <circle cx="30" cy="12" r="2.1"/>
-          <path d="M18.2 27h11.6c1.8 2.1 2.9 4.5 2.9 7.1 0 2.2-.7 4.1-1.6 5.7H16.9c-.9-1.6-1.6-3.5-1.6-5.7 0-2.6 1.1-5 2.9-7.1Z"/>
-          ${base}
-        </svg>
-      `;
-    }
-
-    // King (default)
-    return `
-      <svg ${common}>
-        <path d="M22.2 10h3.6v5.4H31v3.6h-5.2V24h-3.6v-5H17v-3.6h5.2V10Z"/>
-        <path d="M18.2 24.8h11.6c2.3 2.7 3.8 5.7 3.8 9 0 2.0-.5 3.8-1.1 5.2H15.5c-.6-1.4-1.1-3.2-1.1-5.2 0-3.3 1.5-6.3 3.8-9Z"/>
-        ${base}
-      </svg>
-    `;
-  };
 
   const colorOf = (p) => (p ? p[0] : null); // 'w'|'b'|null
   const typeOf  = (p) => (p ? p[1] : null); // 'P','N','B','R','Q','K'
@@ -505,7 +505,7 @@ const clearLegacy = () => { try { localStorage.removeItem(STORAGE_KEY); } catch 
   }
 
 // --- UI -------------------------------------------------------------------
-function mount(root, ctx) {
+async function mount(root, ctx) {
   root.innerHTML = "";
 
   const ui = ctx.ui;
@@ -526,8 +526,23 @@ function mount(root, ctx) {
     { k: "Rules", v: "Legal" },
   ]);
 
-  const board = el("div", { class: "po-ch-board", role: "grid", "aria-label": "Chess board" });
+  const board = el("div", { class: "po-ch-board", role: "grid", "aria-label": "Chess board", tabindex: "0" });
   root.append(board);
+
+  let sprites = {};
+  let spritesFailed = false;
+  try {
+    ui?.setStatus?.("Loading chess set...");
+    const result = await preloadSprites(SPRITE_MANIFEST, { timeoutMs: 3500 });
+    sprites = result.sprites || {};
+    spritesFailed = Boolean(result.failed || result.timedOut);
+  } catch {
+    spritesFailed = true;
+  }
+
+  if (spritesFailed) {
+    ui?.showToast?.("Sprite load failed — using unicode pieces.");
+  }
 
   // Build 64 cells
   const cells = [];
@@ -559,6 +574,9 @@ function mount(root, ctx) {
 
   if (state.done == null) state.done = false;
 
+  const stats = loadStats(store);
+  let statsRecorded = false;
+
   function persist() {
     store?.updateGame?.(GAME_ID, () => ({ save: state }));
     saveLegacy(state);
@@ -587,6 +605,43 @@ function mount(root, ctx) {
     }
 
     function setStatus(msg) { ui?.setStatus?.(msg); }
+
+    function createPieceNode(piece) {
+      if (!piece) return null;
+      const sprite = sprites?.[piece];
+      if (sprite?.src) {
+        return el("img", {
+          class: "po-ch-piece-img",
+          src: sprite.src,
+          alt: PIECE_LABELS[piece] || "Chess piece",
+          draggable: "false",
+        });
+      }
+
+      const unicode = UNICODE_PIECES[piece] || "";
+      return el("span", { class: "po-ch-piece-unicode", text: unicode });
+    }
+
+    function recordOutcome(result) {
+      if (statsRecorded) return;
+      statsRecorded = true;
+      stats.plays += 1;
+      stats.lastPlayed = Date.now();
+
+      if (result === "w") {
+        stats.wins += 1;
+        stats.currentStreak += 1;
+      } else if (result === "b") {
+        stats.losses += 1;
+        stats.currentStreak = 0;
+      } else {
+        stats.draws += 1;
+        stats.currentStreak = 0;
+      }
+
+      stats.bestStreak = Math.max(stats.bestStreak || 0, stats.currentStreak || 0);
+      saveStats(stats);
+    }
 
     function clearHighlights() {
       for (const cell of cells) {
@@ -617,10 +672,11 @@ function mount(root, ctx) {
         const p = state.board[bi];
         if (p) {
           cell.classList.add("has-piece");
-          cell.innerHTML = pieceSvg(p) || "";
+          const node = createPieceNode(p);
+          cell.replaceChildren(node);
         } else {
           cell.classList.remove("has-piece");
-          cell.innerHTML = "";
+          cell.replaceChildren();
         }
 
         if (state.last && (bi === state.last.from || bi === state.last.to)) cell.classList.add("is-last");
@@ -653,11 +709,16 @@ function mount(root, ctx) {
 
       if (out.done && !state.done) {
         state.done = true;
+        const inChk = inCheck(state.board, state.turn);
+        const result = inChk ? (state.turn === "w" ? "b" : "w") : "draw";
+        recordOutcome(result);
+
         ui?.showModal?.({
-          title: "Game Over",
+          title: inChk ? "Checkmate" : "Stalemate",
           body: out.text,
           actions: [
-            { label: "New Game", primary: true, onClick: () => resetBoard() },
+            { label: "Restart", primary: true, onClick: () => resetBoard() },
+            { label: "Back to Arcade", onClick: () => window.location.assign("/arcade/") },
           ],
         });
       }
@@ -758,8 +819,13 @@ function mount(root, ctx) {
       state.last = null;
       state.history = [];
       state.done = false;
+      statsRecorded = false;
       render();
     }
+
+    ctx.addEvent(board, "touchmove", (e) => {
+      e.preventDefault();
+    }, { passive: false });
 
     cells.forEach((cell, di) => {
       ctx.addEvent(cell, "click", () => {

@@ -1,7 +1,8 @@
 import { loadState, saveState } from "../lib/storage.js";
 
 const AUDIO_KEY = "po_arcade_audio_v1";
-const SETTINGS_KEY = "po_arcade_settings_v1";
+const LEGACY_SETTINGS_KEY = "po_arcade_settings_v1";
+const SETTINGS_KEY = "odyssey_arcade_settings_v1";
 
 export function createArcadeStore() {
   let state = loadState();
@@ -172,7 +173,15 @@ export function createSettingsStore() {
 
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) settings = { ...settings, ...JSON.parse(raw) };
+    if (raw) {
+      settings = { ...settings, ...JSON.parse(raw) };
+    } else {
+      const legacy = localStorage.getItem(LEGACY_SETTINGS_KEY);
+      if (legacy) {
+        settings = { ...settings, ...JSON.parse(legacy) };
+        localStorage.removeItem(LEGACY_SETTINGS_KEY);
+      }
+    }
   } catch {}
 
   const persist = () => {

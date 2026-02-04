@@ -432,13 +432,15 @@ const GAMES = [
 
       setPauseUI(false);
 
-      const openHowTo = () => {
+      const openHowTo = (auto = false) => {
         const how = meta?.howTo || {};
         frame?.showHowTo?.({
+          gameId,
           title: meta?.title || "How to Play",
           subtitle: how.subtitle,
           steps: how.steps || [],
           controls: how.controls || [],
+          auto,
         });
       };
 
@@ -519,15 +521,9 @@ const GAMES = [
         });
       };
 
-      const howKey = `po_arcade_howto_${gameId}`;
-      if (!localStorage.getItem(howKey)) {
-        openHowTo();
-        localStorage.setItem(howKey, "1");
+      openHowTo(true);
 
-
-      }
-
-      howToBtn?.addEventListener("click", () => openHowTo());
+      howToBtn?.addEventListener("click", () => openHowTo(false));
       settingsBtn?.addEventListener("click", () => openSettings());
 
       const preventScrollKeys = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Spacebar", "PageUp", "PageDown", "Home", "End"]);
