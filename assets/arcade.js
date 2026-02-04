@@ -341,6 +341,11 @@ const GAMES = [
 
     safeText($("#arcade-year"), new Date().getFullYear());
 
+    const howToBtn = $("#play-howto");
+    const settingsBtn = $("#play-settings");
+    const pauseBtn = $("#play-pause");
+    const restartBtn = $("#play-restart");
+
     const gameId = getQueryParam("g");
     const meta = GAMES.find((x) => x.id === gameId);
 
