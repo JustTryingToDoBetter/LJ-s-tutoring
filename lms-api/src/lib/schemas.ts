@@ -24,6 +24,11 @@ export const LoginSchema = z.object({
   password: z.string().min(1).max(200),
 });
 
+export const TestLoginSchema = z.object({
+  role: z.enum(['ADMIN', 'TUTOR']),
+  email: EmailSchema,
+});
+
 export const MagicLinkRequestSchema = z.object({
   email: EmailSchema,
 });

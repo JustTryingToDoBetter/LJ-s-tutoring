@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { pool } from '../db/pool.js';
 import { normalizeEmail, generateCsrfToken, generateMagicToken, hashToken } from '../lib/security.js';
-import { MagicLinkRequestSchema, RegisterAdminSchema } from '../lib/schemas.js';
+import { MagicLinkRequestSchema, RegisterAdminSchema, TestLoginSchema } from '../lib/schemas.js';
 import { sendMagicLink } from '../lib/email.js';
 
 function sessionCookieOptions() {
@@ -222,6 +222,93 @@ export async function authRoutes(app: FastifyInstance) {
     reply.clearCookie('csrf', { path: '/' });
     return reply.send({ ok: true });
   });
+
+  if (process.env.NODE_ENV === 'test') {
+    app.post('/test/login-as', async (req, reply) => {
+      const parsed = TestLoginSchema.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+      }
+
+      const email = normalizeEmail(parsed.data.email);
+      const role = parsed.data.role;
+      const client = await pool.connect();
+      let userId: string | undefined;
+      let tutorId: string | null = null;
+
+      try {
+        await client.query('BEGIN');
+
+        const existing = await client.query(
+          `select id, role, tutor_profile_id from users where email = $1`,
+          [email]
+        );
+
+        if (existing.rowCount > 0) {
+          const row = existing.rows[0] as { id: string; role: 'ADMIN' | 'TUTOR'; tutor_profile_id: string | null };
+          if (row.role !== role) {
+            await client.query('ROLLBACK');
+            return reply.code(409).send({ error: 'role_mismatch' });
+          }
+          userId = row.id;
+          tutorId = row.tutor_profile_id;
+
+          if (role === 'TUTOR' && !tutorId) {
+            const tutorRes = await client.query(
+              `insert into tutor_profiles (full_name, phone, default_hourly_rate, active)
+               values ($1, null, $2, true)
+               returning id`,
+              ['Test Tutor', 250]
+            );
+            tutorId = tutorRes.rows[0].id as string;
+            await client.query(
+              `update users set tutor_profile_id = $1 where id = $2`,
+              [tutorId, userId]
+            );
+          }
+        } else if (role === 'ADMIN') {
+          const res = await client.query(
+            `insert into users (email, role)
+             values ($1, 'ADMIN')
+             returning id`,
+            [email]
+          );
+          userId = res.rows[0].id as string;
+        } else {
+          const tutorRes = await client.query(
+            `insert into tutor_profiles (full_name, phone, default_hourly_rate, active)
+             values ($1, null, $2, true)
+             returning id`,
+            ['Test Tutor', 250]
+          );
+          tutorId = tutorRes.rows[0].id as string;
+          const userRes = await client.query(
+            `insert into users (email, role, tutor_profile_id)
+             values ($1, 'TUTOR', $2)
+             returning id`,
+            [email, tutorId]
+          );
+          userId = userRes.rows[0].id as string;
+        }
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        req.log?.error?.(err);
+        return reply.code(500).send({ error: 'internal_error' });
+      } finally {
+        client.release();
+      }
+
+      const jwt = await app.jwt.sign({
+        userId,
+        role,
+        tutorId: tutorId ?? undefined
+      });
+      const csrfToken = setAuthCookies(reply, jwt);
+      return reply.send({ ok: true, csrfToken });
+    });
+  }
 
   app.post('/auth/register-admin', async (req, reply) => {
     const parsed = RegisterAdminSchema.safeParse(req.body);

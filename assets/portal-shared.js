@@ -105,7 +105,7 @@ export function qs(id) {
 
 export function renderStatus(status) {
   const raw = String(status || 'DRAFT');
-  const text = escapeHtml(raw.toLowerCase());
+  const text = escapeHtml(raw.toLowerCase().replace(/_/g, ' '));
   const safeClass = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '');
   return `<span class="pill ${safeClass}">${text}</span>`;
 }

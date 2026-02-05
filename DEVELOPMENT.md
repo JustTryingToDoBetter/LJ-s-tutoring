@@ -170,6 +170,23 @@ npm run qa:a11y          # Accessibility testing
 - Pre-commit hooks prevent bad code from entering repo
 - HTML validation catches markup issues early
 
+### A11y Checklist
+- All interactive elements reachable with Tab
+- Visible focus states on buttons, links, and inputs
+- Inline validation messages linked via `aria-describedby`
+- Icon-only controls include `aria-label`
+- Offline/online state announced via `aria-live`
+- Reduced motion respected via `prefers-reduced-motion`
+
+### Manual Test Checklist (Tutor Portal)
+- Start session timer, refresh, and resume from banner
+- Stop timer auto-fills end time and duration is shown
+- Create offline draft, then go online and sync to server DRAFT
+- Verify offline drafts never auto-submit
+- Student picker search returns results quickly; recent students update
+- Keyboard navigation shows visible focus on all controls
+- 360x640 viewport: forms fit, time inputs usable without scroll jank
+
 ## 📈 Future Enhancements
 
 Potential improvements not yet implemented:

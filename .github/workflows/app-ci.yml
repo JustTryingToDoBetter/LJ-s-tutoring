@@ -1,0 +1,157 @@
+name: App CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: app-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lms_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/lms_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare test results folder
+        run: mkdir -p lms-api/test-results
+
+      - name: Run unit tests
+        run: npm run test:ci --prefix lms-api
+
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: lms-api/test-results/
+          retention-days: 14
+
+      - name: Unit test summary
+        if: always()
+        run: |
+          node -e "const fs=require('fs');const p='lms-api/test-results/unit-junit.xml';if(fs.existsSync(p)){const xml=fs.readFileSync(p,'utf8');const m=xml.match(/tests=\"(\d+)\".*failures=\"(\d+)\"/);if(m){console.log('Unit tests: '+m[1]+' total, '+m[2]+' failures');}else{console.log('Unit tests: report parsed');}}" >> $GITHUB_STEP_SUMMARY
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lms_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/lms_test
+      API_BASE_URL: http://localhost:3001
+      PORT: 3001
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare test results folder
+        run: mkdir -p lms-api/test-results
+
+      - name: Reset and seed test database
+        run: |
+          npm run db:reset:test --prefix lms-api
+          npm run seed:test --prefix lms-api
+
+      - name: Start API server
+        run: |
+          npm run dev --prefix lms-api > lms-api/test-results/api.log 2>&1 &
+          npx wait-on http://localhost:3001/health --timeout 60000
+
+      - name: Run e2e tests
+        run: npm run test:e2e:ci --prefix lms-api
+
+      - name: Upload e2e reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-reports
+          path: lms-api/test-results/
+          retention-days: 14
+
+      - name: E2E summary
+        if: always()
+        run: |
+          node -e "const fs=require('fs');const p='lms-api/test-results/e2e-junit.xml';if(fs.existsSync(p)){const xml=fs.readFileSync(p,'utf8');const m=xml.match(/tests=\"(\d+)\".*failures=\"(\d+)\"/);if(m){console.log('E2E tests: '+m[1]+' total, '+m[2]+' failures');}else{console.log('E2E tests: report parsed');}}" >> $GITHUB_STEP_SUMMARY
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
