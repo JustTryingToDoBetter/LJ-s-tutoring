@@ -120,7 +120,7 @@ export async function buildApp() {
     }
   });
 
-  app.setErrorHandler((err, req, reply) => {
+  app.setErrorHandler((err: any, req, reply) => {
     errorMonitor.captureException(err, {
       correlationId: req.id,
       userId: req.user?.userId,
@@ -135,7 +135,7 @@ export async function buildApp() {
       reply.code(statusCode).send({ error: 'internal_error' });
       return;
     }
-    const safeCode = (err as any).code || 'bad_request';
+    const safeCode = err.code || 'bad_request';
     reply.code(statusCode).send({ error: safeCode });
   });
 
