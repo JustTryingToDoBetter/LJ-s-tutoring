@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+const DateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const TimeString = z.string().regex(/^\d{2}:\d{2}$/);
+const SessionStatusSchema = z.enum(['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED']);
+
 export const EmailSchema = z.string().email().transform((s) => s.trim().toLowerCase());
 
 export const PasswordSchema = z
@@ -10,8 +14,8 @@ export const PasswordSchema = z
 export const RegisterAdminSchema = z.object({
   email: EmailSchema,
   password: PasswordSchema,
-  firstName: z.string().min(1).max(80),
-  lastName: z.string().min(1).max(80),
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
   bootstrapToken: z.string().min(1),
 });
 
@@ -26,64 +30,64 @@ export const MagicLinkRequestSchema = z.object({
 
 export const CreateTutorSchema = z.object({
   email: EmailSchema,
-  fullName: z.string().min(1).max(120),
-  phone: z.string().max(40).optional(),
+  fullName: z.string().trim().min(1).max(120),
+  phone: z.string().trim().max(40).optional(),
   defaultHourlyRate: z.number().min(0).max(10000),
   active: z.boolean().optional().default(true),
 });
 
 export const UpdateTutorSchema = z.object({
-  fullName: z.string().min(1).max(120).optional(),
-  phone: z.string().max(40).optional().nullable(),
+  fullName: z.string().trim().min(1).max(120).optional(),
+  phone: z.string().trim().max(40).optional().nullable(),
   defaultHourlyRate: z.number().min(0).max(10000).optional(),
   active: z.boolean().optional(),
 });
 
 export const CreateStudentSchema = z.object({
-  fullName: z.string().min(1).max(120),
-  grade: z.string().max(20).optional(),
-  guardianName: z.string().max(120).optional(),
-  guardianPhone: z.string().max(40).optional(),
-  notes: z.string().max(2000).optional(),
+  fullName: z.string().trim().min(1).max(120),
+  grade: z.string().trim().max(20).optional(),
+  guardianName: z.string().trim().max(120).optional(),
+  guardianPhone: z.string().trim().max(40).optional(),
+  notes: z.string().trim().max(2000).optional(),
   active: z.boolean().optional().default(true),
 });
 
 export const UpdateStudentSchema = z.object({
-  fullName: z.string().min(1).max(120).optional(),
-  grade: z.string().max(20).optional().nullable(),
-  guardianName: z.string().max(120).optional().nullable(),
-  guardianPhone: z.string().max(40).optional().nullable(),
-  notes: z.string().max(2000).optional().nullable(),
+  fullName: z.string().trim().min(1).max(120).optional(),
+  grade: z.string().trim().max(20).optional().nullable(),
+  guardianName: z.string().trim().max(120).optional().nullable(),
+  guardianPhone: z.string().trim().max(40).optional().nullable(),
+  notes: z.string().trim().max(2000).optional().nullable(),
   active: z.boolean().optional(),
 });
 
 export const AssignmentSchema = z.object({
   tutorId: z.string().uuid(),
   studentId: z.string().uuid(),
-  subject: z.string().min(1).max(120),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  subject: z.string().trim().min(1).max(120),
+  startDate: DateString,
+  endDate: DateString.optional().nullable(),
   rateOverride: z.number().min(0).max(10000).optional().nullable(),
   allowedDays: z.array(z.number().int().min(0).max(6)).default([]),
   allowedTimeRanges: z.array(
     z.object({
-      start: z.string().regex(/^\d{2}:\d{2}$/),
-      end: z.string().regex(/^\d{2}:\d{2}$/),
+      start: TimeString,
+      end: TimeString,
     })
   ).default([]),
   active: z.boolean().optional().default(true),
 });
 
 export const UpdateAssignmentSchema = z.object({
-  subject: z.string().min(1).max(120).optional(),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  subject: z.string().trim().min(1).max(120).optional(),
+  startDate: DateString.optional(),
+  endDate: DateString.optional().nullable(),
   rateOverride: z.number().min(0).max(10000).optional().nullable(),
   allowedDays: z.array(z.number().int().min(0).max(6)).optional(),
   allowedTimeRanges: z.array(
     z.object({
-      start: z.string().regex(/^\d{2}:\d{2}$/),
-      end: z.string().regex(/^\d{2}:\d{2}$/),
+      start: TimeString,
+      end: TimeString,
     })
   ).optional(),
   active: z.boolean().optional(),
@@ -92,35 +96,61 @@ export const UpdateAssignmentSchema = z.object({
 export const CreateSessionSchema = z.object({
   assignmentId: z.string().uuid(),
   studentId: z.string().uuid(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/),
-  mode: z.string().min(1).max(40),
-  location: z.string().max(120).optional(),
-  notes: z.string().max(2000).optional(),
+  date: DateString,
+  startTime: TimeString,
+  endTime: TimeString,
+  mode: z.string().trim().min(1).max(40),
+  location: z.string().trim().max(120).optional(),
+  notes: z.string().trim().max(2000).optional(),
+  idempotencyKey: z.string().trim().max(120).optional(),
 });
 
 export const UpdateSessionSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  mode: z.string().min(1).max(40).optional(),
-  location: z.string().max(120).optional().nullable(),
-  notes: z.string().max(2000).optional().nullable(),
+  date: DateString.optional(),
+  startTime: TimeString.optional(),
+  endTime: TimeString.optional(),
+  mode: z.string().trim().min(1).max(40).optional(),
+  location: z.string().trim().max(120).optional().nullable(),
+  notes: z.string().trim().max(2000).optional().nullable(),
 });
 
 export const RejectSessionSchema = z.object({
-  reason: z.string().max(500).optional(),
+  reason: z.string().trim().max(500).optional(),
 });
 
 export const PayrollGenerateSchema = z.object({
-  weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  weekStart: DateString,
 });
 
 export const AdjustmentCreateSchema = z.object({
   tutorId: z.string().uuid(),
   type: z.enum(['BONUS', 'CORRECTION', 'PENALTY']),
   amount: z.number().positive().max(1000000),
-  reason: z.string().min(1).max(2000),
+  reason: z.string().trim().min(1).max(2000),
   relatedSessionId: z.string().uuid().optional().nullable(),
+});
+
+export const DateRangeQuerySchema = z.object({
+  from: DateString.optional(),
+  to: DateString.optional(),
+});
+
+export const AdminSessionsQuerySchema = DateRangeQuerySchema.extend({
+  status: SessionStatusSchema.optional(),
+});
+
+export const TutorSessionsQuerySchema = DateRangeQuerySchema.extend({
+  status: SessionStatusSchema.optional(),
+});
+
+export const WeekStartParamSchema = z.object({
+  weekStart: DateString,
+});
+
+export const IdParamSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const DeleteAdjustmentSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
 });

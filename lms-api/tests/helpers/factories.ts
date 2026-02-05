@@ -152,8 +152,34 @@ export async function loginWithMagicToken(app: any, token: string) {
   });
 
   const cookieHeader = res.headers['set-cookie'];
-  const rawCookie = Array.isArray(cookieHeader) ? cookieHeader[0] : cookieHeader;
-  const sessionCookie = rawCookie?.split(';')[0];
+  const rawCookies = Array.isArray(cookieHeader)
+    ? cookieHeader
+    : cookieHeader
+      ? [cookieHeader]
+      : [];
 
-  return { response: res, cookie: sessionCookie };
+  const cookies = new Map<string, string>();
+  for (const raw of rawCookies) {
+    const pair = raw.split(';')[0];
+    const idx = pair.indexOf('=');
+    if (idx === -1) continue;
+    const name = pair.slice(0, idx);
+    const value = pair.slice(idx + 1);
+    cookies.set(name, value);
+  }
+
+  const sessionValue = cookies.get('session');
+  const csrfValue = cookies.get('csrf');
+  const cookieParts = [
+    sessionValue ? `session=${sessionValue}` : null,
+    csrfValue ? `csrf=${csrfValue}` : null
+  ].filter(Boolean) as string[];
+
+  const cookie = cookieParts.join('; ');
+  const headers = {
+    cookie,
+    ...(csrfValue ? { 'x-csrf-token': csrfValue } : {})
+  };
+
+  return { response: res, cookie, csrfToken: csrfValue, headers };
 }

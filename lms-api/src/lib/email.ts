@@ -14,7 +14,7 @@ export async function sendMagicLink({ to, link }: SendMagicLinkParams) {
   }
 
   if (!apiKey) {
-    console.log(`[magic-link] ${to} -> ${link}`);
+    console.log(`[magic-link] ${to} -> [redacted]`);
     return;
   }
 

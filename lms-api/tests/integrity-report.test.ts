@@ -44,7 +44,7 @@ describe('Integrity report', () => {
     const sessionRes = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { cookie: tutorAuth.cookie },
+      headers: tutorAuth.headers,
       payload: {
         assignmentId: assignment.id,
         studentId: student.id,
@@ -60,19 +60,19 @@ describe('Integrity report', () => {
     await app.inject({
       method: 'POST',
       url: `/tutor/sessions/${sessionId}/submit`,
-      headers: { cookie: tutorAuth.cookie }
+      headers: tutorAuth.headers
     });
 
     await app.inject({
       method: 'POST',
       url: `/admin/sessions/${sessionId}/approve`,
-      headers: { cookie: adminAuth.cookie }
+      headers: adminAuth.headers
     });
 
     await app.inject({
       method: 'POST',
       url: '/admin/payroll/generate-week',
-      headers: { cookie: adminAuth.cookie },
+      headers: adminAuth.headers,
       payload: { weekStart: '2026-02-02' }
     });
 
@@ -81,7 +81,7 @@ describe('Integrity report', () => {
     const reportRes = await app.inject({
       method: 'GET',
       url: '/admin/integrity/pay-period/2026-02-02',
-      headers: { cookie: adminAuth.cookie }
+      headers: adminAuth.headers
     });
 
     expect(reportRes.statusCode).toBe(200);

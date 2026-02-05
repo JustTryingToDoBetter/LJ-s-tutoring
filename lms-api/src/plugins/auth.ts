@@ -33,7 +33,7 @@ export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
       };
       req.user = user;
     } catch {
-      reply.code(401).send({ error: 'unauthorized' });
+      return reply.code(401).send({ error: 'unauthorized' });
     }
   });
 });

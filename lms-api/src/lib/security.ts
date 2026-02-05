@@ -17,6 +17,14 @@ export function generateMagicToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+export function generateCsrfToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+export function generateRequestId() {
+  return crypto.randomBytes(16).toString('hex');
+}
+
 export function hashToken(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }

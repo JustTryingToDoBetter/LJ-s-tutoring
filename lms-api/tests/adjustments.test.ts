@@ -44,7 +44,7 @@ describe('Adjustments', () => {
     const sessionRes = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { cookie: tutorAuth.cookie },
+      headers: tutorAuth.headers,
       payload: {
         assignmentId: assignment.id,
         studentId: student.id,
@@ -60,19 +60,19 @@ describe('Adjustments', () => {
     await app.inject({
       method: 'POST',
       url: `/tutor/sessions/${sessionId}/submit`,
-      headers: { cookie: tutorAuth.cookie }
+      headers: tutorAuth.headers
     });
 
     await app.inject({
       method: 'POST',
       url: `/admin/sessions/${sessionId}/approve`,
-      headers: { cookie: adminAuth.cookie }
+      headers: adminAuth.headers
     });
 
     const adjustmentRes = await app.inject({
       method: 'POST',
       url: '/admin/pay-periods/2026-02-02/adjustments',
-      headers: { cookie: adminAuth.cookie },
+      headers: adminAuth.headers,
       payload: {
         tutorId: tutor.id,
         type: 'BONUS',
@@ -86,7 +86,7 @@ describe('Adjustments', () => {
     const payrollRes = await app.inject({
       method: 'POST',
       url: '/admin/payroll/generate-week',
-      headers: { cookie: adminAuth.cookie },
+      headers: adminAuth.headers,
       payload: { weekStart: '2026-02-02' }
     });
 
@@ -116,7 +116,7 @@ describe('Adjustments', () => {
     const adjustmentRes = await app.inject({
       method: 'POST',
       url: '/admin/pay-periods/2026-02-02/adjustments',
-      headers: { cookie: adminAuth.cookie },
+      headers: adminAuth.headers,
       payload: {
         tutorId: tutor.id,
         type: 'PENALTY',
@@ -130,13 +130,13 @@ describe('Adjustments', () => {
     await app.inject({
       method: 'POST',
       url: '/admin/pay-periods/2026-02-02/lock',
-      headers: { cookie: adminAuth.cookie }
+      headers: adminAuth.headers
     });
 
     const deleteRes = await app.inject({
       method: 'DELETE',
       url: `/admin/adjustments/${adjustmentId}`,
-      headers: { cookie: adminAuth.cookie }
+      headers: adminAuth.headers
     });
 
     expect(deleteRes.statusCode).toBe(409);

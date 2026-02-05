@@ -43,7 +43,7 @@ describe('Tutor logging security', () => {
     const log = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { cookie: tutorLogin.cookie },
+      headers: tutorLogin.headers,
       payload: {
         assignmentId: assignment.id,
         studentId: student2.id,
@@ -88,7 +88,7 @@ describe('Tutor logging security', () => {
     const log = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { cookie: tutorLogin.cookie },
+      headers: tutorLogin.headers,
       payload: {
         assignmentId: assignment.id,
         studentId: student.id,
@@ -132,7 +132,7 @@ describe('Tutor logging security', () => {
     const first = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { cookie: tutorLogin.cookie },
+      headers: tutorLogin.headers,
       payload: {
         assignmentId: assignment.id,
         studentId: student.id,
@@ -147,7 +147,7 @@ describe('Tutor logging security', () => {
     const overlap = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { cookie: tutorLogin.cookie },
+      headers: tutorLogin.headers,
       payload: {
         assignmentId: assignment.id,
         studentId: student.id,

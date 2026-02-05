@@ -1,14 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { pool } from '../db/pool.js';
-import { requireTutor } from '../lib/rbac.js';
-import { CreateSessionSchema, UpdateSessionSchema } from '../lib/schemas.js';
+import { requireAuth, requireRole, requireTutorSelfScope } from '../lib/rbac.js';
+import { CreateSessionSchema, DateRangeQuerySchema, IdParamSchema, TutorSessionsQuerySchema, UpdateSessionSchema } from '../lib/schemas.js';
 import { durationMinutes, isWithinAssignmentWindow } from '../lib/scheduling.js';
 import { buildInvoicePdf, renderInvoiceHtml } from '../lib/invoices.js';
 import { getPayPeriodStart } from '../lib/pay-periods.js';
 
 export async function tutorRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate);
-  app.addHook('preHandler', requireTutor);
+  app.addHook('preHandler', requireAuth);
+  app.addHook('preHandler', requireRole('TUTOR'));
 
   const normalizeJson = (value: any, fallback: any) => {
     if (value == null) return fallback;
@@ -81,7 +82,11 @@ export async function tutorRoutes(app: FastifyInstance) {
 
   app.get('/tutor/sessions', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
-    const { from, to, status } = req.query as { from?: string; to?: string; status?: string };
+    const parsed = TutorSessionsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+    const { from, to, status } = parsed.data;
 
     const params: any[] = [tutorId];
     const filters: string[] = ['s.tutor_id = $1'];
@@ -120,7 +125,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const { assignmentId, studentId, date, startTime, endTime, mode, location, notes } = parsed.data;
+    const { assignmentId, studentId, date, startTime, endTime, mode, location, notes, idempotencyKey } = parsed.data;
 
     const assignmentRes = await pool.query(
       `select id, tutor_id, student_id, start_date, end_date, allowed_days_json, allowed_time_ranges_json, active
@@ -131,7 +136,7 @@ export async function tutorRoutes(app: FastifyInstance) {
 
     if (assignmentRes.rowCount === 0) return reply.code(404).send({ error: 'assignment_not_found' });
     const assignment = assignmentRes.rows[0];
-    if (assignment.tutor_id !== tutorId) return reply.code(403).send({ error: 'forbidden' });
+    if (!requireTutorSelfScope(req, reply, assignment.tutor_id)) return reply;
     if (assignment.student_id !== studentId) return reply.code(400).send({ error: 'student_mismatch' });
     if (!assignment.active) return reply.code(409).send({ error: 'assignment_inactive' });
 
@@ -162,12 +167,22 @@ export async function tutorRoutes(app: FastifyInstance) {
 
     if (overlap.rowCount > 0) return reply.code(409).send({ error: 'overlapping_session' });
 
+    if (idempotencyKey) {
+      const existingRes = await pool.query(
+        `select * from sessions where tutor_id = $1 and sync_key = $2 limit 1`,
+        [tutorId, idempotencyKey]
+      );
+      if (existingRes.rowCount > 0) {
+        return reply.send({ session: existingRes.rows[0], deduped: true });
+      }
+    }
+
     const res = await pool.query(
       `insert into sessions
-       (tutor_id, student_id, assignment_id, date, start_time, end_time, duration_minutes, mode, location, notes, status)
-       values ($1, $2, $3, $4::date, $5::time, $6::time, $7, $8, $9, $10, 'DRAFT')
+       (tutor_id, student_id, assignment_id, date, start_time, end_time, duration_minutes, mode, location, notes, status, sync_key)
+       values ($1, $2, $3, $4::date, $5::time, $6::time, $7, $8, $9, $10, 'DRAFT', $11)
        returning *`,
-      [tutorId, studentId, assignmentId, date, startTime, endTime, minutes, mode, location ?? null, notes ?? null]
+      [tutorId, studentId, assignmentId, date, startTime, endTime, minutes, mode, location ?? null, notes ?? null, idempotencyKey ?? null]
     );
 
     return reply.code(201).send({ session: res.rows[0] });
@@ -175,7 +190,11 @@ export async function tutorRoutes(app: FastifyInstance) {
 
   app.patch('/tutor/sessions/:id', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
-    const sessionId = (req.params as { id: string }).id;
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+    const sessionId = params.data.id;
 
     const parsed = UpdateSessionSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -265,7 +284,11 @@ export async function tutorRoutes(app: FastifyInstance) {
 
   app.post('/tutor/sessions/:id/submit', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
-    const sessionId = (req.params as { id: string }).id;
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+    const sessionId = params.data.id;
 
     const currentRes = await pool.query(
       `select * from sessions where id = $1 and tutor_id = $2`,
@@ -299,7 +322,11 @@ export async function tutorRoutes(app: FastifyInstance) {
 
   app.get('/tutor/payroll/weeks', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
-    const { from, to } = req.query as { from?: string; to?: string };
+    const parsed = DateRangeQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+    const { from, to } = parsed.data;
 
     const params: any[] = [tutorId];
     const filters: string[] = [`s.tutor_id = $1`, `s.status = 'APPROVED'`];
@@ -406,7 +433,11 @@ export async function tutorRoutes(app: FastifyInstance) {
 
   app.get('/tutor/invoices', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
-    const { from, to } = req.query as { from?: string; to?: string };
+    const parsed = DateRangeQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+    const { from, to } = parsed.data;
 
     const params: any[] = [tutorId];
     const filters: string[] = ['i.tutor_id = $1'];
@@ -433,7 +464,11 @@ export async function tutorRoutes(app: FastifyInstance) {
 
   app.get('/tutor/invoices/:id', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
-    const invoiceId = (req.params as { id: string }).id;
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+    const invoiceId = params.data.id;
 
     const invoiceRes = await pool.query(
       `select i.id, i.invoice_number, i.period_start, i.period_end, i.total_amount,
@@ -474,7 +509,11 @@ export async function tutorRoutes(app: FastifyInstance) {
 
   app.get('/tutor/invoices/:id.pdf', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
-    const invoiceId = (req.params as { id: string }).id;
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+    const invoiceId = params.data.id;
 
     const invoiceRes = await pool.query(
       `select i.id, i.invoice_number, i.period_start, i.period_end, i.total_amount,

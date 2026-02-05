@@ -16,15 +16,30 @@ export type InvoiceDetail = {
   lines: InvoiceLine[];
 };
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
 export function renderInvoiceHtml(detail: InvoiceDetail) {
+  const safeInvoiceNumber = escapeHtml(detail.invoiceNumber);
+  const safeTutorName = escapeHtml(detail.tutorName);
+  const safePeriodStart = escapeHtml(detail.periodStart);
+  const safePeriodEnd = escapeHtml(detail.periodEnd);
+  const safeTotalAmount = escapeHtml(detail.totalAmount);
+
   const rows = detail.lines
     .map(
       (line) => `
       <tr>
-        <td>${line.description}</td>
+        <td>${escapeHtml(line.description)}</td>
         <td>${line.minutes}</td>
-        <td>${line.rate}</td>
-        <td>${line.amount}</td>
+        <td>${escapeHtml(line.rate)}</td>
+        <td>${escapeHtml(line.amount)}</td>
       </tr>`
     )
     .join('');
@@ -33,7 +48,7 @@ export function renderInvoiceHtml(detail: InvoiceDetail) {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Invoice ${detail.invoiceNumber}</title>
+  <title>Invoice ${safeInvoiceNumber}</title>
   <style>
     body { font-family: Arial, sans-serif; color: #111827; margin: 24px; }
     h1 { font-size: 20px; margin-bottom: 8px; }
@@ -44,9 +59,9 @@ export function renderInvoiceHtml(detail: InvoiceDetail) {
   </style>
 </head>
 <body>
-  <h1>Invoice ${detail.invoiceNumber}</h1>
-  <div class="meta">Tutor: ${detail.tutorName}</div>
-  <div class="meta">Period: ${detail.periodStart} to ${detail.periodEnd}</div>
+  <h1>Invoice ${safeInvoiceNumber}</h1>
+  <div class="meta">Tutor: ${safeTutorName}</div>
+  <div class="meta">Period: ${safePeriodStart} to ${safePeriodEnd}</div>
   <table>
     <thead>
       <tr>
@@ -60,7 +75,7 @@ export function renderInvoiceHtml(detail: InvoiceDetail) {
       ${rows}
     </tbody>
   </table>
-  <div class="meta" style="margin-top:16px; font-weight:600;">Total: ${detail.totalAmount}</div>
+  <div class="meta" style="margin-top:16px; font-weight:600;">Total: ${safeTotalAmount}</div>
 </body>
 </html>`;
 }

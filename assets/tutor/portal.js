@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, qs, renderStatus, formatMoney, setActiveNav, showBanner, setText } from '/assets/portal-shared.js';
+import { apiGet, apiPost, apiPatch, qs, renderStatus, formatMoney, setActiveNav, showBanner, setText, escapeHtml } from '/assets/portal-shared.js';
 
 const DB_NAME = 'tutor-offline';
 const STORE = 'drafts';
@@ -103,6 +103,8 @@ async function initLogin() {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     msg.textContent = '';
+
+    const idempotencyKey = crypto.randomUUID();
     try {
       const email = qs('#email').value.trim();
       await apiPost('/auth/request-link', { email });
@@ -125,12 +127,12 @@ async function initTutorHome() {
   const today = new Date().toISOString().slice(0, 10);
   const sessions = await apiGet(`/tutor/sessions?from=${today}&to=${today}`);
   sessionsEl.innerHTML = sessions.sessions.length
-    ? sessions.sessions.map((s) => `<div class="panel">${s.student_name} ${renderStatus(s.status)}</div>`).join('')
+    ? sessions.sessions.map((s) => `<div class="panel">${escapeHtml(s.student_name)} ${renderStatus(s.status)}</div>`).join('')
     : '<div class="note">No sessions logged today.</div>';
 
   const assignments = await apiGet('/tutor/assignments');
   upcomingEl.innerHTML = assignments.assignments.length
-    ? assignments.assignments.slice(0, 3).map((a) => `<div class="panel">${a.subject} with ${a.full_name}</div>`).join('')
+    ? assignments.assignments.slice(0, 3).map((a) => `<div class="panel">${escapeHtml(a.subject)} with ${escapeHtml(a.full_name)}</div>`).join('')
     : '<div class="note">No active assignments yet.</div>';
 }
 
@@ -140,8 +142,8 @@ async function initAssignments() {
   const data = await apiGet('/tutor/assignments');
   list.innerHTML = data.assignments
     .map((a) => `<div class="panel">
-        <div><strong>${a.subject}</strong> - ${a.full_name}</div>
-        <div class="note">${a.start_date} to ${a.end_date || 'open-ended'}</div>
+        <div><strong>${escapeHtml(a.subject)}</strong> - ${escapeHtml(a.full_name)}</div>
+        <div class="note">${escapeHtml(a.start_date)} to ${escapeHtml(a.end_date || 'open-ended')}</div>
       </div>`)
     .join('');
 }
@@ -153,10 +155,10 @@ async function initPayroll() {
   list.innerHTML = data.weeks.length
     ? data.weeks.map((w) => {
         const adjustments = (w.adjustments || [])
-          .map((adj) => `<div class="note">${adj.type}: ${formatMoney(adj.signed_amount)} - ${adj.reason}</div>`)
+          .map((adj) => `<div class="note">${escapeHtml(adj.type)}: ${formatMoney(adj.signed_amount)} - ${escapeHtml(adj.reason)}</div>`)
           .join('');
         return `<div class="panel">
-          <div class="split"><strong>${w.week_start}</strong> ${renderStatus(w.status)}</div>
+          <div class="split"><strong>${escapeHtml(w.week_start)}</strong> ${renderStatus(w.status)}</div>
           <div>${w.total_minutes} mins</div>
           <div>${formatMoney(w.total_amount)}</div>
           ${adjustments ? `<div style="margin-top:8px;">${adjustments}</div>` : ''}
@@ -171,8 +173,8 @@ async function initInvoices() {
   const data = await apiGet('/tutor/invoices');
   list.innerHTML = data.invoices.length
     ? data.invoices.map((inv) => `<div class="panel">
-        <div><strong>${inv.invoice_number}</strong></div>
-        <div>${inv.period_start} to ${inv.period_end}</div>
+        <div><strong>${escapeHtml(inv.invoice_number)}</strong></div>
+        <div>${escapeHtml(inv.period_start)} to ${escapeHtml(inv.period_end)}</div>
         <div>${formatMoney(inv.total_amount)}</div>
         <div class="note"><a href="/tutor/invoices/${inv.id}" target="_blank">HTML</a> | <a href="/tutor/invoices/${inv.id}.pdf">PDF</a></div>
       </div>`).join('')
@@ -197,7 +199,7 @@ async function initSessions() {
 
   const assignments = await apiGet('/tutor/assignments');
   assignmentSelect.innerHTML = assignments.assignments
-    .map((a) => `<option value="${a.id}" data-student="${a.full_name}" data-student-id="${a.student_id}">${a.subject} - ${a.full_name}</option>`)
+    .map((a) => `<option value="${a.id}" data-student="${escapeHtml(a.full_name)}" data-student-id="${a.student_id}">${escapeHtml(a.subject)} - ${escapeHtml(a.full_name)}</option>`)
     .join('');
 
   assignmentSelect.addEventListener('change', () => {
@@ -210,8 +212,8 @@ async function initSessions() {
     const data = await apiGet('/tutor/sessions');
     list.innerHTML = data.sessions.length
       ? data.sessions.map((s) => `<div class="panel">
-          <div><strong>${s.student_name}</strong> ${renderStatus(s.status)}</div>
-          <div class="note">${s.date} ${s.start_time}-${s.end_time} (${s.duration_minutes} mins)</div>
+          <div><strong>${escapeHtml(s.student_name)}</strong> ${renderStatus(s.status)}</div>
+          <div class="note">${escapeHtml(s.date)} ${escapeHtml(s.start_time)}-${escapeHtml(s.end_time)} (${s.duration_minutes} mins)</div>
         </div>`).join('')
       : '<div class="note">No sessions logged yet.</div>';
   };
@@ -243,6 +245,7 @@ async function initSessions() {
     event.preventDefault();
     msg.textContent = '';
 
+    const idempotencyKey = crypto.randomUUID();
     const selected = assignmentSelect.selectedOptions[0];
     const payload = {
       assignmentId: assignmentSelect.value,
@@ -252,7 +255,8 @@ async function initSessions() {
       endTime: qs('#endTime').value,
       mode: qs('#mode').value,
       location: qs('#location').value,
-      notes: qs('#notes').value
+      notes: qs('#notes').value,
+      idempotencyKey
     };
 
     try {

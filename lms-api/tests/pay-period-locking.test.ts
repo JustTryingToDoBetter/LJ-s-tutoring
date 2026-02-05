@@ -44,7 +44,7 @@ describe('Pay period locking', () => {
     const sessionRes = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { cookie: tutorAuth.cookie },
+      headers: tutorAuth.headers,
       payload: {
         assignmentId: assignment.id,
         studentId: student.id,
@@ -60,13 +60,13 @@ describe('Pay period locking', () => {
     await app.inject({
       method: 'POST',
       url: `/tutor/sessions/${sessionId}/submit`,
-      headers: { cookie: tutorAuth.cookie }
+      headers: tutorAuth.headers
     });
 
     const lockRes = await app.inject({
       method: 'POST',
       url: '/admin/pay-periods/2026-02-02/lock',
-      headers: { cookie: adminAuth.cookie }
+      headers: adminAuth.headers
     });
 
     expect(lockRes.statusCode).toBe(409);
@@ -104,7 +104,7 @@ describe('Pay period locking', () => {
     const sessionRes = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { cookie: tutorAuth.cookie },
+      headers: tutorAuth.headers,
       payload: {
         assignmentId: assignment.id,
         studentId: student.id,
@@ -120,7 +120,7 @@ describe('Pay period locking', () => {
     const lockRes = await app.inject({
       method: 'POST',
       url: '/admin/pay-periods/2026-02-02/lock',
-      headers: { cookie: adminAuth.cookie }
+      headers: adminAuth.headers
     });
 
     expect(lockRes.statusCode).toBe(200);
@@ -128,7 +128,7 @@ describe('Pay period locking', () => {
     const editRes = await app.inject({
       method: 'PATCH',
       url: `/tutor/sessions/${sessionId}`,
-      headers: { cookie: tutorAuth.cookie },
+      headers: tutorAuth.headers,
       payload: { notes: 'Updated notes' }
     });
 
@@ -138,7 +138,7 @@ describe('Pay period locking', () => {
     const submitRes = await app.inject({
       method: 'POST',
       url: `/tutor/sessions/${sessionId}/submit`,
-      headers: { cookie: tutorAuth.cookie }
+      headers: tutorAuth.headers
     });
 
     expect(submitRes.statusCode).toBe(409);

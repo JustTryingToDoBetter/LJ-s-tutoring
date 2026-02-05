@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, qs, renderStatus, formatMoney, setActiveNav } from '/assets/portal-shared.js';
+import { apiGet, apiPost, apiPatch, qs, renderStatus, formatMoney, setActiveNav, escapeHtml } from '/assets/portal-shared.js';
 
 async function initDashboard() {
   setActiveNav('dashboard');
@@ -17,7 +17,7 @@ async function initTutors() {
     const data = await apiGet('/admin/tutors');
     list.innerHTML = data.tutors
       .map((t) => `<div class="panel">
-          <div><strong>${t.full_name}</strong> (${t.email || 'no email'})</div>
+          <div><strong>${escapeHtml(t.full_name)}</strong> (${escapeHtml(t.email || 'no email')})</div>
           <div class="note">${formatMoney(t.default_hourly_rate)} | ${t.active ? 'Active' : 'Inactive'}</div>
         </div>`)
       .join('');
@@ -49,8 +49,8 @@ async function initStudents() {
     const data = await apiGet('/admin/students');
     list.innerHTML = data.students
       .map((s) => `<div class="panel">
-          <div><strong>${s.full_name}</strong> (${s.grade || 'N/A'})</div>
-          <div class="note">${s.guardian_name || 'No guardian'} | ${s.active ? 'Active' : 'Inactive'}</div>
+          <div><strong>${escapeHtml(s.full_name)}</strong> (${escapeHtml(s.grade || 'N/A')})</div>
+          <div class="note">${escapeHtml(s.guardian_name || 'No guardian')} | ${s.active ? 'Active' : 'Inactive'}</div>
         </div>`)
       .join('');
   };
@@ -83,15 +83,15 @@ async function initAssignments() {
     apiGet('/admin/students')
   ]);
 
-  qs('#assignmentTutor').innerHTML = tutors.tutors.map((t) => `<option value="${t.id}">${t.full_name}</option>`).join('');
-  qs('#assignmentStudent').innerHTML = students.students.map((s) => `<option value="${s.id}">${s.full_name}</option>`).join('');
+  qs('#assignmentTutor').innerHTML = tutors.tutors.map((t) => `<option value="${t.id}">${escapeHtml(t.full_name)}</option>`).join('');
+  qs('#assignmentStudent').innerHTML = students.students.map((s) => `<option value="${s.id}">${escapeHtml(s.full_name)}</option>`).join('');
 
   const load = async () => {
     const data = await apiGet('/admin/assignments');
     list.innerHTML = data.assignments
       .map((a) => `<div class="panel">
-          <div><strong>${a.subject}</strong> - ${a.student_name}</div>
-          <div class="note">Tutor: ${a.tutor_name} | ${a.start_date} to ${a.end_date || 'open-ended'}</div>
+          <div><strong>${escapeHtml(a.subject)}</strong> - ${escapeHtml(a.student_name)}</div>
+          <div class="note">Tutor: ${escapeHtml(a.tutor_name)} | ${escapeHtml(a.start_date)} to ${escapeHtml(a.end_date || 'open-ended')}</div>
         </div>`)
       .join('');
   };
@@ -127,8 +127,8 @@ async function initApprovals() {
     const data = await apiGet('/admin/sessions?status=SUBMITTED');
     list.innerHTML = data.sessions.length
       ? data.sessions.map((s) => `<div class="panel">
-          <div><strong>${s.tutor_name}</strong> - ${s.student_name}</div>
-          <div class="note">${s.date} ${s.start_time}-${s.end_time}</div>
+          <div><strong>${escapeHtml(s.tutor_name)}</strong> - ${escapeHtml(s.student_name)}</div>
+          <div class="note">${escapeHtml(s.date)} ${escapeHtml(s.start_time)}-${escapeHtml(s.end_time)}</div>
           <div class="split" style="margin-top:10px;">
             <button class="button" data-approve="${s.id}">Approve</button>
             <button class="button secondary" data-reject="${s.id}">Reject</button>
@@ -167,7 +167,7 @@ async function initPayroll() {
   if (adjustmentTutor) {
     const tutors = await apiGet('/admin/tutors');
     adjustmentTutor.innerHTML = tutors.tutors
-      .map((t) => `<option value="${t.id}">${t.full_name}</option>`)
+      .map((t) => `<option value="${t.id}">${escapeHtml(t.full_name)}</option>`)
       .join('');
   }
 
@@ -175,12 +175,12 @@ async function initPayroll() {
     if (!adjustmentList || !weekStart) return;
     const data = await apiGet(`/admin/pay-periods/${weekStart}/adjustments`);
     adjustmentList.innerHTML = data.adjustments.length
-      ? data.adjustments.map((adj) => {
-          const voided = adj.voided_at ? ' (voided)' : '';
-          return `<div class="panel">
-            <div><strong>${adj.tutor_name}</strong> ${adj.type}${voided}</div>
-            <div class="note">${formatMoney(adj.signed_amount)} - ${adj.reason}</div>
-          </div>`;
+            ? data.adjustments.map((adj) => {
+                const voided = adj.voided_at ? ' (voided)' : '';
+                return `<div class="panel">
+                  <div><strong>${escapeHtml(adj.tutor_name)}</strong> ${escapeHtml(adj.type)}${voided}</div>
+                  <div class="note">${formatMoney(adj.signed_amount)} - ${escapeHtml(adj.reason)}</div>
+                </div>`;
         }).join('')
       : '<div class="note">No adjustments yet.</div>';
   };
@@ -191,7 +191,7 @@ async function initPayroll() {
     const res = await apiPost('/admin/payroll/generate-week', { weekStart });
     list.innerHTML = res.invoices.length
       ? res.invoices.map((inv) => `<div class="panel">
-          <div><strong>${inv.invoice_number}</strong></div>
+          <div><strong>${escapeHtml(inv.invoice_number)}</strong></div>
           <div>${formatMoney(inv.total_amount)}</div>
         </div>`).join('')
       : '<div class="note">No invoices generated.</div>';
@@ -259,29 +259,29 @@ async function initReconciliation() {
 
     report.innerHTML = [
       renderList('Overlapping sessions', integrity.overlaps, (row) =>
-        `<div class="note">${row.session_id} overlaps ${row.overlap_id} (${row.date} ${row.start_time}-${row.end_time})</div>`
+        `<div class="note">${escapeHtml(row.session_id)} overlaps ${escapeHtml(row.overlap_id)} (${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)})</div>`
       ),
       renderList('Outside assignment window', integrity.outsideAssignmentWindow, (row) =>
-        `<div class="note">${row.id} on ${row.date} ${row.start_time}-${row.end_time}</div>`
+        `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)}</div>`
       ),
       renderList('Approved sessions missing invoice lines', integrity.missingInvoiceLines, (row) =>
-        `<div class="note">${row.id} on ${row.date}</div>`
+        `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)}</div>`
       ),
       renderList('Invoice totals mismatched', integrity.invoiceTotalMismatches, (row) =>
-        `<div class="note">${row.invoice_number} total ${formatMoney(row.total_amount)} vs lines ${formatMoney(row.line_total)}</div>`
+        `<div class="note">${escapeHtml(row.invoice_number)} total ${formatMoney(row.total_amount)} vs lines ${formatMoney(row.line_total)}</div>`
       ),
       renderList('Pending submitted sessions', integrity.pendingSubmissions, (row) =>
-        `<div class="note">${row.tutor_name}: ${row.pending}</div>`
+        `<div class="note">${escapeHtml(row.tutor_name)}: ${row.pending}</div>`
       ),
       renderList('Duplicate sessions', integrity.duplicateSessions, (row) =>
-        `<div class="note">${row.tutor_id} / ${row.student_id} on ${row.date} ${row.start_time}-${row.end_time} (x${row.count})</div>`
+        `<div class="note">${escapeHtml(row.tutor_id)} / ${escapeHtml(row.student_id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)} (x${row.count})</div>`
       )
     ].join('');
 
     const adjustmentItems = adjustments.adjustments || [];
     adjustmentsEl.innerHTML = renderList('Adjustments', adjustmentItems, (row) => {
       const voided = row.voided_at ? ' (voided)' : '';
-      return `<div class="note">${row.tutor_name}: ${row.type} ${formatMoney(row.signed_amount)} - ${row.reason}${voided}</div>`;
+      return `<div class="note">${escapeHtml(row.tutor_name)}: ${escapeHtml(row.type)} ${formatMoney(row.signed_amount)} - ${escapeHtml(row.reason)}${voided}</div>`;
     });
   });
 }

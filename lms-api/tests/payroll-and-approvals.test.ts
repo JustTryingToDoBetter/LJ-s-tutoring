@@ -44,7 +44,7 @@ describe('Approvals and payroll', () => {
     const createRes = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { cookie: tutorAuth.cookie },
+      headers: tutorAuth.headers,
       payload: {
         assignmentId: assignment.id,
         studentId: student.id,
@@ -61,7 +61,7 @@ describe('Approvals and payroll', () => {
     const submitRes = await app.inject({
       method: 'POST',
       url: `/tutor/sessions/${sessionId}/submit`,
-      headers: { cookie: tutorAuth.cookie }
+      headers: tutorAuth.headers
     });
 
     expect(submitRes.statusCode).toBe(200);
@@ -70,7 +70,7 @@ describe('Approvals and payroll', () => {
     const approveRes = await app.inject({
       method: 'POST',
       url: `/admin/sessions/${sessionId}/approve`,
-      headers: { cookie: adminAuth.cookie }
+      headers: adminAuth.headers
     });
 
     expect(approveRes.statusCode).toBe(200);
@@ -108,7 +108,7 @@ describe('Approvals and payroll', () => {
     const sessionA = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { cookie: tutorAuth.cookie },
+      headers: tutorAuth.headers,
       payload: {
         assignmentId: assignment.id,
         studentId: student.id,
@@ -122,7 +122,7 @@ describe('Approvals and payroll', () => {
     const sessionB = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { cookie: tutorAuth.cookie },
+      headers: tutorAuth.headers,
       payload: {
         assignmentId: assignment.id,
         studentId: student.id,
@@ -139,19 +139,19 @@ describe('Approvals and payroll', () => {
       await app.inject({
         method: 'POST',
         url: `/tutor/sessions/${id}/submit`,
-        headers: { cookie: tutorAuth.cookie }
+        headers: tutorAuth.headers
       });
       await app.inject({
         method: 'POST',
         url: `/admin/sessions/${id}/approve`,
-        headers: { cookie: adminAuth.cookie }
+        headers: adminAuth.headers
       });
     }
 
     const payroll = await app.inject({
       method: 'POST',
       url: '/admin/payroll/generate-week',
-      headers: { cookie: adminAuth.cookie },
+      headers: adminAuth.headers,
       payload: { weekStart: '2026-02-02' }
     });
 

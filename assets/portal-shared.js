@@ -1,10 +1,15 @@
 const API_BASE = window.PO_API_BASE ?? '';
 
 async function request(path, options = {}) {
+  const method = String(options.method || 'GET').toUpperCase();
+  const csrfToken = getCookie('csrf');
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...(csrfToken && !['GET', 'HEAD'].includes(method)
+        ? { 'X-CSRF-Token': csrfToken }
+        : {}),
       ...(options.headers || {})
     },
     ...options
@@ -46,13 +51,33 @@ export function apiPatch(path, payload) {
   });
 }
 
+function getCookie(name) {
+  const parts = document.cookie.split(';');
+  for (const part of parts) {
+    const [key, ...rest] = part.trim().split('=');
+    if (key === name) return rest.join('=');
+  }
+  return '';
+}
+
 export function qs(id) {
   return document.querySelector(id);
 }
 
 export function renderStatus(status) {
-  const text = String(status || 'DRAFT').toLowerCase();
-  return `<span class="pill ${text}">${text}</span>`;
+  const raw = String(status || 'DRAFT');
+  const text = escapeHtml(raw.toLowerCase());
+  const safeClass = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  return `<span class="pill ${safeClass}">${text}</span>`;
+}
+
+export function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 export function formatMoney(value) {

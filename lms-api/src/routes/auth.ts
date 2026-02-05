@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { pool } from '../db/pool.js';
-import { normalizeEmail, generateMagicToken, hashToken } from '../lib/security.js';
+import { normalizeEmail, generateCsrfToken, generateMagicToken, hashToken } from '../lib/security.js';
 import { MagicLinkRequestSchema, RegisterAdminSchema } from '../lib/schemas.js';
 import { sendMagicLink } from '../lib/email.js';
 
@@ -15,14 +15,74 @@ function sessionCookieOptions() {
   };
 }
 
+function csrfCookieOptions() {
+  const isProd = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: false,
+    sameSite: 'lax' as const,
+    secure: isProd,
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7
+  };
+}
+
+function setAuthCookies(reply: any, jwt: string) {
+  reply.setCookie('session', jwt, sessionCookieOptions());
+  const csrfToken = generateCsrfToken();
+  reply.setCookie('csrf', csrfToken, csrfCookieOptions());
+  return csrfToken;
+}
+
 export async function authRoutes(app: FastifyInstance) {
-  app.post('/auth/request-link', async (req, reply) => {
+  const requestAttempts = new Map<string, { count: number; resetAt: number }>();
+  const requestWindowMs = 60 * 1000;
+  const requestMaxPerEmail = 5;
+  const verifyAttempts = new Map<string, { count: number; resetAt: number }>();
+  const verifyWindowMs = 60 * 1000;
+  const verifyMax = 10;
+
+  const checkRequestLimit = (key: string) => {
+    const now = Date.now();
+    const entry = requestAttempts.get(key);
+    if (!entry || entry.resetAt <= now) {
+      requestAttempts.set(key, { count: 1, resetAt: now + requestWindowMs });
+      return false;
+    }
+    if (entry.count >= requestMaxPerEmail) return true;
+    entry.count += 1;
+    return false;
+  };
+
+  const checkVerifyLimit = (key: string) => {
+    const now = Date.now();
+    const entry = verifyAttempts.get(key);
+    if (!entry || entry.resetAt <= now) {
+      verifyAttempts.set(key, { count: 1, resetAt: now + verifyWindowMs });
+      return false;
+    }
+    if (entry.count >= verifyMax) return true;
+    entry.count += 1;
+    return false;
+  };
+
+  app.post('/auth/request-link', {
+    config: {
+      rateLimit: {
+        max: 15,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     const parsed = MagicLinkRequestSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
     const email = normalizeEmail(parsed.data.email);
+    const emailKey = `email:${email}`;
+    if (checkRequestLimit(emailKey)) {
+      return reply.code(429).send({ error: 'rate_limited' });
+    }
     const userRes = await pool.query(
       `select id, role, tutor_profile_id, is_active
        from users
@@ -62,27 +122,54 @@ export async function authRoutes(app: FastifyInstance) {
     return reply.send({ ok: true });
   });
 
-  app.get('/auth/verify', async (req, reply) => {
-    const token = (req.query as { token?: string }).token;
+  const handleVerify = async (token: string | undefined, req: any, reply: any) => {
     if (!token) return reply.code(400).send({ error: 'missing_token' });
 
+    const ip = req.ip ?? 'unknown';
+    if (checkVerifyLimit(ip)) {
+      return reply.code(429).send({ error: 'rate_limited' });
+    }
+
     const tokenHash = hashToken(token);
-    const tokenRes = await pool.query(
-      `select t.id, t.expires_at, t.used_at, u.id as user_id, u.role, u.tutor_profile_id, u.is_active
-       from magic_link_tokens t
-       join users u on u.id = t.user_id
-       where t.token_hash = $1`,
+    const consumeRes = await pool.query(
+      `update magic_link_tokens
+       set used_at = now()
+       where token_hash = $1
+         and used_at is null
+         and expires_at >= now()
+       returning id, user_id`,
       [tokenHash]
     );
 
-    if (tokenRes.rowCount === 0) {
+    if (consumeRes.rowCount === 0) {
+      const statusRes = await pool.query(
+        `select used_at, expires_at
+         from magic_link_tokens
+         where token_hash = $1`,
+        [tokenHash]
+      );
+
+      if (statusRes.rowCount === 0) {
+        return reply.code(400).send({ error: 'invalid_token' });
+      }
+
+      const statusRow = statusRes.rows[0] as { used_at: Date | null; expires_at: Date };
+      if (statusRow.used_at) return reply.code(400).send({ error: 'token_used' });
+      return reply.code(400).send({ error: 'token_expired' });
+    }
+
+    const rowRes = await pool.query(
+      `select u.id as user_id, u.role, u.tutor_profile_id, u.is_active
+       from users u
+       where u.id = $1`,
+      [consumeRes.rows[0].user_id]
+    );
+
+    if (rowRes.rowCount === 0) {
       return reply.code(400).send({ error: 'invalid_token' });
     }
 
-    const row = tokenRes.rows[0] as {
-      id: string;
-      expires_at: Date;
-      used_at: Date | null;
+    const row = rowRes.rows[0] as {
       user_id: string;
       role: 'ADMIN' | 'TUTOR';
       tutor_profile_id: string | null;
@@ -90,12 +177,6 @@ export async function authRoutes(app: FastifyInstance) {
     };
 
     if (!row.is_active) return reply.code(403).send({ error: 'account_disabled' });
-    if (row.used_at) return reply.code(400).send({ error: 'token_used' });
-    if (new Date(row.expires_at).getTime() < Date.now()) {
-      return reply.code(400).send({ error: 'token_expired' });
-    }
-
-    await pool.query(`update magic_link_tokens set used_at = now() where id = $1`, [row.id]);
 
     if (row.role === 'TUTOR' && !row.tutor_profile_id) {
       return reply.code(500).send({ error: 'tutor_profile_missing' });
@@ -107,13 +188,38 @@ export async function authRoutes(app: FastifyInstance) {
       tutorId: row.tutor_profile_id ?? undefined
     });
 
-    reply.setCookie('session', jwt, sessionCookieOptions());
+    setAuthCookies(reply, jwt);
     const redirectTo = row.role === 'ADMIN' ? '/admin' : '/tutor';
     return reply.redirect(redirectTo);
+  };
+
+  app.get('/auth/verify', {
+    config: {
+      rateLimit: {
+        max: 20,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
+    const token = (req.query as { token?: string }).token;
+    return handleVerify(token, req, reply);
+  });
+
+  app.post('/auth/verify', {
+    config: {
+      rateLimit: {
+        max: 20,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
+    const token = (req.body as { token?: string } | undefined)?.token;
+    return handleVerify(token, req, reply);
   });
 
   app.post('/auth/logout', async (_req, reply) => {
     reply.clearCookie('session', { path: '/' });
+    reply.clearCookie('csrf', { path: '/' });
     return reply.send({ ok: true });
   });
 

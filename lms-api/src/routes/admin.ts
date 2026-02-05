@@ -2,21 +2,24 @@ import type { FastifyInstance } from 'fastify';
 import { pool } from '../db/pool.js';
 import { normalizeEmail } from '../lib/security.js';
 import {
+  AdminSessionsQuerySchema,
   AssignmentSchema,
   CreateStudentSchema,
   CreateTutorSchema,
+  DeleteAdjustmentSchema,
   AdjustmentCreateSchema,
+  IdParamSchema,
   PayrollGenerateSchema,
   RejectSessionSchema,
+  WeekStartParamSchema,
   UpdateAssignmentSchema,
   UpdateStudentSchema,
   UpdateTutorSchema
 } from '../lib/schemas.js';
-import { requireAdmin } from '../lib/rbac.js';
+import { requireAuth, requireRole } from '../lib/rbac.js';
 import { getPayPeriodRange, getPayPeriodStart } from '../lib/pay-periods.js';
 import { isWithinAssignmentWindow } from '../lib/scheduling.js';
 
-const weekStartPattern = /^\d{4}-\d{2}-\d{2}$/;
 
 function toDateString(value: Date) {
   return value.toISOString().slice(0, 10);
@@ -28,7 +31,8 @@ function getSignedAmount(type: string, amount: number) {
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate);
-  app.addHook('preHandler', requireAdmin);
+  app.addHook('preHandler', requireAuth);
+  app.addHook('preHandler', requireRole('ADMIN'));
 
   const normalizeJson = (value: any) => {
     if (value == null) return null;
@@ -41,8 +45,6 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     return value;
   };
-
-  const ensureWeekStart = (value: string) => (weekStartPattern.test(value) ? value : null);
 
   const getOrCreatePayPeriod = async (client: any, weekStart: string, weekEnd: string) => {
     await client.query(
@@ -422,7 +424,12 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.get('/admin/sessions', async (req, reply) => {
-    const { status, from, to } = req.query as { status?: string; from?: string; to?: string };
+    const parsed = AdminSessionsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const { status, from, to } = parsed.data;
 
     const params: any[] = [];
     const filters: string[] = [];
@@ -455,7 +462,11 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.post('/admin/sessions/:id/approve', async (req, reply) => {
-    const sessionId = (req.params as { id: string }).id;
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+    const sessionId = params.data.id;
     const adminId = req.user!.userId;
 
     const currentRes = await pool.query(`select * from sessions where id = $1`, [sessionId]);
@@ -484,7 +495,11 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.post('/admin/sessions/:id/reject', async (req, reply) => {
-    const sessionId = (req.params as { id: string }).id;
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+    const sessionId = params.data.id;
     const adminId = req.user!.userId;
     const parsed = RejectSessionSchema.safeParse(req.body ?? {});
     if (!parsed.success) {
@@ -521,7 +536,14 @@ export async function adminRoutes(app: FastifyInstance) {
     return reply.send({ session: updatedRes.rows[0] });
   });
 
-  app.post('/admin/payroll/generate-week', async (req, reply) => {
+  app.post('/admin/payroll/generate-week', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     const parsed = PayrollGenerateSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
@@ -559,10 +581,19 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post('/admin/pay-periods/:weekStart/lock', async (req, reply) => {
-    const weekStartParam = (req.params as { weekStart: string }).weekStart;
-    const weekStart = ensureWeekStart(weekStartParam);
-    if (!weekStart) return reply.code(400).send({ error: 'invalid_week_start' });
+  app.post('/admin/pay-periods/:weekStart/lock', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
+    const params = WeekStartParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_week_start' });
+    }
+    const weekStart = params.data.weekStart;
 
     const range = getPayPeriodRange(weekStart);
     const adminId = req.user!.userId;
@@ -620,10 +651,19 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post('/admin/pay-periods/:weekStart/adjustments', async (req, reply) => {
-    const weekStartParam = (req.params as { weekStart: string }).weekStart;
-    const weekStart = ensureWeekStart(weekStartParam);
-    if (!weekStart) return reply.code(400).send({ error: 'invalid_week_start' });
+  app.post('/admin/pay-periods/:weekStart/adjustments', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
+    const params = WeekStartParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_week_start' });
+    }
+    const weekStart = params.data.weekStart;
 
     const parsed = AdjustmentCreateSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -696,9 +736,11 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.get('/admin/pay-periods/:weekStart/adjustments', async (req, reply) => {
-    const weekStartParam = (req.params as { weekStart: string }).weekStart;
-    const weekStart = ensureWeekStart(weekStartParam);
-    if (!weekStart) return reply.code(400).send({ error: 'invalid_week_start' });
+    const params = WeekStartParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_week_start' });
+    }
+    const weekStart = params.data.weekStart;
 
     const res = await pool.query(
       `select a.*, t.full_name as tutor_name
@@ -719,9 +761,17 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.delete('/admin/adjustments/:id', async (req, reply) => {
-    const adjustmentId = (req.params as { id: string }).id;
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+    const parsed = DeleteAdjustmentSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+    const adjustmentId = params.data.id;
     const adminId = req.user!.userId;
-    const reason = (req.body as { reason?: string } | undefined)?.reason ?? 'deleted_by_admin';
+    const reason = parsed.data.reason ?? 'deleted_by_admin';
 
     const res = await pool.query(
       `select a.id, p.status
@@ -746,8 +796,19 @@ export async function adminRoutes(app: FastifyInstance) {
     return reply.send({ adjustment: updateRes.rows[0] });
   });
 
-  app.get('/admin/payroll/week/:weekStart.csv', async (req, reply) => {
-    const weekStart = (req.params as { weekStart: string }).weekStart;
+  app.get('/admin/payroll/week/:weekStart.csv', {
+    config: {
+      rateLimit: {
+        max: 30,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
+    const params = WeekStartParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_week_start' });
+    }
+    const weekStart = params.data.weekStart;
 
     const res = await pool.query(
       `select i.invoice_number, i.period_start, i.period_end, i.total_amount,
@@ -786,10 +847,19 @@ export async function adminRoutes(app: FastifyInstance) {
     return reply.send(csv);
   });
 
-  app.get('/admin/integrity/pay-period/:weekStart', async (req, reply) => {
-    const weekStartParam = (req.params as { weekStart: string }).weekStart;
-    const weekStart = ensureWeekStart(weekStartParam);
-    if (!weekStart) return reply.code(400).send({ error: 'invalid_week_start' });
+  app.get('/admin/integrity/pay-period/:weekStart', {
+    config: {
+      rateLimit: {
+        max: 20,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
+    const params = WeekStartParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_week_start' });
+    }
+    const weekStart = params.data.weekStart;
 
     const range = getPayPeriodRange(weekStart);
 
@@ -887,7 +957,11 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.post('/admin/invoices/:id/mark-paid', async (req, reply) => {
-    const invoiceId = (req.params as { id: string }).id;
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+    const invoiceId = params.data.id;
     const res = await pool.query(
       `update invoices set status = 'PAID' where id = $1 returning id, status`,
       [invoiceId]
