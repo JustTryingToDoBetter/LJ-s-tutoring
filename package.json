@@ -6,12 +6,17 @@
     "node": "20.x"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
     "argon2": "^0.44.0",
     "fastify": "^5.7.2",
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "nodemailer": "^8.0.0",
+    "pdfkit": "^0.17.2"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.16",
+    "@types/nodemailer": "^7.0.9",
+    "@types/pdfkit": "^0.17.4",
     "cpy-cli": "^5.0.0",
     "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
@@ -51,17 +56,14 @@
     "lint:js": "eslint \"assets/**/*.js\" \"scripts/**/*.js\"",
     "lint:html": "html-validate \"*.html\" \"guides/*.html\" \"arcade/**/*.html\"",
     "lint": "npm-run-all --parallel lint:js lint:html",
-
     "check:arcade-best-today": "node scripts/check-arcade-best-today.mjs",
     "check:quickmath-export": "node scripts/check-quickmath-export.mjs",
-
     "qa:html": "html-validate \"dist/*.html\" \"dist/guides/*.html\" \"dist/arcade/**/*.html\"",
     "qa:links": "linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip \"^mailto:|^tel:|^https?:\\/\\/(?!localhost:8080)\"",
     "qa:a11y": "pa11y-ci",
     "qa:quick": "npm-run-all build && (npm run serve --silent & wait-on http://localhost:8080) && npm-run-all --parallel qa:html qa:links",
     "qa": "npm-run-all build && (npm run serve --silent & wait-on http://localhost:8080) && npm-run-all --parallel qa:html qa:links qa:a11y",
     "fetch:words": "node scripts/fetch-words.js",
-    "check:build-js": "node scripts/check-built-js.js",
     "prepare": "husky || true"
   }
 }

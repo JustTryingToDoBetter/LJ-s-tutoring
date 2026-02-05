@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invoices | Tutor Portal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body data-page="invoices">
+  <div class="portal-shell">
+    <nav class="portal-nav">
+      <div class="portal-nav-inner">
+        <div class="brand">
+          <span class="brand-badge">PO</span>
+          Tutor Portal
+        </div>
+        <div class="nav-links">
+          <a class="nav-link" data-nav="home" href="/tutor/index.html">Home</a>
+          <a class="nav-link" data-nav="sessions" href="/tutor/sessions.html">Sessions</a>
+          <a class="nav-link" data-nav="assignments" href="/tutor/assignments.html">Assignments</a>
+          <a class="nav-link" data-nav="payroll" href="/tutor/payroll.html">Payroll</a>
+          <a class="nav-link" data-nav="invoices" href="/tutor/invoices.html">Invoices</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="portal-main">
+      <section class="page-header">
+        <h1 class="page-title">Invoices</h1>
+        <p class="page-subtitle">Download your weekly invoices.</p>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <div id="invoiceList" class="grid"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/assets/tutor/portal.js"></script>
+</body>
+</html>

@@ -2,164 +2,164 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { resetDb } from './helpers/db.js';
 import { pool } from '../src/db/pool.js';
-
-async function bootstrapAdmin(app: any) {
-  process.env.ADMIN_BOOTSTRAP_TOKEN = 'bootstrap';
-  const reg = await app.inject({
-    method: 'POST',
-    url: '/auth/register-admin',
-    payload: {
-      email: 'admin@example.com',
-      password: 'superstrongpassword123',
-      firstName: 'Admin',
-      lastName: 'User',
-      bootstrapToken: 'bootstrap'
-    }
-  });
-  return reg.json().token as string;
-}
+import {
+  createAdmin,
+  createAssignment,
+  createStudent,
+  createTutor,
+  issueMagicToken,
+  loginWithMagicToken
+} from './helpers/factories.js';
 
 describe('Tutor logging security', () => {
   beforeEach(async () => resetDb());
   afterAll(async () => pool.end());
 
-  it('prevents tutor logging for unassigned student (IDOR)', async () => {
+  it('prevents tutor logging with mismatched student', async () => {
     const app = await buildApp();
-    const adminToken = await bootstrapAdmin(app);
+    await createAdmin('admin@example.com');
 
-    // Create tutor
-    const tutorRes = await app.inject({
-      method: 'POST',
-      url: '/admin/tutors',
-      headers: { authorization: `Bearer ${adminToken}` },
-      payload: {
-        email: 'tutor@example.com',
-        password: 'superstrongpassword123',
-        firstName: 'T',
-        lastName: 'U'
-      }
-    });
-    expect(tutorRes.statusCode).toBe(201);
-
-    // Create two students
-    const s1 = await app.inject({
-      method: 'POST',
-      url: '/admin/students',
-      headers: { authorization: `Bearer ${adminToken}` },
-      payload: { firstName: 'Stu', lastName: 'One', grade: '10' }
-    });
-    const s2 = await app.inject({
-      method: 'POST',
-      url: '/admin/students',
-      headers: { authorization: `Bearer ${adminToken}` },
-      payload: { firstName: 'Stu', lastName: 'Two', grade: '10' }
+    const { tutor, user } = await createTutor({
+      email: 'tutor@example.com',
+      fullName: 'Tutor One',
+      defaultHourlyRate: 300
     });
 
-    const student1Id = s1.json().student.id;
-    const student2Id = s2.json().student.id;
+    const student1 = await createStudent({ fullName: 'Student One', grade: '10' });
+    const student2 = await createStudent({ fullName: 'Student Two', grade: '10' });
 
-    // Assign only student1
-    const tutorId = tutorRes.json().tutor.id;
-    await app.inject({
-      method: 'POST',
-      url: '/admin/assignments',
-      headers: { authorization: `Bearer ${adminToken}` },
-      payload: { tutorId, studentId: student1Id, isActive: true }
+    const assignment = await createAssignment({
+      tutorId: tutor.id,
+      studentId: student1.id,
+      subject: 'Math',
+      startDate: '2026-01-01',
+      allowedDays: [1, 2, 3, 4, 5],
+      allowedTimeRanges: [{ start: '14:00', end: '18:00' }]
     });
 
-    // Login tutor
-    const login = await app.inject({
-      method: 'POST',
-      url: '/auth/login',
-      payload: { email: 'tutor@example.com', password: 'superstrongpassword123' }
-    });
-    const tutorToken = login.json().token as string;
-
-    // Attempt to log for student2 (not assigned)
-    const now = new Date();
-    const start = new Date(now.getTime() - 60 * 60000);
-    const end = new Date(now.getTime() - 30 * 60000);
+    const tutorToken = await issueMagicToken(user.id);
+    const tutorLogin = await loginWithMagicToken(app, tutorToken);
 
     const log = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { authorization: `Bearer ${tutorToken}` },
+      headers: { cookie: tutorLogin.cookie },
       payload: {
-        studentId: student2Id,
-        startAt: start.toISOString(),
-        endAt: end.toISOString(),
-        notes: 'Trying IDOR'
+        assignmentId: assignment.id,
+        studentId: student2.id,
+        date: '2026-02-04',
+        startTime: '14:30',
+        endTime: '15:30',
+        mode: 'online'
       }
     });
 
-    expect(log.statusCode).toBe(403);
-    expect(log.json().error).toBe('student_not_assigned_to_tutor');
-
+    expect(log.statusCode).toBe(400);
+    expect(log.json().error).toBe('student_mismatch');
     await app.close();
   });
 
   it('blocks logging outside assignment window', async () => {
     const app = await buildApp();
-    const adminToken = await bootstrapAdmin(app);
+    const admin = await createAdmin('admin@example.com');
+    const adminToken = await issueMagicToken(admin.id);
+    const adminAuth = await loginWithMagicToken(app, adminToken);
 
-    const tutorRes = await app.inject({
-      method: 'POST',
-      url: '/admin/tutors',
-      headers: { authorization: `Bearer ${adminToken}` },
-      payload: {
-        email: 'tutor@example.com',
-        password: 'superstrongpassword123',
-        firstName: 'T',
-        lastName: 'U'
-      }
+    const { tutor, user } = await createTutor({
+      email: 'tutor@example.com',
+      fullName: 'Tutor Two',
+      defaultHourlyRate: 300
+    });
+    const student = await createStudent({ fullName: 'Student One' });
+
+    const assignment = await createAssignment({
+      tutorId: tutor.id,
+      studentId: student.id,
+      subject: 'Physics',
+      startDate: '2026-02-01',
+      endDate: '2026-02-28',
+      allowedDays: [1],
+      allowedTimeRanges: [{ start: '08:00', end: '09:00' }]
     });
 
-    const studentRes = await app.inject({
-      method: 'POST',
-      url: '/admin/students',
-      headers: { authorization: `Bearer ${adminToken}` },
-      payload: { firstName: 'Stu', lastName: 'One' }
-    });
-
-    const tutorId = tutorRes.json().tutor.id;
-    const studentId = studentRes.json().student.id;
-
-    // assignment valid from now-10m to now-5m (so current time is outside)
-    // Make base far enough in the past so a 30-min session can't drift into "future"
-    const base = new Date(Date.now() - 2 * 60 * 60_000); // 2 hours safely in the past
-
-    const validFrom = new Date(base.getTime() - 10 * 60_000); // base - 10m
-    const validTo   = new Date(base.getTime() - 5  * 60_000); // base - 5m
-
-
-    await app.inject({
-      method: 'POST',
-      url: '/admin/assignments',
-      headers: { authorization: `Bearer ${adminToken}` },
-      payload: { tutorId, studentId, isActive: true, validFrom: validFrom.toISOString(), validTo: validTo.toISOString() }
-    });
-
-    const login = await app.inject({
-      method: 'POST',
-      url: '/auth/login',
-      payload: { email: 'tutor@example.com', password: 'superstrongpassword123' }
-    });
-    const tutorToken = login.json().token as string;
-
-    // Session happens AFTER validTo and lasts 30 minutes (passes min-duration rule)
-    const start = new Date(base.getTime() - 4 * 60_000); // base - 4m
-    const end   = new Date(base.getTime() + 30 * 60_000); // base - 3m
+    const tutorToken = await issueMagicToken(user.id);
+    const tutorLogin = await loginWithMagicToken(app, tutorToken);
 
     const log = await app.inject({
       method: 'POST',
       url: '/tutor/sessions',
-      headers: { authorization: `Bearer ${tutorToken}` },
-      payload: { studentId, startAt: start.toISOString(), endAt: end.toISOString(), notes: 'Outside window' }
+      headers: { cookie: tutorLogin.cookie },
+      payload: {
+        assignmentId: assignment.id,
+        studentId: student.id,
+        date: '2026-02-02',
+        startTime: '10:00',
+        endTime: '11:00',
+        mode: 'in-person'
+      }
     });
 
-    expect(log.statusCode).toBe(403);
+    expect(log.statusCode).toBe(400);
     expect(log.json().error).toBe('outside_assignment_window');
+    await app.close();
+  });
 
+  it('rejects overlapping sessions for a tutor', async () => {
+    const app = await buildApp();
+    const admin = await createAdmin('admin@example.com');
+    const adminToken = await issueMagicToken(admin.id);
+    await loginWithMagicToken(app, adminToken);
+
+    const { tutor, user } = await createTutor({
+      email: 'tutor@example.com',
+      fullName: 'Tutor Three',
+      defaultHourlyRate: 300
+    });
+    const student = await createStudent({ fullName: 'Student One' });
+
+    const assignment = await createAssignment({
+      tutorId: tutor.id,
+      studentId: student.id,
+      subject: 'Math',
+      startDate: '2026-02-01',
+      allowedDays: [1, 2, 3, 4, 5],
+      allowedTimeRanges: [{ start: '08:00', end: '18:00' }]
+    });
+
+    const tutorToken = await issueMagicToken(user.id);
+    const tutorLogin = await loginWithMagicToken(app, tutorToken);
+
+    const first = await app.inject({
+      method: 'POST',
+      url: '/tutor/sessions',
+      headers: { cookie: tutorLogin.cookie },
+      payload: {
+        assignmentId: assignment.id,
+        studentId: student.id,
+        date: '2026-02-03',
+        startTime: '09:00',
+        endTime: '10:00',
+        mode: 'online'
+      }
+    });
+    expect(first.statusCode).toBe(201);
+
+    const overlap = await app.inject({
+      method: 'POST',
+      url: '/tutor/sessions',
+      headers: { cookie: tutorLogin.cookie },
+      payload: {
+        assignmentId: assignment.id,
+        studentId: student.id,
+        date: '2026-02-03',
+        startTime: '09:30',
+        endTime: '10:30',
+        mode: 'online'
+      }
+    });
+
+    expect(overlap.statusCode).toBe(409);
+    expect(overlap.json().error).toBe('overlapping_session');
     await app.close();
   });
 });

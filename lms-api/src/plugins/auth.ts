@@ -5,12 +5,12 @@ import type { AuthUser } from '../types.js';
 
 type JwtPayload = {
   userId: string;
-  role: 'admin' | 'tutor';
+  role: 'ADMIN' | 'TUTOR';
   tutorId?: string;
 };
 
 export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
-  const secret = process.env.JWT_SECRET;
+  const secret = process.env.JWT_SECRET ?? process.env.COOKIE_SECRET;
   if (!secret) throw new Error('JWT_SECRET is required');
 
   app.register(jwt, {
@@ -22,7 +22,10 @@ export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
 
   app.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) => {
     try {
-      const decoded = await req.jwtVerify<JwtPayload>();
+      const token = req.cookies?.session;
+      if (!token) return reply.code(401).send({ error: 'unauthorized' });
+
+      const decoded = await app.jwt.verify<JwtPayload>(token);
       const user: AuthUser = {
         userId: decoded.userId,
         role: decoded.role,

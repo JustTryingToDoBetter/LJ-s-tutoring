@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
+import cookie from '@fastify/cookie';
 
 import './types.js';
 import { authPlugin } from './plugins/auth.js';
@@ -17,12 +18,16 @@ export async function buildApp() {
   });
 
   await app.register(helmet, { contentSecurityPolicy: false });
+  await app.register(cookie, {
+    secret: process.env.COOKIE_SECRET,
+    hook: 'onRequest'
+  });
   await app.register(cors, {
     origin: (process.env.CORS_ORIGIN ?? '')
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean),
-    credentials: false
+    credentials: true
   });
   await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
 

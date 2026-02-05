@@ -1,16 +1,28 @@
 import { pool } from '../../src/db/pool.js';
 
 export async function resetDb() {
-  // Order matters due to FKs
   await pool.query('begin');
   try {
-    await pool.query('delete from tutoring_session_current');
-    await pool.query('delete from tutoring_session_log');
-    await pool.query('delete from tutoring_sessions'); // if you still have old table lingering
-    await pool.query('delete from tutor_student_assignments');
-    await pool.query('delete from students');
-    await pool.query('delete from tutors');
-    await pool.query('delete from users');
+    await pool.query(`
+      do $$
+      begin
+        if to_regclass('public.invoice_lines') is not null then execute 'delete from invoice_lines'; end if;
+        if to_regclass('public.invoices') is not null then execute 'delete from invoices'; end if;
+        if to_regclass('public.session_history') is not null then execute 'delete from session_history'; end if;
+        if to_regclass('public.sessions') is not null then execute 'delete from sessions'; end if;
+        if to_regclass('public.assignments') is not null then execute 'delete from assignments'; end if;
+        if to_regclass('public.magic_link_tokens') is not null then execute 'delete from magic_link_tokens'; end if;
+        if to_regclass('public.tutor_profiles') is not null then execute 'delete from tutor_profiles'; end if;
+        if to_regclass('public.students') is not null then execute 'delete from students'; end if;
+        if to_regclass('public.users') is not null then execute 'delete from users'; end if;
+
+        if to_regclass('public.tutoring_session_current') is not null then execute 'delete from tutoring_session_current'; end if;
+        if to_regclass('public.tutoring_session_log') is not null then execute 'delete from tutoring_session_log'; end if;
+        if to_regclass('public.tutoring_sessions') is not null then execute 'delete from tutoring_sessions'; end if;
+        if to_regclass('public.tutor_student_assignments') is not null then execute 'delete from tutor_student_assignments'; end if;
+        if to_regclass('public.tutors') is not null then execute 'delete from tutors'; end if;
+      end $$;
+    `);
     await pool.query('commit');
   } catch (e) {
     await pool.query('rollback');

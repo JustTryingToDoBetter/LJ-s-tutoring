@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tutors | Admin Console</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body data-page="tutors">
+  <div class="portal-shell">
+    <nav class="portal-nav">
+      <div class="portal-nav-inner">
+        <div class="brand">
+          <span class="brand-badge">PO</span>
+          Admin Console
+        </div>
+        <div class="nav-links">
+          <a class="nav-link" data-nav="dashboard" href="/admin/index.html">Dashboard</a>
+          <a class="nav-link" data-nav="tutors" href="/admin/tutors.html">Tutors</a>
+          <a class="nav-link" data-nav="students" href="/admin/students.html">Students</a>
+          <a class="nav-link" data-nav="assignments" href="/admin/assignments.html">Assignments</a>
+          <a class="nav-link" data-nav="approvals" href="/admin/approvals.html">Approvals</a>
+          <a class="nav-link" data-nav="payroll" href="/admin/payroll.html">Payroll</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="portal-main">
+      <section class="page-header">
+        <h1 class="page-title">Tutors</h1>
+        <p class="page-subtitle">Create and manage tutor profiles.</p>
+      </section>
+
+      <section class="grid two">
+        <div class="panel">
+          <h2 class="panel-title">Add tutor</h2>
+          <form id="tutorForm">
+            <div class="field">
+              <label for="tutorName">Full name</label>
+              <input id="tutorName" required>
+            </div>
+            <div class="field">
+              <label for="tutorEmail">Email</label>
+              <input id="tutorEmail" type="email" required>
+            </div>
+            <div class="field">
+              <label for="tutorPhone">Phone</label>
+              <input id="tutorPhone" type="tel">
+            </div>
+            <div class="field">
+              <label for="tutorRate">Default hourly rate</label>
+              <input id="tutorRate" type="number" min="0" step="0.01" required>
+            </div>
+            <label class="field">
+              <span>Active</span>
+              <input id="tutorActive" type="checkbox" checked>
+            </label>
+            <button class="button" type="submit">Create tutor</button>
+          </form>
+        </div>
+        <div class="panel">
+          <h2 class="panel-title">Tutor list</h2>
+          <div id="tutorList" class="grid"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/assets/admin/portal.js"></script>
+</body>
+</html>

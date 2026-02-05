@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sessions | Tutor Portal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body data-page="sessions">
+  <div class="portal-shell">
+    <nav class="portal-nav">
+      <div class="portal-nav-inner">
+        <div class="brand">
+          <span class="brand-badge">PO</span>
+          Tutor Portal
+        </div>
+        <div class="nav-links">
+          <a class="nav-link" data-nav="home" href="/tutor/index.html">Home</a>
+          <a class="nav-link" data-nav="sessions" href="/tutor/sessions.html">Sessions</a>
+          <a class="nav-link" data-nav="assignments" href="/tutor/assignments.html">Assignments</a>
+          <a class="nav-link" data-nav="payroll" href="/tutor/payroll.html">Payroll</a>
+          <a class="nav-link" data-nav="invoices" href="/tutor/invoices.html">Invoices</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="portal-main">
+      <section class="page-header">
+        <h1 class="page-title">Log a session</h1>
+        <p class="page-subtitle">Drafts are saved offline and synced when you are online.</p>
+      </section>
+
+      <div id="syncBanner" class="banner">
+        <div>Offline drafts ready to sync. (<span id="syncCount">0</span>)</div>
+        <button id="syncDraftsBtn" class="button secondary">Sync drafts</button>
+      </div>
+
+      <section class="grid two" style="margin-top:16px;">
+        <div class="panel">
+          <h2 class="panel-title">Session details</h2>
+          <form id="sessionForm">
+            <div class="field">
+              <label for="assignmentSelect">Assignment</label>
+              <select id="assignmentSelect" required></select>
+            </div>
+            <div class="field">
+              <label>Student</label>
+              <div id="studentLabel" class="note">--</div>
+            </div>
+            <div class="split">
+              <div class="field">
+                <label for="date">Date</label>
+                <input id="date" type="date" required>
+              </div>
+              <div class="field">
+                <label for="mode">Mode</label>
+                <select id="mode">
+                  <option value="online">Online</option>
+                  <option value="in-person">In-person</option>
+                </select>
+              </div>
+            </div>
+            <div class="split">
+              <div class="field">
+                <label for="startTime">Start time</label>
+                <input id="startTime" type="time" required>
+              </div>
+              <div class="field">
+                <label for="endTime">End time</label>
+                <input id="endTime" type="time" required>
+              </div>
+            </div>
+            <div class="timer">
+              <button type="button" id="startTimer" class="button secondary">Start timer</button>
+              <button type="button" id="stopTimer" class="button secondary" disabled>Stop timer</button>
+              <span id="timerLabel">Timer idle.</span>
+            </div>
+            <div class="field">
+              <label for="location">Location</label>
+              <input id="location" type="text" placeholder="Venue or online platform">
+            </div>
+            <div class="field">
+              <label for="notes">Notes</label>
+              <textarea id="notes" rows="4" placeholder="Topics covered"></textarea>
+            </div>
+            <button class="button" type="submit">Save draft</button>
+            <p id="sessionMsg" class="note" style="margin-top:10px;"></p>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">Recent sessions</h2>
+          <div id="sessionsList" class="grid"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/assets/tutor/portal.js"></script>
+</body>
+</html>

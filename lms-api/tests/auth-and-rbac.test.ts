@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { resetDb } from './helpers/db.js';
 import { pool } from '../src/db/pool.js';
+import { createAdmin, issueMagicToken, loginWithMagicToken } from './helpers/factories.js';
 
 describe('Auth + RBAC', () => {
   beforeEach(async () => {
@@ -12,40 +13,24 @@ describe('Auth + RBAC', () => {
     await pool.end();
   });
 
-  it('bootstraps an admin and logs in', async () => {
-    process.env.ADMIN_BOOTSTRAP_TOKEN = 'bootstrap';
+  it('verifies magic link and sets session cookie', async () => {
     const app = await buildApp();
+    const admin = await createAdmin('admin@example.com');
+    const token = await issueMagicToken(admin.id);
 
-    const reg = await app.inject({
-      method: 'POST',
-      url: '/auth/register-admin',
-      payload: {
-        email: 'admin@example.com',
-        password: 'superstrongpassword123',
-        firstName: 'Admin',
-        lastName: 'User',
-        bootstrapToken: 'bootstrap'
-      }
-    });
-
-    expect(reg.statusCode).toBe(201);
-    const regBody = reg.json();
-    expect(regBody.token).toBeTruthy();
-
-    const login = await app.inject({
-      method: 'POST',
-      url: '/auth/login',
-      payload: { email: 'admin@example.com', password: 'superstrongpassword123' }
-    });
-
-    expect(login.statusCode).toBe(200);
-    expect(login.json().token).toBeTruthy();
+    const { response, cookie } = await loginWithMagicToken(app, token);
+    expect(response.statusCode).toBe(302);
+    expect(cookie).toMatch(/^session=/);
     await app.close();
   });
 
-  it('blocks admin routes without token', async () => {
+  it('blocks admin routes without cookie', async () => {
     const app = await buildApp();
-    const res = await app.inject({ method: 'POST', url: '/admin/students', payload: { firstName: 'A', lastName: 'B' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/admin/students',
+      payload: { fullName: 'A B' }
+    });
     expect(res.statusCode).toBe(401);
     await app.close();
   });

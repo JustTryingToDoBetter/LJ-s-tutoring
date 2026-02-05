@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TUTOR
+}
+
+enum SessionStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+}
+
+model User {
+  id             String        @id @default(uuid()) @db.Uuid
+  email          String        @unique
+  role           Role
+  tutorProfileId String?       @map("tutor_profile_id") @db.Uuid
+  passwordHash   String?       @map("password_hash")
+  isActive       Boolean       @default(true) @map("is_active")
+  tutorProfile   TutorProfile? @relation(fields: [tutorProfileId], references: [id])
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @map("updated_at")
+
+  magicLinkTokens MagicLinkToken[]
+  approvedSessions Session[]       @relation("approved_by")
+  sessionHistoryChanges SessionHistory[] @relation("changed_by")
+  invoices        Invoice[]
+
+  @@map("users")
+}
+
+model MagicLinkToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("magic_link_tokens")
+  @@index([tokenHash])
+}
+
+model TutorProfile {
+  id                String  @id @default(uuid()) @db.Uuid
+  fullName          String  @map("full_name")
+  phone             String?
+  defaultHourlyRate Decimal @map("default_hourly_rate") @db.Numeric(10, 2)
+  active            Boolean @default(true)
+
+  user        User?
+  assignments Assignment[]
+  sessions    Session[]
+  invoices    Invoice[]
+
+  @@map("tutor_profiles")
+}
+
+model Student {
+  id            String  @id @default(uuid()) @db.Uuid
+  fullName      String  @map("full_name")
+  grade         String?
+  guardianName  String? @map("guardian_name")
+  guardianPhone String? @map("guardian_phone")
+  notes         String?
+  active        Boolean @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @map("updated_at")
+
+  assignments Assignment[]
+  sessions    Session[]
+
+  @@map("students")
+}
+
+model Assignment {
+  id                   String   @id @default(uuid()) @db.Uuid
+  tutorId              String   @map("tutor_id") @db.Uuid
+  studentId            String   @map("student_id") @db.Uuid
+  subject              String
+  startDate            DateTime @map("start_date") @db.Date
+  endDate              DateTime? @map("end_date") @db.Date
+  rateOverride         Decimal? @map("rate_override") @db.Numeric(10, 2)
+  allowedDaysJson      Json     @map("allowed_days_json")
+  allowedTimeRangesJson Json    @map("allowed_time_ranges_json")
+  active               Boolean  @default(true)
+
+  tutor   TutorProfile @relation(fields: [tutorId], references: [id])
+  student Student      @relation(fields: [studentId], references: [id])
+  sessions Session[]
+
+  @@map("assignments")
+  @@index([tutorId, studentId])
+}
+
+model Session {
+  id              String        @id @default(uuid()) @db.Uuid
+  tutorId         String        @map("tutor_id") @db.Uuid
+  studentId       String        @map("student_id") @db.Uuid
+  assignmentId    String        @map("assignment_id") @db.Uuid
+  date            DateTime      @db.Date
+  startTime       DateTime      @map("start_time") @db.Time
+  endTime         DateTime      @map("end_time") @db.Time
+  durationMinutes Int           @map("duration_minutes")
+  mode            String
+  location        String?
+  notes           String?
+  status          SessionStatus @default(DRAFT)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  submittedAt     DateTime?     @map("submitted_at")
+  approvedAt      DateTime?     @map("approved_at")
+  approvedById    String?       @map("approved_by") @db.Uuid
+
+  tutor      TutorProfile @relation(fields: [tutorId], references: [id])
+  student    Student      @relation(fields: [studentId], references: [id])
+  assignment Assignment  @relation(fields: [assignmentId], references: [id])
+  approvedBy User?        @relation("approved_by", fields: [approvedById], references: [id])
+  history    SessionHistory[]
+  invoiceLines InvoiceLine[]
+
+  @@map("sessions")
+  @@index([tutorId, date])
+}
+
+model SessionHistory {
+  id               String   @id @default(uuid()) @db.Uuid
+  sessionId        String   @map("session_id") @db.Uuid
+  changedByUserId  String?  @map("changed_by_user_id") @db.Uuid
+  changeType       String   @map("change_type")
+  beforeJson       Json?    @map("before_json")
+  afterJson        Json?    @map("after_json")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  session Session @relation(fields: [sessionId], references: [id])
+  changedBy User? @relation("changed_by", fields: [changedByUserId], references: [id])
+
+  @@map("session_history")
+  @@index([sessionId])
+}
+
+model Invoice {
+  id           String        @id @default(uuid()) @db.Uuid
+  tutorId      String        @map("tutor_id") @db.Uuid
+  periodStart  DateTime      @map("period_start") @db.Date
+  periodEnd    DateTime      @map("period_end") @db.Date
+  invoiceNumber String       @map("invoice_number")
+  totalAmount  Decimal       @map("total_amount") @db.Numeric(12, 2)
+  status       InvoiceStatus @default(DRAFT)
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  tutor TutorProfile @relation(fields: [tutorId], references: [id])
+  lines InvoiceLine[]
+
+  @@map("invoices")
+  @@unique([invoiceNumber])
+  @@index([tutorId, periodStart])
+}
+
+model InvoiceLine {
+  id          String   @id @default(uuid()) @db.Uuid
+  invoiceId   String   @map("invoice_id") @db.Uuid
+  sessionId   String   @map("session_id") @db.Uuid
+  description String
+  minutes     Int
+  rate        Decimal  @db.Numeric(10, 2)
+  amount      Decimal  @db.Numeric(12, 2)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+  session Session @relation(fields: [sessionId], references: [id])
+
+  @@map("invoice_lines")
+  @@index([invoiceId])
+  @@index([sessionId])
+}

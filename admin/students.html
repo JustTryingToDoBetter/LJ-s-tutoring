@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Students | Admin Console</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body data-page="students">
+  <div class="portal-shell">
+    <nav class="portal-nav">
+      <div class="portal-nav-inner">
+        <div class="brand">
+          <span class="brand-badge">PO</span>
+          Admin Console
+        </div>
+        <div class="nav-links">
+          <a class="nav-link" data-nav="dashboard" href="/admin/index.html">Dashboard</a>
+          <a class="nav-link" data-nav="tutors" href="/admin/tutors.html">Tutors</a>
+          <a class="nav-link" data-nav="students" href="/admin/students.html">Students</a>
+          <a class="nav-link" data-nav="assignments" href="/admin/assignments.html">Assignments</a>
+          <a class="nav-link" data-nav="approvals" href="/admin/approvals.html">Approvals</a>
+          <a class="nav-link" data-nav="payroll" href="/admin/payroll.html">Payroll</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="portal-main">
+      <section class="page-header">
+        <h1 class="page-title">Students</h1>
+        <p class="page-subtitle">Add learners and guardian details.</p>
+      </section>
+
+      <section class="grid two">
+        <div class="panel">
+          <h2 class="panel-title">Add student</h2>
+          <form id="studentForm">
+            <div class="field">
+              <label for="studentName">Full name</label>
+              <input id="studentName" required>
+            </div>
+            <div class="field">
+              <label for="studentGrade">Grade</label>
+              <input id="studentGrade">
+            </div>
+            <div class="field">
+              <label for="guardianName">Guardian name</label>
+              <input id="guardianName">
+            </div>
+            <div class="field">
+              <label for="guardianPhone">Guardian phone</label>
+              <input id="guardianPhone">
+            </div>
+            <div class="field">
+              <label for="studentNotes">Notes</label>
+              <textarea id="studentNotes" rows="3"></textarea>
+            </div>
+            <label class="field">
+              <span>Active</span>
+              <input id="studentActive" type="checkbox" checked>
+            </label>
+            <button class="button" type="submit">Create student</button>
+          </form>
+        </div>
+        <div class="panel">
+          <h2 class="panel-title">Student list</h2>
+          <div id="studentList" class="grid"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/assets/admin/portal.js"></script>
+</body>
+</html>

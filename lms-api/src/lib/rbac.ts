@@ -10,12 +10,12 @@ export function requireRole(role: Role) {
 
 export async function requireTutor(req: FastifyRequest, reply: FastifyReply) {
   if (!req.user) return reply.code(401).send({ error: 'unauthorized' });
-  if (req.user.role !== 'tutor' || !req.user.tutorId) {
+  if (req.user.role !== 'TUTOR' || !req.user.tutorId) {
     return reply.code(403).send({ error: 'forbidden' });
   }
 }
 
 export async function requireAdmin(req: FastifyRequest, reply: FastifyReply) {
   if (!req.user) return reply.code(401).send({ error: 'unauthorized' });
-  if (req.user.role !== 'admin') return reply.code(403).send({ error: 'forbidden' });
+  if (req.user.role !== 'ADMIN') return reply.code(403).send({ error: 'forbidden' });
 }
