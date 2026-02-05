@@ -151,11 +151,17 @@ async function initPayroll() {
   const list = qs('#payrollList');
   const data = await apiGet('/tutor/payroll/weeks');
   list.innerHTML = data.weeks.length
-    ? data.weeks.map((w) => `<div class="panel">
-        <div><strong>${w.week_start}</strong></div>
-        <div>${w.total_minutes} mins</div>
-        <div>${formatMoney(w.total_amount)}</div>
-      </div>`).join('')
+    ? data.weeks.map((w) => {
+        const adjustments = (w.adjustments || [])
+          .map((adj) => `<div class="note">${adj.type}: ${formatMoney(adj.signed_amount)} - ${adj.reason}</div>`)
+          .join('');
+        return `<div class="panel">
+          <div class="split"><strong>${w.week_start}</strong> ${renderStatus(w.status)}</div>
+          <div>${w.total_minutes} mins</div>
+          <div>${formatMoney(w.total_amount)}</div>
+          ${adjustments ? `<div style="margin-top:8px;">${adjustments}</div>` : ''}
+        </div>`;
+      }).join('')
     : '<div class="note">No approved sessions yet.</div>';
 }
 

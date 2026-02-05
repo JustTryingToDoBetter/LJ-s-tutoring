@@ -24,6 +24,23 @@ type AssignmentInput = {
   rateOverride?: number | null;
 };
 
+type PayPeriodInput = {
+  weekStart: string;
+  weekEnd: string;
+  status?: 'OPEN' | 'LOCKED';
+};
+
+type AdjustmentInput = {
+  tutorId: string;
+  payPeriodId: string;
+  type: 'BONUS' | 'CORRECTION' | 'PENALTY';
+  amount: number;
+  reason: string;
+  createdByUserId: string;
+  approvedByUserId?: string | null;
+  relatedSessionId?: string | null;
+};
+
 export async function createAdmin(email = 'admin@example.com') {
   const res = await pool.query(
     `insert into users (email, role)
@@ -79,6 +96,36 @@ export async function createAssignment(input: AssignmentInput) {
       input.rateOverride ?? null,
       JSON.stringify(input.allowedDays ?? []),
       JSON.stringify(input.allowedTimeRanges ?? [])
+    ]
+  );
+  return res.rows[0];
+}
+
+export async function createPayPeriod(input: PayPeriodInput) {
+  const res = await pool.query(
+    `insert into pay_periods (period_start_date, period_end_date, status)
+     values ($1::date, $2::date, $3)
+     returning *`,
+    [input.weekStart, input.weekEnd, input.status ?? 'OPEN']
+  );
+  return res.rows[0];
+}
+
+export async function createAdjustment(input: AdjustmentInput) {
+  const res = await pool.query(
+    `insert into adjustments
+     (tutor_id, pay_period_id, type, amount, reason, status, created_by_user_id, approved_by_user_id, approved_at, related_session_id)
+     values ($1, $2, $3, $4, $5, 'APPROVED', $6, $7, now(), $8)
+     returning *`,
+    [
+      input.tutorId,
+      input.payPeriodId,
+      input.type,
+      input.amount,
+      input.reason,
+      input.createdByUserId,
+      input.approvedByUserId ?? input.createdByUserId,
+      input.relatedSessionId ?? null
     ]
   );
   return res.rows[0];

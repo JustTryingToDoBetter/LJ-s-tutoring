@@ -16,7 +16,7 @@ if (!DATABASE_URL) {
 const pool = new Pool({ connectionString: DATABASE_URL });
 
 function getMigrationsDir() {
-  return path.resolve(__dirname, '../../migrations');
+  return path.resolve(__dirname, '../../prisma/migrations');
 }
 
 async function ensureMigrationsTable(client: any) {
@@ -39,9 +39,10 @@ async function markApplied(client: any, id: string) {
 
 async function run() {
   const dir = getMigrationsDir();
-  const files = fs
-    .readdirSync(dir)
-    .filter((f) => /^\d+_.*\.sql$/.test(f))
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  const files = entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
     .sort((a, b) => a.localeCompare(b));
 
   const client = await pool.connect();
@@ -49,15 +50,16 @@ async function run() {
     await client.query('BEGIN');
     await ensureMigrationsTable(client);
 
-    for (const file of files) {
-      if (await applied(client, file)) continue;
+    for (const folder of files) {
+      if (await applied(client, folder)) continue;
 
-      const full = path.join(dir, file);
+      const full = path.join(dir, folder, 'migration.sql');
+      if (!fs.existsSync(full)) continue;
       const sql = fs.readFileSync(full, 'utf8');
 
-      console.log(`Applying ${file}...`);
+      console.log(`Applying ${folder}...`);
       await client.query(sql);
-      await markApplied(client, file);
+      await markApplied(client, folder);
     }
 
     await client.query('COMMIT');

@@ -116,3 +116,11 @@ export const RejectSessionSchema = z.object({
 export const PayrollGenerateSchema = z.object({
   weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
+
+export const AdjustmentCreateSchema = z.object({
+  tutorId: z.string().uuid(),
+  type: z.enum(['BONUS', 'CORRECTION', 'PENALTY']),
+  amount: z.number().positive().max(1000000),
+  reason: z.string().min(1).max(2000),
+  relatedSessionId: z.string().uuid().optional().nullable(),
+});

@@ -23,6 +23,7 @@
           <a class="nav-link" data-nav="assignments" href="/admin/assignments.html">Assignments</a>
           <a class="nav-link" data-nav="approvals" href="/admin/approvals.html">Approvals</a>
           <a class="nav-link" data-nav="payroll" href="/admin/payroll.html">Payroll</a>
+          <a class="nav-link" data-nav="reconciliation" href="/admin/reconciliation.html">Reconciliation</a>
         </div>
       </div>
     </nav>
@@ -41,7 +42,10 @@
               <label for="weekStart">Week start (Monday)</label>
               <input id="weekStart" type="date" required>
             </div>
-            <button class="button" type="submit">Generate invoices</button>
+            <div class="split">
+              <button class="button" type="submit">Generate invoices</button>
+              <button class="button secondary" type="button" id="lockWeek">Lock week</button>
+            </div>
           </form>
           <div style="margin-top:12px;">
             <a id="payrollCsv" class="button secondary" href="#">Download CSV</a>
@@ -50,6 +54,47 @@
         <div class="panel">
           <h2 class="panel-title">Generated invoices</h2>
           <div id="payrollList" class="grid"></div>
+        </div>
+      </section>
+
+      <section class="grid two" style="margin-top:16px;">
+        <div class="panel">
+          <h2 class="panel-title">Adjustments</h2>
+          <form id="adjustmentForm">
+            <div class="field">
+              <label for="adjustWeek">Week start (Monday)</label>
+              <input id="adjustWeek" type="date" required>
+            </div>
+            <div class="field">
+              <label for="adjustTutor">Tutor</label>
+              <select id="adjustTutor" required></select>
+            </div>
+            <div class="field">
+              <label for="adjustType">Type</label>
+              <select id="adjustType">
+                <option value="BONUS">Bonus</option>
+                <option value="CORRECTION">Correction</option>
+                <option value="PENALTY">Penalty</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="adjustAmount">Amount</label>
+              <input id="adjustAmount" type="number" step="0.01" min="0" required>
+            </div>
+            <div class="field">
+              <label for="adjustReason">Reason</label>
+              <textarea id="adjustReason" rows="2" required></textarea>
+            </div>
+            <div class="field">
+              <label for="adjustSession">Related session ID (optional)</label>
+              <input id="adjustSession" type="text">
+            </div>
+            <button class="button" type="submit">Add adjustment</button>
+          </form>
+        </div>
+        <div class="panel">
+          <h2 class="panel-title">Week adjustments</h2>
+          <div id="adjustmentList" class="grid"></div>
         </div>
       </section>
     </main>

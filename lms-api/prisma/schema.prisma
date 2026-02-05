@@ -95,12 +95,16 @@ model Adjustment {
   approvedByUserId String?          @map("approved_by_user_id") @db.Uuid
   createdAt        DateTime         @default(now()) @map("created_at")
   approvedAt       DateTime?        @map("approved_at")
+  voidedAt         DateTime?        @map("voided_at")
+  voidedByUserId   String?          @map("voided_by_user_id") @db.Uuid
+  voidReason       String?          @map("void_reason")
   relatedSessionId String?          @map("related_session_id") @db.Uuid
 
   tutor TutorProfile @relation(fields: [tutorId], references: [id])
   payPeriod PayPeriod @relation(fields: [payPeriodId], references: [id])
   createdBy User @relation("adjustment_created_by", fields: [createdByUserId], references: [id])
   approvedBy User? @relation("adjustment_approved_by", fields: [approvedByUserId], references: [id])
+  voidedBy User? @relation(fields: [voidedByUserId], references: [id])
   relatedSession Session? @relation(fields: [relatedSessionId], references: [id])
   invoiceLines InvoiceLine[]
 

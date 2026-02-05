@@ -5,6 +5,7 @@ import {
   AssignmentSchema,
   CreateStudentSchema,
   CreateTutorSchema,
+  AdjustmentCreateSchema,
   PayrollGenerateSchema,
   RejectSessionSchema,
   UpdateAssignmentSchema,
@@ -12,11 +13,17 @@ import {
   UpdateTutorSchema
 } from '../lib/schemas.js';
 import { requireAdmin } from '../lib/rbac.js';
+import { getPayPeriodRange, getPayPeriodStart } from '../lib/pay-periods.js';
+import { isWithinAssignmentWindow } from '../lib/scheduling.js';
 
-function addDays(start: Date, days: number) {
-  const d = new Date(start);
-  d.setDate(d.getDate() + days);
-  return d;
+const weekStartPattern = /^\d{4}-\d{2}-\d{2}$/;
+
+function toDateString(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+function getSignedAmount(type: string, amount: number) {
+  return type === 'PENALTY' ? -Math.abs(amount) : Math.abs(amount);
 }
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -33,6 +40,141 @@ export async function adminRoutes(app: FastifyInstance) {
       }
     }
     return value;
+  };
+
+  const ensureWeekStart = (value: string) => (weekStartPattern.test(value) ? value : null);
+
+  const getOrCreatePayPeriod = async (client: any, weekStart: string, weekEnd: string) => {
+    await client.query(
+      `insert into pay_periods (period_start_date, period_end_date, status)
+       values ($1::date, $2::date, 'OPEN')
+       on conflict (period_start_date) do nothing`,
+      [weekStart, weekEnd]
+    );
+
+    const res = await client.query(
+      `select id, status, period_start_date, period_end_date
+       from pay_periods where period_start_date = $1::date`,
+      [weekStart]
+    );
+    return res.rows[0] as { id: string; status: string; period_start_date: Date; period_end_date: Date } | undefined;
+  };
+
+  const isDateLocked = async (client: any, dateValue: Date) => {
+    const weekStart = getPayPeriodStart(toDateString(dateValue));
+    const res = await client.query(
+      `select status from pay_periods where period_start_date = $1::date`,
+      [weekStart]
+    );
+    return res.rowCount > 0 && res.rows[0].status === 'LOCKED';
+  };
+
+  const generateInvoicesForWeek = async (client: any, weekStart: string, weekEnd: string) => {
+    const payPeriod = await getOrCreatePayPeriod(client, weekStart, weekEnd);
+    const periodId = payPeriod?.id;
+
+    const tutorRes = await client.query(
+      `select distinct t.id as tutor_id, t.full_name, t.default_hourly_rate
+       from tutor_profiles t
+       where exists (
+         select 1 from sessions s
+         where s.tutor_id = t.id
+           and s.status = 'APPROVED'
+           and s.date between $1::date and $2::date
+       )
+       or exists (
+         select 1 from adjustments a
+         where a.tutor_id = t.id
+           and a.pay_period_id = $3
+           and a.status = 'APPROVED'
+           and a.voided_at is null
+       )`,
+      [weekStart, weekEnd, periodId]
+    );
+
+    const invoices: Array<{ id: string; invoice_number: string; total_amount: number }> = [];
+
+    for (const tutor of tutorRes.rows) {
+      const linesRes = await client.query(
+        `select s.id, s.duration_minutes, s.date, s.start_time, s.end_time,
+                coalesce(a.rate_override, $3) as rate,
+                st.full_name as student_name, a.subject
+         from sessions s
+         join assignments a on a.id = s.assignment_id
+         join students st on st.id = s.student_id
+         where s.tutor_id = $1
+           and s.status = 'APPROVED'
+           and s.date between $2::date and $4::date
+         order by s.date asc, s.start_time asc`,
+        [tutor.tutor_id, weekStart, tutor.default_hourly_rate, weekEnd]
+      );
+
+      const adjustmentsRes = await client.query(
+        `select a.id, a.type, a.amount, a.reason, a.related_session_id
+         from adjustments a
+         where a.tutor_id = $1
+           and a.pay_period_id = $2
+           and a.status = 'APPROVED'
+           and a.voided_at is null
+         order by a.created_at asc`,
+        [tutor.tutor_id, periodId]
+      );
+
+      if (linesRes.rowCount === 0 && adjustmentsRes.rowCount === 0) continue;
+
+      const invoiceNumber = `INV-${weekStart.replaceAll('-', '')}-${String(tutor.tutor_id).slice(0, 8)}`;
+      let totalAmount = 0;
+
+      const sessionLines = linesRes.rows.map((line: any) => {
+        const amount = (Number(line.duration_minutes) / 60) * Number(line.rate);
+        totalAmount += amount;
+        return {
+          sessionId: line.id,
+          lineType: 'SESSION',
+          adjustmentId: null,
+          description: `${line.subject} - ${line.student_name} (${line.date.toISOString().slice(0, 10)} ${line.start_time}-${line.end_time})`,
+          minutes: line.duration_minutes,
+          rate: Number(line.rate),
+          amount
+        };
+      });
+
+      const adjustmentLines = adjustmentsRes.rows.map((adj: any) => {
+        const signedAmount = getSignedAmount(adj.type, Number(adj.amount));
+        totalAmount += signedAmount;
+        return {
+          sessionId: null,
+          lineType: 'ADJUSTMENT',
+          adjustmentId: adj.id,
+          description: `Adjustment (${adj.type}): ${adj.reason}`,
+          minutes: 0,
+          rate: 0,
+          amount: signedAmount
+        };
+      });
+
+      const invoiceRes = await client.query(
+        `insert into invoices (tutor_id, period_start, period_end, invoice_number, total_amount, status)
+         values ($1, $2::date, $3::date, $4, $5, 'ISSUED')
+         returning id, invoice_number, total_amount`,
+        [tutor.tutor_id, weekStart, weekEnd, invoiceNumber, totalAmount]
+      );
+
+      const invoiceId = invoiceRes.rows[0].id as string;
+      const allLines = [...sessionLines, ...adjustmentLines];
+
+      for (const line of allLines) {
+        await client.query(
+          `insert into invoice_lines (invoice_id, session_id, adjustment_id, line_type, description, minutes, rate, amount)
+           values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [invoiceId, line.sessionId, line.adjustmentId, line.lineType, line.description, line.minutes, line.rate, line.amount]
+        );
+      }
+
+      invoices.push(invoiceRes.rows[0]);
+    }
+
+    return invoices;
   };
 
   app.get('/admin/dashboard', async (_req, reply) => {
@@ -319,6 +461,9 @@ export async function adminRoutes(app: FastifyInstance) {
     const currentRes = await pool.query(`select * from sessions where id = $1`, [sessionId]);
     if (currentRes.rowCount === 0) return reply.code(404).send({ error: 'session_not_found' });
     const current = currentRes.rows[0];
+    if (await isDateLocked(pool, current.date)) {
+      return reply.code(409).send({ error: 'pay_period_locked' });
+    }
     if (current.status !== 'SUBMITTED') return reply.code(409).send({ error: 'only_submitted_approvable' });
 
     const updatedRes = await pool.query(
@@ -349,6 +494,9 @@ export async function adminRoutes(app: FastifyInstance) {
     const currentRes = await pool.query(`select * from sessions where id = $1`, [sessionId]);
     if (currentRes.rowCount === 0) return reply.code(404).send({ error: 'session_not_found' });
     const current = currentRes.rows[0];
+    if (await isDateLocked(pool, current.date)) {
+      return reply.code(409).send({ error: 'pay_period_locked' });
+    }
     if (current.status !== 'SUBMITTED') return reply.code(409).send({ error: 'only_submitted_rejectable' });
 
     const updatedRes = await pool.query(
@@ -379,12 +527,12 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const weekStart = new Date(parsed.data.weekStart + 'T00:00:00Z');
-    const weekEnd = addDays(weekStart, 6);
+    const weekStart = parsed.data.weekStart;
+    const range = getPayPeriodRange(weekStart);
 
     const existing = await pool.query(
       `select 1 from invoices where period_start = $1::date`,
-      [parsed.data.weekStart]
+      [weekStart]
     );
     if ((existing.rowCount ?? 0) > 0) return reply.code(409).send({ error: 'invoices_already_generated' });
 
@@ -392,68 +540,13 @@ export async function adminRoutes(app: FastifyInstance) {
     try {
       await client.query('BEGIN');
 
-      const tutorsRes = await client.query(
-        `select distinct s.tutor_id, t.full_name, t.default_hourly_rate
-         from sessions s
-         join tutor_profiles t on t.id = s.tutor_id
-         where s.status = 'APPROVED'
-           and s.date between $1::date and $2::date`,
-        [parsed.data.weekStart, weekEnd.toISOString().slice(0, 10)]
-      );
-
-      const invoices = [] as any[];
-
-      for (const tutor of tutorsRes.rows) {
-        const linesRes = await client.query(
-          `select s.id, s.duration_minutes, s.date, s.start_time, s.end_time,
-                  coalesce(a.rate_override, $3) as rate,
-                  st.full_name as student_name, a.subject
-           from sessions s
-           join assignments a on a.id = s.assignment_id
-           join students st on st.id = s.student_id
-           where s.tutor_id = $1
-             and s.status = 'APPROVED'
-             and s.date between $2::date and $4::date
-           order by s.date asc, s.start_time asc`,
-          [tutor.tutor_id, parsed.data.weekStart, tutor.default_hourly_rate, weekEnd.toISOString().slice(0, 10)]
-        );
-
-        if (linesRes.rowCount === 0) continue;
-
-        const invoiceNumber = `INV-${parsed.data.weekStart.replaceAll('-', '')}-${String(tutor.tutor_id).slice(0, 8)}`;
-        let totalAmount = 0;
-
-        const lineValues = linesRes.rows.map((line: any) => {
-          const amount = (Number(line.duration_minutes) / 60) * Number(line.rate);
-          totalAmount += amount;
-          return {
-            sessionId: line.id,
-            description: `${line.subject} - ${line.student_name} (${line.date.toISOString().slice(0, 10)} ${line.start_time}-${line.end_time})`,
-            minutes: line.duration_minutes,
-            rate: Number(line.rate),
-            amount
-          };
-        });
-
-        const invoiceRes = await client.query(
-          `insert into invoices (tutor_id, period_start, period_end, invoice_number, total_amount, status)
-           values ($1, $2::date, $3::date, $4, $5, 'ISSUED')
-           returning id, invoice_number, total_amount`,
-          [tutor.tutor_id, parsed.data.weekStart, weekEnd.toISOString().slice(0, 10), invoiceNumber, totalAmount]
-        );
-
-        const invoiceId = invoiceRes.rows[0].id as string;
-
-        for (const line of lineValues) {
-          await client.query(
-            `insert into invoice_lines (invoice_id, session_id, description, minutes, rate, amount)
-             values ($1, $2, $3, $4, $5, $6)`,
-            [invoiceId, line.sessionId, line.description, line.minutes, line.rate, line.amount]
-          );
-        }
-
-        invoices.push(invoiceRes.rows[0]);
+      const payPeriod = await getOrCreatePayPeriod(client, weekStart, range.end);
+      if (payPeriod?.status === 'LOCKED') {
+        await client.query('ROLLBACK');
+        return reply.code(409).send({ error: 'pay_period_locked' });
       }
+
+      const invoices = await generateInvoicesForWeek(client, weekStart, range.end);
 
       await client.query('COMMIT');
       return reply.send({ invoices });
@@ -466,14 +559,200 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   });
 
+  app.post('/admin/pay-periods/:weekStart/lock', async (req, reply) => {
+    const weekStartParam = (req.params as { weekStart: string }).weekStart;
+    const weekStart = ensureWeekStart(weekStartParam);
+    if (!weekStart) return reply.code(400).send({ error: 'invalid_week_start' });
+
+    const range = getPayPeriodRange(weekStart);
+    const adminId = req.user!.userId;
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const payPeriod = await getOrCreatePayPeriod(client, weekStart, range.end);
+      if (!payPeriod) {
+        await client.query('ROLLBACK');
+        return reply.code(500).send({ error: 'internal_error' });
+      }
+      if (payPeriod.status === 'LOCKED') {
+        await client.query('ROLLBACK');
+        return reply.code(409).send({ error: 'pay_period_locked' });
+      }
+
+      const pendingRes = await client.query(
+        `select count(*) as pending
+         from sessions
+         where status = 'SUBMITTED'
+           and date between $1::date and $2::date`,
+        [weekStart, range.end]
+      );
+      if (Number(pendingRes.rows[0].pending) > 0) {
+        await client.query('ROLLBACK');
+        return reply.code(409).send({ error: 'pending_sessions' });
+      }
+
+      const invoicesRes = await client.query(
+        `select 1 from invoices where period_start = $1::date limit 1`,
+        [weekStart]
+      );
+      if ((invoicesRes.rowCount ?? 0) === 0) {
+        await generateInvoicesForWeek(client, weekStart, range.end);
+      }
+
+      const lockedRes = await client.query(
+        `update pay_periods
+         set status = 'LOCKED', locked_at = now(), locked_by_user_id = $2
+         where period_start_date = $1::date
+         returning id, status, locked_at, locked_by_user_id`,
+        [weekStart, adminId]
+      );
+
+      await client.query('COMMIT');
+      return reply.send({ payPeriod: lockedRes.rows[0] });
+    } catch (err: any) {
+      await client.query('ROLLBACK');
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    } finally {
+      client.release();
+    }
+  });
+
+  app.post('/admin/pay-periods/:weekStart/adjustments', async (req, reply) => {
+    const weekStartParam = (req.params as { weekStart: string }).weekStart;
+    const weekStart = ensureWeekStart(weekStartParam);
+    if (!weekStart) return reply.code(400).send({ error: 'invalid_week_start' });
+
+    const parsed = AdjustmentCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const range = getPayPeriodRange(weekStart);
+    const adminId = req.user!.userId;
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const tutorRes = await client.query(`select 1 from tutor_profiles where id = $1`, [parsed.data.tutorId]);
+      if (tutorRes.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return reply.code(404).send({ error: 'tutor_not_found' });
+      }
+
+      if (parsed.data.relatedSessionId) {
+        const sessionRes = await client.query(
+          `select 1 from sessions
+           where id = $1 and tutor_id = $2
+             and date between $3::date and $4::date`,
+          [parsed.data.relatedSessionId, parsed.data.tutorId, weekStart, range.end]
+        );
+        if (sessionRes.rowCount === 0) {
+          await client.query('ROLLBACK');
+          return reply.code(400).send({ error: 'related_session_invalid' });
+        }
+      }
+
+      const payPeriod = await getOrCreatePayPeriod(client, weekStart, range.end);
+      if (!payPeriod) {
+        await client.query('ROLLBACK');
+        return reply.code(500).send({ error: 'internal_error' });
+      }
+
+      const res = await client.query(
+        `insert into adjustments
+         (tutor_id, pay_period_id, type, amount, reason, status, created_by_user_id, approved_by_user_id, approved_at, related_session_id)
+         values ($1, $2, $3, $4, $5, 'APPROVED', $6, $6, now(), $7)
+         returning *`,
+        [
+          parsed.data.tutorId,
+          payPeriod.id,
+          parsed.data.type,
+          parsed.data.amount,
+          parsed.data.reason,
+          adminId,
+          parsed.data.relatedSessionId ?? null
+        ]
+      );
+
+      await client.query('COMMIT');
+      const adjustment = res.rows[0];
+      return reply.code(201).send({
+        adjustment: {
+          ...adjustment,
+          signed_amount: getSignedAmount(adjustment.type, Number(adjustment.amount))
+        }
+      });
+    } catch (err: any) {
+      await client.query('ROLLBACK');
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    } finally {
+      client.release();
+    }
+  });
+
+  app.get('/admin/pay-periods/:weekStart/adjustments', async (req, reply) => {
+    const weekStartParam = (req.params as { weekStart: string }).weekStart;
+    const weekStart = ensureWeekStart(weekStartParam);
+    if (!weekStart) return reply.code(400).send({ error: 'invalid_week_start' });
+
+    const res = await pool.query(
+      `select a.*, t.full_name as tutor_name
+       from adjustments a
+       join pay_periods p on p.id = a.pay_period_id
+       join tutor_profiles t on t.id = a.tutor_id
+       where p.period_start_date = $1::date
+       order by a.created_at asc`,
+      [weekStart]
+    );
+
+    const adjustments = res.rows.map((row) => ({
+      ...row,
+      signed_amount: getSignedAmount(row.type, Number(row.amount))
+    }));
+
+    return reply.send({ adjustments });
+  });
+
+  app.delete('/admin/adjustments/:id', async (req, reply) => {
+    const adjustmentId = (req.params as { id: string }).id;
+    const adminId = req.user!.userId;
+    const reason = (req.body as { reason?: string } | undefined)?.reason ?? 'deleted_by_admin';
+
+    const res = await pool.query(
+      `select a.id, p.status
+       from adjustments a
+       join pay_periods p on p.id = a.pay_period_id
+       where a.id = $1`,
+      [adjustmentId]
+    );
+
+    if (res.rowCount === 0) return reply.code(404).send({ error: 'adjustment_not_found' });
+    if (res.rows[0].status === 'LOCKED') return reply.code(409).send({ error: 'pay_period_locked' });
+
+    const updateRes = await pool.query(
+      `update adjustments
+       set voided_at = now(), voided_by_user_id = $2, void_reason = $3
+       where id = $1 and voided_at is null
+       returning id, voided_at, voided_by_user_id`,
+      [adjustmentId, adminId, reason]
+    );
+
+    if (updateRes.rowCount === 0) return reply.code(409).send({ error: 'adjustment_already_voided' });
+    return reply.send({ adjustment: updateRes.rows[0] });
+  });
+
   app.get('/admin/payroll/week/:weekStart.csv', async (req, reply) => {
     const weekStart = (req.params as { weekStart: string }).weekStart;
-    const weekEnd = addDays(new Date(weekStart + 'T00:00:00Z'), 6).toISOString().slice(0, 10);
 
     const res = await pool.query(
       `select i.invoice_number, i.period_start, i.period_end, i.total_amount,
               t.full_name as tutor_name,
-              l.session_id, l.description, l.minutes, l.rate, l.amount
+              l.session_id, l.adjustment_id, l.line_type, l.description, l.minutes, l.rate, l.amount
        from invoices i
        join tutor_profiles t on t.id = i.tutor_id
        join invoice_lines l on l.invoice_id = i.id
@@ -482,7 +761,7 @@ export async function adminRoutes(app: FastifyInstance) {
       [weekStart]
     );
 
-    const header = 'invoice_number,period_start,period_end,tutor_name,session_id,description,minutes,rate,amount,total_amount';
+    const header = 'invoice_number,period_start,period_end,tutor_name,session_id,adjustment_id,line_type,description,minutes,rate,amount,total_amount';
     const lines = res.rows.map((row) => {
       const safe = (value: any) => String(value ?? '').replaceAll('"', '""');
       return [
@@ -490,7 +769,9 @@ export async function adminRoutes(app: FastifyInstance) {
         row.period_start.toISOString().slice(0, 10),
         row.period_end.toISOString().slice(0, 10),
         safe(row.tutor_name),
-        row.session_id,
+        row.session_id ?? '',
+        row.adjustment_id ?? '',
+        row.line_type,
         safe(row.description),
         row.minutes,
         row.rate,
@@ -503,6 +784,106 @@ export async function adminRoutes(app: FastifyInstance) {
     reply.header('Content-Type', 'text/csv');
     reply.header('Content-Disposition', `attachment; filename="payroll-${weekStart}.csv"`);
     return reply.send(csv);
+  });
+
+  app.get('/admin/integrity/pay-period/:weekStart', async (req, reply) => {
+    const weekStartParam = (req.params as { weekStart: string }).weekStart;
+    const weekStart = ensureWeekStart(weekStartParam);
+    if (!weekStart) return reply.code(400).send({ error: 'invalid_week_start' });
+
+    const range = getPayPeriodRange(weekStart);
+
+    const payPeriodRes = await pool.query(
+      `select id, status from pay_periods where period_start_date = $1::date`,
+      [weekStart]
+    );
+
+    const overlappingRes = await pool.query(
+      `select s1.id as session_id, s1.tutor_id, s1.student_id, s1.date, s1.start_time, s1.end_time,
+              s2.id as overlap_id
+       from sessions s1
+       join sessions s2
+         on s1.tutor_id = s2.tutor_id
+        and s1.id < s2.id
+        and s1.date = s2.date
+        and not (s1.end_time <= s2.start_time or s1.start_time >= s2.end_time)
+       where s1.date between $1::date and $2::date`,
+      [weekStart, range.end]
+    );
+
+    const assignmentRes = await pool.query(
+      `select s.id, s.tutor_id, s.student_id, s.date, s.start_time, s.end_time,
+              a.start_date, a.end_date, a.allowed_days_json, a.allowed_time_ranges_json
+       from sessions s
+       join assignments a on a.id = s.assignment_id
+       where s.date between $1::date and $2::date`,
+      [weekStart, range.end]
+    );
+
+    const outsideAssignment = assignmentRes.rows.filter((row) => {
+      const date = toDateString(row.date);
+      const allowedDays = normalizeJson(row.allowed_days_json) ?? [];
+      const allowedTimeRanges = normalizeJson(row.allowed_time_ranges_json) ?? [];
+      return !isWithinAssignmentWindow(date, row.start_time, row.end_time, {
+        startDate: toDateString(row.start_date),
+        endDate: row.end_date ? toDateString(row.end_date) : null,
+        allowedDays,
+        allowedTimeRanges
+      });
+    });
+
+    const missingInvoiceLinesRes = await pool.query(
+      `select s.id, s.tutor_id, s.date
+       from sessions s
+       left join invoice_lines l
+         on l.session_id = s.id and l.line_type = 'SESSION'
+       where s.status = 'APPROVED'
+         and s.date between $1::date and $2::date
+         and l.id is null`,
+      [weekStart, range.end]
+    );
+
+    const invoiceMismatchRes = await pool.query(
+      `select i.id, i.invoice_number, i.total_amount,
+              coalesce(sum(l.amount), 0) as line_total
+       from invoices i
+       left join invoice_lines l on l.invoice_id = i.id
+       where i.period_start = $1::date
+       group by i.id
+       having i.total_amount <> coalesce(sum(l.amount), 0)`,
+      [weekStart]
+    );
+
+    const pendingRes = await pool.query(
+      `select s.tutor_id, t.full_name as tutor_name, count(*) as pending
+       from sessions s
+       join tutor_profiles t on t.id = s.tutor_id
+       where s.status = 'SUBMITTED'
+         and s.date between $1::date and $2::date
+       group by s.tutor_id, t.full_name
+       order by t.full_name asc`,
+      [weekStart, range.end]
+    );
+
+    const duplicateRes = await pool.query(
+      `select tutor_id, student_id, date, start_time, end_time, count(*) as count
+       from sessions
+       where date between $1::date and $2::date
+       group by tutor_id, student_id, date, start_time, end_time
+       having count(*) > 1
+       order by date asc`,
+      [weekStart, range.end]
+    );
+
+    return reply.send({
+      payPeriod: payPeriodRes.rows[0] ?? { status: 'OPEN' },
+      overlaps: overlappingRes.rows,
+      outsideAssignmentWindow: outsideAssignment,
+      missingInvoiceLines: missingInvoiceLinesRes.rows,
+      invoiceTotalMismatches: invoiceMismatchRes.rows,
+      pendingSubmissions: pendingRes.rows,
+      duplicateSessions: duplicateRes.rows
+    });
   });
 
   app.post('/admin/invoices/:id/mark-paid', async (req, reply) => {

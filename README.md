@@ -144,6 +144,26 @@ npm run migrate   # Applies DB migrations (lms-api)
 npm run test      # Runs API tests (lms-api)
 ```
 
+### Payroll Locking & Adjustments
+
+**Weekly pay period**: Monday 00:00 to Sunday 23:59 (date-only, consistent with existing week grouping).
+
+**Locking flow**:
+1. Approve or reject all submitted sessions for the week.
+2. Generate invoices for the week.
+3. Run reconciliation checks.
+4. Lock the pay period (no edits or approval changes allowed afterward).
+
+**Adjustments**:
+- Admin-only line items for a tutor in a pay period.
+- Types: BONUS, CORRECTION, PENALTY.
+- Amounts are positive; penalties are applied as negative totals.
+- Adjustments remain editable only while the pay period is OPEN.
+
+**Corrections after lock**:
+- Do not edit sessions or approvals.
+- Add a new adjustment with a clear reason.
+
 ## ☁️ DigitalOcean Deployment Notes
 
 - Deploy the API as a DigitalOcean App Platform service using the `lms-api` folder.

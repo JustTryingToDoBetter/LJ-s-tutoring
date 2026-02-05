@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin Dashboard | Project Odysseus</title>
+  <title>Reconciliation | Admin Console</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/assets/portal.css">
 </head>
-<body data-page="dashboard">
+<body data-page="reconciliation">
   <div class="portal-shell">
     <nav class="portal-nav">
       <div class="portal-nav-inner">
@@ -30,23 +30,36 @@
 
     <main class="portal-main">
       <section class="page-header">
-        <h1 class="page-title">Admin dashboard</h1>
-        <p class="page-subtitle">Monitor approvals, tutor activity, and payroll runs.</p>
+        <h1 class="page-title">Reconciliation</h1>
+        <p class="page-subtitle">Validate payroll integrity before locking a week.</p>
       </section>
 
-      <section class="grid three">
-        <div class="panel hero-card">
-          <h2 class="panel-title">Active tutors</h2>
-          <div id="countTutors" class="page-title">0</div>
+      <section class="grid two">
+        <div class="panel">
+          <h2 class="panel-title">Select week</h2>
+          <form id="reconForm">
+            <div class="field">
+              <label for="reconWeek">Week start (Monday)</label>
+              <input id="reconWeek" type="date" required>
+            </div>
+            <button class="button" type="submit">Run checks</button>
+          </form>
         </div>
-        <div class="panel hero-card">
-          <h2 class="panel-title">Active students</h2>
-          <div id="countStudents" class="page-title">0</div>
+        <div class="panel">
+          <h2 class="panel-title">Quick links</h2>
+          <div class="grid">
+            <a class="button secondary" href="/admin/approvals.html">Approvals queue</a>
+            <a class="button secondary" href="/admin/payroll.html">Invoice list</a>
+            <a class="button secondary" href="#reconAdjustments">Adjustments list</a>
+          </div>
         </div>
-        <div class="panel hero-card">
-          <h2 class="panel-title">Sessions in system</h2>
-          <div id="countSessions" class="page-title">0</div>
-        </div>
+      </section>
+
+      <section class="panel" style="margin-top:16px;">
+        <h2 class="panel-title">Integrity report</h2>
+        <div id="reconStatus" class="note">Select a week to run checks.</div>
+        <div id="reconReport" class="grid"></div>
+        <div id="reconAdjustments" class="grid" style="margin-top:16px;"></div>
       </section>
     </main>
   </div>

@@ -159,6 +159,31 @@ async function initPayroll() {
   setActiveNav('payroll');
   const form = qs('#payrollForm');
   const list = qs('#payrollList');
+  const lockBtn = qs('#lockWeek');
+  const adjustmentForm = qs('#adjustmentForm');
+  const adjustmentList = qs('#adjustmentList');
+  const adjustmentTutor = qs('#adjustTutor');
+
+  if (adjustmentTutor) {
+    const tutors = await apiGet('/admin/tutors');
+    adjustmentTutor.innerHTML = tutors.tutors
+      .map((t) => `<option value="${t.id}">${t.full_name}</option>`)
+      .join('');
+  }
+
+  const loadAdjustments = async (weekStart) => {
+    if (!adjustmentList || !weekStart) return;
+    const data = await apiGet(`/admin/pay-periods/${weekStart}/adjustments`);
+    adjustmentList.innerHTML = data.adjustments.length
+      ? data.adjustments.map((adj) => {
+          const voided = adj.voided_at ? ' (voided)' : '';
+          return `<div class="panel">
+            <div><strong>${adj.tutor_name}</strong> ${adj.type}${voided}</div>
+            <div class="note">${formatMoney(adj.signed_amount)} - ${adj.reason}</div>
+          </div>`;
+        }).join('')
+      : '<div class="note">No adjustments yet.</div>';
+  };
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -173,6 +198,92 @@ async function initPayroll() {
 
     qs('#payrollCsv').href = `/admin/payroll/week/${weekStart}.csv`;
   });
+
+  lockBtn?.addEventListener('click', async () => {
+    const weekStart = qs('#weekStart').value;
+    if (!weekStart) return;
+    await apiPost(`/admin/pay-periods/${weekStart}/lock`);
+    alert(`Week ${weekStart} locked.`);
+  });
+
+  if (adjustmentForm) {
+    adjustmentForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const weekStart = qs('#adjustWeek').value;
+      const payload = {
+        tutorId: qs('#adjustTutor').value,
+        type: qs('#adjustType').value,
+        amount: Number(qs('#adjustAmount').value),
+        reason: qs('#adjustReason').value,
+        relatedSessionId: qs('#adjustSession').value || undefined
+      };
+      await apiPost(`/admin/pay-periods/${weekStart}/adjustments`, payload);
+      adjustmentForm.reset();
+      await loadAdjustments(weekStart);
+    });
+
+    const weekInput = qs('#adjustWeek');
+    weekInput.addEventListener('change', () => loadAdjustments(weekInput.value));
+  }
+}
+
+async function initReconciliation() {
+  setActiveNav('reconciliation');
+  const form = qs('#reconForm');
+  const status = qs('#reconStatus');
+  const report = qs('#reconReport');
+  const adjustmentsEl = qs('#reconAdjustments');
+
+  const renderList = (title, items, renderItem) => {
+    const content = items.length
+      ? items.map(renderItem).join('')
+      : '<div class="note">None found.</div>';
+    return `<div class="panel">
+      <div><strong>${title}</strong></div>
+      <div style="margin-top:8px;">${content}</div>
+    </div>`;
+  };
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    report.innerHTML = '';
+    adjustmentsEl.innerHTML = '';
+    const weekStart = qs('#reconWeek').value;
+
+    const [integrity, adjustments] = await Promise.all([
+      apiGet(`/admin/integrity/pay-period/${weekStart}`),
+      apiGet(`/admin/pay-periods/${weekStart}/adjustments`)
+    ]);
+
+    status.textContent = `Week status: ${integrity.payPeriod?.status || 'OPEN'}`;
+
+    report.innerHTML = [
+      renderList('Overlapping sessions', integrity.overlaps, (row) =>
+        `<div class="note">${row.session_id} overlaps ${row.overlap_id} (${row.date} ${row.start_time}-${row.end_time})</div>`
+      ),
+      renderList('Outside assignment window', integrity.outsideAssignmentWindow, (row) =>
+        `<div class="note">${row.id} on ${row.date} ${row.start_time}-${row.end_time}</div>`
+      ),
+      renderList('Approved sessions missing invoice lines', integrity.missingInvoiceLines, (row) =>
+        `<div class="note">${row.id} on ${row.date}</div>`
+      ),
+      renderList('Invoice totals mismatched', integrity.invoiceTotalMismatches, (row) =>
+        `<div class="note">${row.invoice_number} total ${formatMoney(row.total_amount)} vs lines ${formatMoney(row.line_total)}</div>`
+      ),
+      renderList('Pending submitted sessions', integrity.pendingSubmissions, (row) =>
+        `<div class="note">${row.tutor_name}: ${row.pending}</div>`
+      ),
+      renderList('Duplicate sessions', integrity.duplicateSessions, (row) =>
+        `<div class="note">${row.tutor_id} / ${row.student_id} on ${row.date} ${row.start_time}-${row.end_time} (x${row.count})</div>`
+      )
+    ].join('');
+
+    const adjustmentItems = adjustments.adjustments || [];
+    adjustmentsEl.innerHTML = renderList('Adjustments', adjustmentItems, (row) => {
+      const voided = row.voided_at ? ' (voided)' : '';
+      return `<div class="note">${row.tutor_name}: ${row.type} ${formatMoney(row.signed_amount)} - ${row.reason}${voided}</div>`;
+    });
+  });
 }
 
 const page = document.body.dataset.page;
@@ -183,3 +294,4 @@ if (page === 'students') initStudents();
 if (page === 'assignments') initAssignments();
 if (page === 'approvals') initApprovals();
 if (page === 'payroll') initPayroll();
+if (page === 'reconciliation') initReconciliation();

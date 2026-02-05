@@ -4,6 +4,7 @@ import { requireTutor } from '../lib/rbac.js';
 import { CreateSessionSchema, UpdateSessionSchema } from '../lib/schemas.js';
 import { durationMinutes, isWithinAssignmentWindow } from '../lib/scheduling.js';
 import { buildInvoicePdf, renderInvoiceHtml } from '../lib/invoices.js';
+import { getPayPeriodStart } from '../lib/pay-periods.js';
 
 export async function tutorRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate);
@@ -20,6 +21,20 @@ export async function tutorRoutes(app: FastifyInstance) {
     }
     return value;
   };
+
+  const toDateString = (value: Date) => value.toISOString().slice(0, 10);
+
+  const isDateLocked = async (dateValue: string) => {
+    const weekStart = getPayPeriodStart(dateValue);
+    const res = await pool.query(
+      `select status from pay_periods where period_start_date = $1::date`,
+      [weekStart]
+    );
+    return res.rowCount > 0 && res.rows[0].status === 'LOCKED';
+  };
+
+  const getSignedAmount = (type: string, amount: number) =>
+    type === 'PENALTY' ? -Math.abs(amount) : Math.abs(amount);
 
   app.get('/tutor/me', async (req, reply) => {
     const userId = req.user!.userId;
@@ -120,6 +135,8 @@ export async function tutorRoutes(app: FastifyInstance) {
     if (assignment.student_id !== studentId) return reply.code(400).send({ error: 'student_mismatch' });
     if (!assignment.active) return reply.code(409).send({ error: 'assignment_inactive' });
 
+    if (await isDateLocked(date)) return reply.code(409).send({ error: 'pay_period_locked' });
+
     const allowedDays = normalizeJson(assignment.allowed_days_json, []);
     const allowedTimeRanges = normalizeJson(assignment.allowed_time_ranges_json, []);
 
@@ -179,6 +196,8 @@ export async function tutorRoutes(app: FastifyInstance) {
     const endTime = parsed.data.endTime ?? current.end_time;
     const minutes = durationMinutes(startTime, endTime);
     if (minutes <= 0) return reply.code(400).send({ error: 'invalid_duration_minutes' });
+
+    if (await isDateLocked(date)) return reply.code(409).send({ error: 'pay_period_locked' });
 
     const assignmentRes = await pool.query(
       `select start_date, end_date, allowed_days_json, allowed_time_ranges_json, active
@@ -257,6 +276,10 @@ export async function tutorRoutes(app: FastifyInstance) {
     const current = currentRes.rows[0];
     if (current.status !== 'DRAFT') return reply.code(409).send({ error: 'only_draft_submittable' });
 
+    if (await isDateLocked(toDateString(current.date))) {
+      return reply.code(409).send({ error: 'pay_period_locked' });
+    }
+
     const updatedRes = await pool.query(
       `update sessions
        set status = 'SUBMITTED', submitted_at = now()
@@ -290,7 +313,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       filters.push(`s.date <= $${params.length}::date`);
     }
 
-    const res = await pool.query(
+    const sessionRes = await pool.query(
       `select date_trunc('week', s.date)::date as week_start,
               sum(s.duration_minutes) as total_minutes,
               sum((s.duration_minutes / 60.0) * coalesce(a.rate_override, t.default_hourly_rate)) as total_amount
@@ -303,7 +326,82 @@ export async function tutorRoutes(app: FastifyInstance) {
       params
     );
 
-    return reply.send({ weeks: res.rows });
+    const adjParams: any[] = [tutorId];
+    const adjFilters: string[] = ['a.tutor_id = $1', `a.status = 'APPROVED'`, 'a.voided_at is null'];
+    if (from) {
+      adjParams.push(from);
+      adjFilters.push(`p.period_start_date >= $${adjParams.length}::date`);
+    }
+    if (to) {
+      adjParams.push(to);
+      adjFilters.push(`p.period_start_date <= $${adjParams.length}::date`);
+    }
+
+    const adjustmentRes = await pool.query(
+      `select p.period_start_date as week_start, a.type, a.amount, a.reason
+       from adjustments a
+       join pay_periods p on p.id = a.pay_period_id
+       where ${adjFilters.join(' and ')}`,
+      adjParams
+    );
+
+    const weeks = new Map<string, {
+      week_start: string;
+      total_minutes: number;
+      total_amount: number;
+      adjustments: Array<{ type: string; amount: number; reason: string; signed_amount: number }>;
+      status: string;
+    }>();
+
+    for (const row of sessionRes.rows) {
+      const weekStart = toDateString(row.week_start);
+      weeks.set(weekStart, {
+        week_start: weekStart,
+        total_minutes: Number(row.total_minutes ?? 0),
+        total_amount: Number(row.total_amount ?? 0),
+        adjustments: [],
+        status: 'OPEN'
+      });
+    }
+
+    for (const row of adjustmentRes.rows) {
+      const weekStart = toDateString(row.week_start);
+      const signedAmount = getSignedAmount(row.type, Number(row.amount));
+      const existing = weeks.get(weekStart) ?? {
+        week_start: weekStart,
+        total_minutes: 0,
+        total_amount: 0,
+        adjustments: [],
+        status: 'OPEN'
+      };
+
+      existing.adjustments.push({
+        type: row.type,
+        amount: Number(row.amount),
+        reason: row.reason,
+        signed_amount: signedAmount
+      });
+      existing.total_amount += signedAmount;
+      weeks.set(weekStart, existing);
+    }
+
+    const weekStarts = Array.from(weeks.keys());
+    if (weekStarts.length > 0) {
+      const statusRes = await pool.query(
+        `select period_start_date, status from pay_periods
+         where period_start_date = any($1::date[])`,
+        [weekStarts]
+      );
+
+      for (const row of statusRes.rows) {
+        const weekStart = toDateString(row.period_start_date);
+        const entry = weeks.get(weekStart);
+        if (entry) entry.status = row.status;
+      }
+    }
+
+    const response = Array.from(weeks.values()).sort((a, b) => b.week_start.localeCompare(a.week_start));
+    return reply.send({ weeks: response });
   });
 
   app.get('/tutor/invoices', async (req, reply) => {
