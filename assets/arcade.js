@@ -125,6 +125,8 @@ const GAMES = [
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
+  const MIGRATED_GAMES = new Set(["pong", "snake", "sudoku", "wordle", "hangman", "tictactoe", "chess", "quickmath"]);
+
   function safeText(el, value) {
     if (el) el.textContent = String(value);
   }
@@ -213,7 +215,9 @@ const GAMES = [
 
     const play = document.createElement("a");
     play.className = "po-arcade__btn po-arcade__btn--primary";
-    play.href = `/arcade/play.html?g=${encodeURIComponent(game.id)}`;
+    play.href = MIGRATED_GAMES.has(game.id)
+      ? `/arcade/games/${encodeURIComponent(game.id)}/`
+      : `/arcade/play.html?g=${encodeURIComponent(game.id)}`;
     play.textContent = "Play";
 
     // Performance: warm the module cache on intent.
@@ -358,6 +362,12 @@ const GAMES = [
 
     if (!gameId) {
       mount.innerHTML = `<div class="po-arcade__muted" style="padding:16px">No game selected.</div>`;
+      return;
+    }
+
+    if (MIGRATED_GAMES.has(gameId)) {
+      const qs = window.location.search || "";
+      window.location.assign(`/arcade/games/${encodeURIComponent(gameId)}/${qs}`);
       return;
     }
 

@@ -6,7 +6,7 @@
    - Offline: Works for arcade + games after first visit
 */
 
-const VERSION = "po-v2026-02-03-01"; // bump on every deploy
+const VERSION = "po-v2026-02-04-03"; // bump on every deploy
 const CACHE_APP = `po-app-${VERSION}`;
 const CACHE_MEDIA = `po-media-${VERSION}`;
 const CACHE_DOCS = `po-docs-${VERSION}`;
@@ -20,6 +20,14 @@ const PRECACHE_URLS = [
   `/arcade/?v=${VERSION}`,
   `/arcade/index.html?v=${VERSION}`,
   `/arcade/play.html?v=${VERSION}`,
+  `/arcade/games/pong/?v=${VERSION}`,
+  `/arcade/games/snake/?v=${VERSION}`,
+  `/arcade/games/sudoku/?v=${VERSION}`,
+  `/arcade/games/wordle/?v=${VERSION}`,
+  `/arcade/games/hangman/?v=${VERSION}`,
+  `/arcade/games/tictactoe/?v=${VERSION}`,
+  `/arcade/games/chess/?v=${VERSION}`,
+  `/arcade/games/quickmath/?v=${VERSION}`,
 
   `/assets/site.css?v=${VERSION}`,
   `/assets/arcade.css?v=${VERSION}`,
