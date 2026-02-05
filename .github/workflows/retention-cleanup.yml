@@ -1,0 +1,32 @@
+name: Retention Cleanup
+
+on:
+  schedule:
+    - cron: '30 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  retention:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      RETENTION_SESSIONS_YEARS: ${{ secrets.RETENTION_SESSIONS_YEARS }}
+      RETENTION_SESSION_HISTORY_YEARS: ${{ secrets.RETENTION_SESSION_HISTORY_YEARS }}
+      RETENTION_INVOICES_YEARS: ${{ secrets.RETENTION_INVOICES_YEARS }}
+      RETENTION_AUDIT_YEARS: ${{ secrets.RETENTION_AUDIT_YEARS }}
+      RETENTION_MAGIC_LINK_DAYS: ${{ secrets.RETENTION_MAGIC_LINK_DAYS }}
+      RETENTION_PRIVACY_REQUESTS_YEARS: ${{ secrets.RETENTION_PRIVACY_REQUESTS_YEARS }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run retention cleanup
+        run: npm run retention:cleanup --prefix lms-api

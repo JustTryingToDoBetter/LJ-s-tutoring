@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Students | Admin Console</title>
+  <title>Data Retention | Admin Console</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/assets/portal.css">
 </head>
-<body data-page="students">
+<body data-page="retention">
   <div class="portal-shell">
     <nav class="portal-nav">
       <div class="portal-nav-inner">
@@ -34,44 +34,20 @@
 
     <main class="portal-main">
       <section class="page-header">
-        <h1 class="page-title">Students</h1>
-        <p class="page-subtitle">Add learners and guardian details.</p>
+        <h1 class="page-title">Data retention</h1>
+        <p class="page-subtitle">Current retention settings and what will be purged.</p>
       </section>
 
       <section class="grid two">
         <div class="panel">
-          <h2 class="panel-title">Add student</h2>
-          <form id="studentForm">
-            <div class="field">
-              <label for="studentName">Full name</label>
-              <input id="studentName" required>
-            </div>
-            <div class="field">
-              <label for="studentGrade">Grade</label>
-              <input id="studentGrade">
-            </div>
-            <div class="field">
-              <label for="guardianName">Guardian name</label>
-              <input id="guardianName">
-            </div>
-            <div class="field">
-              <label for="guardianPhone">Guardian phone</label>
-              <input id="guardianPhone">
-            </div>
-            <div class="field">
-              <label for="studentNotes">Notes</label>
-              <textarea id="studentNotes" rows="3"></textarea>
-            </div>
-            <label class="field">
-              <span>Active</span>
-              <input id="studentActive" type="checkbox" checked>
-            </label>
-            <button class="button" type="submit">Create student</button>
-          </form>
+          <h2 class="panel-title">Retention settings</h2>
+          <div id="retentionConfig" class="grid"></div>
+          <p class="note" style="margin-top:10px;">These settings are configured via environment variables.</p>
         </div>
         <div class="panel">
-          <h2 class="panel-title">Student list</h2>
-          <div id="studentList" class="grid"></div>
+          <h2 class="panel-title">Eligible for cleanup</h2>
+          <div id="retentionEligible" class="grid"></div>
+          <p class="note" style="margin-top:10px;">Cleanup runs on a schedule. This page is read-only.</p>
         </div>
       </section>
     </main>

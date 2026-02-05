@@ -176,6 +176,28 @@ export const BulkRejectSessionsSchema = z.object({
   reason: z.string().trim().max(500).optional(),
 });
 
+export const PrivacyRequestCreateSchema = z.object({
+  requestType: z.enum(['ACCESS', 'CORRECTION', 'DELETION']),
+  subjectType: z.enum(['TUTOR', 'STUDENT']),
+  subjectId: z.string().uuid(),
+  reason: z.string().trim().max(2000).optional(),
+});
+
+export const PrivacyRequestQuerySchema = z.object({
+  status: z.enum(['OPEN', 'CLOSED']).optional(),
+  subjectType: z.enum(['TUTOR', 'STUDENT']).optional(),
+  subjectId: z.string().uuid().optional(),
+});
+
+export const PrivacyRequestCloseSchema = z.object({
+  outcome: z.enum(['FULFILLED', 'REJECTED', 'ANONYMIZED', 'DELETED', 'CORRECTED']).optional(),
+  note: z.string().trim().max(2000).optional(),
+  correction: z.object({
+    tutor: UpdateTutorSchema.optional(),
+    student: UpdateStudentSchema.optional(),
+  }).optional(),
+});
+
 export const ImpersonateStartSchema = z.object({
   tutorId: z.string().uuid(),
 });

@@ -6,6 +6,9 @@ import {
   AdminSessionsQuerySchema,
   AssignmentSchema,
   AuditLogQuerySchema,
+  PrivacyRequestCreateSchema,
+  PrivacyRequestQuerySchema,
+  PrivacyRequestCloseSchema,
   BulkApproveSessionsSchema,
   BulkRejectSessionsSchema,
   CreateStudentSchema,
@@ -26,6 +29,8 @@ import { requireAuth, requireRole } from '../lib/rbac.js';
 import { getPayPeriodRange, getPayPeriodStart } from '../lib/pay-periods.js';
 import { isWithinAssignmentWindow } from '../lib/scheduling.js';
 import { safeAuditMeta, writeAuditLog } from '../lib/audit.js';
+import { getRetentionConfig, getRetentionCutoffs } from '../lib/retention.js';
+import { anonymizeStudent, anonymizeTutor, exportStudentData, exportTutorData } from '../lib/privacy.js';
 
 
 function toDateString(value: Date) {
@@ -281,6 +286,102 @@ export async function adminRoutes(app: FastifyInstance) {
     return res.rows[0] as { id: string; status: string; period_start_date: Date; period_end_date: Date } | undefined;
   };
 
+  const applyTutorCorrection = async (client: any, tutorId: string, payload: any) => {
+    const currentRes = await client.query(`select * from tutor_profiles where id = $1`, [tutorId]);
+    if (currentRes.rowCount === 0) return null;
+    const current = currentRes.rows[0];
+
+    const res = await client.query(
+      `update tutor_profiles
+       set full_name = $1,
+           phone = $2,
+           default_hourly_rate = $3,
+           active = $4
+       where id = $5
+       returning id, full_name, phone, default_hourly_rate, active`,
+      [
+        payload.fullName ?? current.full_name,
+        payload.phone ?? current.phone,
+        payload.defaultHourlyRate ?? current.default_hourly_rate,
+        payload.active ?? current.active,
+        tutorId
+      ]
+    );
+    return res.rows[0];
+  };
+
+  const applyStudentCorrection = async (client: any, studentId: string, payload: any) => {
+    const currentRes = await client.query(`select * from students where id = $1`, [studentId]);
+    if (currentRes.rowCount === 0) return null;
+    const current = currentRes.rows[0];
+
+    const res = await client.query(
+      `update students
+       set full_name = $1,
+           grade = $2,
+           guardian_name = $3,
+           guardian_phone = $4,
+           notes = $5,
+           is_active = $6
+       where id = $7
+       returning id, full_name, grade, guardian_name, guardian_phone, notes, is_active as active`,
+      [
+        payload.fullName ?? current.full_name,
+        payload.grade ?? current.grade,
+        payload.guardianName ?? current.guardian_name,
+        payload.guardianPhone ?? current.guardian_phone,
+        payload.notes ?? current.notes,
+        payload.active ?? current.is_active,
+        studentId
+      ]
+    );
+    return res.rows[0];
+  };
+
+  const canDeleteTutor = async (client: any, tutorId: string) => {
+    const cutoffs = getRetentionCutoffs(new Date());
+    const recentSession = await client.query(
+      `select 1 from sessions where tutor_id = $1 and date >= $2::date limit 1`,
+      [tutorId, cutoffs.sessionsBefore]
+    );
+    if (recentSession.rowCount > 0) return false;
+
+    const recentInvoice = await client.query(
+      `select 1 from invoices where tutor_id = $1 and period_end >= $2::date limit 1`,
+      [tutorId, cutoffs.invoicesBefore]
+    );
+    if (recentInvoice.rowCount > 0) return false;
+
+    const invoiceLine = await client.query(
+      `select 1
+       from invoice_lines l
+       join sessions s on s.id = l.session_id
+       where s.tutor_id = $1
+       limit 1`,
+      [tutorId]
+    );
+    return invoiceLine.rowCount === 0;
+  };
+
+  const canDeleteStudent = async (client: any, studentId: string) => {
+    const cutoffs = getRetentionCutoffs(new Date());
+    const recentSession = await client.query(
+      `select 1 from sessions where student_id = $1 and date >= $2::date limit 1`,
+      [studentId, cutoffs.sessionsBefore]
+    );
+    if (recentSession.rowCount > 0) return false;
+
+    const invoiceLine = await client.query(
+      `select 1
+       from invoice_lines l
+       join sessions s on s.id = l.session_id
+       where s.student_id = $1
+       limit 1`,
+      [studentId]
+    );
+    return invoiceLine.rowCount === 0;
+  };
+
   const isDateLocked = async (client: any, dateValue: Date) => {
     const weekStart = getPayPeriodStart(toDateString(dateValue));
     const res = await client.query(
@@ -412,6 +513,40 @@ export async function adminRoutes(app: FastifyInstance) {
     });
   });
 
+  app.get('/admin/retention/summary', async (_req, reply) => {
+    const cutoffs = getRetentionCutoffs(new Date());
+    const config = getRetentionConfig();
+
+    const [
+      magicLinkRes,
+      auditRes,
+      historyRes,
+      invoiceRes,
+      sessionRes,
+      requestRes
+    ] = await Promise.all([
+      pool.query(`select count(*) as count from magic_link_tokens where expires_at < $1`, [cutoffs.magicLinkBefore]),
+      pool.query(`select count(*) as count from audit_log where created_at < $1`, [cutoffs.auditBefore]),
+      pool.query(`select count(*) as count from session_history where created_at < $1`, [cutoffs.sessionHistoryBefore]),
+      pool.query(`select count(*) as count from invoices where period_end < $1::date`, [cutoffs.invoicesBefore]),
+      pool.query(`select count(*) as count from sessions where date < $1::date`, [cutoffs.sessionsBefore]),
+      pool.query(`select count(*) as count from privacy_requests where created_at < $1`, [cutoffs.privacyRequestsBefore])
+    ]);
+
+    return reply.send({
+      config,
+      cutoffs,
+      eligible: {
+        magicLinkTokens: Number(magicLinkRes.rows[0].count),
+        auditLogs: Number(auditRes.rows[0].count),
+        sessionHistory: Number(historyRes.rows[0].count),
+        invoices: Number(invoiceRes.rows[0].count),
+        sessions: Number(sessionRes.rows[0].count),
+        privacyRequests: Number(requestRes.rows[0].count)
+      }
+    });
+  });
+
   app.post('/admin/tutors', async (req, reply) => {
     const parsed = CreateTutorSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -513,6 +648,229 @@ export async function adminRoutes(app: FastifyInstance) {
     );
 
     return reply.code(201).send({ student: res.rows[0] });
+  });
+
+  app.post('/admin/privacy-requests', async (req, reply) => {
+    const parsed = PrivacyRequestCreateSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const adminId = req.user!.userId;
+    const res = await pool.query(
+      `insert into privacy_requests
+       (request_type, subject_type, subject_id, reason, status, created_by_user_id)
+       values ($1, $2, $3, $4, 'OPEN', $5)
+       returning *`,
+      [
+        parsed.data.requestType,
+        parsed.data.subjectType,
+        parsed.data.subjectId,
+        parsed.data.reason ?? null,
+        adminId
+      ]
+    );
+
+    await logAuditSafe(pool, {
+      actorUserId: adminId,
+      actorRole: 'ADMIN',
+      action: 'privacy_request.create',
+      entityType: 'privacy_request',
+      entityId: res.rows[0].id,
+      meta: safeAuditMeta({
+        requestType: parsed.data.requestType,
+        subjectType: parsed.data.subjectType,
+        subjectId: parsed.data.subjectId
+      }),
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string | undefined,
+      correlationId: req.id,
+    });
+
+    return reply.code(201).send({ request: res.rows[0] });
+  });
+
+  app.get('/admin/privacy-requests', async (req, reply) => {
+    const parsed = PrivacyRequestQuerySchema.safeParse(req.query ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const params: any[] = [];
+    const filters: string[] = [];
+    if (parsed.data.status) {
+      params.push(parsed.data.status);
+      filters.push(`status = $${params.length}`);
+    }
+    if (parsed.data.subjectType) {
+      params.push(parsed.data.subjectType);
+      filters.push(`subject_type = $${params.length}`);
+    }
+    if (parsed.data.subjectId) {
+      params.push(parsed.data.subjectId);
+      filters.push(`subject_id = $${params.length}`);
+    }
+
+    const where = filters.length ? `where ${filters.join(' and ')}` : '';
+    const res = await pool.query(
+      `select * from privacy_requests ${where} order by created_at desc`,
+      params
+    );
+    return reply.send({ requests: res.rows });
+  });
+
+  app.get('/admin/privacy-requests/:id/export', async (req, reply) => {
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+    const requestId = params.data.id;
+
+    const res = await pool.query(
+      `select * from privacy_requests where id = $1`,
+      [requestId]
+    );
+    if (res.rowCount === 0) return reply.code(404).send({ error: 'privacy_request_not_found' });
+
+    const request = res.rows[0];
+    let payload: any = null;
+    if (request.subject_type === 'TUTOR') {
+      payload = await exportTutorData(pool, request.subject_id);
+    } else {
+      payload = await exportStudentData(pool, request.subject_id);
+    }
+
+    return reply.send({
+      request: {
+        id: request.id,
+        requestType: request.request_type,
+        subjectType: request.subject_type,
+        subjectId: request.subject_id,
+        createdAt: request.created_at
+      },
+      data: payload
+    });
+  });
+
+  app.post('/admin/privacy-requests/:id/close', async (req, reply) => {
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+    const parsed = PrivacyRequestCloseSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const requestId = params.data.id;
+    const adminId = req.user!.userId;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const requestRes = await client.query(`select * from privacy_requests where id = $1`, [requestId]);
+      if (requestRes.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return reply.code(404).send({ error: 'privacy_request_not_found' });
+      }
+      const request = requestRes.rows[0];
+      if (request.status === 'CLOSED') {
+        await client.query('ROLLBACK');
+        return reply.code(409).send({ error: 'privacy_request_closed' });
+      }
+
+      let outcome = parsed.data.outcome ?? null;
+
+      if (request.request_type === 'CORRECTION') {
+        if (request.subject_type === 'TUTOR' && parsed.data.correction?.tutor) {
+          const updated = await applyTutorCorrection(client, request.subject_id, parsed.data.correction.tutor);
+          if (!updated) {
+            await client.query('ROLLBACK');
+            return reply.code(404).send({ error: 'tutor_not_found' });
+          }
+        }
+
+        if (request.subject_type === 'STUDENT' && parsed.data.correction?.student) {
+          const updated = await applyStudentCorrection(client, request.subject_id, parsed.data.correction.student);
+          if (!updated) {
+            await client.query('ROLLBACK');
+            return reply.code(404).send({ error: 'student_not_found' });
+          }
+        }
+
+        outcome = outcome ?? 'CORRECTED';
+      }
+
+      if (request.request_type === 'DELETION') {
+        if (request.subject_type === 'TUTOR') {
+          const okToDelete = await canDeleteTutor(client, request.subject_id);
+          if (okToDelete) {
+            await client.query(`delete from session_history where session_id in (select id from sessions where tutor_id = $1)`, [request.subject_id]);
+            await client.query(`delete from sessions where tutor_id = $1`, [request.subject_id]);
+            await client.query(`delete from assignments where tutor_id = $1`, [request.subject_id]);
+            await client.query(`delete from invoice_lines where invoice_id in (select id from invoices where tutor_id = $1)`, [request.subject_id]);
+            await client.query(`delete from invoices where tutor_id = $1`, [request.subject_id]);
+            await client.query(`delete from adjustments where tutor_id = $1`, [request.subject_id]);
+            await client.query(`delete from users where tutor_profile_id = $1`, [request.subject_id]);
+            await client.query(`delete from tutor_profiles where id = $1`, [request.subject_id]);
+            outcome = outcome ?? 'DELETED';
+          } else {
+            await anonymizeTutor(client, request.subject_id);
+            outcome = outcome ?? 'ANONYMIZED';
+          }
+        } else {
+          const okToDelete = await canDeleteStudent(client, request.subject_id);
+          if (okToDelete) {
+            await client.query(`delete from session_history where session_id in (select id from sessions where student_id = $1)`, [request.subject_id]);
+            await client.query(`delete from sessions where student_id = $1`, [request.subject_id]);
+            await client.query(`delete from assignments where student_id = $1`, [request.subject_id]);
+            await client.query(`delete from students where id = $1`, [request.subject_id]);
+            outcome = outcome ?? 'DELETED';
+          } else {
+            await anonymizeStudent(client, request.subject_id);
+            outcome = outcome ?? 'ANONYMIZED';
+          }
+        }
+      }
+
+      if (request.request_type === 'ACCESS' && !outcome) {
+        outcome = 'FULFILLED';
+      }
+
+      const updatedRes = await client.query(
+        `update privacy_requests
+         set status = 'CLOSED', outcome = $1, closed_at = now(), closed_by_user_id = $2, close_note = $3
+         where id = $4
+         returning *`,
+        [outcome, adminId, parsed.data.note ?? null, requestId]
+      );
+
+      await logAuditSafe(client, {
+        actorUserId: adminId,
+        actorRole: 'ADMIN',
+        action: 'privacy_request.close',
+        entityType: 'privacy_request',
+        entityId: requestId,
+        meta: safeAuditMeta({
+          outcome,
+          requestType: request.request_type,
+          subjectType: request.subject_type,
+          subjectId: request.subject_id
+        }),
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id,
+      });
+
+      await client.query('COMMIT');
+      return reply.send({ request: updatedRes.rows[0] });
+    } catch (err: any) {
+      await client.query('ROLLBACK');
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    } finally {
+      client.release();
+    }
   });
 
   app.get('/admin/students', async (_req, reply) => {

@@ -46,6 +46,30 @@ enum InvoiceLineType {
   ADJUSTMENT
 }
 
+enum PrivacyRequestType {
+  ACCESS
+  CORRECTION
+  DELETION
+}
+
+enum PrivacyRequestStatus {
+  OPEN
+  CLOSED
+}
+
+enum PrivacyRequestOutcome {
+  FULFILLED
+  REJECTED
+  ANONYMIZED
+  DELETED
+  CORRECTED
+}
+
+enum PrivacySubjectType {
+  TUTOR
+  STUDENT
+}
+
 model User {
   id             String        @id @default(uuid()) @db.Uuid
   email          String        @unique
@@ -282,4 +306,23 @@ model InvoiceLine {
   @@index([invoiceId])
   @@index([sessionId])
   @@index([adjustmentId])
+}
+
+model PrivacyRequest {
+  id            String                 @id @default(uuid()) @db.Uuid
+  requestType   PrivacyRequestType     @map("request_type")
+  subjectType   PrivacySubjectType     @map("subject_type")
+  subjectId     String                 @map("subject_id") @db.Uuid
+  reason        String?
+  status        PrivacyRequestStatus   @default(OPEN)
+  outcome       PrivacyRequestOutcome?
+  createdByUserId String?              @map("created_by_user_id") @db.Uuid
+  createdAt     DateTime               @default(now()) @map("created_at")
+  closedAt      DateTime?              @map("closed_at")
+  closedByUserId String?               @map("closed_by_user_id") @db.Uuid
+  closeNote     String?                @map("close_note")
+
+  @@map("privacy_requests")
+  @@index([status, createdAt(sort: Desc)])
+  @@index([subjectType, subjectId])
 }
