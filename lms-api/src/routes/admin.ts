@@ -4,6 +4,8 @@ import { normalizeEmail } from '../lib/security.js';
 import {
   AdminSessionsQuerySchema,
   AssignmentSchema,
+  BulkApproveSessionsSchema,
+  BulkRejectSessionsSchema,
   CreateStudentSchema,
   CreateTutorSchema,
   DeleteAdjustmentSchema,
@@ -429,36 +431,270 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const { status, from, to } = parsed.data;
+    const {
+      status,
+      from,
+      to,
+      tutorId,
+      studentId,
+      q,
+      sort,
+      order,
+      page,
+      pageSize
+    } = parsed.data;
 
-    const params: any[] = [];
-    const filters: string[] = [];
+    const baseParams: any[] = [];
+    const baseFilters: string[] = [];
 
-    if (status) {
-      params.push(status);
-      filters.push(`s.status = $${params.length}`);
-    }
     if (from) {
-      params.push(from);
-      filters.push(`s.date >= $${params.length}::date`);
+      baseParams.push(from);
+      baseFilters.push(`s.date >= $${baseParams.length}::date`);
     }
     if (to) {
-      params.push(to);
-      filters.push(`s.date <= $${params.length}::date`);
+      baseParams.push(to);
+      baseFilters.push(`s.date <= $${baseParams.length}::date`);
+    }
+    if (tutorId) {
+      baseParams.push(tutorId);
+      baseFilters.push(`s.tutor_id = $${baseParams.length}`);
+    }
+    if (studentId) {
+      baseParams.push(studentId);
+      baseFilters.push(`s.student_id = $${baseParams.length}`);
+    }
+    if (q) {
+      baseParams.push(`%${q}%`);
+      baseFilters.push(`(t.full_name ilike $${baseParams.length} or st.full_name ilike $${baseParams.length} or coalesce(s.notes, '') ilike $${baseParams.length})`);
     }
 
-    const where = filters.length ? `where ${filters.join(' and ')}` : '';
-    const res = await pool.query(
-      `select s.*, t.full_name as tutor_name, st.full_name as student_name
+    const buildWhere = (includeStatus: boolean) => {
+      const params = [...baseParams];
+      const filters = [...baseFilters];
+      if (includeStatus && status) {
+        params.push(status);
+        filters.push(`s.status = $${params.length}`);
+      }
+      return {
+        params,
+        where: filters.length ? `where ${filters.join(' and ')}` : ''
+      };
+    };
+
+    const sortColumn = (() => {
+      switch (sort) {
+        case 'createdAt':
+          return 's.created_at';
+        case 'tutor':
+          return 't.full_name';
+        case 'student':
+          return 'st.full_name';
+        case 'date':
+        default:
+          return 's.date';
+      }
+    })();
+    const orderSql = order === 'asc' ? 'asc' : 'desc';
+    const offset = (page - 1) * pageSize;
+
+    const listQuery = buildWhere(true);
+    const listParams = [...listQuery.params, pageSize, offset];
+    const listRes = await pool.query(
+      `select s.id, s.date, s.start_time, s.end_time, s.duration_minutes, s.status,
+              s.created_at, s.notes, s.mode,
+              t.full_name as tutor_name,
+              st.full_name as student_name,
+              a.subject,
+              coalesce(a.rate_override, t.default_hourly_rate) as rate
        from sessions s
        join tutor_profiles t on t.id = s.tutor_id
        join students st on st.id = s.student_id
-       ${where}
-       order by s.date desc, s.start_time desc`,
-      params
+       join assignments a on a.id = s.assignment_id
+       ${listQuery.where}
+       order by ${sortColumn} ${orderSql}, s.date desc, s.start_time desc
+       limit $${listQuery.params.length + 1}
+       offset $${listQuery.params.length + 2}`,
+      listParams
     );
 
-    return reply.send({ sessions: res.rows });
+    const totalRes = await pool.query(
+      `select count(*)
+       from sessions s
+       join tutor_profiles t on t.id = s.tutor_id
+       join students st on st.id = s.student_id
+       ${listQuery.where}`,
+      listQuery.params
+    );
+
+    const aggQuery = buildWhere(false);
+    const aggRes = await pool.query(
+      `select
+        count(*) filter (where s.status = 'DRAFT') as draft_count,
+        count(*) filter (where s.status = 'SUBMITTED') as submitted_count,
+        count(*) filter (where s.status = 'APPROVED') as approved_count,
+        count(*) filter (where s.status = 'REJECTED') as rejected_count,
+        coalesce(sum(case when s.status = 'SUBMITTED' then s.duration_minutes else 0 end), 0) as submitted_minutes,
+        coalesce(sum(case when s.status = 'APPROVED' then s.duration_minutes else 0 end), 0) as approved_minutes,
+        coalesce(sum(case when s.status = 'REJECTED' then s.duration_minutes else 0 end), 0) as rejected_minutes,
+        coalesce(sum(s.duration_minutes), 0) as total_minutes
+       from sessions s
+       join tutor_profiles t on t.id = s.tutor_id
+       join students st on st.id = s.student_id
+       ${aggQuery.where}`,
+      aggQuery.params
+    );
+
+    const agg = aggRes.rows[0];
+
+    return reply.send({
+      items: listRes.rows,
+      total: Number(totalRes.rows[0].count),
+      page,
+      pageSize,
+      aggregates: {
+        countsByStatus: {
+          DRAFT: Number(agg.draft_count),
+          SUBMITTED: Number(agg.submitted_count),
+          APPROVED: Number(agg.approved_count),
+          REJECTED: Number(agg.rejected_count)
+        },
+        totalMinutes: Number(agg.total_minutes),
+        totalMinutesSubmitted: Number(agg.submitted_minutes),
+        totalMinutesApproved: Number(agg.approved_minutes),
+        totalMinutesRejected: Number(agg.rejected_minutes)
+      }
+    });
+  });
+
+  app.post('/admin/sessions/bulk-approve', async (req, reply) => {
+    const parsed = BulkApproveSessionsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const { sessionIds } = parsed.data;
+    const adminId = req.user!.userId;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const res = await client.query(
+        `select * from sessions where id = any($1::uuid[])`,
+        [sessionIds]
+      );
+      const sessionById = new Map(res.rows.map((row) => [row.id, row]));
+
+      const results: Array<{ sessionId: string; status: string; reason?: string }> = [];
+
+      for (const sessionId of sessionIds) {
+        const current = sessionById.get(sessionId);
+        if (!current) {
+          results.push({ sessionId, status: 'error', reason: 'not_found' });
+          continue;
+        }
+        if (await isDateLocked(client, current.date)) {
+          results.push({ sessionId, status: 'error', reason: 'pay_period_locked' });
+          continue;
+        }
+        if (current.status !== 'SUBMITTED') {
+          results.push({ sessionId, status: 'skipped', reason: 'status_not_submitted' });
+          continue;
+        }
+
+        const updatedRes = await client.query(
+          `update sessions
+           set status = 'APPROVED', approved_at = now(), approved_by = $1
+           where id = $2
+           returning *`,
+          [adminId, sessionId]
+        );
+
+        await client.query(
+          `insert into session_history (session_id, changed_by_user_id, change_type, before_json, after_json)
+           values ($1, $2, 'approve', $3, $4)`,
+          [sessionId, adminId, current, updatedRes.rows[0]]
+        );
+
+        results.push({ sessionId, status: 'approved' });
+      }
+
+      await client.query('COMMIT');
+      return reply.send({ results });
+    } catch (err: any) {
+      await client.query('ROLLBACK');
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    } finally {
+      client.release();
+    }
+  });
+
+  app.post('/admin/sessions/bulk-reject', async (req, reply) => {
+    const parsed = BulkRejectSessionsSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const { sessionIds, reason } = parsed.data;
+    const adminId = req.user!.userId;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const res = await client.query(
+        `select * from sessions where id = any($1::uuid[])`,
+        [sessionIds]
+      );
+      const sessionById = new Map(res.rows.map((row) => [row.id, row]));
+
+      const results: Array<{ sessionId: string; status: string; reason?: string }> = [];
+
+      for (const sessionId of sessionIds) {
+        const current = sessionById.get(sessionId);
+        if (!current) {
+          results.push({ sessionId, status: 'error', reason: 'not_found' });
+          continue;
+        }
+        if (await isDateLocked(client, current.date)) {
+          results.push({ sessionId, status: 'error', reason: 'pay_period_locked' });
+          continue;
+        }
+        if (current.status !== 'SUBMITTED') {
+          results.push({ sessionId, status: 'skipped', reason: 'status_not_submitted' });
+          continue;
+        }
+
+        const updatedRes = await client.query(
+          `update sessions
+           set status = 'REJECTED'
+           where id = $1
+           returning *`,
+          [sessionId]
+        );
+
+        await client.query(
+          `insert into session_history (session_id, changed_by_user_id, change_type, before_json, after_json)
+           values ($1, $2, 'reject', $3, $4)`,
+          [
+            sessionId,
+            adminId,
+            current,
+            { ...updatedRes.rows[0], reject_reason: reason ?? null }
+          ]
+        );
+
+        results.push({ sessionId, status: 'rejected' });
+      }
+
+      await client.query('COMMIT');
+      return reply.send({ results });
+    } catch (err: any) {
+      await client.query('ROLLBACK');
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    } finally {
+      client.release();
+    }
   });
 
   app.post('/admin/sessions/:id/approve', async (req, reply) => {

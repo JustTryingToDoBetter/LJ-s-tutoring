@@ -137,6 +137,13 @@ export const DateRangeQuerySchema = z.object({
 
 export const AdminSessionsQuerySchema = DateRangeQuerySchema.extend({
   status: SessionStatusSchema.optional(),
+  tutorId: z.string().uuid().optional(),
+  studentId: z.string().uuid().optional(),
+  q: z.string().trim().max(200).optional(),
+  sort: z.enum(['createdAt', 'date', 'tutor', 'student']).optional().default('date'),
+  order: z.enum(['asc', 'desc']).optional().default('desc'),
+  page: z.coerce.number().int().min(1).max(500).optional().default(1),
+  pageSize: z.coerce.number().int().min(1).max(200).optional().default(25),
 });
 
 export const TutorSessionsQuerySchema = DateRangeQuerySchema.extend({
@@ -152,5 +159,14 @@ export const IdParamSchema = z.object({
 });
 
 export const DeleteAdjustmentSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
+});
+
+export const BulkApproveSessionsSchema = z.object({
+  sessionIds: z.array(z.string().uuid()).min(1),
+});
+
+export const BulkRejectSessionsSchema = z.object({
+  sessionIds: z.array(z.string().uuid()).min(1),
   reason: z.string().trim().max(500).optional(),
 });

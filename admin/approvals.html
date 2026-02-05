@@ -36,11 +36,134 @@
 
       <section class="grid">
         <div class="panel">
-          <div id="approvalList" class="grid"></div>
+          <h2 class="panel-title">Fast filters</h2>
+          <div class="split">
+            <div class="field">
+              <label for="searchInput">Search tutor, student, notes</label>
+              <input id="searchInput" type="search" placeholder="e.g. Naledi, Algebra, make-up" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="statusFilter">Status</label>
+              <select id="statusFilter">
+                <option value="SUBMITTED">Submitted</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="DRAFT">Draft</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="sortBy">Sort</label>
+              <select id="sortBy">
+                <option value="date">Session date</option>
+                <option value="createdAt">Created at</option>
+                <option value="tutor">Tutor name</option>
+                <option value="student">Student name</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="sortOrder">Order</label>
+              <select id="sortOrder">
+                <option value="desc">Newest first</option>
+                <option value="asc">Oldest first</option>
+              </select>
+            </div>
+          </div>
+          <div class="split">
+            <div class="field">
+              <label>Date range</label>
+              <div class="split" style="gap:10px;">
+                <button type="button" class="button secondary" data-preset="this-week">This week</button>
+                <button type="button" class="button secondary" data-preset="last-week">Last week</button>
+                <button type="button" class="button secondary" data-preset="custom">Custom</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="fromDate">From</label>
+              <input id="fromDate" type="date">
+            </div>
+            <div class="field">
+              <label for="toDate">To</label>
+              <input id="toDate" type="date">
+            </div>
+            <div class="field">
+              <label for="pageSize">Page size</label>
+              <select id="pageSize">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div class="split">
+            <button id="applyFilters" class="button secondary" type="button">Apply filters</button>
+            <button id="resetFilters" class="button secondary" type="button">Reset</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">Queue summary</h2>
+          <div class="split">
+            <div>
+              <div class="note">Selected</div>
+              <div id="selectionSummary" style="font-size:18px; font-weight:600;">0 sessions</div>
+              <div id="selectionMeta" class="note">0 minutes • R0.00</div>
+            </div>
+            <div>
+              <div class="note">Totals (range)</div>
+              <div id="aggregateSummary" style="font-size:18px; font-weight:600;">0 submitted</div>
+              <div id="aggregateMeta" class="note">0 minutes submitted</div>
+            </div>
+            <div class="split" style="gap:10px;">
+              <button id="bulkApprove" class="button" type="button">Bulk approve</button>
+              <button id="bulkReject" class="button danger" type="button">Bulk reject</button>
+            </div>
+          </div>
+          <div id="bulkResult" class="note" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="panel">
+          <div class="split" style="align-items:center;">
+            <div class="note" id="pageMeta">Page 1</div>
+            <div class="split" style="gap:10px;">
+              <button id="prevPage" class="button secondary" type="button">Prev</button>
+              <button id="nextPage" class="button secondary" type="button">Next</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto; margin-top:12px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width:36px;"><input id="selectAll" type="checkbox" aria-label="Select all on page"></th>
+                  <th>Session</th>
+                  <th>Schedule</th>
+                  <th>Notes</th>
+                  <th>Status</th>
+                  <th style="width:160px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="approvalList"></tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>
   </div>
+
+  <dialog id="bulkDialog">
+    <form method="dialog" class="panel" style="max-width:420px;">
+      <h3 class="panel-title" id="bulkDialogTitle">Confirm action</h3>
+      <p class="note" id="bulkDialogSummary">You are about to update 0 sessions.</p>
+      <div id="bulkReasonField" class="field" style="display:none;">
+        <label for="bulkReason">Rejection reason (optional)</label>
+        <textarea id="bulkReason" rows="3" placeholder="Add a short reason for tutors"></textarea>
+      </div>
+      <div class="split">
+        <button class="button secondary" type="button" id="bulkCancel">Cancel</button>
+        <button class="button" type="button" id="bulkConfirm">Confirm</button>
+      </div>
+    </form>
+  </dialog>
 
   <script type="module" src="/assets/admin/portal.js"></script>
 </body>
