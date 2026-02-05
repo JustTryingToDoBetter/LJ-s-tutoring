@@ -10,6 +10,12 @@ export async function tutorRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate);
   app.addHook('preHandler', requireAuth);
   app.addHook('preHandler', requireRole('TUTOR'));
+  app.addHook('preHandler', async (req, reply) => {
+    if (!req.impersonation) return;
+    if (['POST', 'PATCH', 'DELETE'].includes(req.method)) {
+      return reply.code(403).send({ error: 'impersonation_read_only' });
+    }
+  });
 
   const normalizeJson = (value: any, fallback: any) => {
     if (value == null) return fallback;

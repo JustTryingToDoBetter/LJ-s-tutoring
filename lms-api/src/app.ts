@@ -17,8 +17,12 @@ import { adminRoutes } from './routes/admin.js';
 import { tutorRoutes } from './routes/tutor.js';
 
 export async function buildApp() {
+  const logger = process.env.NODE_ENV === 'test'
+    ? { level: process.env.LOG_LEVEL ?? 'info', stream: process.stdout }
+    : true;
+
   const app = Fastify({
-    logger: true,
+    logger,
     trustProxy: Number(process.env.TRUST_PROXY ?? 1),
     bodyLimit: 256 * 1024
   });
@@ -143,13 +147,6 @@ export async function buildApp() {
   process.on('uncaughtException', (err) => {
     errorMonitor.captureException(err);
     app.log?.error?.(err, 'uncaughtException');
-  });
-
-  app.addHook('preHandler', async (req, reply) => {
-    if (!req.impersonation) return;
-    if (['POST', 'PATCH', 'DELETE'].includes(req.method)) {
-      return reply.code(403).send({ error: 'impersonation_read_only' });
-    }
   });
 
   app.addHook('onResponse', async (req, reply) => {

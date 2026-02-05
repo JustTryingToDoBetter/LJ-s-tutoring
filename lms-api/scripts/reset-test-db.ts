@@ -55,7 +55,17 @@ async function runMigrations() {
   const folders = entries
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .sort((a, b) => a.localeCompare(b));
+    .sort((a, b) => {
+      const priority = (name: string) => {
+        if (name.includes('baseline_legacy')) return 0;
+        if (name.includes('init_tutor_records')) return 1;
+        return 2;
+      };
+      const pa = priority(a);
+      const pb = priority(b);
+      if (pa !== pb) return pa - pb;
+      return a.localeCompare(b);
+    });
 
   const client = await pool.connect();
   try {
