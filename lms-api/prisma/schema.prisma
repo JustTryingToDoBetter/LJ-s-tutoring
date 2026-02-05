@@ -25,6 +25,27 @@ enum InvoiceStatus {
   PAID
 }
 
+enum PayPeriodStatus {
+  OPEN
+  LOCKED
+}
+
+enum AdjustmentType {
+  BONUS
+  CORRECTION
+  PENALTY
+}
+
+enum AdjustmentStatus {
+  DRAFT
+  APPROVED
+}
+
+enum InvoiceLineType {
+  SESSION
+  ADJUSTMENT
+}
+
 model User {
   id             String        @id @default(uuid()) @db.Uuid
   email          String        @unique
@@ -40,8 +61,52 @@ model User {
   approvedSessions Session[]       @relation("approved_by")
   sessionHistoryChanges SessionHistory[] @relation("changed_by")
   invoices        Invoice[]
+  adjustmentsCreated Adjustment[] @relation("adjustment_created_by")
+  adjustmentsApproved Adjustment[] @relation("adjustment_approved_by")
 
   @@map("users")
+}
+
+model PayPeriod {
+  id             String          @id @default(uuid()) @db.Uuid
+  periodStartDate DateTime       @map("period_start_date") @db.Date
+  periodEndDate   DateTime       @map("period_end_date") @db.Date
+  status         PayPeriodStatus @default(OPEN)
+  lockedAt       DateTime?       @map("locked_at")
+  lockedByUserId String?         @map("locked_by_user_id") @db.Uuid
+  notes          String?
+
+  lockedBy User? @relation(fields: [lockedByUserId], references: [id])
+  adjustments Adjustment[]
+
+  @@map("pay_periods")
+  @@unique([periodStartDate])
+}
+
+model Adjustment {
+  id               String           @id @default(uuid()) @db.Uuid
+  tutorId          String           @map("tutor_id") @db.Uuid
+  payPeriodId      String           @map("pay_period_id") @db.Uuid
+  type             AdjustmentType
+  amount           Decimal          @db.Numeric(10, 2)
+  reason           String
+  status           AdjustmentStatus @default(APPROVED)
+  createdByUserId  String           @map("created_by_user_id") @db.Uuid
+  approvedByUserId String?          @map("approved_by_user_id") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at")
+  approvedAt       DateTime?        @map("approved_at")
+  relatedSessionId String?          @map("related_session_id") @db.Uuid
+
+  tutor TutorProfile @relation(fields: [tutorId], references: [id])
+  payPeriod PayPeriod @relation(fields: [payPeriodId], references: [id])
+  createdBy User @relation("adjustment_created_by", fields: [createdByUserId], references: [id])
+  approvedBy User? @relation("adjustment_approved_by", fields: [approvedByUserId], references: [id])
+  relatedSession Session? @relation(fields: [relatedSessionId], references: [id])
+  invoiceLines InvoiceLine[]
+
+  @@map("adjustments")
+  @@index([tutorId, payPeriodId])
+  @@index([payPeriodId])
 }
 
 model MagicLinkToken {
@@ -175,16 +240,20 @@ model Invoice {
 model InvoiceLine {
   id          String   @id @default(uuid()) @db.Uuid
   invoiceId   String   @map("invoice_id") @db.Uuid
-  sessionId   String   @map("session_id") @db.Uuid
+  sessionId   String?  @map("session_id") @db.Uuid
+  adjustmentId String? @map("adjustment_id") @db.Uuid
+  lineType    InvoiceLineType @default(SESSION) @map("line_type")
   description String
   minutes     Int
   rate        Decimal  @db.Numeric(10, 2)
   amount      Decimal  @db.Numeric(12, 2)
 
   invoice Invoice @relation(fields: [invoiceId], references: [id])
-  session Session @relation(fields: [sessionId], references: [id])
+  session Session? @relation(fields: [sessionId], references: [id])
+  adjustment Adjustment? @relation(fields: [adjustmentId], references: [id])
 
   @@map("invoice_lines")
   @@index([invoiceId])
   @@index([sessionId])
+  @@index([adjustmentId])
 }

@@ -120,6 +120,37 @@ npm run serve
 # Deploy dist/ folder
 ```
 
+## 🧾 Tutor Records / Payroll API
+
+The Tutor Records module lives in `lms-api/` and runs alongside the static site.
+
+### API Environment Variables
+
+Add these to your `.env` or hosting provider secrets:
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/lms
+PUBLIC_BASE_URL=http://localhost:3001
+COOKIE_SECRET=change_me_to_a_long_random_string
+EMAIL_PROVIDER_KEY=
+EMAIL_FROM=projectodysseus10@gmail.com
+```
+
+### API Scripts
+
+```bash
+npm run dev       # Starts static site + API (parallel)
+npm run migrate   # Applies DB migrations (lms-api)
+npm run test      # Runs API tests (lms-api)
+```
+
+## ☁️ DigitalOcean Deployment Notes
+
+- Deploy the API as a DigitalOcean App Platform service using the `lms-api` folder.
+- Serve the static site as a separate static site service or from the same app.
+- If Cloudflare is in front, keep `PUBLIC_BASE_URL` set to the public HTTPS domain used for magic links.
+- Ensure the API sets `COOKIE_SECRET` and the database URL is reachable from the app.
+
 ### Staging
 ```bash
 # Create separate staging config

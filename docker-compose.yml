@@ -29,6 +29,10 @@ services:
       JWT_SECRET: change_me_to_a_long_random_string
       JWT_EXPIRES_IN: 15m
       ADMIN_BOOTSTRAP_TOKEN: change_me
+      PUBLIC_BASE_URL: http://localhost:3001
+      COOKIE_SECRET: change_me_to_a_long_random_string
+      EMAIL_PROVIDER_KEY: ""
+      EMAIL_FROM: projectodysseus10@gmail.com
     depends_on:
       - db
     command: sh -c "npm ci && npm run migrate && npm run dev"
