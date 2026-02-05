@@ -1,0 +1,36 @@
+name: Uptime Check
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check health endpoint
+        id: health
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          if [ -z "$HEALTHCHECK_URL" ]; then
+            echo "HEALTHCHECK_URL not set; skipping."
+            exit 0
+          fi
+          curl -fsS "${HEALTHCHECK_URL%/}/health"
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Uptime check failed';
+            const body = `The scheduled uptime check failed at ${new Date().toISOString()}.
+
+            Please verify the /health endpoint and hosting status.`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body
+            });

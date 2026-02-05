@@ -21,6 +21,7 @@ declare module 'fastify' {
   interface FastifyRequest {
     user: AuthUser;
     impersonation?: ImpersonationContext;
+    requestStart?: number;
   }
 }
 
