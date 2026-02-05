@@ -180,7 +180,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.get('/admin/dashboard', async (_req, reply) => {
     const [tutors, students, sessions] = await Promise.all([
       pool.query(`select count(*) from tutor_profiles where active = true`),
-      pool.query(`select count(*) from students where active = true`),
+      pool.query(`select count(*) from students where is_active = true`),
       pool.query(`select status, count(*) from sessions group by status`)
     ]);
 
@@ -278,9 +278,9 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     const res = await pool.query(
-      `insert into students (full_name, grade, guardian_name, guardian_phone, notes, active)
+      `insert into students (full_name, grade, guardian_name, guardian_phone, notes, is_active)
        values ($1, $2, $3, $4, $5, $6)
-       returning id, full_name, grade, guardian_name, guardian_phone, notes, active`,
+       returning id, full_name, grade, guardian_name, guardian_phone, notes, is_active as active`,
       [
         parsed.data.fullName,
         parsed.data.grade ?? null,
@@ -296,7 +296,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.get('/admin/students', async (_req, reply) => {
     const res = await pool.query(
-      `select id, full_name, grade, guardian_name, guardian_phone, notes, active
+      `select id, full_name, grade, guardian_name, guardian_phone, notes, is_active as active
        from students
        order by full_name asc`
     );
@@ -321,9 +321,9 @@ export async function adminRoutes(app: FastifyInstance) {
            guardian_name = $3,
            guardian_phone = $4,
            notes = $5,
-           active = $6
+           is_active = $6
        where id = $7
-       returning id, full_name, grade, guardian_name, guardian_phone, notes, active`,
+       returning id, full_name, grade, guardian_name, guardian_phone, notes, is_active as active`,
       [
         parsed.data.fullName ?? current.full_name,
         parsed.data.grade ?? current.grade,

@@ -43,6 +43,9 @@ create table if not exists adjustments (
   approved_by_user_id uuid references users(id) on delete set null,
   created_at timestamptz not null default now(),
   approved_at timestamptz,
+  voided_at timestamptz,
+  voided_by_user_id uuid references users(id) on delete set null,
+  void_reason text,
   related_session_id uuid references sessions(id) on delete set null
 );
 
@@ -51,6 +54,9 @@ create index if not exists idx_adjustments_tutor_period
 
 create index if not exists idx_adjustments_period
   on adjustments (pay_period_id);
+
+create index if not exists idx_adjustments_voided
+  on adjustments (voided_at);
 
 alter table invoice_lines
   add column if not exists line_type invoice_line_type not null default 'SESSION',

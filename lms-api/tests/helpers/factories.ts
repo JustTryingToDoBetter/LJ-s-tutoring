@@ -73,7 +73,7 @@ export async function createTutor(input: TutorInput) {
 
 export async function createStudent(input: StudentInput) {
   const res = await pool.query(
-    `insert into students (full_name, grade, active)
+    `insert into students (full_name, grade, is_active)
      values ($1, $2, true)
      returning id, full_name, grade`,
     [input.fullName, input.grade ?? null]
