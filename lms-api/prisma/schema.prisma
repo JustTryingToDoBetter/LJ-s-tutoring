@@ -126,6 +126,27 @@ model MagicLinkToken {
   @@index([tokenHash])
 }
 
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  actorUserId   String?  @map("actor_user_id") @db.Uuid
+  actorRole     String?  @map("actor_role")
+  action        String
+  entityType    String?  @map("entity_type")
+  entityId      String?  @map("entity_id")
+  metaJson      Json?    @map("meta_json")
+  ip            String?
+  userAgent     String?  @map("user_agent")
+  correlationId String?  @map("correlation_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorUserId], references: [id])
+
+  @@map("audit_log")
+  @@index([createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+}
+
 model TutorProfile {
   id                String  @id @default(uuid()) @db.Uuid
   fullName          String  @map("full_name")

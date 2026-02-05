@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Audit Log | Admin Console</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body data-page="audit">
+  <div class="portal-shell">
+    <nav class="portal-nav">
+      <div class="portal-nav-inner">
+        <div class="brand">
+          <span class="brand-badge">PO</span>
+          Admin Console
+        </div>
+        <div class="nav-links">
+          <a class="nav-link" data-nav="dashboard" href="/admin/index.html">Dashboard</a>
+          <a class="nav-link" data-nav="tutors" href="/admin/tutors.html">Tutors</a>
+          <a class="nav-link" data-nav="students" href="/admin/students.html">Students</a>
+          <a class="nav-link" data-nav="assignments" href="/admin/assignments.html">Assignments</a>
+          <a class="nav-link" data-nav="approvals" href="/admin/approvals.html">Approvals</a>
+          <a class="nav-link" data-nav="payroll" href="/admin/payroll.html">Payroll</a>
+          <a class="nav-link" data-nav="reconciliation" href="/admin/reconciliation.html">Reconciliation</a>
+          <a class="nav-link" data-nav="audit" href="/admin/audit.html">Audit</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="portal-main">
+      <section class="page-header">
+        <h1 class="page-title">Audit log</h1>
+        <p class="page-subtitle">Filter, review, and export admin activity.</p>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <h2 class="panel-title">Filters</h2>
+          <div class="split">
+            <div class="field">
+              <label for="auditFrom">From</label>
+              <input id="auditFrom" type="date">
+            </div>
+            <div class="field">
+              <label for="auditTo">To</label>
+              <input id="auditTo" type="date">
+            </div>
+            <div class="field">
+              <label for="auditActor">Actor ID</label>
+              <input id="auditActor" placeholder="UUID">
+            </div>
+            <div class="field">
+              <label for="auditEntityType">Entity type</label>
+              <input id="auditEntityType" placeholder="session, tutor, http_request">
+            </div>
+            <div class="field">
+              <label for="auditEntityId">Entity ID</label>
+              <input id="auditEntityId" placeholder="UUID or id">
+            </div>
+            <div class="field">
+              <label for="auditPageSize">Page size</label>
+              <select id="auditPageSize">
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div class="split">
+            <button id="auditApply" class="button secondary" type="button">Apply filters</button>
+            <button id="auditReset" class="button secondary" type="button">Reset</button>
+            <button id="auditExport" class="button" type="button">Export CSV</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="split" style="align-items:center;">
+            <div class="note" id="auditPageMeta">Page 1</div>
+            <div class="split" style="gap:10px;">
+              <button id="auditPrev" class="button secondary" type="button">Prev</button>
+              <button id="auditNext" class="button secondary" type="button">Next</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto; margin-top:12px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Action</th>
+                  <th>Entity</th>
+                  <th>Actor</th>
+                  <th>Correlation</th>
+                </tr>
+              </thead>
+              <tbody id="auditList"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/assets/admin/portal.js"></script>
+</body>
+</html>

@@ -170,3 +170,19 @@ export const BulkRejectSessionsSchema = z.object({
   sessionIds: z.array(z.string().uuid()).min(1),
   reason: z.string().trim().max(500).optional(),
 });
+
+export const ImpersonateStartSchema = z.object({
+  tutorId: z.string().uuid(),
+});
+
+export const ImpersonateStopSchema = z.object({
+  impersonationId: z.string().uuid().optional(),
+});
+
+export const AuditLogQuerySchema = DateRangeQuerySchema.extend({
+  actorId: z.string().uuid().optional(),
+  entityType: z.string().trim().max(80).optional(),
+  entityId: z.string().trim().max(120).optional(),
+  page: z.coerce.number().int().min(1).max(500).optional().default(1),
+  pageSize: z.coerce.number().int().min(1).max(200).optional().default(25),
+});

@@ -7,6 +7,8 @@ import cookie from '@fastify/cookie';
 import './types.js';
 import { authPlugin } from './plugins/auth.js';
 import { generateCsrfToken, generateRequestId } from './lib/security.js';
+import { pool } from './db/pool.js';
+import { safeAuditMeta, writeAuditLog } from './lib/audit.js';
 import { authRoutes } from './routes/auth.js';
 import { adminRoutes } from './routes/admin.js';
 import { tutorRoutes } from './routes/tutor.js';
@@ -86,6 +88,39 @@ export async function buildApp() {
   });
 
   await app.register(authPlugin);
+
+  app.addHook('preHandler', async (req, reply) => {
+    if (!req.impersonation) return;
+    if (['POST', 'PATCH', 'DELETE'].includes(req.method)) {
+      return reply.code(403).send({ error: 'impersonation_read_only' });
+    }
+  });
+
+  app.addHook('onResponse', async (req, reply) => {
+    if (!req.impersonation) return;
+    if (req.method !== 'GET') return;
+    try {
+      await writeAuditLog(pool, {
+        actorUserId: req.impersonation.adminUserId,
+        actorRole: 'ADMIN',
+        action: 'impersonation.read',
+        entityType: 'http_request',
+        entityId: req.routeOptions?.url ?? req.url,
+        meta: safeAuditMeta({
+          method: req.method,
+          path: req.url,
+          statusCode: reply.statusCode,
+          tutorId: req.impersonation.tutorId,
+          impersonationId: req.impersonation.impersonationId,
+        }),
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id,
+      });
+    } catch {
+      req.log?.error?.('Failed to write impersonation audit log');
+    }
+  });
 
   app.get('/health', async () => ({ ok: true }));
 

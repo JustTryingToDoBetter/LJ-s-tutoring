@@ -24,6 +24,7 @@
           <a class="nav-link" data-nav="approvals" href="/admin/approvals.html">Approvals</a>
           <a class="nav-link" data-nav="payroll" href="/admin/payroll.html">Payroll</a>
           <a class="nav-link" data-nav="reconciliation" href="/admin/reconciliation.html">Reconciliation</a>
+          <a class="nav-link" data-nav="audit" href="/admin/audit.html">Audit</a>
         </div>
       </div>
     </nav>
@@ -139,7 +140,7 @@
                   <th>Schedule</th>
                   <th>Notes</th>
                   <th>Status</th>
-                  <th style="width:160px;">Actions</th>
+                  <th style="width:220px;">Actions</th>
                 </tr>
               </thead>
               <tbody id="approvalList"></tbody>
@@ -162,6 +163,19 @@
         <button class="button secondary" type="button" id="bulkCancel">Cancel</button>
         <button class="button" type="button" id="bulkConfirm">Confirm</button>
       </div>
+    </form>
+  </dialog>
+
+  <dialog id="historyDialog">
+    <form class="panel" style="max-width:860px;">
+      <div class="split" style="align-items:center;">
+        <div>
+          <h3 class="panel-title" id="historyTitle">Session history</h3>
+          <p class="note" id="historySubtitle">Latest changes first.</p>
+        </div>
+        <button class="button secondary" type="button" id="historyClose">Close</button>
+      </div>
+      <div id="historyContent" style="margin-top:14px;"></div>
     </form>
   </dialog>
 

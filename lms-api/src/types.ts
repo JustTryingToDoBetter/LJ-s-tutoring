@@ -9,9 +9,18 @@ export type AuthUser = {
   tutorId?: string;
 };
 
+export type ImpersonationContext = {
+  adminUserId: string;
+  tutorId: string;
+  tutorUserId: string;
+  impersonationId: string;
+  mode: 'READ_ONLY';
+};
+
 declare module 'fastify' {
   interface FastifyRequest {
     user: AuthUser;
+    impersonation?: ImpersonationContext;
   }
 }
 

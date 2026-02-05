@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, qs, renderStatus, formatMoney, setActiveNav, escapeHtml } from '/assets/portal-shared.js';
+import { apiGet, apiPost, apiPatch, qs, renderStatus, formatMoney, setActiveNav, escapeHtml, setImpersonationContext } from '/assets/portal-shared.js';
 
 async function initDashboard() {
   setActiveNav('dashboard');
@@ -19,6 +19,9 @@ async function initTutors() {
       .map((t) => `<div class="panel">
           <div><strong>${escapeHtml(t.full_name)}</strong> (${escapeHtml(t.email || 'no email')})</div>
           <div class="note">${formatMoney(t.default_hourly_rate)} | ${t.active ? 'Active' : 'Inactive'}</div>
+          <div class="split" style="margin-top:10px;">
+            <button class="button secondary" data-impersonate="${t.id}" data-name="${escapeHtml(t.full_name)}">View as tutor (read-only)</button>
+          </div>
         </div>`)
       .join('');
   };
@@ -37,6 +40,24 @@ async function initTutors() {
     await apiPost('/admin/tutors', payload);
     form.reset();
     await load();
+  });
+
+  list.addEventListener('click', async (event) => {
+    const target = event.target;
+    if (!target?.dataset?.impersonate) return;
+    target.disabled = true;
+    try {
+      const res = await apiPost('/admin/impersonate/start', { tutorId: target.dataset.impersonate });
+      setImpersonationContext({
+        token: res.impersonationToken,
+        tutorId: res.tutor.id,
+        tutorName: res.tutor.name,
+        impersonationId: res.impersonationId
+      });
+      window.location.href = '/tutor/index.html';
+    } finally {
+      target.disabled = false;
+    }
   });
 }
 
@@ -149,6 +170,11 @@ async function initApprovals() {
   const bulkReason = qs('#bulkReason');
   const bulkCancel = qs('#bulkCancel');
   const bulkConfirm = qs('#bulkConfirm');
+  const historyDialog = qs('#historyDialog');
+  const historyTitle = qs('#historyTitle');
+  const historySubtitle = qs('#historySubtitle');
+  const historyContent = qs('#historyContent');
+  const historyClose = qs('#historyClose');
 
   const state = {
     sessions: [],
@@ -275,6 +301,7 @@ async function initApprovals() {
             <div class="split" style="gap:8px; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));">
               <button class="button" data-approve="${s.id}" ${actionDisabled}>Approve</button>
               <button class="button secondary" data-reject="${s.id}" ${actionDisabled}>Reject</button>
+              <button class="button secondary" data-history="${s.id}">History</button>
             </div>
           </td>
         </tr>`;
@@ -348,6 +375,97 @@ async function initApprovals() {
       await load();
     } catch (err) {
       bulkResult.textContent = `Bulk action failed: ${err.message}`;
+    }
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return 'Unknown time';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString();
+  };
+
+  const renderHistory = (entries) => {
+    if (!historyContent) return;
+    if (!entries.length) {
+      historyContent.innerHTML = '<div class="note">No history available for this session.</div>';
+      return;
+    }
+
+    historyContent.innerHTML = entries.map((entry) => {
+      const actor = entry.actor ? (entry.actor.name || entry.actor.email || entry.actor.role) : 'System';
+      const actorMeta = entry.actor?.email && entry.actor.name ? ` (${escapeHtml(entry.actor.email)})` : '';
+      const diffs = entry.diffs || [];
+      const diffRows = diffs.length
+        ? diffs.map((diff) => `<tr class="${diff.important ? 'history-diff-important' : ''}">
+              <td>${escapeHtml(diff.label)}</td>
+              <td class="note">${escapeHtml(diff.before)}</td>
+              <td class="note">${escapeHtml(diff.after)}</td>
+            </tr>`).join('')
+        : '<tr><td colspan="3" class="note">No field changes captured.</td></tr>';
+
+      const rawId = `history-raw-${entry.id}`;
+      const rawPayload = JSON.stringify({ before: entry.beforeJson, after: entry.afterJson }, null, 2);
+      return `<div class="history-entry">
+          <div class="history-entry-header">
+            <div>
+              <div><strong>${escapeHtml(entry.changeType)}</strong> by ${escapeHtml(actor)}${actorMeta}</div>
+              <div class="note">${formatDateTime(entry.createdAt)}</div>
+            </div>
+            <span class="pill">${escapeHtml(entry.changeType)}</span>
+          </div>
+          <table class="table history-table">
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Before</th>
+                <th>After</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${diffRows}
+            </tbody>
+          </table>
+          <details style="margin-top:10px;">
+            <summary class="note">Raw JSON (copy)</summary>
+            <div class="split" style="margin-top:8px; align-items:center;">
+              <button class="button secondary" type="button" data-copy="${rawId}">Copy JSON</button>
+              <span class="note">Before and after payload</span>
+            </div>
+            <pre id="${rawId}" class="history-raw">${escapeHtml(rawPayload)}</pre>
+          </details>
+        </div>`;
+    }).join('');
+
+    historyContent.querySelectorAll('button[data-copy]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const targetId = btn.dataset.copy;
+        const target = document.getElementById(targetId);
+        if (!target) return;
+        const text = target.textContent || '';
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        }
+      });
+    });
+  };
+
+  const openHistory = async (sessionId) => {
+    if (!historyDialog) return;
+    const session = state.sessions.find((item) => item.id === sessionId);
+    const subtitle = session
+      ? `${session.tutor_name} → ${session.student_name} • ${session.date} ${session.start_time}-${session.end_time}`
+      : 'Session history details.';
+    if (historyTitle) historyTitle.textContent = 'Session history';
+    if (historySubtitle) historySubtitle.textContent = subtitle;
+    if (historyContent) historyContent.innerHTML = '<div class="note">Loading history...</div>';
+    historyDialog.showModal();
+
+    try {
+      const data = await apiGet(`/admin/sessions/${sessionId}/history`);
+      renderHistory(data.history || []);
+    } catch (err) {
+      if (historyContent) historyContent.innerHTML = `<div class="note">Failed to load history: ${err.message}</div>`;
     }
   };
 
@@ -445,12 +563,16 @@ async function initApprovals() {
       await apiPost(`/admin/sessions/${target.dataset.reject}/reject`, { reason });
       await load();
     }
+    if (target.dataset.history) {
+      await openHistory(target.dataset.history);
+    }
   });
 
   bulkApprove?.addEventListener('click', () => openBulkDialog('approve'));
   bulkReject?.addEventListener('click', () => openBulkDialog('reject'));
   bulkCancel?.addEventListener('click', () => bulkDialog.close());
   bulkConfirm?.addEventListener('click', runBulkAction);
+  historyClose?.addEventListener('click', () => historyDialog.close());
 
   await load();
 }
@@ -527,6 +649,121 @@ async function initPayroll() {
   }
 }
 
+async function initAudit() {
+  setActiveNav('audit');
+  const list = qs('#auditList');
+  const fromInput = qs('#auditFrom');
+  const toInput = qs('#auditTo');
+  const actorInput = qs('#auditActor');
+  const entityTypeInput = qs('#auditEntityType');
+  const entityIdInput = qs('#auditEntityId');
+  const pageSizeInput = qs('#auditPageSize');
+  const applyBtn = qs('#auditApply');
+  const resetBtn = qs('#auditReset');
+  const exportBtn = qs('#auditExport');
+  const prevBtn = qs('#auditPrev');
+  const nextBtn = qs('#auditNext');
+  const pageMeta = qs('#auditPageMeta');
+
+  const state = {
+    page: 1,
+    pageSize: Number(pageSizeInput?.value || 25),
+    total: 0,
+  };
+
+  const buildParams = () => {
+    const params = new URLSearchParams();
+    if (fromInput?.value) params.set('from', fromInput.value);
+    if (toInput?.value) params.set('to', toInput.value);
+    if (actorInput?.value) params.set('actorId', actorInput.value.trim());
+    if (entityTypeInput?.value) params.set('entityType', entityTypeInput.value.trim());
+    if (entityIdInput?.value) params.set('entityId', entityIdInput.value.trim());
+    params.set('page', String(state.page));
+    params.set('pageSize', String(state.pageSize));
+    return params;
+  };
+
+  const updatePageMeta = () => {
+    const totalPages = Math.max(1, Math.ceil(state.total / state.pageSize));
+    pageMeta.textContent = `Page ${state.page} of ${totalPages} (${state.total} total)`;
+    prevBtn.disabled = state.page <= 1;
+    nextBtn.disabled = state.page >= totalPages;
+  };
+
+  const renderRows = (items) => {
+    if (!items.length) {
+      list.innerHTML = '<tr><td colspan="5" class="note">No audit entries found.</td></tr>';
+      updatePageMeta();
+      return;
+    }
+
+    list.innerHTML = items.map((item) => {
+      const actor = item.actor ? `${item.actor.email || 'User'} (${item.actor.role || 'role'})` : 'System';
+      const entity = item.entityType ? `${item.entityType}:${item.entityId || 'n/a'}` : '—';
+      return `<tr>
+          <td>${escapeHtml(new Date(item.createdAt).toLocaleString())}</td>
+          <td><strong>${escapeHtml(item.action)}</strong></td>
+          <td>${escapeHtml(entity)}</td>
+          <td class="note">${escapeHtml(actor)}</td>
+          <td class="note">${escapeHtml(item.correlationId || '—')}</td>
+        </tr>`;
+    }).join('');
+
+    updatePageMeta();
+  };
+
+  const load = async () => {
+    const params = buildParams();
+    const data = await apiGet(`/admin/audit?${params.toString()}`);
+    state.total = Number(data.total || 0);
+    renderRows(data.items || []);
+  };
+
+  applyBtn?.addEventListener('click', () => {
+    state.page = 1;
+    load();
+  });
+
+  resetBtn?.addEventListener('click', () => {
+    fromInput.value = '';
+    toInput.value = '';
+    actorInput.value = '';
+    entityTypeInput.value = '';
+    entityIdInput.value = '';
+    pageSizeInput.value = '25';
+    state.pageSize = 25;
+    state.page = 1;
+    load();
+  });
+
+  pageSizeInput?.addEventListener('change', () => {
+    state.pageSize = Number(pageSizeInput.value || 25);
+    state.page = 1;
+    load();
+  });
+
+  prevBtn?.addEventListener('click', () => {
+    if (state.page > 1) {
+      state.page -= 1;
+      load();
+    }
+  });
+
+  nextBtn?.addEventListener('click', () => {
+    state.page += 1;
+    load();
+  });
+
+  exportBtn?.addEventListener('click', () => {
+    const params = buildParams();
+    params.delete('page');
+    params.delete('pageSize');
+    window.location.href = `/admin/audit/export.csv?${params.toString()}`;
+  });
+
+  await load();
+}
+
 async function initReconciliation() {
   setActiveNav('reconciliation');
   const form = qs('#reconForm');
@@ -594,4 +831,5 @@ if (page === 'students') initStudents();
 if (page === 'assignments') initAssignments();
 if (page === 'approvals') initApprovals();
 if (page === 'payroll') initPayroll();
+if (page === 'audit') initAudit();
 if (page === 'reconciliation') initReconciliation();

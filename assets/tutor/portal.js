@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, qs, renderStatus, formatMoney, setActiveNav, showBanner, setText, escapeHtml } from '/assets/portal-shared.js';
+import { apiGet, apiPost, apiPatch, qs, renderStatus, formatMoney, setActiveNav, showBanner, setText, escapeHtml, getImpersonationMeta, clearImpersonationContext } from '/assets/portal-shared.js';
 
 const DB_NAME = 'tutor-offline';
 const STORE = 'drafts';
@@ -94,10 +94,31 @@ function listenOnlineSync() {
   refreshBanner();
 }
 
+function initImpersonationBanner() {
+  const meta = getImpersonationMeta();
+  if (!meta) return;
+
+  showBanner('#impersonationBanner', true);
+  setText('#impersonationName', meta.tutorName || 'Tutor');
+
+  const exitBtn = qs('#exitImpersonation');
+  exitBtn?.addEventListener('click', async () => {
+    try {
+      await apiPost('/admin/impersonate/stop', { impersonationId: meta.impersonationId });
+    } catch {
+      // Ignore stop errors, still clear local state.
+    }
+    clearImpersonationContext();
+    window.location.href = '/admin/tutors.html';
+  });
+}
+
 async function initLogin() {
   setActiveNav('login');
   const form = qs('#loginForm');
   const msg = qs('#loginMsg');
+  const banner = qs('#impersonationBanner');
+  if (banner) banner.remove();
   if (!form) return;
 
   form.addEventListener('submit', async (event) => {
@@ -276,6 +297,8 @@ async function initSessions() {
 }
 
 const page = document.body.dataset.page;
+
+initImpersonationBanner();
 
 if (page === 'login') initLogin();
 if (page === 'home') initTutorHome();

@@ -1,14 +1,53 @@
 const API_BASE = window.PO_API_BASE ?? '';
+const IMPERSONATION_KEY = 'impersonationToken';
+const IMPERSONATION_META_KEY = 'impersonationMeta';
+
+function getImpersonationToken() {
+  return localStorage.getItem(IMPERSONATION_KEY) || '';
+}
+
+export function getImpersonationMeta() {
+  const raw = localStorage.getItem(IMPERSONATION_META_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function setImpersonationContext(context) {
+  if (!context?.token) return;
+  localStorage.setItem(IMPERSONATION_KEY, context.token);
+  localStorage.setItem(IMPERSONATION_META_KEY, JSON.stringify({
+    tutorId: context.tutorId,
+    tutorName: context.tutorName,
+    impersonationId: context.impersonationId,
+    startedAt: new Date().toISOString()
+  }));
+}
+
+export function clearImpersonationContext() {
+  localStorage.removeItem(IMPERSONATION_KEY);
+  localStorage.removeItem(IMPERSONATION_META_KEY);
+}
 
 async function request(path, options = {}) {
   const method = String(options.method || 'GET').toUpperCase();
   const csrfToken = getCookie('csrf');
+  const impersonationToken = getImpersonationToken();
+  if (impersonationToken && !['GET', 'HEAD'].includes(method) && path.startsWith('/tutor/')) {
+    throw new Error('impersonation_read_only');
+  }
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(csrfToken && !['GET', 'HEAD'].includes(method)
         ? { 'X-CSRF-Token': csrfToken }
+        : {}),
+      ...(impersonationToken && path.startsWith('/tutor/')
+        ? { 'X-Impersonation-Token': impersonationToken }
         : {}),
       ...(options.headers || {})
     },

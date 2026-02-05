@@ -1,14 +1,18 @@
 import type { FastifyInstance } from 'fastify';
+import crypto from 'node:crypto';
 import { pool } from '../db/pool.js';
 import { normalizeEmail } from '../lib/security.js';
 import {
   AdminSessionsQuerySchema,
   AssignmentSchema,
+  AuditLogQuerySchema,
   BulkApproveSessionsSchema,
   BulkRejectSessionsSchema,
   CreateStudentSchema,
   CreateTutorSchema,
   DeleteAdjustmentSchema,
+  ImpersonateStartSchema,
+  ImpersonateStopSchema,
   AdjustmentCreateSchema,
   IdParamSchema,
   PayrollGenerateSchema,
@@ -21,6 +25,7 @@ import {
 import { requireAuth, requireRole } from '../lib/rbac.js';
 import { getPayPeriodRange, getPayPeriodStart } from '../lib/pay-periods.js';
 import { isWithinAssignmentWindow } from '../lib/scheduling.js';
+import { safeAuditMeta, writeAuditLog } from '../lib/audit.js';
 
 
 function toDateString(value: Date) {
@@ -46,6 +51,218 @@ export async function adminRoutes(app: FastifyInstance) {
       }
     }
     return value;
+  };
+
+  const logAuditSafe = async (client: any, entry: Parameters<typeof writeAuditLog>[1]) => {
+    try {
+      await writeAuditLog(client, entry);
+    } catch (err) {
+      app.log?.error?.(err);
+    }
+  };
+
+  const buildAuditFilters = (data: {
+    from?: string;
+    to?: string;
+    actorId?: string;
+    entityType?: string;
+    entityId?: string;
+  }) => {
+    const params: any[] = [];
+    const filters: string[] = [];
+    if (data.from) {
+      params.push(data.from);
+      filters.push(`a.created_at >= $${params.length}::timestamptz`);
+    }
+    if (data.to) {
+      params.push(`${data.to} 23:59:59`);
+      filters.push(`a.created_at <= $${params.length}::timestamptz`);
+    }
+    if (data.actorId) {
+      params.push(data.actorId);
+      filters.push(`a.actor_user_id = $${params.length}`);
+    }
+    if (data.entityType) {
+      params.push(data.entityType);
+      filters.push(`a.entity_type = $${params.length}`);
+    }
+    if (data.entityId) {
+      params.push(data.entityId);
+      filters.push(`a.entity_id = $${params.length}`);
+    }
+
+    return {
+      params,
+      where: filters.length ? `where ${filters.join(' and ')}` : ''
+    };
+  };
+
+  const fieldLabels: Record<string, string> = {
+    date: 'Date',
+    start_time: 'Start time',
+    end_time: 'End time',
+    duration_minutes: 'Duration',
+    status: 'Status',
+    mode: 'Mode',
+    location: 'Location',
+    notes: 'Notes',
+    assignment_id: 'Assignment',
+    tutor_id: 'Tutor',
+    student_id: 'Student',
+    approved_by: 'Approved by',
+    approved_at: 'Approved at',
+    submitted_at: 'Submitted at',
+    created_at: 'Created at',
+    reject_reason: 'Reject reason'
+  };
+
+  const importantFields = new Set([
+    'status',
+    'date',
+    'start_time',
+    'end_time',
+    'assignment_id',
+    'student_id',
+    'tutor_id',
+    'approved_by'
+  ]);
+
+  const orderedFields = [
+    'status',
+    'date',
+    'start_time',
+    'end_time',
+    'duration_minutes',
+    'assignment_id',
+    'student_id',
+    'tutor_id',
+    'mode',
+    'location',
+    'notes',
+    'approved_by',
+    'approved_at',
+    'submitted_at',
+    'created_at',
+    'reject_reason'
+  ];
+
+  const stableStringify = (value: any): string => {
+    if (value === undefined) return 'null';
+    if (value == null) return '';
+    if (Array.isArray(value)) return JSON.stringify(value.map((item) => JSON.parse(stableStringify(item) || 'null')));
+    if (typeof value === 'object') {
+      const keys = Object.keys(value).sort();
+      const normalized: Record<string, any> = {};
+      for (const key of keys) {
+        normalized[key] = JSON.parse(stableStringify(value[key]) || 'null');
+      }
+      return JSON.stringify(normalized);
+    }
+    return JSON.stringify(value);
+  };
+
+  const normalizeDateValue = (value: any) => {
+    if (!value) return null;
+    if (value instanceof Date) return value.toISOString().slice(0, 10);
+    if (typeof value === 'string') {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+      const asDate = new Date(value);
+      if (!Number.isNaN(asDate.getTime())) return asDate.toISOString().slice(0, 10);
+    }
+    return value;
+  };
+
+  const normalizeTimeValue = (value: any) => {
+    if (!value) return null;
+    if (value instanceof Date) return value.toISOString().slice(11, 16);
+    if (typeof value === 'string') {
+      const match = value.match(/^(\d{2}:\d{2})/);
+      if (match) return match[1];
+    }
+    return value;
+  };
+
+  const normalizeComparable = (field: string, value: any) => {
+    if (value == null) return null;
+    if (field === 'date' || field.endsWith('_date')) return normalizeDateValue(value);
+    if (field === 'start_time' || field === 'end_time') return normalizeTimeValue(value);
+    if (field.endsWith('_at')) {
+      if (value instanceof Date) return value.toISOString();
+      if (typeof value === 'string') return value;
+    }
+    if (typeof value === 'number') return Number(value);
+    if (typeof value === 'string') return value.trim();
+    if (Array.isArray(value) || typeof value === 'object') return stableStringify(value);
+    return value;
+  };
+
+  const summarizeComplex = (value: any) => {
+    if (value == null) return '—';
+    if (Array.isArray(value)) {
+      if (value.length <= 3) return JSON.stringify(value);
+      return `${value.length} items`;
+    }
+    if (typeof value === 'object') {
+      const keys = Object.keys(value);
+      if (keys.length === 0) return '{}';
+      const preview = keys.slice(0, 3).join(', ');
+      const more = keys.length > 3 ? ` (+${keys.length - 3})` : '';
+      return `Keys: ${preview}${more}`;
+    }
+    return String(value);
+  };
+
+  const formatDisplay = (field: string, value: any) => {
+    if (value == null || value === '') return '—';
+    if (field === 'date' || field.endsWith('_date')) return String(normalizeDateValue(value));
+    if (field === 'start_time' || field === 'end_time') return String(normalizeTimeValue(value));
+    if (field === 'duration_minutes') return `${Number(value)} min`;
+    if (Array.isArray(value) || typeof value === 'object') return summarizeComplex(value);
+    return String(value);
+  };
+
+  const toLabel = (field: string) => {
+    if (fieldLabels[field]) return fieldLabels[field];
+    return field
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  const computeDiffs = (beforeRaw: any, afterRaw: any) => {
+    const before = normalizeJson(beforeRaw) ?? {};
+    const after = normalizeJson(afterRaw) ?? {};
+    const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+
+    const known = orderedFields.filter((key) => keys.has(key));
+    const rest = Array.from(keys)
+      .filter((key) => !orderedFields.includes(key))
+      .sort();
+
+    const diffs = [] as Array<{
+      field: string;
+      label: string;
+      before: string;
+      after: string;
+      important: boolean;
+    }>;
+
+    for (const field of [...known, ...rest]) {
+      const beforeValue = before[field];
+      const afterValue = after[field];
+      const normBefore = normalizeComparable(field, beforeValue);
+      const normAfter = normalizeComparable(field, afterValue);
+      if (normBefore === normAfter) continue;
+
+      diffs.push({
+        field,
+        label: toLabel(field),
+        before: formatDisplay(field, beforeValue),
+        after: formatDisplay(field, afterValue),
+        important: importantFields.has(field)
+      });
+    }
+
+    return diffs;
   };
 
   const getOrCreatePayPeriod = async (client: any, weekStart: string, weekEnd: string) => {
@@ -566,6 +783,230 @@ export async function adminRoutes(app: FastifyInstance) {
     });
   });
 
+  app.get('/admin/sessions/:id/history', async (req, reply) => {
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+
+    const sessionId = params.data.id;
+    const res = await pool.query(
+      `select h.id, h.change_type, h.before_json, h.after_json, h.created_at,
+              u.id as actor_id, u.email as actor_email, u.role as actor_role,
+              t.full_name as actor_name
+       from session_history h
+       left join users u on u.id = h.changed_by_user_id
+       left join tutor_profiles t on t.id = u.tutor_profile_id
+       where h.session_id = $1
+       order by h.created_at desc`,
+      [sessionId]
+    );
+
+    const history = res.rows.map((row) => ({
+      id: row.id,
+      changeType: row.change_type,
+      createdAt: row.created_at,
+      actor: row.actor_id ? {
+        id: row.actor_id,
+        email: row.actor_email,
+        role: row.actor_role,
+        name: row.actor_name
+      } : null,
+      beforeJson: normalizeJson(row.before_json),
+      afterJson: normalizeJson(row.after_json),
+      diffs: computeDiffs(row.before_json, row.after_json)
+    }));
+
+    return reply.send({ history });
+  });
+
+  app.post('/admin/impersonate/start', async (req, reply) => {
+    const parsed = ImpersonateStartSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const adminId = req.user!.userId;
+    const tutorRes = await pool.query(
+      `select t.id as tutor_id, t.full_name, u.id as tutor_user_id, u.email
+       from tutor_profiles t
+       join users u on u.tutor_profile_id = t.id
+       where t.id = $1`,
+      [parsed.data.tutorId]
+    );
+
+    if (tutorRes.rowCount === 0) return reply.code(404).send({ error: 'tutor_not_found' });
+    const tutor = tutorRes.rows[0];
+    const impersonationId = crypto.randomUUID();
+    const token = app.jwt.sign({
+      adminUserId: adminId,
+      tutorId: tutor.tutor_id,
+      tutorUserId: tutor.tutor_user_id,
+      impersonationId,
+      mode: 'READ_ONLY'
+    }, { expiresIn: '15m' });
+
+    await logAuditSafe(pool, {
+      actorUserId: adminId,
+      actorRole: 'ADMIN',
+      action: 'impersonation.start',
+      entityType: 'tutor',
+      entityId: tutor.tutor_id,
+      meta: safeAuditMeta({ impersonationId, tutorName: tutor.full_name }),
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string | undefined,
+      correlationId: req.id,
+    });
+
+    return reply.send({
+      impersonationToken: token,
+      impersonationId,
+      tutor: {
+        id: tutor.tutor_id,
+        name: tutor.full_name,
+        email: tutor.email
+      }
+    });
+  });
+
+  app.post('/admin/impersonate/stop', async (req, reply) => {
+    const parsed = ImpersonateStopSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    await logAuditSafe(pool, {
+      actorUserId: req.user!.userId,
+      actorRole: 'ADMIN',
+      action: 'impersonation.stop',
+      entityType: 'impersonation',
+      entityId: parsed.data.impersonationId ?? null,
+      meta: safeAuditMeta({ impersonationId: parsed.data.impersonationId ?? null }),
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string | undefined,
+      correlationId: req.id,
+    });
+
+    return reply.send({ ok: true });
+  });
+
+  app.get('/admin/audit', async (req, reply) => {
+    const parsed = AuditLogQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const { from, to, actorId, entityType, entityId, page, pageSize } = parsed.data;
+    const { where, params } = buildAuditFilters({ from, to, actorId, entityType, entityId });
+    const offset = (page - 1) * pageSize;
+
+    const listRes = await pool.query(
+      `select a.id, a.action, a.entity_type, a.entity_id, a.meta_json, a.ip, a.user_agent,
+              a.correlation_id, a.created_at, a.actor_user_id,
+              u.email as actor_email, u.role as actor_role
+       from audit_log a
+       left join users u on u.id = a.actor_user_id
+       ${where}
+       order by a.created_at desc
+       limit $${params.length + 1} offset $${params.length + 2}`,
+      [...params, pageSize, offset]
+    );
+
+    const totalRes = await pool.query(
+      `select count(*)
+       from audit_log a
+       ${where}`,
+      params
+    );
+
+    const items = listRes.rows.map((row) => ({
+      id: row.id,
+      action: row.action,
+      entityType: row.entity_type,
+      entityId: row.entity_id,
+      meta: row.meta_json,
+      ip: row.ip,
+      userAgent: row.user_agent,
+      correlationId: row.correlation_id,
+      createdAt: row.created_at,
+      actor: row.actor_user_id ? {
+        id: row.actor_user_id,
+        email: row.actor_email,
+        role: row.actor_role
+      } : null
+    }));
+
+    return reply.send({
+      items,
+      total: Number(totalRes.rows[0].count),
+      page,
+      pageSize
+    });
+  });
+
+  app.get('/admin/audit/export.csv', async (req, reply) => {
+    const parsed = AuditLogQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const { from, to, actorId, entityType, entityId } = parsed.data;
+    const { where, params } = buildAuditFilters({ from, to, actorId, entityType, entityId });
+
+    const csvValue = (value: any) => {
+      if (value == null) return '';
+      const text = typeof value === 'string' ? value : JSON.stringify(value);
+      const escaped = text.replace(/"/g, '""');
+      return `"${escaped}"`;
+    };
+
+    reply.header('Content-Type', 'text/csv; charset=utf-8');
+    reply.header('Content-Disposition', 'attachment; filename="audit-export.csv"');
+
+    reply.raw.write('timestamp,action,entity_type,entity_id,actor_id,actor_email,actor_role,ip,user_agent,correlation_id,meta\n');
+
+    const pageSize = 500;
+    let page = 1;
+
+    while (true) {
+      const offset = (page - 1) * pageSize;
+      const rows = await pool.query(
+        `select a.action, a.entity_type, a.entity_id, a.meta_json, a.ip, a.user_agent,
+                a.correlation_id, a.created_at, a.actor_user_id,
+                u.email as actor_email, u.role as actor_role
+         from audit_log a
+         left join users u on u.id = a.actor_user_id
+         ${where}
+         order by a.created_at desc
+         limit $${params.length + 1} offset $${params.length + 2}`,
+        [...params, pageSize, offset]
+      );
+
+      if (rows.rowCount === 0) break;
+
+      for (const row of rows.rows) {
+        const line = [
+          csvValue(row.created_at?.toISOString?.() ?? row.created_at),
+          csvValue(row.action),
+          csvValue(row.entity_type),
+          csvValue(row.entity_id),
+          csvValue(row.actor_user_id),
+          csvValue(row.actor_email),
+          csvValue(row.actor_role),
+          csvValue(row.ip),
+          csvValue(row.user_agent),
+          csvValue(row.correlation_id),
+          csvValue(row.meta_json)
+        ].join(',');
+        reply.raw.write(`${line}\n`);
+      }
+
+      page += 1;
+    }
+
+    reply.raw.end();
+  });
+
   app.post('/admin/sessions/bulk-approve', async (req, reply) => {
     const parsed = BulkApproveSessionsSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -614,6 +1055,18 @@ export async function adminRoutes(app: FastifyInstance) {
            values ($1, $2, 'approve', $3, $4)`,
           [sessionId, adminId, current, updatedRes.rows[0]]
         );
+
+        await logAuditSafe(client, {
+          actorUserId: adminId,
+          actorRole: 'ADMIN',
+          action: 'session.approve',
+          entityType: 'session',
+          entityId: sessionId,
+          meta: safeAuditMeta({ status: 'APPROVED', bulk: true }),
+          ip: req.ip,
+          userAgent: req.headers['user-agent'] as string | undefined,
+          correlationId: req.id,
+        });
 
         results.push({ sessionId, status: 'approved' });
       }
@@ -683,6 +1136,18 @@ export async function adminRoutes(app: FastifyInstance) {
           ]
         );
 
+        await logAuditSafe(client, {
+          actorUserId: adminId,
+          actorRole: 'ADMIN',
+          action: 'session.reject',
+          entityType: 'session',
+          entityId: sessionId,
+          meta: safeAuditMeta({ status: 'REJECTED', reason: reason ?? null, bulk: true }),
+          ip: req.ip,
+          userAgent: req.headers['user-agent'] as string | undefined,
+          correlationId: req.id,
+        });
+
         results.push({ sessionId, status: 'rejected' });
       }
 
@@ -727,6 +1192,18 @@ export async function adminRoutes(app: FastifyInstance) {
       [sessionId, adminId, current, updatedRes.rows[0]]
     );
 
+    await logAuditSafe(pool, {
+      actorUserId: adminId,
+      actorRole: 'ADMIN',
+      action: 'session.approve',
+      entityType: 'session',
+      entityId: sessionId,
+      meta: safeAuditMeta({ status: 'APPROVED' }),
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string | undefined,
+      correlationId: req.id,
+    });
+
     return reply.send({ session: updatedRes.rows[0] });
   });
 
@@ -768,6 +1245,18 @@ export async function adminRoutes(app: FastifyInstance) {
         { ...updatedRes.rows[0], reject_reason: parsed.data.reason ?? null }
       ]
     );
+
+    await logAuditSafe(pool, {
+      actorUserId: adminId,
+      actorRole: 'ADMIN',
+      action: 'session.reject',
+      entityType: 'session',
+      entityId: sessionId,
+      meta: safeAuditMeta({ status: 'REJECTED', reason: parsed.data.reason ?? null }),
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string | undefined,
+      correlationId: req.id,
+    });
 
     return reply.send({ session: updatedRes.rows[0] });
   });
