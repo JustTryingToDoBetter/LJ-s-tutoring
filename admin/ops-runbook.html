@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ops Runbook | Admin Console</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body data-page="ops-runbook">
+  <div class="portal-shell">
+    <nav class="portal-nav">
+      <div class="portal-nav-inner">
+        <div class="brand">
+          <span class="brand-badge">PO</span>
+          Admin Console
+        </div>
+        <div class="nav-links">
+          <a class="nav-link" data-nav="dashboard" href="/admin/index.html">Dashboard</a>
+          <a class="nav-link" data-nav="tutors" href="/admin/tutors.html">Tutors</a>
+          <a class="nav-link" data-nav="students" href="/admin/students.html">Students</a>
+          <a class="nav-link" data-nav="assignments" href="/admin/assignments.html">Assignments</a>
+          <a class="nav-link" data-nav="approvals" href="/admin/approvals.html">Approvals</a>
+          <a class="nav-link" data-nav="payroll" href="/admin/payroll.html">Payroll</a>
+          <a class="nav-link" data-nav="reconciliation" href="/admin/reconciliation.html">Reconciliation</a>
+          <a class="nav-link" data-nav="audit" href="/admin/audit.html">Audit</a>
+          <a class="nav-link" data-nav="ops-runbook" href="/admin/ops-runbook.html">Ops Runbook</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="portal-main">
+      <section class="page-header">
+        <h1 class="page-title">Ops runbook</h1>
+        <p class="page-subtitle">Step-by-step admin workflow for approvals, payroll, invoices, exports, and disputes.</p>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <h2 class="panel-title">1) Approvals queue</h2>
+          <ol class="note" style="margin:0; padding-left:18px;">
+            <li>Open the approvals queue and set filters for the week.</li>
+            <li>Search by tutor/student when needed.</li>
+            <li>Select sessions and review totals.</li>
+            <li>Use bulk approve or reject with a clear reason.</li>
+            <li>Spot-check history for unusual changes.</li>
+          </ol>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">2) Payroll run</h2>
+          <ol class="note" style="margin:0; padding-left:18px;">
+            <li>Open Payroll and set the week start (Monday).</li>
+            <li>Generate invoices once approvals are complete.</li>
+            <li>Review adjustments for the week.</li>
+            <li>Lock the week after recon checks pass.</li>
+          </ol>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">3) Invoices</h2>
+          <ol class="note" style="margin:0; padding-left:18px;">
+            <li>Confirm invoice totals and session counts.</li>
+            <li>Export CSV for finance or payroll systems.</li>
+            <li>Mark invoices as paid when payment is confirmed.</li>
+          </ol>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">4) Exports</h2>
+          <ol class="note" style="margin:0; padding-left:18px;">
+            <li>Use the Audit page to export activity logs.</li>
+            <li>Use Payroll CSV for week totals.</li>
+            <li>Store exports with the week start date in the filename.</li>
+          </ol>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">5) Dispute resolution</h2>
+          <ol class="note" style="margin:0; padding-left:18px;">
+            <li>Open session history and verify timestamps and notes.</li>
+            <li>Check audit log for approval actions.</li>
+            <li>If needed, reject the session with a clear reason.</li>
+            <li>Re-run payroll if invoices were already generated.</li>
+          </ol>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">6) Support tools</h2>
+          <ol class="note" style="margin:0; padding-left:18px;">
+            <li>Use “View as tutor (read-only)” to reproduce issues.</li>
+            <li>Exit impersonation after review.</li>
+            <li>Use /health and /ready for uptime checks.</li>
+          </ol>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
