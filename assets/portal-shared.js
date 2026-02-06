@@ -1,4 +1,4 @@
-const API_BASE = window.PO_API_BASE ?? '';
+const API_BASE = (window.PO_API_BASE || window.__PO_API_BASE__ || 'http://localhost:3001').replace(/\/$/, '');
 const IMPERSONATION_KEY = 'impersonationToken';
 const IMPERSONATION_META_KEY = 'impersonationMeta';
 
