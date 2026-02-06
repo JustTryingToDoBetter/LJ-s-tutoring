@@ -14,6 +14,7 @@
     "pdfkit": "^0.17.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "@tailwindcss/typography": "^0.5.16",
     "@types/nodemailer": "^7.0.9",
     "@types/pdfkit": "^0.17.4",
@@ -21,6 +22,7 @@
     "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
     "html-validate": "^9.5.3",
+    "jsdom": "^24.0.0",
     "husky": "^9.0.11",
     "linkinator": "^6.1.2",
     "mkdirp": "^3.0.1",
@@ -28,6 +30,7 @@
     "pa11y-ci": "^4.0.1",
     "rimraf": "^5.0.5",
     "tailwindcss": "^3.4.17",
+    "vitest": "^2.1.8",
     "wait-on": "^7.2.0"
   },
   "scripts": {
@@ -61,11 +64,17 @@
     "dev": "npm-run-all --parallel dev:static dev:api",
     "migrate": "npm run migrate --prefix lms-api",
     "test": "npm run test --prefix lms-api",
-    "test:e2e": "npm run test:e2e --prefix lms-api",
+    "test:e2e:api": "npm run test:e2e --prefix lms-api",
     "db:migrate:test": "npm run db:migrate:test --prefix lms-api",
     "db:reset:test": "npm run db:reset:test --prefix lms-api",
     "seed:test": "npm run seed:test --prefix lms-api",
     "retention:cleanup": "npm run retention:cleanup --prefix lms-api",
+    "start:api:test": "NODE_ENV=test DATABASE_URL=$DATABASE_URL_TEST PORT=3001 npm run start:test --prefix lms-api",
+    "start:static:test": "http-server dist -p 8080 -c-1 --silent",
+    "test:unit": "vitest run",
+    "test:api": "npm run test --prefix lms-api",
+    "test:e2e": "mkdir -p test-results lms-api/test-results && npm run build && npm run db:reset:test && npm run seed:test && playwright test",
+    "test:all": "npm-run-all lint test:unit test:api test:e2e build",
     "lint:js": "eslint \"assets/**/*.js\" \"scripts/**/*.js\"",
     "lint:html": "html-validate \"*.html\" \"guides/*.html\" \"arcade/**/*.html\"",
     "lint": "npm-run-all --parallel lint:js lint:html",
