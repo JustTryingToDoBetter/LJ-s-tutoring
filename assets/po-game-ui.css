@@ -59,32 +59,30 @@
 
 .po-btn{
   height: var(--po-hit);
-  .po-btn--primary{
-    background: linear-gradient(140deg, rgba(60,240,255,.92), rgba(255,79,216,.82));
-    color: #06101a;
-    box-shadow: var(--po-glow);
-  }
   padding: 0 12px;
-  .po-btn:focus-visible{
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(60,240,255,.35);
-  }
   border-radius: var(--po-radius-sm);
   border: 1px solid var(--po-border-2);
-  background: rgba(255,255,255,.10);
+  background: rgba(8,12,20,.75);
   color: var(--po-text);
   font-weight: 800;
-    border: 1px solid var(--po-border-2);
-    background: rgba(8,12,20,.75);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-    box-shadow: 0 0 0 3px rgba(60,240,255,.35);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.po-btn:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(60,240,255,.35);
+}
 .po-btn:active{ transform: translateY(1px); }
-.po-btn--primary{ background: rgba(255,255,255,.18); }
+.po-btn--primary{
+  background: linear-gradient(140deg, rgba(60,240,255,.92), rgba(255,79,216,.82));
+  color: #06101a;
+  box-shadow: var(--po-glow);
+}
 .po-btn--ghost{ background: transparent; }
 
 /* Form controls (for game controls dock) */
@@ -93,13 +91,13 @@
   padding: 0 12px;
   border-radius: var(--po-radius-sm);
   border: 1px solid var(--po-border-2);
-  background: rgba(255,255,255,.08);
+  background: rgba(2,4,10,.65);
   color: var(--po-text);
   font-weight: 900;
   font-size: 12px;
   outline: none;
 }
-    background: rgba(2,4,10,.65);
+.po-select:focus-visible{
   box-shadow: 0 0 0 3px rgba(56,189,248,.18);
 }
 
@@ -136,7 +134,8 @@
   font-weight: 800;
   color: var(--po-subtext);
   line-height: 1.35;
-    background: rgba(8,12,20,.7);
+  background: rgba(8,12,20,.7);
+}
 
 .po-panel{
   border-radius: var(--po-radius);

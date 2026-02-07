@@ -123,11 +123,104 @@ const GAMES = [
       ],
     },
   },
+  {
+    id: "invaders",
+    title: "Neon Invaders",
+    desc: "Defend the beacon in a neon space siege.",
+    icon: "👾",
+    lane: ["quick", "reflex"],
+    tags: ["~3–6 min", "Arcade", "Reflex"],
+    howTo: {
+      subtitle: "Clear the wave before it reaches the base.",
+      steps: [
+        "Move left/right to line up shots.",
+        "Fire to clear invaders.",
+        "Survive as the pace speeds up.",
+      ],
+      controls: [
+        "Keyboard: Arrow keys or A/D, Space to fire.",
+        "Touch: Left/Right + Fire.",
+      ],
+    },
+  },
+  {
+    id: "asteroids",
+    title: "Aether Drift",
+    desc: "Asteroids-lite with smooth drift and simple thrusters.",
+    icon: "🛰️",
+    lane: ["reflex"],
+    tags: ["~4–8 min", "Arcade", "Reflex"],
+    howTo: {
+      subtitle: "Drift, dodge, and clear the field.",
+      steps: [
+        "Rotate and thrust to steer.",
+        "Fire to break asteroids.",
+        "Clear waves to advance.",
+      ],
+      controls: [
+        "Keyboard: Left/Right rotate, Up thrust, Space fire.",
+        "Touch: Rotate + Thrust + Fire.",
+      ],
+    },
+  },
+  {
+    id: "2048",
+    title: "2048",
+    desc: "Merge tiles and climb to 2048 and beyond.",
+    icon: "🧱",
+    lane: ["puzzle"],
+    tags: ["~3–7 min", "Puzzle", "Strategy"],
+    howTo: {
+      subtitle: "Merge tiles to reach 2048.",
+      steps: [
+        "Swipe to slide tiles.",
+        "Matching tiles merge into larger values.",
+        "No moves left ends the run.",
+      ],
+      controls: [
+        "Keyboard: Arrow keys.",
+        "Touch: Swipe in any direction.",
+      ],
+    },
+  },
+  {
+    id: "minesweeper",
+    title: "Minesweeper",
+    desc: "Scan the field, flag mines, clear the grid.",
+    icon: "🧭",
+    lane: ["puzzle"],
+    tags: ["~4–8 min", "Puzzle", "Logic"],
+    howTo: {
+      subtitle: "Mark mines and clear safe tiles.",
+      steps: [
+        "Reveal safe tiles to uncover numbers.",
+        "Numbers show nearby mines.",
+        "Flag mines to win.",
+      ],
+      controls: [
+        "Tap to reveal.",
+        "Toggle Flag mode to place flags.",
+      ],
+    },
+  },
 ];
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-  const MIGRATED_GAMES = new Set(["pong", "snake", "sudoku", "wordle", "hangman", "tictactoe", "chess", "quickmath"]);
+  const MIGRATED_GAMES = new Set([
+    "pong",
+    "snake",
+    "sudoku",
+    "wordle",
+    "hangman",
+    "tictactoe",
+    "chess",
+    "quickmath",
+    "invaders",
+    "asteroids",
+    "2048",
+    "minesweeper",
+  ]);
 
   function safeText(el, value) {
     if (el) el.textContent = String(value);
@@ -255,6 +348,16 @@ const GAMES = [
       const losses = Number.isFinite(state.losses) ? state.losses : null;
       const draws = Number.isFinite(state.draws) ? state.draws : null;
       return { plays, wins, losses, draws };
+    }
+
+    const shared = readJson("po_arcade_v1") || {};
+    const sharedGame = shared?.games?.[gameId];
+    if (sharedGame && typeof sharedGame === "object") {
+      const best = Number.isFinite(sharedGame.bestScore) ? sharedGame.bestScore : null;
+      const wins = Number.isFinite(sharedGame.wins) ? sharedGame.wins : null;
+      const losses = Number.isFinite(sharedGame.losses) ? sharedGame.losses : null;
+      const draws = Number.isFinite(sharedGame.draws) ? sharedGame.draws : null;
+      return { plays, best, wins, losses, draws };
     }
 
     return { plays };

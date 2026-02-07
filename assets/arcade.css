@@ -120,6 +120,10 @@
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
 }
 .po-arcade__iconbtn:hover { background: rgba(20, 26, 40, 0.85); border-color: rgba(60, 240, 255, 0.35); box-shadow: var(--glow); }
+.po-arcade__iconbtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(60, 240, 255, 0.35);
+}
 .po-arcade__iconbtn:active { transform: translateY(1px) scale(0.99); }
 
 .po-arcade__main {
@@ -284,6 +288,10 @@
   transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 .po-arcade__chip:hover { background: rgba(18, 24, 38, 0.9); }
+.po-arcade__chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(60, 240, 255, 0.28);
+}
 .po-arcade__chip:active { transform: translateY(1px); }
 .po-arcade__chip.is-active {
   background: rgba(60, 240, 255, 0.14);
@@ -299,6 +307,10 @@
   border: 1px solid rgba(60, 240, 255, 0.18);
   background: rgba(12, 16, 26, 0.75);
   max-width: 420px;
+}
+.po-arcade__search:focus-within {
+  border-color: rgba(60, 240, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(60, 240, 255, 0.18);
 }
 .po-arcade__search input {
   width: 100%;
@@ -500,6 +512,118 @@
   background: rgba(4, 6, 12, 0.7);
   overflow: hidden;
 }
+
+/* Arcade game layouts */
+.po-inv-wrap,
+.po-ast-wrap {
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+}
+
+.po-inv-stage,
+.po-ast-stage {
+  width: min(520px, 100%);
+  aspect-ratio: 4 / 5.5;
+  border-radius: 18px;
+  border: 1px solid rgba(60, 240, 255, 0.18);
+  background: rgba(6, 10, 18, 0.85);
+  display: grid;
+  place-items: center;
+}
+
+.po-inv-canvas,
+.po-ast-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.po-2048-wrap {
+  width: min(420px, 100%);
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.po-2048-grid {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(60, 240, 255, 0.18);
+  background: rgba(6, 10, 18, 0.85);
+}
+
+.po-2048-cell {
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(12, 16, 26, 0.75);
+  font-weight: 900;
+  font-size: clamp(14px, 4vw, 22px);
+  color: rgba(236, 246, 255, 0.95);
+}
+
+.po-2048-cell[data-value="0"] { color: transparent; }
+.po-2048-cell[data-value="2"] { background: rgba(60, 240, 255, 0.12); }
+.po-2048-cell[data-value="4"] { background: rgba(60, 240, 255, 0.18); }
+.po-2048-cell[data-value="8"] { background: rgba(255, 79, 216, 0.25); }
+.po-2048-cell[data-value="16"] { background: rgba(255, 79, 216, 0.32); }
+.po-2048-cell[data-value="32"] { background: rgba(245, 193, 90, 0.35); }
+.po-2048-cell[data-value="64"] { background: rgba(245, 193, 90, 0.45); }
+.po-2048-cell[data-value="128"] { background: rgba(60, 240, 255, 0.32); }
+.po-2048-cell[data-value="256"] { background: rgba(60, 240, 255, 0.42); }
+.po-2048-cell[data-value="512"] { background: rgba(255, 79, 216, 0.42); }
+.po-2048-cell[data-value="1024"] { background: rgba(255, 79, 216, 0.5); }
+.po-2048-cell[data-value="2048"] { background: rgba(245, 193, 90, 0.6); }
+
+.po-ms-wrap {
+  width: min(520px, 100%);
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.po-ms-grid {
+  width: 100%;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(60, 240, 255, 0.18);
+  background: rgba(6, 10, 18, 0.85);
+}
+
+.po-ms-cell {
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(12, 16, 26, 0.75);
+  font-weight: 900;
+  font-size: clamp(10px, 2.2vw, 14px);
+  color: rgba(236, 246, 255, 0.95);
+}
+
+.po-ms-cell[data-revealed="1"] {
+  background: rgba(15, 22, 36, 0.95);
+  border-color: rgba(60, 240, 255, 0.25);
+}
+
+.po-ms-cell[data-mine="1"][data-revealed="1"] {
+  background: rgba(255, 79, 216, 0.3);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.po-ms-cell[data-revealed="1"][data-count="1"] { color: rgba(60, 240, 255, 0.95); }
+.po-ms-cell[data-revealed="1"][data-count="2"] { color: rgba(245, 193, 90, 0.95); }
+.po-ms-cell[data-revealed="1"][data-count="3"] { color: rgba(255, 79, 216, 0.95); }
+.po-ms-cell[data-revealed="1"][data-count="4"] { color: rgba(180, 168, 255, 0.95); }
 
 /* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
