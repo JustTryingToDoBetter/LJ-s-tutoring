@@ -244,6 +244,9 @@ export function createStorageManager(store, gameId, { legacyKeys = [] } = {}) {
     bestScore: Number.isFinite(g.bestScore) ? g.bestScore : 0,
     bestToday: g.bestToday || null,
     streak: Number.isFinite(g.streak) ? g.streak : 0,
+    wins: Number.isFinite(g.wins) ? g.wins : 0,
+    losses: Number.isFinite(g.losses) ? g.losses : 0,
+    draws: Number.isFinite(g.draws) ? g.draws : 0,
     settings: g.settings && typeof g.settings === "object" ? g.settings : {},
   });
 

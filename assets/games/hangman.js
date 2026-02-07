@@ -117,6 +117,8 @@ export default {
     const { signal } = this._ac;
 
     const ui = ctx.ui;
+    const storage = ctx.storage;
+    let resultRecorded = false;
 
     // Initial frame status while loading
     ui?.setHUD?.([{ k: "Mode", v: "…" }, { k: "Mistakes", v: "…" }, { k: "Pack", v: "Loading" }]);
@@ -229,12 +231,24 @@ export default {
       if (won) {
         state.done = true;
         state.won = true;
+        recordResult();
         return;
       }
       if (state.wrong >= state.maxWrong) {
         state.done = true;
         state.won = false;
+        recordResult();
       }
+    };
+
+    const recordResult = () => {
+      if (resultRecorded || !storage?.get || !storage?.update) return;
+      const stats = storage.get();
+      storage.update({
+        wins: stats.wins + (state.won ? 1 : 0),
+        losses: stats.losses + (state.won ? 0 : 1),
+      });
+      resultRecorded = true;
     };
 
     const guess = (ch) => {

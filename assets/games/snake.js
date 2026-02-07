@@ -126,6 +126,7 @@ export default {
     const { signal } = this._ac;
 
     const ui = ctx.ui;
+    const storage = ctx.storage;
 
     this._rng = seededRandForSession();
     this._state = makeInitialState(load());
@@ -402,6 +403,7 @@ export default {
           state.paused = false;
           state.status = "The sea wall wins. Restart.";
           setStatus(state.status);
+          storage?.recordScore?.(state.score);
           persist();
           return;
         }
@@ -419,6 +421,7 @@ export default {
         state.paused = false;
         state.status = "You tangled yourself. Restart.";
         setStatus(state.status);
+        storage?.recordScore?.(state.score);
         persist();
         return;
       }

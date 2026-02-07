@@ -71,6 +71,7 @@ export default {
     const { signal } = this._ac;
 
     const ui = ctx.ui;
+    const storage = ctx.storage;
 
     this._rng = seededRandForSession();
 
@@ -367,6 +368,14 @@ export default {
       if (done1 || done2) {
         state.status = done1 ? "P1 wins the match!" : "P2 wins the match!";
         setStatus(state.status);
+        storage?.recordScore?.(state.bestWins);
+        const stats = storage?.get?.();
+        if (stats) {
+          storage.update?.({
+            wins: stats.wins + (done1 ? 1 : 0),
+            losses: stats.losses + (done2 ? 1 : 0),
+          });
+        }
         persist();
         return;
       }

@@ -160,6 +160,7 @@ export default {
     const { signal } = this._ac;
 
     const ui = ctx.ui;
+    const storage = ctx.storage;
     const personality = cyclopsPersonality();
 
     const restored = load();
@@ -270,6 +271,14 @@ export default {
 
       setStatus(state.status);
       render(lines);
+      const stats = storage?.get?.();
+      if (stats && storage?.update) {
+        storage.update({
+          wins: stats.wins + (out === "X" ? 1 : 0),
+          losses: stats.losses + (out === "O" ? 1 : 0),
+          draws: stats.draws + (out === "draw" ? 1 : 0),
+        });
+      }
       persist();
       return true;
     }

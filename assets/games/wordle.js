@@ -132,6 +132,8 @@ export default {
     const { signal } = this._ac;
 
     const ui = ctx.ui;
+    const storage = ctx.storage;
+    let resultRecorded = false;
 
     ui?.setHUD?.([{ k: "Mode", v: "…" }, { k: "Row", v: "…" }, { k: "Pack", v: "Loading" }]);
     ui?.setStatus?.("Loading word pack…");
@@ -285,13 +287,25 @@ export default {
         state.done = true;
         state.won = true;
         state.status = "Victory — the Oracle yields.";
+        recordResult();
         return;
       }
       if (state.rows.length >= state.maxRows) {
         state.done = true;
         state.won = false;
         state.status = `Defeat — the word was ${state.answer}.`;
+        recordResult();
       }
+    };
+
+    const recordResult = () => {
+      if (resultRecorded || !storage?.get || !storage?.update) return;
+      const stats = storage.get();
+      storage.update({
+        wins: stats.wins + (state.won ? 1 : 0),
+        losses: stats.losses + (state.won ? 0 : 1),
+      });
+      resultRecorded = true;
     };
 
     const typeChar = (ch) => {
