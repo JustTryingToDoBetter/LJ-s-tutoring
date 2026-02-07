@@ -1,4 +1,5 @@
 import { createConsolePage, lockScroll } from "/assets/arcade/ui/ConsolePage.js";
+import { createConsoleRuntime } from "/assets/arcade/console-runtime.js";
 import pong from "/assets/games/pong.js";
 
 const root = document.getElementById("game-root");
@@ -21,15 +22,14 @@ const page = createConsolePage({
 
 root.append(page.root);
 
-const ctx = {
-  ui: {
-    setHUD: (chips) => page.setHUD(chips),
-    setControls: (node) => page.setControls(node),
-    setStatus: (text) => page.setStatus(text),
-  },
-};
+const runtime = createConsoleRuntime({
+  gameId: "pong",
+  mountEl: page.surfaceInner,
+  surfaceEl: page.surface,
+  page,
+});
 
-await pong.mount(page.surfaceInner, ctx);
+await pong.mount(page.surfaceInner, runtime.ctx);
 page.showHowTo();
 
 function togglePause() {

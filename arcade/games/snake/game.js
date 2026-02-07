@@ -1,4 +1,5 @@
 import { createConsolePage, lockScroll } from "/assets/arcade/ui/ConsolePage.js";
+import { createConsoleRuntime } from "/assets/arcade/console-runtime.js";
 import snake from "/assets/games/snake.js";
 
 const root = document.getElementById("game-root");
@@ -21,15 +22,14 @@ const page = createConsolePage({
 
 root.append(page.root);
 
-const ctx = {
-  ui: {
-    setHUD: (chips) => page.setHUD(chips),
-    setControls: (node) => page.setControls(node),
-    setStatus: (text) => page.setStatus(text),
-  },
-};
+const runtime = createConsoleRuntime({
+  gameId: "snake",
+  mountEl: page.surfaceInner,
+  surfaceEl: page.surface,
+  page,
+});
 
-await snake.mount(page.surfaceInner, ctx);
+await snake.mount(page.surfaceInner, runtime.ctx);
 page.showHowTo();
 
 function togglePause() {

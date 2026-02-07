@@ -21,6 +21,7 @@ const PRECACHE = [
 
   "/assets/arcade/frame.js",
   "/assets/arcade/sdk-core.js",
+  "/assets/arcade/console-runtime.js",
   "/assets/arcade/ui/arcade-ui.css",
   "/assets/arcade/ui/Button.js",
   "/assets/arcade/ui/ConsolePage.js",

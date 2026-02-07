@@ -1,8 +1,5 @@
 import { createConsolePage, lockScroll } from "/assets/arcade/ui/ConsolePage.js";
-import { createArcadeStore } from "/assets/arcade/sdk-core.js";
-import { createModal } from "/assets/arcade/ui/Modal.js";
-import { createToastManager } from "/assets/arcade/ui/Toast.js";
-import { createGameContext } from "/arcade/game-runtime.js";
+import { createConsoleRuntime } from "/assets/arcade/console-runtime.js";
 
 const root = document.getElementById("game-root");
 lockScroll();
@@ -12,7 +9,7 @@ const page = createConsolePage({
   subtitle: "Local 2‑player",
   onBack: () => (window.location.href = "/arcade/"),
   onRestart: () => window.location.reload(),
-  onPause: () => page.showSettings(),
+  onPause: () => runtime.showSettings(),
   howTo: {
     gameId: "chess",
     title: "How to play Chess",
@@ -25,45 +22,23 @@ const page = createConsolePage({
 root.append(page.root);
 page.showHowTo();
 
-await loadChessModule(page.surfaceInner);
+const runtime = createConsoleRuntime({
+  gameId: "chess",
+  mountEl: page.surfaceInner,
+  surfaceEl: page.surface,
+  page,
+});
 
-function loadChessModule(mount) {
-  const ctx = createGameContext({ root: mount, gameId: "chess" });
-  const store = createArcadeStore();
-  const toastManager = createToastManager(page.surface);
-
-  ctx.ui = {
-    setHUD: (chips) => page.setHUD(chips),
-    setControls: (node) => page.setControls(node),
-    setStatus: (text) => page.setStatus(text),
-    showToast: (msg, ms) => toastManager.show(msg, ms),
-    showModal: ({ title, body, content, actions, onClose, closeOnBackdrop } = {}) => {
-      const modal = createModal({
-        title: title || "",
-        body,
-        content,
-        actions: actions || [],
-        onClose,
-        closeOnBackdrop,
-      });
-      page.surface.append(modal.root);
-      return modal;
-    },
-  };
-  ctx.store = store;
-  ctx.onCleanup(() => toastManager.destroy());
-
-  return import("/assets/games/chess.js")
-    .then((mod) => {
-      const game = mod?.default || mod?.game;
-      if (!game?.init && !game?.mount) {
-        throw new Error("Chess module missing init/mount export.");
-      }
-      if (game.init) return game.init(ctx);
-      return game.mount(ctx.root, ctx);
-    })
-    .catch((err) => {
-      page.setStatus("Chess failed to load.");
-      throw err;
-    });
-}
+await import("/assets/games/chess.js")
+  .then((mod) => {
+    const game = mod?.default || mod?.game;
+    if (!game?.init && !game?.mount) {
+      throw new Error("Chess module missing init/mount export.");
+    }
+    if (game.init) return game.init(runtime.ctx);
+    return game.mount(runtime.ctx.root, runtime.ctx);
+  })
+  .catch((err) => {
+    page.setStatus("Chess failed to load.");
+    throw err;
+  });

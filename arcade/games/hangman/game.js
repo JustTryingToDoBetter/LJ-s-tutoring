@@ -1,4 +1,5 @@
 import { createConsolePage, lockScroll } from "/assets/arcade/ui/ConsolePage.js";
+import { createConsoleRuntime } from "/assets/arcade/console-runtime.js";
 import hangman from "/assets/games/hangman.js";
 
 const root = document.getElementById("game-root");
@@ -9,7 +10,7 @@ const page = createConsolePage({
   subtitle: "Hangman",
   onBack: () => (window.location.href = "/arcade/"),
   onRestart: () => window.location.reload(),
-  onPause: () => page.showSettings(),
+  onPause: () => runtime.showSettings(),
   howTo: {
     gameId: "hangman",
     title: "How to play Hangman",
@@ -21,13 +22,12 @@ const page = createConsolePage({
 
 root.append(page.root);
 
-const ctx = {
-  ui: {
-    setHUD: (chips) => page.setHUD(chips),
-    setControls: (node) => page.setControls(node),
-    setStatus: (text) => page.setStatus(text),
-  },
-};
+const runtime = createConsoleRuntime({
+  gameId: "hangman",
+  mountEl: page.surfaceInner,
+  surfaceEl: page.surface,
+  page,
+});
 
-await hangman.mount(page.surfaceInner, ctx);
+await hangman.mount(page.surfaceInner, runtime.ctx);
 page.showHowTo();

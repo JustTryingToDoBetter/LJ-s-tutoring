@@ -1,5 +1,5 @@
-import { createArcadeStore } from "/assets/arcade/sdk-core.js";
 import { createConsolePage, lockScroll } from "/assets/arcade/ui/ConsolePage.js";
+import { createConsoleRuntime } from "/assets/arcade/console-runtime.js";
 import quickmath from "/assets/games/quickmath.js";
 
 const root = document.getElementById("game-root");
@@ -22,18 +22,14 @@ const page = createConsolePage({
 
 root.append(page.root);
 
-const store = createArcadeStore();
+const runtime = createConsoleRuntime({
+  gameId: "quickmath",
+  mountEl: page.surfaceInner,
+  surfaceEl: page.surface,
+  page,
+});
 
-const ctx = {
-  ui: {
-    setHUD: (chips) => page.setHUD(chips),
-    setControls: (node) => page.setControls(node),
-    setStatus: (text) => page.setStatus(text),
-  },
-  store,
-};
-
-await quickmath.init?.(ctx);
+await quickmath.init?.(runtime.ctx);
 page.showHowTo();
 
 function togglePause() {

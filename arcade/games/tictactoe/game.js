@@ -1,4 +1,5 @@
 import { createConsolePage, lockScroll } from "/assets/arcade/ui/ConsolePage.js";
+import { createConsoleRuntime } from "/assets/arcade/console-runtime.js";
 import tictactoe from "/assets/games/tictactoe.js";
 
 const root = document.getElementById("game-root");
@@ -9,7 +10,7 @@ const page = createConsolePage({
   subtitle: "Classic",
   onBack: () => (window.location.href = "/arcade/"),
   onRestart: () => window.location.reload(),
-  onPause: () => page.showSettings(),
+  onPause: () => runtime.showSettings(),
   howTo: {
     gameId: "tictactoe",
     title: "How to play Tic Tac Toe",
@@ -21,13 +22,12 @@ const page = createConsolePage({
 
 root.append(page.root);
 
-const ctx = {
-  ui: {
-    setHUD: (chips) => page.setHUD(chips),
-    setControls: (node) => page.setControls(node),
-    setStatus: (text) => page.setStatus(text),
-  },
-};
+const runtime = createConsoleRuntime({
+  gameId: "tictactoe",
+  mountEl: page.surfaceInner,
+  surfaceEl: page.surface,
+  page,
+});
 
-await tictactoe.mount(page.surfaceInner, ctx);
+await tictactoe.mount(page.surfaceInner, runtime.ctx);
 page.showHowTo();
