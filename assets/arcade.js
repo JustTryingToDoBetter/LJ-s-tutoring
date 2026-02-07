@@ -146,12 +146,16 @@ const GAMES = [
 
   function getBestTodayScore() {
     try {
-      const raw = localStorage.getItem("po_arcade_state_v1");
-      if (!raw) return "—";
-      const state = JSON.parse(raw);
-      const daily = state?.games?.quickmath?.dailyBest;
-      if (!daily || daily.dayKey !== dayKey()) return "—";
-      return typeof daily.score === "number" ? String(daily.score) : "—";
+      const keys = ["po_arcade_v1", "po_arcade_state_v1"];
+      for (const key of keys) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const state = JSON.parse(raw);
+        const daily = state?.games?.quickmath?.dailyBest;
+        if (!daily || daily.dayKey !== dayKey()) continue;
+        return typeof daily.score === "number" ? String(daily.score) : "—";
+      }
+      return "—";
     } catch {
       return "—";
     }

@@ -1,14 +1,14 @@
-:root{
-  --arc-bg: #0f172a;
-  --arc-panel: rgba(15,23,42,.92);
-  --arc-border: rgba(148,163,184,.22);
-  --arc-text: rgba(226,232,240,.95);
-  --arc-muted: rgba(148,163,184,.85);
-  --arc-primary: #38bdf8;
-  --arc-danger: #f43f5e;
-  --arc-shadow: 0 20px 50px rgba(0,0,0,.45);
+.po-arcade{
+  --arc-bg: #070a12;
+  --arc-panel: rgba(12,18,30,.92);
+  --arc-border: rgba(60,240,255,.22);
+  --arc-text: rgba(232,244,255,.96);
+  --arc-muted: rgba(160,182,212,.85);
+  --arc-primary: #3cf0ff;
+  --arc-danger: #ff4fd8;
+  --arc-shadow: 0 20px 50px rgba(0,0,0,.55);
   --arc-radius: 16px;
-  --arc-ring: 0 0 0 3px rgba(56,189,248,.45);
+  --arc-ring: 0 0 0 3px rgba(60,240,255,.4);
 }
 
 .arcade-shell{
@@ -63,7 +63,7 @@
 .arc-btn{
   appearance: none;
   border: 1px solid var(--arc-border);
-  background: rgba(2,6,23,.35);
+  background: rgba(8,12,20,.75);
   color: var(--arc-text);
   padding: 10px 14px;
   border-radius: 12px;
@@ -78,9 +78,10 @@
 }
 
 .arc-btn--primary{
-  background: linear-gradient(140deg, rgba(56,189,248,.9), rgba(14,116,144,.9));
-  border-color: rgba(56,189,248,.65);
+  background: linear-gradient(140deg, rgba(60,240,255,.95), rgba(255,79,216,.85));
+  border-color: rgba(255,79,216,.65);
   color: #04111c;
+  box-shadow: 0 0 18px rgba(60,240,255,.25);
 }
 
 .arc-btn--ghost{
@@ -164,8 +165,8 @@
 .arc-toast{
   padding: 10px 14px;
   border-radius: 999px;
-  background: rgba(15,23,42,.9);
-  border: 1px solid rgba(148,163,184,.25);
+  background: rgba(10,16,24,.92);
+  border: 1px solid rgba(60,240,255,.25);
   color: var(--arc-text);
   font-size: .85rem;
   box-shadow: var(--arc-shadow);

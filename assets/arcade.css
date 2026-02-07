@@ -4,23 +4,56 @@
 ========================================================================== */
 
 .po-arcade {
-  --bg: #070a12;
-  --panel: rgba(255, 255, 255, 0.06);
-  --panel2: rgba(255, 255, 255, 0.04);
-  --stroke: rgba(255, 255, 255, 0.10);
-  --text: #e5e7eb;
-  --muted: rgba(226, 232, 240, 0.72);
-  --gold: #d7a63a;              /* matches your brand-gold vibe */
-  --neon: #48ffd2;              /* subtle neon secondary */
-  --shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  --bg: #05060a;
+  --panel: rgba(14, 18, 30, 0.82);
+  --panel2: rgba(10, 12, 20, 0.6);
+  --stroke: rgba(92, 250, 255, 0.22);
+  --text: #e6f0ff;
+  --muted: rgba(196, 212, 236, 0.72);
+  --gold: #f5c15a;
+  --neon: #3cf0ff;
+  --magenta: #ff4fd8;
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  --glow: 0 0 20px rgba(60, 240, 255, 0.22);
 
   background:
-    radial-gradient(1200px 700px at 20% -10%, rgba(72, 255, 210, 0.10), transparent 60%),
-    radial-gradient(900px 600px at 110% 10%, rgba(215, 166, 58, 0.10), transparent 55%),
-    radial-gradient(900px 800px at 50% 120%, rgba(72, 255, 210, 0.06), transparent 60%),
-    linear-gradient(180deg, #070a12, #050711);
+    radial-gradient(900px 600px at 12% -8%, rgba(60, 240, 255, 0.12), transparent 60%),
+    radial-gradient(900px 600px at 110% 20%, rgba(255, 79, 216, 0.12), transparent 55%),
+    radial-gradient(1200px 800px at 50% 130%, rgba(245, 193, 90, 0.08), transparent 62%),
+    linear-gradient(180deg, #05060a, #070a13 45%, #05060a);
   color: var(--text);
   min-height: 100vh;
+  position: relative;
+  font-family: "Rajdhani", "Chakra Petch", "Trebuchet MS", "Verdana", sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+.po-arcade::before,
+.po-arcade::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.po-arcade::before {
+  background: repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.035) 0px,
+      rgba(255, 255, 255, 0.035) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  opacity: 0.45;
+  mix-blend-mode: soft-light;
+}
+
+.po-arcade::after {
+  background:
+    radial-gradient(600px 240px at 50% 0%, rgba(60, 240, 255, 0.18), transparent 65%),
+    radial-gradient(600px 240px at 50% 100%, rgba(255, 79, 216, 0.12), transparent 70%);
+  opacity: 0.6;
 }
 
 .po-arcade__noscript {
@@ -32,8 +65,8 @@
   top: 0;
   z-index: 50;
   backdrop-filter: blur(14px);
-  background: linear-gradient(180deg, rgba(7,10,18,0.92), rgba(7,10,18,0.70));
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(5, 8, 14, 0.95), rgba(6, 10, 18, 0.72));
+  border-bottom: 1px solid rgba(60, 240, 255, 0.12);
 }
 
 .po-arcade__topbar-inner {
@@ -59,9 +92,9 @@
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: rgba(215, 166, 58, 0.12);
-  border: 1px solid rgba(215, 166, 58, 0.25);
-  box-shadow: 0 0 0 4px rgba(215, 166, 58, 0.06);
+  background: radial-gradient(circle at 30% 30%, rgba(245, 193, 90, 0.55), rgba(12, 16, 24, 0.4));
+  border: 1px solid rgba(245, 193, 90, 0.45);
+  box-shadow: 0 0 0 4px rgba(245, 193, 90, 0.08), 0 0 18px rgba(245, 193, 90, 0.18);
 }
 .po-arcade__brand-text {
   font-weight: 800;
@@ -78,26 +111,30 @@
   width: 40px;
   height: 40px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(60, 240, 255, 0.18);
+  background: rgba(12, 16, 26, 0.7);
   display: grid;
   place-items: center;
   color: var(--text);
   text-decoration: none;
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
 }
-.po-arcade__iconbtn:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12); }
+.po-arcade__iconbtn:hover { background: rgba(20, 26, 40, 0.85); border-color: rgba(60, 240, 255, 0.35); box-shadow: var(--glow); }
 .po-arcade__iconbtn:active { transform: translateY(1px) scale(0.99); }
 
 .po-arcade__main {
   max-width: 1100px;
   margin: 0 auto;
   padding: 18px 16px 40px;
+  position: relative;
+  z-index: 1;
 }
 
 .po-arcade__hero-card {
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  border: 1px solid rgba(60, 240, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(12, 18, 32, 0.92), rgba(8, 12, 20, 0.72)),
+    radial-gradient(420px 220px at 10% 20%, rgba(60, 240, 255, 0.12), transparent 65%);
   border-radius: 26px;
   padding: 18px;
   box-shadow: var(--shadow);
@@ -109,7 +146,7 @@
 }
 
 .po-arcade__eyebrow {
-  color: rgba(72, 255, 210, 0.85);
+  color: rgba(60, 240, 255, 0.9);
   font-weight: 700;
   font-size: 12px;
   letter-spacing: 0.12em;
@@ -121,6 +158,7 @@
   font-weight: 900;
   letter-spacing: -0.03em;
   margin-top: 6px;
+  text-shadow: 0 0 18px rgba(60, 240, 255, 0.18);
 }
 .po-arcade__sub {
   margin-top: 10px;
@@ -142,28 +180,28 @@
   gap: 10px;
   padding: 12px 14px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(60, 240, 255, 0.18);
   text-decoration: none;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(12, 18, 30, 0.8);
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   font-weight: 800;
 }
-.po-arcade__btn:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.14); }
+.po-arcade__btn:hover { background: rgba(18, 24, 38, 0.92); border-color: rgba(60, 240, 255, 0.4); box-shadow: var(--glow); }
 .po-arcade__btn:active { transform: translateY(1px) scale(0.99); }
 
 .po-arcade__btn--primary {
-  background: linear-gradient(180deg, rgba(215, 166, 58, 0.95), rgba(215, 166, 58, 0.80));
-  color: #0b1020;
-  border-color: rgba(215, 166, 58, 0.45);
-  box-shadow: 0 16px 30px rgba(215, 166, 58, 0.16);
+  background: linear-gradient(140deg, rgba(60, 240, 255, 0.95), rgba(255, 79, 216, 0.85));
+  color: #06101a;
+  border-color: rgba(255, 79, 216, 0.55);
+  box-shadow: 0 16px 30px rgba(60, 240, 255, 0.22), 0 0 18px rgba(255, 79, 216, 0.22);
 }
 .po-arcade__btn--primary:hover {
-  box-shadow: 0 18px 40px rgba(215, 166, 58, 0.22);
+  box-shadow: 0 22px 46px rgba(60, 240, 255, 0.28), 0 0 24px rgba(255, 79, 216, 0.24);
 }
 
 .po-arcade__btn--ghost {
-  border-color: rgba(72, 255, 210, 0.22);
+  border-color: rgba(245, 193, 90, 0.35);
 }
 
 .po-arcade__hero-right {
@@ -174,8 +212,8 @@
 }
 .po-arcade__stat {
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 12, 20, 0.6);
   padding: 14px;
 }
 .po-arcade__stat-num {
@@ -194,8 +232,8 @@
 .po-arcade__continue {
   margin-top: 12px;
   border-radius: 22px;
-  border: 1px solid rgba(72, 255, 210, 0.20);
-  background: linear-gradient(180deg, rgba(72, 255, 210, 0.10), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(60, 240, 255, 0.25);
+  background: linear-gradient(180deg, rgba(60, 240, 255, 0.12), rgba(8, 12, 20, 0.65));
 }
 .po-arcade__continue-inner {
   padding: 14px 16px;
@@ -238,18 +276,18 @@
 .po-arcade__chip {
   padding: 9px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(60, 240, 255, 0.18);
+  background: rgba(12, 16, 26, 0.7);
   color: var(--text);
   font-weight: 800;
   font-size: 13px;
   transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
-.po-arcade__chip:hover { background: rgba(255, 255, 255, 0.05); }
+.po-arcade__chip:hover { background: rgba(18, 24, 38, 0.9); }
 .po-arcade__chip:active { transform: translateY(1px); }
 .po-arcade__chip.is-active {
-  background: rgba(72, 255, 210, 0.12);
-  border-color: rgba(72, 255, 210, 0.26);
+  background: rgba(60, 240, 255, 0.14);
+  border-color: rgba(60, 240, 255, 0.38);
 }
 
 .po-arcade__search {
@@ -258,8 +296,8 @@
   gap: 10px;
   border-radius: 18px;
   padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(60, 240, 255, 0.18);
+  background: rgba(12, 16, 26, 0.75);
   max-width: 420px;
 }
 .po-arcade__search input {
@@ -304,16 +342,27 @@
 /* Game card */
 .po-arcade__card {
   border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  border: 1px solid rgba(60, 240, 255, 0.14);
+  background: linear-gradient(180deg, rgba(14, 18, 30, 0.88), rgba(8, 12, 22, 0.65));
   padding: 16px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.30);
   transition: transform 170ms ease, border-color 170ms ease, background 170ms ease;
+  position: relative;
+  overflow: hidden;
+}
+.po-arcade__card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(280px 160px at 10% 0%, rgba(60, 240, 255, 0.16), transparent 70%);
+  opacity: 0.65;
+  pointer-events: none;
 }
 .po-arcade__card:hover {
   transform: translateY(-2px);
-  border-color: rgba(72, 255, 210, 0.18);
-  background: linear-gradient(180deg, rgba(72,255,210,0.08), rgba(255,255,255,0.02));
+  border-color: rgba(255, 79, 216, 0.35);
+  background: linear-gradient(180deg, rgba(22, 28, 44, 0.9), rgba(10, 14, 26, 0.7));
+  box-shadow: 0 22px 64px rgba(60, 240, 255, 0.12);
 }
 .po-arcade__card-head {
   display: flex;
@@ -327,8 +376,9 @@
   border-radius: 18px;
   display: grid;
   place-items: center;
-  background: rgba(215, 166, 58, 0.12);
-  border: 1px solid rgba(215, 166, 58, 0.22);
+  background: rgba(60, 240, 255, 0.16);
+  border: 1px solid rgba(60, 240, 255, 0.35);
+  box-shadow: inset 0 0 12px rgba(60, 240, 255, 0.2);
 }
 .po-arcade__card-title {
   font-weight: 900;
@@ -352,8 +402,8 @@
   border-radius: 999px;
   font-size: 12px;
   font-weight: 800;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(12, 16, 26, 0.75);
 }
 
 .po-arcade__card-actions {
