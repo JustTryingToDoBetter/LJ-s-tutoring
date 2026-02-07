@@ -343,6 +343,11 @@ const GAMES = [
     const mount = $("#game-mount");
     if (!mount) return;
 
+    const setNoScroll = (on) => {
+      document.documentElement.classList.toggle("arcade-page--no-scroll", on);
+      document.body.classList.toggle("arcade-page--no-scroll", on);
+    };
+
     safeText($("#arcade-year"), new Date().getFullYear());
 
     const howToBtn = $("#play-howto");
@@ -381,6 +386,7 @@ const GAMES = [
     let runtime = null;
     let moduleLoader = null;
     let isPaused = false;
+    let isGameActive = false;
     let keyGuardOff = null;
 
     const cleanup = () => {
@@ -388,6 +394,8 @@ const GAMES = [
       try { frame?.destroy?.(); } catch {}
       activeGame = null;
       frame = null;
+      isGameActive = false;
+      setNoScroll(false);
     };
 
     $("#play-exit")?.addEventListener("click", () => {
@@ -515,6 +523,8 @@ const GAMES = [
       };
 
       await mountWithRuntime();
+      isGameActive = true;
+      setNoScroll(true);
       setPauseUI(false);
       frame?.focusStage?.();
 
@@ -553,7 +563,7 @@ const GAMES = [
         if (!preventScrollKeys.has(e.key)) return;
         const target = e.target;
         if (isEditable(target)) return;
-        if (!mount.contains(target) && !mount.contains(document.activeElement)) return;
+        if (!isGameActive) return;
         e.preventDefault();
       };
 

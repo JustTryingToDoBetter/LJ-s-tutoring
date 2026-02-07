@@ -1,4 +1,8 @@
 import { createConsolePage, lockScroll } from "/assets/arcade/ui/ConsolePage.js";
+import { createArcadeStore } from "/assets/arcade/sdk-core.js";
+import { createModal } from "/assets/arcade/ui/Modal.js";
+import { createToastManager } from "/assets/arcade/ui/Toast.js";
+import { createGameContext } from "/arcade/game-runtime.js";
 
 const root = document.getElementById("game-root");
 lockScroll();
@@ -21,26 +25,45 @@ const page = createConsolePage({
 root.append(page.root);
 page.showHowTo();
 
-await loadLegacySudoku(page.surfaceInner);
+await loadSudokuModule(page.surfaceInner);
 
-function loadLegacySudoku(mount) {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "/assets/games/sudoku.js";
-    script.onload = () => {
-      const entry = (window.PO_ARCADE_GAMES || []).find((g) => g.id === "sudoku");
-      if (!entry?.mount) {
-        page.setStatus("Sudoku failed to load.");
-        reject(new Error("Sudoku module not registered."));
-        return;
+function loadSudokuModule(mount) {
+  const ctx = createGameContext({ root: mount, gameId: "sudoku" });
+  const store = createArcadeStore();
+  const toastManager = createToastManager(page.surface);
+
+  ctx.ui = {
+    setHUD: (chips) => page.setHUD(chips),
+    setControls: (node) => page.setControls(node),
+    setStatus: (text) => page.setStatus(text),
+    showToast: (msg, ms) => toastManager.show(msg, ms),
+    showModal: ({ title, body, content, actions, onClose, closeOnBackdrop } = {}) => {
+      const modal = createModal({
+        title: title || "",
+        body,
+        content,
+        actions: actions || [],
+        onClose,
+        closeOnBackdrop,
+      });
+      page.surface.append(modal.root);
+      return modal;
+    },
+  };
+  ctx.store = store;
+  ctx.onCleanup(() => toastManager.destroy());
+
+  return import("/assets/games/sudoku.js")
+    .then((mod) => {
+      const game = mod?.default || mod?.game;
+      if (!game?.init && !game?.mount) {
+        throw new Error("Sudoku module missing init/mount export.");
       }
-      entry.mount(mount);
-      resolve();
-    };
-    script.onerror = () => {
+      if (game.init) return game.init(ctx);
+      return game.mount(ctx.root, ctx);
+    })
+    .catch((err) => {
       page.setStatus("Sudoku failed to load.");
-      reject(new Error("Sudoku script failed to load."));
-    };
-    document.head.appendChild(script);
-  });
+      throw err;
+    });
 }
