@@ -16,6 +16,8 @@
     lastGame: "po_arcade_last_game",
     sessions: "po_arcade_sessions",
     sound: "po_arcade_sound",
+    recent: "po_arcade_recent_games",
+    stats: "po_arcade_stats_v1",
   };
 
 const GAMES = [
@@ -24,7 +26,7 @@ const GAMES = [
     title: "Quick Math",
     desc: "60-second drills for speed + accuracy.",
     icon: "⚡",
-    lane: ["quick", "daily"],
+    lane: ["quick", "daily", "reflex"],
     tags: ["~1 min", "Daily", "Math"],
   },
   {
@@ -32,7 +34,7 @@ const GAMES = [
     title: "Sudoku",
     desc: "Pattern recognition + logic focus.",
     icon: "🧩",
-    lane: ["daily"],
+    lane: ["daily", "puzzle"],
     tags: ["~3–8 min", "Daily", "Logic"],
     howTo: {
       subtitle: "Complete the grid so every row, column, and 3×3 box has 1–9.",
@@ -52,7 +54,7 @@ const GAMES = [
     title: "Word Voyage",
     desc: "Word puzzle for consistency + focus.",
     icon: "🗺️",
-    lane: ["daily"],
+    lane: ["daily", "puzzle"],
     tags: ["~2–5 min", "Daily", "Puzzle"],
   },
   {
@@ -60,7 +62,7 @@ const GAMES = [
     title: "Hangman",
     desc: "Light puzzle for vocab + reasoning.",
     icon: "🪢",
-    lane: ["quick"],
+    lane: ["quick", "puzzle"],
     tags: ["~2 min", "Quick", "Puzzle"],
   },
   {
@@ -86,7 +88,7 @@ const GAMES = [
     title: "Serpent of Scylla",
     desc: "Swipe + d-pad snake. Speed tiers and local best.",
     icon: "🐍",
-    lane: ["quick", "daily"],
+    lane: ["quick", "daily", "reflex"],
     tags: ["~2–6 min", "Arcade", "Reflex"],
     howTo: {
       subtitle: "Eat to grow. Avoid walls and your own tail.",
@@ -106,7 +108,7 @@ const GAMES = [
     title: "Aegean Rally",
     desc: "Pong with 1P vs AI or 2P local. Drag to move.",
     icon: "🏓",
-    lane: ["quick", "two", "strategy"],
+    lane: ["quick", "two", "strategy", "reflex"],
     tags: ["~2–8 min", "Arcade", "2 Player"],
     howTo: {
       subtitle: "First to 7 wins. Keep the rally alive.",
@@ -159,6 +161,125 @@ const GAMES = [
     } catch {
       return "—";
     }
+  }
+
+  function readJson(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function loadStatsStore() {
+    return readJson(LS.stats) || { games: {} };
+  }
+
+  function saveStatsStore(store) {
+    try { localStorage.setItem(LS.stats, JSON.stringify(store)); } catch {}
+  }
+
+  function recordRecentGame(gameId) {
+    const recent = readJson(LS.recent) || [];
+    const next = [gameId, ...recent.filter((x) => x !== gameId)].slice(0, 6);
+    try { localStorage.setItem(LS.recent, JSON.stringify(next)); } catch {}
+
+    const store = loadStatsStore();
+    const now = Date.now();
+    const cur = store.games[gameId] || { plays: 0, lastPlayed: null };
+    store.games[gameId] = {
+      plays: (cur.plays || 0) + 1,
+      lastPlayed: now,
+    };
+    saveStatsStore(store);
+  }
+
+  function getRecentGameIds() {
+    const recent = readJson(LS.recent);
+    return Array.isArray(recent) ? recent : [];
+  }
+
+  function getGameStats(gameId) {
+    const statsStore = loadStatsStore();
+    const plays = statsStore.games?.[gameId]?.plays || 0;
+
+    if (gameId === "quickmath") {
+      const state = readJson("po_arcade_v1") || readJson("po_arcade_state_v1") || {};
+      const qm = state?.games?.quickmath || {};
+      const best = Number.isFinite(qm.best) ? qm.best : 0;
+      const daily = qm.dailyBest?.dayKey === dayKey() ? qm.dailyBest.score : null;
+      const streak = Number.isFinite(qm.last?.streak) ? qm.last.streak : null;
+      return { plays, best, bestToday: daily, streak };
+    }
+
+    if (gameId === "snake") {
+      const state = readJson("po_arcade_snake_v3") || {};
+      const best = Number.isFinite(state.best) ? state.best : 0;
+      return { plays, best };
+    }
+
+    if (gameId === "pong") {
+      const state = readJson("po_arcade_pong_v3") || {};
+      const best = Number.isFinite(state.bestWins) ? state.bestWins : 0;
+      return { plays, best };
+    }
+
+    if (gameId === "wordle") {
+      const state = readJson("po_arcade_wordle_v3") || {};
+      const wins = Number.isFinite(state.wins) ? state.wins : 0;
+      const played = Number.isFinite(state.plays) ? state.plays : plays;
+      return { plays: played, wins };
+    }
+
+    if (gameId === "hangman") {
+      const legacy = readJson("po_arcade_v1") || readJson("po_arcade_state_v1") || {};
+      const hm = legacy?.games?.hangman || {};
+      const wins = Number.isFinite(hm.wins) ? hm.wins : null;
+      const losses = Number.isFinite(hm.losses) ? hm.losses : null;
+      return { plays, wins, losses };
+    }
+
+    if (gameId === "tictactoe") {
+      const legacy = readJson("po_arcade_v1") || readJson("po_arcade_state_v1") || {};
+      const tt = legacy?.games?.tictactoe || {};
+      const winsX = Number.isFinite(tt.winsX) ? tt.winsX : null;
+      const winsO = Number.isFinite(tt.winsO) ? tt.winsO : null;
+      const draws = Number.isFinite(tt.draws) ? tt.draws : null;
+      return { plays, winsX, winsO, draws };
+    }
+
+    if (gameId === "chess") {
+      const state = readJson("odyssey_stats_chess_v1") || {};
+      const wins = Number.isFinite(state.wins) ? state.wins : null;
+      const losses = Number.isFinite(state.losses) ? state.losses : null;
+      const draws = Number.isFinite(state.draws) ? state.draws : null;
+      return { plays, wins, losses, draws };
+    }
+
+    return { plays };
+  }
+
+  function buildStatsRows(stats = {}) {
+    const rows = [];
+    const addRow = (key, value) => {
+      if (value == null) return;
+      rows.push({ k: key, v: value });
+    };
+
+    addRow("Plays", stats.plays);
+    addRow("Best", stats.best);
+    if (stats.bestToday != null) addRow("Today", stats.bestToday);
+    if (stats.streak != null) addRow("Streak", stats.streak);
+    if (stats.wins != null) addRow("Wins", stats.wins);
+    if (stats.losses != null) addRow("Losses", stats.losses);
+    if (stats.draws != null) addRow("Draws", stats.draws);
+    if (stats.winsX != null || stats.winsO != null) {
+      addRow("X Wins", stats.winsX ?? 0);
+      addRow("O Wins", stats.winsO ?? 0);
+    }
+
+    return rows;
   }
 
   function setSoundUI(btn, on) {
@@ -234,10 +355,39 @@ const GAMES = [
       localStorage.setItem(LS.lastGame, game.id);
       const sessions = Number(localStorage.getItem(LS.sessions) || "0") + 1;
       localStorage.setItem(LS.sessions, String(sessions));
+      recordRecentGame(game.id);
     });
 
     actions.appendChild(play);
     card.appendChild(actions);
+
+    return card;
+  }
+
+  function buildMiniCard(game, stats) {
+    const card = buildCard(game);
+    card.classList.add("po-arcade__card--mini");
+
+    const rows = buildStatsRows(stats);
+    if (rows.length) {
+      const statsWrap = document.createElement("div");
+      statsWrap.className = "po-arcade__stats";
+
+      for (const row of rows.slice(0, 3)) {
+        const line = document.createElement("div");
+        line.className = "po-arcade__stats-row";
+        const key = document.createElement("span");
+        key.className = "po-arcade__stats-key";
+        key.textContent = row.k;
+        const val = document.createElement("span");
+        val.className = "po-arcade__stats-val";
+        val.textContent = String(row.v);
+        line.append(key, val);
+        statsWrap.appendChild(line);
+      }
+
+      card.insertBefore(statsWrap, card.querySelector(".po-arcade__card-actions"));
+    }
 
     return card;
   }
@@ -269,6 +419,22 @@ const GAMES = [
     // build cards
     grid.innerHTML = "";
     for (const g of GAMES) grid.appendChild(buildCard(g));
+
+    const recentWrap = $("#arcade-recent");
+    const recentGrid = $("#arcade-recent-grid");
+    if (recentWrap && recentGrid) {
+      const ids = getRecentGameIds();
+      recentGrid.innerHTML = "";
+      const items = ids.map((id) => GAMES.find((x) => x.id === id)).filter(Boolean);
+      if (items.length) {
+        recentWrap.hidden = false;
+        for (const g of items) {
+          recentGrid.appendChild(buildMiniCard(g, getGameStats(g.id)));
+        }
+      } else {
+        recentWrap.hidden = true;
+      }
+    }
 
     // continue
     const last = localStorage.getItem(LS.lastGame);

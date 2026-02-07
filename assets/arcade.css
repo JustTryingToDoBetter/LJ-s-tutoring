@@ -339,6 +339,16 @@
   .po-arcade__grid { grid-template-columns: 1fr 1fr 1fr; }
 }
 
+.po-arcade__grid--mini {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 680px) {
+  .po-arcade__grid--mini { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 980px) {
+  .po-arcade__grid--mini { grid-template-columns: 1fr 1fr 1fr 1fr; }
+}
+
 /* Game card */
 .po-arcade__card {
   border-radius: 22px;
@@ -350,6 +360,36 @@
   position: relative;
   overflow: hidden;
 }
+.po-arcade__card--mini {
+  padding: 14px;
+}
+.po-arcade__card--mini .po-arcade__card-desc,
+.po-arcade__card--mini .po-arcade__card-chips {
+  display: none;
+}
+.po-arcade__card--mini .po-arcade__card-actions {
+  margin-top: 10px;
+}
+
+.po-arcade__stats {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.po-arcade__stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 12, 20, 0.55);
+}
+.po-arcade__stats-key { font-weight: 800; letter-spacing: 0.02em; }
+.po-arcade__stats-val { font-weight: 900; color: var(--text); }
 .po-arcade__card::before {
   content: "";
   position: absolute;

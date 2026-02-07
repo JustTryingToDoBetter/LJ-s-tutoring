@@ -85,6 +85,15 @@
       </div>
     </section>
 
+    <!-- Recently played -->
+    <section class="po-arcade__section po-arcade__section--compact" id="arcade-recent" aria-label="Recently played" hidden>
+      <div class="po-arcade__section-head">
+        <h2 class="po-arcade__h2">Recently played</h2>
+        <p class="po-arcade__muted">Jump back in.</p>
+      </div>
+      <div class="po-arcade__grid po-arcade__grid--mini" id="arcade-recent-grid"></div>
+    </section>
+
     <!-- Filters -->
     <section class="po-arcade__filters" aria-label="Game filters">
       <div class="po-arcade__filters-inner">
@@ -92,6 +101,8 @@
           <button class="po-arcade__chip is-active" type="button" data-filter="all" role="tab" aria-selected="true">All</button>
           <button class="po-arcade__chip" type="button" data-filter="quick" role="tab" aria-selected="false">Quick</button>
           <button class="po-arcade__chip" type="button" data-filter="daily" role="tab" aria-selected="false">Daily</button>
+          <button class="po-arcade__chip" type="button" data-filter="puzzle" role="tab" aria-selected="false">Puzzle</button>
+          <button class="po-arcade__chip" type="button" data-filter="reflex" role="tab" aria-selected="false">Reflex</button>
           <button class="po-arcade__chip" type="button" data-filter="strategy" role="tab" aria-selected="false">Strategy</button>
           <button class="po-arcade__chip" type="button" data-filter="two" role="tab" aria-selected="false">2 Player</button>
         </div>
