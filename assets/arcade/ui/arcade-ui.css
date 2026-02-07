@@ -268,6 +268,30 @@
   touch-action: none;
 }
 
+.arcade-page__surface::before,
+.arcade-page__surface::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.arcade-page__surface::before{
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,.04) 0px,
+    rgba(255,255,255,.04) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: .35;
+}
+
+.arcade-page__surface::after{
+  background: radial-gradient(420px 180px at 50% 0%, rgba(60,240,255,.18), transparent 70%);
+  opacity: .5;
+}
+
 .arcade-page__surface-inner{
   width: 100%;
   height: 100%;
