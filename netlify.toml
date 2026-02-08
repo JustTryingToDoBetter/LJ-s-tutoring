@@ -2,6 +2,37 @@
   publish = "dist"
   command = "npm run build"
 
+# Block direct access to admin/tutor pages until auth is implemented
+[[redirects]]
+  from = "/admin"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/tutor"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/tutor/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/tutor-dashboard.html"
+  to = "/404.html"
+  status = 404
+  force = true
+
 # Security headers for all routes
 [[headers]]
   for = "/*"

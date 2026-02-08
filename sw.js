@@ -6,7 +6,7 @@
    - Offline: Works for arcade + games after first visit
 */
 
-const VERSION = "po-v2026-02-08-02"; // bump on every deploy
+const VERSION = "po-v2026-02-08-03"; // bump on every deploy
 const CACHE_APP = `po-app-${VERSION}`;
 const CACHE_MEDIA = `po-media-${VERSION}`;
 const CACHE_DOCS = `po-docs-${VERSION}`;
