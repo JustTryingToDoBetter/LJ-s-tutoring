@@ -79,7 +79,6 @@
     "lint:html": "html-validate \"*.html\" \"guides/*.html\" \"arcade/**/*.html\"",
     "lint": "npm-run-all --parallel lint:js lint:html",
     "check:arcade-best-today": "node scripts/check-arcade-best-today.mjs",
-    "check:arcade-smoke": "node scripts/arcade-smoke.mjs",
     "check:quickmath-export": "node scripts/check-quickmath-export.mjs",
     "qa:html": "html-validate \"dist/*.html\" \"dist/guides/*.html\" \"dist/arcade/**/*.html\"",
     "qa:links": "linkinator http://localhost:8080 --recurse --timeout 10000 --concurrency 4 --skip \"^mailto:|^tel:|^https?:\\/\\/(?!localhost:8080)\"",
