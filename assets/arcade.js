@@ -20,6 +20,23 @@
     stats: "po_arcade_stats_v1",
   };
 
+  let adManagerPromise = null;
+
+  function emitArcadeEvent(name, detail = {}) {
+    try {
+      window.dispatchEvent(new CustomEvent(name, { detail }));
+    } catch {}
+  }
+
+  function getAdManager() {
+    if (!adManagerPromise) {
+      adManagerPromise = import(`${ASSET_BASE}/arcade/ad-manager.js`)
+        .then((mod) => mod.initAdManager({ apiBase: "" }))
+        .catch(() => null);
+    }
+    return adManagerPromise;
+  }
+
 const GAMES = [
   {
     id: "quickmath",
@@ -519,6 +536,22 @@ const GAMES = [
     safeText($("#arcade-stat-sessions"), localStorage.getItem(LS.sessions) || "0");
     safeText($("#arcade-stat-best"), getBestTodayScore());
 
+    const hero = $(".po-arcade__hero");
+    if (hero && !$("#arcade-ad-banner")) {
+      const slot = document.createElement("div");
+      slot.id = "arcade-ad-banner";
+      slot.className = "po-arcade__ad-slot";
+      hero.appendChild(slot);
+    }
+
+    getAdManager().then((adManager) => {
+      if (!adManager) return;
+      adManager.bindGameEvents();
+      adManager.setGameState({ active: false });
+      const slot = $("#arcade-ad-banner");
+      if (slot) adManager.mountBanner({ container: slot, placement: "banner" });
+    });
+
     // build cards
     grid.innerHTML = "";
     for (const g of GAMES) grid.appendChild(buildCard(g));
@@ -651,6 +684,14 @@ const GAMES = [
 
     localStorage.setItem(LS.lastGame, gameId);
 
+    const adManager = await getAdManager();
+    if (adManager) {
+      adManager.bindGameEvents();
+      adManager.setGameState({ active: true, gameId });
+    }
+
+    emitArcadeEvent("arcade:game:start", { gameId, source: "play" });
+
     // Create frame + tiny app context
     const ctx = createArcadeCtx();
 
@@ -771,6 +812,7 @@ const GAMES = [
           storage,
           settings: settingsStore,
           prefs: { reducedMotion: settingsStore.get().reducedMotion ?? prefersReducedMotion() },
+          emitGameEvent: (eventName, detail = {}) => emitArcadeEvent(eventName, { gameId, ...detail, source: "play" }),
         }),
       });
 
@@ -790,6 +832,7 @@ const GAMES = [
           await mountWithRuntime();
           setPauseUI(false);
           frame?.focusStage?.();
+          emitArcadeEvent("arcade:game:restart", { gameId, source: "play" });
         },
         audio,
         settings: settingsStore,

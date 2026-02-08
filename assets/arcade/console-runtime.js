@@ -6,6 +6,7 @@ import {
   createStorageManager,
   prefersReducedMotion,
 } from "/assets/arcade/sdk-core.js";
+import { initAdManager } from "/assets/arcade/ad-manager.js";
 import { createModal } from "/assets/arcade/ui/Modal.js";
 import { createSettingsPanel } from "/assets/arcade/ui/SettingsPanel.js";
 import { createToastManager } from "/assets/arcade/ui/Toast.js";
@@ -65,6 +66,12 @@ export function createConsoleRuntime({ gameId, mountEl, surfaceEl, page }) {
   if (!mountEl) throw new Error("createConsoleRuntime: mountEl is required");
   if (!surfaceEl) throw new Error("createConsoleRuntime: surfaceEl is required");
 
+  const emitArcadeEvent = (name, detail = {}) => {
+    try {
+      window.dispatchEvent(new CustomEvent(name, { detail }));
+    } catch {}
+  };
+
   const ctx = createGameContext({ root: mountEl, gameId });
   const store = createArcadeStore();
   const settingsStore = createSettingsStore();
@@ -72,6 +79,11 @@ export function createConsoleRuntime({ gameId, mountEl, surfaceEl, page }) {
   const storage = createStorageManager(store, gameId, { legacyKeys: legacyKeysFor(gameId) });
   const input = createInputManager(ctx);
   const toastManager = createToastManager(surfaceEl);
+
+  const adManager = initAdManager({ apiBase: "" });
+  adManager.bindGameEvents();
+  adManager.setGameState({ active: true, gameId });
+  emitArcadeEvent("arcade:game:start", { gameId, source: "console" });
 
   ctx.ui = {
     setHUD: (chips) => page?.setHUD?.(chips),
@@ -98,6 +110,7 @@ export function createConsoleRuntime({ gameId, mountEl, surfaceEl, page }) {
   ctx.settings = settingsStore;
   ctx.input = input;
   ctx.prefs = { reducedMotion: settingsStore.get().reducedMotion ?? prefersReducedMotion() };
+  ctx.emitGameEvent = (eventName, detail = {}) => emitArcadeEvent(eventName, { gameId, ...detail });
 
   ctx.onCleanup(() => toastManager.destroy());
 

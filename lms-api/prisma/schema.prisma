@@ -326,3 +326,75 @@ model PrivacyRequest {
   @@index([status, createdAt(sort: Desc)])
   @@index([subjectType, subjectId])
 }
+
+model ArcadePlayer {
+  id        String   @id @default(uuid()) @db.Uuid
+  nickname  String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  sessions       ArcadeSession[]
+  scores         ArcadeScore[]
+  adImpressions  ArcadeAdImpression[]
+
+  @@map("arcade_players")
+}
+
+model ArcadeGame {
+  id    String @id
+  title String
+
+  sessions ArcadeSession[]
+  scores   ArcadeScore[]
+
+  @@map("arcade_games")
+}
+
+model ArcadeSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  playerId  String   @map("player_id") @db.Uuid
+  gameId    String   @map("game_id")
+  startedAt DateTime @default(now()) @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+
+  player ArcadePlayer @relation(fields: [playerId], references: [id])
+  game   ArcadeGame   @relation(fields: [gameId], references: [id])
+
+  @@map("arcade_sessions")
+  @@index([playerId, startedAt(sort: Desc)])
+  @@index([gameId, startedAt(sort: Desc)])
+}
+
+model ArcadeScore {
+  id        String   @id @default(uuid()) @db.Uuid
+  playerId  String   @map("player_id") @db.Uuid
+  gameId    String   @map("game_id")
+  score     Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  player ArcadePlayer @relation(fields: [playerId], references: [id])
+  game   ArcadeGame   @relation(fields: [gameId], references: [id])
+
+  @@map("arcade_scores")
+  @@index([gameId, score(sort: Desc), createdAt(sort: Asc)])
+  @@index([playerId, createdAt(sort: Desc)])
+}
+
+model ArcadeAdImpression {
+  id        String   @id @default(uuid()) @db.Uuid
+  playerId  String   @map("player_id") @db.Uuid
+  placement String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  player ArcadePlayer @relation(fields: [playerId], references: [id])
+
+  @@map("arcade_ad_impressions")
+  @@index([playerId, placement, createdAt(sort: Desc)])
+}
+
+model ArcadeAdRule {
+  placement       String @id
+  cooldownSeconds Int    @map("cooldown_seconds")
+  maxPerDay       Int    @map("max_per_day")
+
+  @@map("arcade_ad_rules")
+}

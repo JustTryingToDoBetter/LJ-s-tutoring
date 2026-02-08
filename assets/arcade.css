@@ -1268,3 +1268,85 @@
   font-size: 12px;
   color: var(--po-subtext);
 }
+
+/* ============================================================================
+  Arcade Ads
+============================================================================ */
+.po-arcade__ad-slot {
+  margin-top: 14px;
+  border-radius: 18px;
+  border: 1px dashed rgba(60, 240, 255, 0.25);
+  background: rgba(8, 12, 20, 0.5);
+  padding: 12px;
+}
+
+.po-ad {
+  border-radius: 16px;
+  border: 1px solid rgba(245, 193, 90, 0.35);
+  background: rgba(8, 12, 20, 0.8);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.po-ad__label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(245, 193, 90, 0.9);
+  font-weight: 700;
+}
+
+.po-ad__title {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.po-ad__body {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.po-ad__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.po-ad__cta {
+  border-radius: 12px;
+  border: 1px solid rgba(60, 240, 255, 0.4);
+  background: rgba(60, 240, 255, 0.2);
+  color: var(--text);
+  font-weight: 800;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.po-ad__cta--ghost {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.po-ad--banner {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.po-ad--interstitial {
+  max-width: 420px;
+  width: min(90vw, 420px);
+}
+
+.po-ad-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+}

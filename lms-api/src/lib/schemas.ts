@@ -213,3 +213,33 @@ export const AuditLogQuerySchema = DateRangeQuerySchema.extend({
   page: z.coerce.number().int().min(1).max(500).optional().default(1),
   pageSize: z.coerce.number().int().min(1).max(200).optional().default(25),
 });
+
+export const ArcadePlayerCreateSchema = z.object({
+  nickname: z.string().trim().min(1).max(32).optional(),
+});
+
+export const ArcadeSessionStartSchema = z.object({
+  playerId: z.string().uuid(),
+  gameId: z.string().trim().min(1).max(80),
+  gameTitle: z.string().trim().min(1).max(120).optional(),
+});
+
+export const ArcadeSessionEndSchema = z.object({
+  sessionId: z.string().uuid(),
+  endedAt: z.string().datetime().optional(),
+});
+
+export const ArcadeScoreSchema = z.object({
+  playerId: z.string().uuid(),
+  gameId: z.string().trim().min(1).max(80),
+  gameTitle: z.string().trim().min(1).max(120).optional(),
+  score: z.number().int().min(0).max(100000000),
+});
+
+export const ArcadeLeaderboardParamSchema = z.object({
+  game: z.string().trim().min(1).max(80),
+});
+
+export const ArcadeLeaderboardQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+});
