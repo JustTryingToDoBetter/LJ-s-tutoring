@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, qs, renderStatus, formatMoney, setActiveNav, showBanner, setText, escapeHtml, getImpersonationMeta, clearImpersonationContext } from '/assets/portal-shared.js';
+import { apiGet, apiPost, apiPatch, qs, renderStatusEl, formatMoney, setActiveNav, showBanner, setText, escapeHtml, getImpersonationMeta, clearImpersonationContext, createEl, clearChildren } from '/assets/portal-shared.js';
 
 const DB_NAME = 'tutor-offline';
 const STORE = 'drafts';
@@ -261,59 +261,113 @@ async function initTutorHome() {
 
   const today = new Date().toISOString().slice(0, 10);
   const sessions = await apiGet(`/tutor/sessions?from=${today}&to=${today}`);
-  sessionsEl.innerHTML = sessions.sessions.length
-    ? sessions.sessions.map((s) => `<div class="panel">${escapeHtml(s.student_name)} ${renderStatus(s.status)}</div>`).join('')
-    : '<div class="note">No sessions logged today.</div>';
+  clearChildren(sessionsEl);
+  if (sessions.sessions.length) {
+    const frag = document.createDocumentFragment();
+    sessions.sessions.forEach((s) => {
+      const panel = createEl('div', { className: 'panel' });
+      panel.append(createEl('span', { text: s.student_name }), document.createTextNode(' '), renderStatusEl(s.status));
+      frag.append(panel);
+    });
+    sessionsEl.append(frag);
+  } else {
+    sessionsEl.append(createEl('div', { className: 'note', text: 'No sessions logged today.' }));
+  }
 
   const assignments = await apiGet('/tutor/assignments');
-  upcomingEl.innerHTML = assignments.assignments.length
-    ? assignments.assignments.slice(0, 3).map((a) => `<div class="panel">${escapeHtml(a.subject)} with ${escapeHtml(a.full_name)}</div>`).join('')
-    : '<div class="note">No active assignments yet.</div>';
+  clearChildren(upcomingEl);
+  if (assignments.assignments.length) {
+    const frag = document.createDocumentFragment();
+    assignments.assignments.slice(0, 3).forEach((a) => {
+      const panel = createEl('div', { className: 'panel' });
+      panel.append(
+        createEl('span', { text: a.subject }),
+        document.createTextNode(' with '),
+        createEl('span', { text: a.full_name })
+      );
+      frag.append(panel);
+    });
+    upcomingEl.append(frag);
+  } else {
+    upcomingEl.append(createEl('div', { className: 'note', text: 'No active assignments yet.' }));
+  }
 }
 
 async function initAssignments() {
   setActiveNav('assignments');
   const list = qs('#assignmentList');
   const data = await apiGet('/tutor/assignments');
-  list.innerHTML = data.assignments
-    .map((a) => `<div class="panel">
-        <div><strong>${escapeHtml(a.subject)}</strong> - ${escapeHtml(a.full_name)}</div>
-        <div class="note">${escapeHtml(a.start_date)} to ${escapeHtml(a.end_date || 'open-ended')}</div>
-      </div>`)
-    .join('');
+  clearChildren(list);
+  const frag = document.createDocumentFragment();
+  data.assignments.forEach((a) => {
+    const panel = createEl('div', { className: 'panel' });
+    const title = createEl('div');
+    const subject = createEl('strong', { text: a.subject });
+    title.append(subject, document.createTextNode(' - '), createEl('span', { text: a.full_name }));
+    const note = createEl('div', { className: 'note', text: `${a.start_date} to ${a.end_date || 'open-ended'}` });
+    panel.append(title, note);
+    frag.append(panel);
+  });
+  list.append(frag);
 }
 
 async function initPayroll() {
   setActiveNav('payroll');
   const list = qs('#payrollList');
   const data = await apiGet('/tutor/payroll/weeks');
-  list.innerHTML = data.weeks.length
-    ? data.weeks.map((w) => {
-        const adjustments = (w.adjustments || [])
-          .map((adj) => `<div class="note">${escapeHtml(adj.type)}: ${formatMoney(adj.signed_amount)} - ${escapeHtml(adj.reason)}</div>`)
-          .join('');
-        return `<div class="panel">
-          <div class="split"><strong>${escapeHtml(w.week_start)}</strong> ${renderStatus(w.status)}</div>
-          <div>${w.total_minutes} mins</div>
-          <div>${formatMoney(w.total_amount)}</div>
-          ${adjustments ? `<div style="margin-top:8px;">${adjustments}</div>` : ''}
-        </div>`;
-      }).join('')
-    : '<div class="note">No approved sessions yet.</div>';
+  clearChildren(list);
+  if (!data.weeks.length) {
+    list.append(createEl('div', { className: 'note', text: 'No approved sessions yet.' }));
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  data.weeks.forEach((w) => {
+    const panel = createEl('div', { className: 'panel' });
+    const split = createEl('div', { className: 'split' });
+    split.append(createEl('strong', { text: w.week_start }), document.createTextNode(' '), renderStatusEl(w.status));
+    panel.append(split);
+    panel.append(createEl('div', { text: `${w.total_minutes} mins` }));
+    panel.append(createEl('div', { text: formatMoney(w.total_amount) }));
+
+    const adjustments = (w.adjustments || []);
+    if (adjustments.length) {
+      const wrap = createEl('div', { attrs: { style: 'margin-top:8px;' } });
+      adjustments.forEach((adj) => {
+        wrap.append(createEl('div', { className: 'note', text: `${adj.type}: ${formatMoney(adj.signed_amount)} - ${adj.reason}` }));
+      });
+      panel.append(wrap);
+    }
+
+    frag.append(panel);
+  });
+  list.append(frag);
 }
 
 async function initInvoices() {
   setActiveNav('invoices');
   const list = qs('#invoiceList');
   const data = await apiGet('/tutor/invoices');
-  list.innerHTML = data.invoices.length
-    ? data.invoices.map((inv) => `<div class="panel">
-        <div><strong>${escapeHtml(inv.invoice_number)}</strong></div>
-        <div>${escapeHtml(inv.period_start)} to ${escapeHtml(inv.period_end)}</div>
-        <div>${formatMoney(inv.total_amount)}</div>
-        <div class="note"><a href="/tutor/invoices/${inv.id}" target="_blank">HTML</a> | <a href="/tutor/invoices/${inv.id}.pdf">PDF</a></div>
-      </div>`).join('')
-    : '<div class="note">No invoices yet.</div>';
+  clearChildren(list);
+  if (!data.invoices.length) {
+    list.append(createEl('div', { className: 'note', text: 'No invoices yet.' }));
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  data.invoices.forEach((inv) => {
+    const panel = createEl('div', { className: 'panel' });
+    const title = createEl('div');
+    title.append(createEl('strong', { text: inv.invoice_number }));
+    panel.append(title);
+    panel.append(createEl('div', { text: `${inv.period_start} to ${inv.period_end}` }));
+    panel.append(createEl('div', { text: formatMoney(inv.total_amount) }));
+    const note = createEl('div', { className: 'note' });
+    const htmlLink = createEl('a', { attrs: { href: `/tutor/invoices/${inv.id}`, target: '_blank' } , text: 'HTML' });
+    const pdfLink = createEl('a', { attrs: { href: `/tutor/invoices/${inv.id}.pdf` }, text: 'PDF' });
+    note.append(htmlLink, document.createTextNode(' | '), pdfLink);
+    panel.append(note);
+    frag.append(panel);
+  });
+  list.append(frag);
 }
 
 async function initSessions() {

@@ -110,6 +110,43 @@ export function renderStatus(status) {
   return `<span class="pill ${safeClass}">${text}</span>`;
 }
 
+export function renderStatusEl(status) {
+  const raw = String(status || 'DRAFT');
+  const text = raw.toLowerCase().replace(/_/g, ' ');
+  const safeClass = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  return createEl('span', { className: `pill ${safeClass}`, text });
+}
+
+export function createEl(tag, options = {}, children = []) {
+  const el = document.createElement(tag);
+  if (options.className) el.className = options.className;
+  if (options.text != null) el.textContent = String(options.text);
+  if (options.attrs) {
+    Object.entries(options.attrs).forEach(([key, value]) => {
+      if (value == null) return;
+      el.setAttribute(key, String(value));
+    });
+  }
+  if (options.dataset) {
+    Object.entries(options.dataset).forEach(([key, value]) => {
+      if (value == null) return;
+      el.dataset[key] = String(value);
+    });
+  }
+  if (Array.isArray(children)) {
+    children.forEach((child) => {
+      if (child == null) return;
+      el.append(child);
+    });
+  }
+  return el;
+}
+
+export function clearChildren(el) {
+  if (!el) return;
+  el.replaceChildren();
+}
+
 export function escapeHtml(value) {
   return String(value)
     .replaceAll('&', '&amp;')

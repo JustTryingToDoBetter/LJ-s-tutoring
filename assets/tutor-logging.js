@@ -22,6 +22,10 @@ const els = {
   sessionsList: document.getElementById("sessionsList"),
 };
 
+function containsHtmlTags(value) {
+  return /<\/?[a-z][^>]*>/i.test(String(value || ""));
+}
+
 function setMsg(el, text, kind = "error") {
   el.textContent = text;
   el.classList.remove("hidden", "text-rose-300", "text-emerald-300");
@@ -76,7 +80,7 @@ function isoFromDatetimeLocal(value) {
 }
 
 function renderStudents(students) {
-  els.studentSelect.innerHTML = "";
+  els.studentSelect.replaceChildren();
   for (const s of students) {
     const opt = document.createElement("option");
     opt.value = s.id;
@@ -85,17 +89,8 @@ function renderStudents(students) {
   }
 }
 
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 function renderSessions(sessions) {
-  els.sessionsList.innerHTML = "";
+  els.sessionsList.replaceChildren();
   if (!sessions.length) {
     const empty = document.createElement("div");
     empty.className = "text-sm text-slate-400";
@@ -112,15 +107,28 @@ function renderSessions(sessions) {
     const end = new Date(s.end_at);
     const mins = Math.round((end - start) / 60000);
 
-    card.innerHTML = `
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <div class="text-sm font-medium">${s.student_last_name}, ${s.student_first_name}</div>
-          <div class="text-xs text-slate-400 mt-1">${start.toLocaleString()} → ${end.toLocaleString()} • ${mins} min</div>
-        </div>
-      </div>
-      ${s.notes ? `<div class="text-sm text-slate-200 mt-2 whitespace-pre-wrap">${escapeHtml(s.notes)}</div>` : ""}
-    `;
+    const header = document.createElement("div");
+    header.className = "flex items-start justify-between gap-3";
+
+    const details = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "text-sm font-medium";
+    title.textContent = `${s.student_last_name}, ${s.student_first_name}`;
+
+    const meta = document.createElement("div");
+    meta.className = "text-xs text-slate-400 mt-1";
+    meta.textContent = `${start.toLocaleString()} → ${end.toLocaleString()} • ${mins} min`;
+
+    details.append(title, meta);
+    header.append(details);
+    card.append(header);
+
+    if (s.notes) {
+      const notes = document.createElement("div");
+      notes.className = "text-sm text-slate-200 mt-2 whitespace-pre-wrap";
+      notes.textContent = s.notes;
+      card.append(notes);
+    }
     els.sessionsList.appendChild(card);
   }
 }
@@ -164,6 +172,11 @@ els.logForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   hideMsg(els.logMsg);
 
+  if (containsHtmlTags(els.notes.value)) {
+    setMsg(els.logMsg, "Please remove HTML tags from notes.");
+    return;
+  }
+
   try {
     await api("/tutor/sessions", {
       method: "POST",
@@ -171,7 +184,7 @@ els.logForm.addEventListener("submit", async (e) => {
         studentId: els.studentSelect.value,
         startAt: isoFromDatetimeLocal(els.startAt.value),
         endAt: isoFromDatetimeLocal(els.endAt.value),
-        notes: els.notes.value,
+        notes: els.notes.value.trim(),
       }),
     });
 

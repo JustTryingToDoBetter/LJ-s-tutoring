@@ -41,6 +41,14 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
+  function containsHtmlTags(value) {
+    return /<\/?[a-z][^>]*>/i.test(String(value || ''));
+  }
+
+  function stripHtmlTags(value) {
+    return String(value || '').replace(/<\/?[a-z][^>]*>/gi, '').trim();
+  }
+
   // ==========================================
   // WHATSAPP LINK NORMALISATION (critical)
   // ==========================================
@@ -139,7 +147,12 @@
         if (elSecs) {elSecs.textContent = String(secs).padStart(2, '0');}
       } else {
         const countdown = $('#countdown');
-        if (countdown) {countdown.innerHTML = '<p class="text-brand-gold font-bold">Bookings Now Open!</p>';}
+        if (countdown) {
+          const msg = document.createElement('p');
+          msg.className = 'text-brand-gold font-bold';
+          msg.textContent = 'Bookings Now Open!';
+          countdown.replaceChildren(msg);
+        }
       }
     }
 
@@ -209,6 +222,36 @@
     formStatus.className = 'mt-4 text-center hidden';
     form.appendChild(formStatus);
 
+    function el(tag, attrs, children) {
+      const node = document.createElement(tag);
+      if (attrs) {
+        Object.keys(attrs).forEach(function (key) {
+          const val = attrs[key];
+          if (val == null) {return;}
+          if (key === 'class') node.className = val;
+          else if (key === 'text') node.textContent = val;
+          else node.setAttribute(key, String(val));
+        });
+      }
+      if (children && children.length) {
+        children.forEach(function (child) {
+          if (child == null) {return;}
+          node.append(child);
+        });
+      }
+      return node;
+    }
+
+    function setButtonContent(button, text, iconClass) {
+      if (!button) {return;}
+      button.replaceChildren();
+      if (iconClass) {
+        const icon = el('i', { class: iconClass, 'aria-hidden': 'true' });
+        button.append(icon, document.createTextNode(' '));
+      }
+      button.append(document.createTextNode(text));
+    }
+
     function trackFormEvent(eventName, params) {
       if (typeof window.gtag !== 'function') {return;}
       if (localStorage.getItem('po_ga_consent') !== 'granted') {return;}
@@ -217,8 +260,10 @@
 
     function showFormError(message, options) {
       const opts = options || {};
-      formStatus.innerHTML =
-        '<p class="text-red-400"><i class="fas fa-exclamation-circle mr-2"></i>' + message + '</p>';
+        const icon = el('i', { class: 'fas fa-exclamation-circle mr-2', 'aria-hidden': 'true' });
+        const text = el('p', { class: 'text-red-400', text: message }, [icon]);
+        text.insertBefore(icon, text.firstChild);
+        formStatus.replaceChildren(text);
       formStatus.classList.remove('hidden');
       if (!opts.sticky) {
         setTimeout(function () {
@@ -253,23 +298,24 @@
 
       const waHref = 'https://wa.me/' + CONFIG.whatsappNumber + '?text=' + encodeURIComponent(waMessage);
 
-      formStatus.innerHTML =
-        '<div class="text-red-200">' +
-        '  <p class="text-red-400"><i class="fas fa-exclamation-circle mr-2"></i>We couldn\'t submit the form right now.</p>' +
-        '  <p class="mt-2 text-slate-200">No stress — you can still reach us instantly:</p>' +
-        '  <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">' +
-        '    <a class="inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-500" href="' +
-        waHref +
-        '" target="_blank" rel="noopener">' +
-        '      <i class="fab fa-whatsapp mr-2"></i> WhatsApp us' +
-        '    </a>' +
-        '    <a class="inline-flex items-center justify-center rounded-lg border border-slate-600 bg-slate-900/30 px-4 py-2 font-semibold text-white hover:bg-slate-900/50" href="' +
-        mailtoHref +
-        '">' +
-        '      <i class="fas fa-envelope mr-2"></i> Email us' +
-        '    </a>' +
-        '  </div>' +
-        '</div>';
+      const wrap = el('div', { class: 'text-red-200' });
+      const errorP = el('p', { class: 'text-red-400', text: "We couldn't submit the form right now." });
+      errorP.prepend(el('i', { class: 'fas fa-exclamation-circle mr-2', 'aria-hidden': 'true' }));
+      const infoP = el('p', { class: 'mt-2 text-slate-200', text: 'No stress — you can still reach us instantly:' });
+      const actions = el('div', { class: 'mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center' });
+      const waLink = el('a', {
+        class: 'inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-500',
+        href: waHref,
+        target: '_blank',
+        rel: 'noopener'
+      }, [el('i', { class: 'fab fa-whatsapp mr-2', 'aria-hidden': 'true' }), document.createTextNode('WhatsApp us')]);
+      const emailLink = el('a', {
+        class: 'inline-flex items-center justify-center rounded-lg border border-slate-600 bg-slate-900/30 px-4 py-2 font-semibold text-white hover:bg-slate-900/50',
+        href: mailtoHref
+      }, [el('i', { class: 'fas fa-envelope mr-2', 'aria-hidden': 'true' }), document.createTextNode('Email us')]);
+      actions.append(waLink, emailLink);
+      wrap.append(errorP, infoP, actions);
+      formStatus.replaceChildren(wrap);
       formStatus.classList.remove('hidden');
     }
 
@@ -299,6 +345,16 @@
       const name = (nameEl && nameEl.value ? nameEl.value : '').trim();
       const email = (emailEl && emailEl.value ? emailEl.value : '').trim();
       const grade = gradeEl && gradeEl.value ? gradeEl.value : '';
+      const messageEl = $('#message');
+      const message = messageEl && messageEl.value ? messageEl.value : '';
+
+      if (containsHtmlTags(name) || containsHtmlTags(message)) {
+        showFormError('Please remove HTML tags from your message.');
+        return;
+      }
+  const originalText = btn.textContent || '';
+  setButtonContent(btn, 'Sending...', 'fas fa-spinner fa-spin mr-2');
+  setButtonContent(btn, 'Sent Successfully!', 'fas fa-check mr-2');
 
       if (!name || name.length < 2) {
         showFormError('Please enter a valid name.');
@@ -350,12 +406,14 @@
         btn.classList.remove('bg-brand-gold', 'hover:bg-yellow-400');
         btn.classList.add('bg-green-500');
 
-        formStatus.innerHTML =
-          '<p class="text-green-400"><i class="fas fa-check-circle mr-2"></i>Thank you! We\'ll be in touch within 24 hours.</p>';
+        const success = el('p', { class: 'text-green-400', text: "Thank you! We'll be in touch within 24 hours." });
+        success.prepend(el('i', { class: 'fas fa-check-circle mr-2', 'aria-hidden': 'true' }));
+        formStatus.replaceChildren(success);
         formStatus.classList.remove('hidden');
 
         setTimeout(function () {
           btn.innerHTML = originalText;
+          setButtonContent(btn, originalText);
           btn.classList.add('bg-brand-gold', 'hover:bg-yellow-400');
           btn.classList.remove('bg-green-500');
           btn.disabled = false;
@@ -364,6 +422,7 @@
         }, 3000);
       } catch (_err) {
         btn.innerHTML = originalText;
+        setButtonContent(btn, originalText);
         btn.disabled = false;
         trackFormEvent('form_submit_failure', {
           form_id: 'contact-form',
@@ -391,6 +450,7 @@
       e.preventDefault();
       const btn = form.querySelector('button[type="submit"]');
       const originalText = btn.innerHTML;
+      const originalText = btn.textContent || '';
       const emailInput = $('#lead-email');
       const email = emailInput ? emailInput.value : '';
 
@@ -405,6 +465,8 @@
       });
 
       btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+      btn.replaceChildren();
+      btn.append(document.createTextNode('Sending...'));
       btn.disabled = true;
 
       try {
@@ -433,12 +495,16 @@
         }
 
         btn.innerHTML = '<i class="fas fa-check mr-2"></i> Check Your Email!';
+        btn.replaceChildren();
+        btn.append(document.createTextNode('Check Your Email!'));
         btn.classList.remove('bg-brand-gold');
         btn.classList.add('bg-green-500');
 
         setTimeout(function () {
           window.open('guides/matric-maths-mistakes-guide.html', '_blank');
           btn.innerHTML = originalText;
+          btn.replaceChildren();
+          btn.append(document.createTextNode(originalText));
           btn.classList.add('bg-brand-gold');
           btn.classList.remove('bg-green-500');
           btn.disabled = false;
@@ -446,6 +512,8 @@
         }, 1500);
       } catch (_err) {
         btn.innerHTML = originalText;
+        btn.replaceChildren();
+        btn.append(document.createTextNode(originalText));
         btn.disabled = false;
         trackFormEvent('form_submit_failure', {
           form_id: 'lead-form',
@@ -533,7 +601,7 @@
 
     function updateWhatsAppMessage() {
       const grade = gradeSelect ? gradeSelect.value : '';
-      const name = nameInput ? nameInput.value.trim() : '';
+      const name = nameInput ? stripHtmlTags(nameInput.value.trim()) : '';
       let message = "Hi! I'm interested in Maths tutoring.";
 
       if (grade) {
