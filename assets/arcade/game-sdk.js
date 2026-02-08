@@ -33,6 +33,30 @@ export function createGameSDK(ctx, {
     lives: config?.lives ?? null,
   };
 
+  const eventStream = (() => {
+    const events = [];
+    const record = (type, payload = {}, frame = null) => {
+      events.push({
+        type: String(type || "event"),
+        payload,
+        frame: Number.isFinite(frame) ? frame : null,
+      });
+    };
+    const snapshot = () => events.slice();
+    const reset = () => { events.length = 0; };
+    return { record, snapshot, reset };
+  })();
+
+  const emitDeterministicEvent = (type, payload = {}, frame = null) => {
+    eventStream.record(type, payload, frame);
+    ctx.emitGameEvent?.("arcade:game:event", {
+      runSeed,
+      type: String(type || "event"),
+      payload,
+      frame: Number.isFinite(frame) ? frame : null,
+    });
+  };
+
   function hud(pairs) {
     ui.setHUD([
       { k: "Level", v: state.level },
@@ -64,5 +88,7 @@ export function createGameSDK(ctx, {
     hud,
     toast: ui.toast,
     randFromTable,
+    events: eventStream,
+    emitDeterministicEvent,
   };
 }

@@ -3,10 +3,12 @@ import { pool } from '../db/pool.js';
 import {
   ArcadeLeaderboardParamSchema,
   ArcadeLeaderboardQuerySchema,
+  ArcadeMatchEventSchema,
   ArcadePlayerCreateSchema,
   ArcadeScoreSchema,
   ArcadeSessionEndSchema,
   ArcadeSessionStartSchema,
+  ArcadeValidationSchema,
 } from '../lib/schemas.js';
 
 const DEFAULT_AD_RULES = [
@@ -255,5 +257,31 @@ export async function arcadeRoutes(app: FastifyInstance) {
     } catch (err) {
       return respondDbError(reply, err);
     }
+  });
+
+  app.post('/match/events', async (req, reply) => {
+    const parsed = ArcadeMatchEventSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    return reply.code(501).send({
+      ok: false,
+      error: 'not_implemented',
+      message: 'Multiplayer event ingestion is not enabled yet.'
+    });
+  });
+
+  app.post('/match/validate', async (req, reply) => {
+    const parsed = ArcadeValidationSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    return reply.code(501).send({
+      ok: false,
+      error: 'not_implemented',
+      message: 'Server-side validation hooks are not enabled yet.'
+    });
   });
 }

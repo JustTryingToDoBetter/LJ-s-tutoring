@@ -243,3 +243,22 @@ export const ArcadeLeaderboardParamSchema = z.object({
 export const ArcadeLeaderboardQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 });
+
+export const ArcadeEventSchema = z.object({
+  type: z.string().trim().min(1).max(80),
+  payload: z.record(z.any()).optional().default({}),
+  frame: z.number().int().min(0).max(1000000).optional().nullable(),
+});
+
+export const ArcadeMatchEventSchema = z.object({
+  gameId: z.string().trim().min(1).max(80),
+  runSeed: z.string().trim().min(1).max(160),
+  events: z.array(ArcadeEventSchema).min(1).max(5000),
+});
+
+export const ArcadeValidationSchema = z.object({
+  gameId: z.string().trim().min(1).max(80),
+  runSeed: z.string().trim().min(1).max(160),
+  score: z.number().int().min(0).max(100000000),
+  events: z.array(ArcadeEventSchema).min(1).max(5000),
+});
