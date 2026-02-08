@@ -14,7 +14,7 @@
     for (const [k, v] of Object.entries(attrs)) {
       if (k === "class") n.className = v;
       else if (k === "text") n.textContent = v;
-      else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
+      else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2).toLowerCase(), v);
       else if (v !== false && v != null) n.setAttribute(k, String(v));
     }
     for (const c of children) n.append(c);

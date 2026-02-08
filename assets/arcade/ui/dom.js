@@ -6,7 +6,7 @@ export function el(tag, props = {}, children = []) {
     else if (key === "html") node.innerHTML = String(value ?? "");
     else if (key === "style" && value && typeof value === "object") Object.assign(node.style, value);
     else if (key === "dataset" && value && typeof value === "object") Object.assign(node.dataset, value);
-    else if (key.startsWith("on") && typeof value === "function") node.addEventListener(key.slice(2), value);
+    else if (key.startsWith("on") && typeof value === "function") node.addEventListener(key.slice(2).toLowerCase(), value);
     else if (value === true) node.setAttribute(key, "");
     else if (value !== false && value != null) node.setAttribute(key, String(value));
   }
