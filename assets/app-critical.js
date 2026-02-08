@@ -41,12 +41,59 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
+  const sanitize = (window && window.PO_SANITIZE) || {};
+
   function containsHtmlTags(value) {
+    if (typeof sanitize.containsHtmlTags === 'function') {
+      return sanitize.containsHtmlTags(value);
+    }
     return /<\/?[a-z][^>]*>/i.test(String(value || ''));
   }
 
   function stripHtmlTags(value) {
+    if (typeof sanitize.stripHtmlTags === 'function') {
+      return sanitize.stripHtmlTags(value);
+    }
     return String(value || '').replace(/<\/?[a-z][^>]*>/gi, '').trim();
+  }
+
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (key) {
+        const val = attrs[key];
+        if (val === null || val === undefined) {return;}
+        if (key === 'class') {node.className = val;}
+        else if (key === 'text') {node.textContent = val;}
+        else {node.setAttribute(key, String(val));}
+      });
+    }
+    if (children && children.length) {
+      children.forEach(function (child) {
+        if (child === null || child === undefined) {return;}
+        node.append(child);
+      });
+    }
+    return node;
+  }
+
+  function setButtonContent(button, text, iconClass) {
+    if (!button) {return;}
+    button.replaceChildren();
+    if (iconClass) {
+      const icon = el('i', { class: iconClass, 'aria-hidden': 'true' });
+      button.append(icon, document.createTextNode(' '));
+    }
+    button.append(document.createTextNode(text));
+  }
+
+  function getButtonState(button) {
+    if (!button) {return { text: '', iconClass: '' };}
+    const icon = button.querySelector('i');
+    return {
+      text: (button.textContent || '').trim(),
+      iconClass: icon ? icon.className : '',
+    };
   }
 
   // ==========================================
@@ -73,53 +120,53 @@
   // DARK MODE TOGGLE (critical)
   // ==========================================
   function initDarkMode() {
-  const toggle = $('#dark-mode-toggle');
-  const icon = $('#dark-mode-icon');
-  const html = document.documentElement;
+    const toggle = $('#dark-mode-toggle');
+    const icon = $('#dark-mode-icon');
+    const html = document.documentElement;
 
-  if (!toggle || !icon) {return;}
+    if (!toggle || !icon) {return;}
 
-  const THEME_KEY = 'po_theme';     // 'dark' | 'light'
-  const LEGACY_KEY = 'darkMode';    // 'true' | 'false' (old)
+    const THEME_KEY = 'po_theme';     // 'dark' | 'light'
+    const LEGACY_KEY = 'darkMode';    // 'true' | 'false' (old)
 
-  // Read theme preference with backwards compatibility.
-  function readTheme() {
+    // Read theme preference with backwards compatibility.
+    function readTheme() {
     // 1) New key wins
-    const modern = localStorage.getItem(THEME_KEY);
-    if (modern === 'dark' || modern === 'light') {return modern;}
+      const modern = localStorage.getItem(THEME_KEY);
+      if (modern === 'dark' || modern === 'light') {return modern;}
 
-    // 2) Legacy key fallback
-    const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy === 'true') {return 'dark';}
-    if (legacy === 'false') {return 'light';}
+      // 2) Legacy key fallback
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy === 'true') {return 'dark';}
+      if (legacy === 'false') {return 'light';}
 
-    // 3) System default
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      // 3) System default
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function applyTheme(mode) {
+      const isDark = mode === 'dark';
+
+      html.classList.toggle('dark', isDark);
+
+      // Keep icon consistent
+      icon.classList.toggle('fa-moon', !isDark);
+      icon.classList.toggle('fa-sun', isDark);
+
+      // Persist BOTH keys for backwards compatibility across versions/pages
+      localStorage.setItem(THEME_KEY, mode);
+      localStorage.setItem(LEGACY_KEY, String(isDark));
+    }
+
+    // Initial load
+    applyTheme(readTheme());
+
+    // Toggle handler
+    toggle.addEventListener('click', function () {
+      const isDark = html.classList.contains('dark');
+      applyTheme(isDark ? 'light' : 'dark');
+    });
   }
-
-  function applyTheme(mode) {
-    const isDark = mode === 'dark';
-
-    html.classList.toggle('dark', isDark);
-
-    // Keep icon consistent
-    icon.classList.toggle('fa-moon', !isDark);
-    icon.classList.toggle('fa-sun', isDark);
-
-    // Persist BOTH keys for backwards compatibility across versions/pages
-    localStorage.setItem(THEME_KEY, mode);
-    localStorage.setItem(LEGACY_KEY, String(isDark));
-  }
-
-  // Initial load
-  applyTheme(readTheme());
-
-  // Toggle handler
-  toggle.addEventListener('click', function () {
-    const isDark = html.classList.contains('dark');
-    applyTheme(isDark ? 'light' : 'dark');
-  });
-}
 
   // ==========================================
   // COUNTDOWN TIMER (critical)
@@ -227,29 +274,19 @@
       if (attrs) {
         Object.keys(attrs).forEach(function (key) {
           const val = attrs[key];
-          if (val == null) {return;}
-          if (key === 'class') node.className = val;
-          else if (key === 'text') node.textContent = val;
-          else node.setAttribute(key, String(val));
+          if (val === null || val === undefined) {return;}
+          if (key === 'class') {node.className = val;}
+          else if (key === 'text') {node.textContent = val;}
+          else {node.setAttribute(key, String(val));}
         });
       }
       if (children && children.length) {
         children.forEach(function (child) {
-          if (child == null) {return;}
+          if (child === null || child === undefined) {return;}
           node.append(child);
         });
       }
       return node;
-    }
-
-    function setButtonContent(button, text, iconClass) {
-      if (!button) {return;}
-      button.replaceChildren();
-      if (iconClass) {
-        const icon = el('i', { class: iconClass, 'aria-hidden': 'true' });
-        button.append(icon, document.createTextNode(' '));
-      }
-      button.append(document.createTextNode(text));
     }
 
     function trackFormEvent(eventName, params) {
@@ -260,10 +297,10 @@
 
     function showFormError(message, options) {
       const opts = options || {};
-        const icon = el('i', { class: 'fas fa-exclamation-circle mr-2', 'aria-hidden': 'true' });
-        const text = el('p', { class: 'text-red-400', text: message }, [icon]);
-        text.insertBefore(icon, text.firstChild);
-        formStatus.replaceChildren(text);
+      const icon = el('i', { class: 'fas fa-exclamation-circle mr-2', 'aria-hidden': 'true' });
+      const text = el('p', { class: 'text-red-400', text: message }, [icon]);
+      text.insertBefore(icon, text.firstChild);
+      formStatus.replaceChildren(text);
       formStatus.classList.remove('hidden');
       if (!opts.sticky) {
         setTimeout(function () {
@@ -307,11 +344,11 @@
         class: 'inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-500',
         href: waHref,
         target: '_blank',
-        rel: 'noopener'
+        rel: 'noopener',
       }, [el('i', { class: 'fab fa-whatsapp mr-2', 'aria-hidden': 'true' }), document.createTextNode('WhatsApp us')]);
       const emailLink = el('a', {
         class: 'inline-flex items-center justify-center rounded-lg border border-slate-600 bg-slate-900/30 px-4 py-2 font-semibold text-white hover:bg-slate-900/50',
-        href: mailtoHref
+        href: mailtoHref,
       }, [el('i', { class: 'fas fa-envelope mr-2', 'aria-hidden': 'true' }), document.createTextNode('Email us')]);
       actions.append(waLink, emailLink);
       wrap.append(errorP, infoP, actions);
@@ -326,7 +363,7 @@
         const honeypot = $('#website');
         if (honeypot && honeypot.value) {
           e.preventDefault();
-          console.log('Bot detected - form submission blocked');
+          return;
         }
       },
       true,
@@ -336,7 +373,7 @@
       e.preventDefault();
 
       const btn = form.querySelector('button[type="submit"]');
-      const originalText = btn.innerHTML;
+      const originalState = getButtonState(btn);
 
       const nameEl = $('#name');
       const emailEl = $('#email');
@@ -352,9 +389,6 @@
         showFormError('Please remove HTML tags from your message.');
         return;
       }
-  const originalText = btn.textContent || '';
-  setButtonContent(btn, 'Sending...', 'fas fa-spinner fa-spin mr-2');
-  setButtonContent(btn, 'Sent Successfully!', 'fas fa-check mr-2');
 
       if (!name || name.length < 2) {
         showFormError('Please enter a valid name.');
@@ -374,7 +408,7 @@
         page_path: window.location.pathname,
       });
 
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+      setButtonContent(btn, 'Sending...', 'fas fa-spinner fa-spin mr-2');
       btn.disabled = true;
       formStatus.classList.add('hidden');
 
@@ -402,7 +436,7 @@
           }
         }
 
-        btn.innerHTML = '<i class="fas fa-check mr-2"></i> Sent Successfully!';
+        setButtonContent(btn, 'Sent Successfully!', 'fas fa-check mr-2');
         btn.classList.remove('bg-brand-gold', 'hover:bg-yellow-400');
         btn.classList.add('bg-green-500');
 
@@ -412,8 +446,7 @@
         formStatus.classList.remove('hidden');
 
         setTimeout(function () {
-          btn.innerHTML = originalText;
-          setButtonContent(btn, originalText);
+          setButtonContent(btn, originalState.text, originalState.iconClass);
           btn.classList.add('bg-brand-gold', 'hover:bg-yellow-400');
           btn.classList.remove('bg-green-500');
           btn.disabled = false;
@@ -421,14 +454,17 @@
           formStatus.classList.add('hidden');
         }, 3000);
       } catch (_err) {
-        btn.innerHTML = originalText;
-        setButtonContent(btn, originalText);
+        setButtonContent(btn, originalState.text, originalState.iconClass);
         btn.disabled = false;
         trackFormEvent('form_submit_failure', {
           form_id: 'contact-form',
           page_path: window.location.pathname,
         });
-        showFormFallback({ name: name, email: email, grade: grade });
+        showFormFallback({
+          name: stripHtmlTags(name),
+          email: stripHtmlTags(email),
+          grade: stripHtmlTags(grade),
+        });
       }
     });
   }
@@ -449,11 +485,14 @@
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       const btn = form.querySelector('button[type="submit"]');
-      const originalText = btn.innerHTML;
-      const originalText = btn.textContent || '';
+      const originalState = getButtonState(btn);
       const emailInput = $('#lead-email');
       const email = emailInput ? emailInput.value : '';
 
+      if (containsHtmlTags(email)) {
+        alert('Please remove HTML tags from your email.');
+        return;
+      }
       if (!isValidEmail(email)) {
         alert('Please enter a valid email address.');
         return;
@@ -464,9 +503,7 @@
         page_path: window.location.pathname,
       });
 
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
-      btn.replaceChildren();
-      btn.append(document.createTextNode('Sending...'));
+      setButtonContent(btn, 'Sending...', 'fas fa-spinner fa-spin mr-2');
       btn.disabled = true;
 
       try {
@@ -494,26 +531,20 @@
           }
         }
 
-        btn.innerHTML = '<i class="fas fa-check mr-2"></i> Check Your Email!';
-        btn.replaceChildren();
-        btn.append(document.createTextNode('Check Your Email!'));
+        setButtonContent(btn, 'Check Your Email!', 'fas fa-check mr-2');
         btn.classList.remove('bg-brand-gold');
         btn.classList.add('bg-green-500');
 
         setTimeout(function () {
           window.open('guides/matric-maths-mistakes-guide.html', '_blank');
-          btn.innerHTML = originalText;
-          btn.replaceChildren();
-          btn.append(document.createTextNode(originalText));
+          setButtonContent(btn, originalState.text, originalState.iconClass);
           btn.classList.add('bg-brand-gold');
           btn.classList.remove('bg-green-500');
           btn.disabled = false;
           form.reset();
         }, 1500);
       } catch (_err) {
-        btn.innerHTML = originalText;
-        btn.replaceChildren();
-        btn.append(document.createTextNode(originalText));
+        setButtonContent(btn, originalState.text, originalState.iconClass);
         btn.disabled = false;
         trackFormEvent('form_submit_failure', {
           form_id: 'lead-form',
@@ -674,80 +705,80 @@
   /* ==========================================================================
    Grade Results Carousel
    ========================================================================== */
-(function initGradeResultsCarousel() {
-  const root = document.querySelector("[data-po-carousel]");
-  if (!root) return;
+  (function initGradeResultsCarousel() {
+    const root = document.querySelector('[data-po-carousel]');
+    if (!root) {return;}
 
-  const track = root.querySelector("[data-po-track]");
-  const slides = Array.from(root.querySelectorAll("[data-po-slide]"));
-  const dotsWrap = root.querySelector("[data-po-dots]");
-  const prevBtns = Array.from(root.querySelectorAll("[data-po-prev]"));
-  const nextBtns = Array.from(root.querySelectorAll("[data-po-next]"));
+    const track = root.querySelector('[data-po-track]');
+    const slides = Array.from(root.querySelectorAll('[data-po-slide]'));
+    const dotsWrap = root.querySelector('[data-po-dots]');
+    const prevBtns = Array.from(root.querySelectorAll('[data-po-prev]'));
+    const nextBtns = Array.from(root.querySelectorAll('[data-po-next]'));
 
-  if (!track || slides.length === 0 || !dotsWrap) return;
+    if (!track || slides.length === 0 || !dotsWrap) {return;}
 
-  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
-  // Build dots
-  dotsWrap.innerHTML = "";
-  const dots = slides.map((_, i) => {
-    const b = document.createElement("button");
-    b.className = "po-dot";
-    b.type = "button";
-    b.setAttribute("aria-label", `Go to result ${i + 1}`);
-    b.addEventListener("click", () => scrollToIndex(i));
-    dotsWrap.appendChild(b);
-    return b;
-  });
+    // Build dots
+    dotsWrap.innerHTML = '';
+    const dots = slides.map((_, i) => {
+      const b = document.createElement('button');
+      b.className = 'po-dot';
+      b.type = 'button';
+      b.setAttribute('aria-label', `Go to result ${i + 1}`);
+      b.addEventListener('click', () => scrollToIndex(i));
+      dotsWrap.appendChild(b);
+      return b;
+    });
 
-  const slideLeft = (el) => el.getBoundingClientRect().left;
-  const trackLeft = () => track.getBoundingClientRect().left;
+    const slideLeft = (el) => el.getBoundingClientRect().left;
+    const trackLeft = () => track.getBoundingClientRect().left;
 
-  function nearestIndex() {
-    const tL = trackLeft();
-    let best = 0;
-    let bestDist = Infinity;
-    for (let i = 0; i < slides.length; i++) {
-      const d = Math.abs(slideLeft(slides[i]) - tL);
-      if (d < bestDist) { bestDist = d; best = i; }
+    function nearestIndex() {
+      const tL = trackLeft();
+      let best = 0;
+      let bestDist = Infinity;
+      for (let i = 0; i < slides.length; i++) {
+        const d = Math.abs(slideLeft(slides[i]) - tL);
+        if (d < bestDist) { bestDist = d; best = i; }
+      }
+      return best;
     }
-    return best;
-  }
 
-  function setActive(i) {
-    dots.forEach((d, idx) => d.setAttribute("aria-current", idx === i ? "true" : "false"));
-  }
+    function setActive(i) {
+      dots.forEach((d, idx) => d.setAttribute('aria-current', idx === i ? 'true' : 'false'));
+    }
 
-  function scrollToIndex(i) {
-    i = clamp(i, 0, slides.length - 1);
-    slides[i].scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
-    setActive(i);
-  }
+    function scrollToIndex(i) {
+      i = clamp(i, 0, slides.length - 1);
+      slides[i].scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+      setActive(i);
+    }
 
-  function step(dir) {
-    const i = nearestIndex();
-    scrollToIndex(i + dir);
-  }
+    function step(dir) {
+      const i = nearestIndex();
+      scrollToIndex(i + dir);
+    }
 
-  prevBtns.forEach((b) => b.addEventListener("click", () => step(-1)));
-  nextBtns.forEach((b) => b.addEventListener("click", () => step(+1)));
+    prevBtns.forEach((b) => b.addEventListener('click', () => step(-1)));
+    nextBtns.forEach((b) => b.addEventListener('click', () => step(+1)));
 
-  // Keyboard support on the track
-  track.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
-    if (e.key === "ArrowRight") { e.preventDefault(); step(+1); }
-  });
+    // Keyboard support on the track
+    track.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); step(+1); }
+    });
 
-  // Update active dot while user scrolls
-  let raf = 0;
-  track.addEventListener("scroll", () => {
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => setActive(nearestIndex()));
-  });
+    // Update active dot while user scrolls
+    let raf = 0;
+    track.addEventListener('scroll', () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setActive(nearestIndex()));
+    });
 
-  // Initialize
-  setActive(0);
-})();
+    // Initialize
+    setActive(0);
+  })();
 
 
   function initCritical() {

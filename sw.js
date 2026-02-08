@@ -6,7 +6,8 @@
    - Offline: Works for arcade + games after first visit
 */
 
-const VERSION = "po-v2026-02-08-03"; // bump on every deploy
+// Build script replaces VERSION in dist/sw.js
+const VERSION = "po-v-dev";
 const CACHE_APP = `po-app-${VERSION}`;
 const CACHE_MEDIA = `po-media-${VERSION}`;
 const CACHE_DOCS = `po-docs-${VERSION}`;

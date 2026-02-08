@@ -10,8 +10,9 @@
     default-src 'self';
     base-uri 'self';
     object-src 'none';
+    frame-ancestors 'none';
     form-action 'self' https://formspree.io;
-    script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com;
+    script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
     font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:;
     img-src 'self' https: data:;
@@ -25,15 +26,12 @@
     <script defer src="/assets/analytics.js"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&amp;display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha384-3B6NwesSXE7YJlcLI9RpRqGf2p/EgVH8BgoKTaUrmKNDkHPStTQ3EyoYjCGXaOTS" crossorigin="anonymous">
 
     <link rel="stylesheet" href="/assets/tailwind-input.css">
 
-    <script>
-  // runtime config (will be overwritten in dist by inject-config.js if you set env vars)
-  window.PO_ERROR_MONITOR = { endpoint: '', sampleRate: 1 };
-</script>
-<script defer src="/assets/error-monitor.js"></script>
+        <script defer src="/assets/error-monitor-config.js"></script>
+        <script defer src="/assets/error-monitor.js"></script>
 
 </head>
 <body class="font-sans text-slate-800 antialiased bg-slate-50">

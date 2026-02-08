@@ -7,7 +7,7 @@
  * PURPOSE:
  * Reads environment variables from .env and injects them into the CONFIG object
  * in the built app-critical.js file. Also injects PO_ERROR_MONITOR config into
- * built HTML files.
+ * the dedicated error-monitor-config.js asset.
  *
  * HOW IT FITS IN THE SYSTEM:
  * - Runs during build AFTER assets are copied to dist/
@@ -69,49 +69,31 @@ function escapeJsString(value) {
 }
 
 function clamp01(n) {
-  if (!Number.isFinite(n)) return 1;
+  if (!Number.isFinite(n)) {return 1;}
   return Math.max(0, Math.min(1, n));
 }
 
-function listHtmlFiles(dir) {
-  /** @type {string[]} */
-  const out = [];
-  if (!fs.existsSync(dir)) return out;
-  const items = fs.readdirSync(dir, { withFileTypes: true });
-  for (const it of items) {
-    const p = path.join(dir, it.name);
-    if (it.isDirectory()) out.push(...listHtmlFiles(p));
-    else if (it.isFile() && p.endsWith('.html')) out.push(p);
-  }
-  return out;
-}
-
-function injectErrorMonitorConfigIntoHtml() {
+function injectErrorMonitorConfigAsset() {
   const endpoint = escapeJsString(errorMonitorEndpoint);
   const sampleRate = clamp01(errorMonitorSampleRate);
+  const assetPath = path.join(distAssetsDir, 'error-monitor-config.js');
 
-  const files = listHtmlFiles(distDir);
-  if (!files.length) return;
+  if (!fs.existsSync(assetPath)) {
+    console.warn('⚠️  Warning: error-monitor-config.js not found in dist/assets/');
+    console.warn('    Error monitor config injection skipped.');
+    return;
+  }
 
   const assignPattern = /window\.PO_ERROR_MONITOR\s*=\s*\{[\s\S]*?\};/g;
   const replacement = `window.PO_ERROR_MONITOR = { endpoint: '${endpoint}', sampleRate: ${sampleRate} };`;
 
-  let touched = 0;
-  for (const f of files) {
-    const html = fs.readFileSync(f, 'utf8');
-    if (!assignPattern.test(html)) continue;
-
-    const next = html.replace(assignPattern, replacement);
-    if (next !== html) {
-      fs.writeFileSync(f, next, 'utf8');
-      touched++;
-    }
-  }
-
-  if (touched) {
-    console.log(`✅ Injected PO_ERROR_MONITOR config into ${touched} HTML file(s)`);
+  const content = fs.readFileSync(assetPath, 'utf8');
+  const next = content.replace(assignPattern, replacement);
+  if (next !== content) {
+    fs.writeFileSync(assetPath, next, 'utf8');
+    console.log('✅ Injected PO_ERROR_MONITOR config into error-monitor-config.js');
   }
 }
 
-injectErrorMonitorConfigIntoHtml();
+injectErrorMonitorConfigAsset();
 

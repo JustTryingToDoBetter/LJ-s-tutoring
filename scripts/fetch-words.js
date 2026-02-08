@@ -5,12 +5,12 @@
   - If fetch fails, uses existing local file (no build fail)
 */
 
-const https = require("https");
-const fs = require("fs");
-const path = require("path");
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
 
-const OUT_PATH = path.join(__dirname, "..", "assets", "data", "words-5.json");
-const DEFAULT_URL = "https://raw.githubusercontent.com/tabatkins/wordle-list/main/words";
+const OUT_PATH = path.join(__dirname, '..', 'assets', 'data', 'words-5.json');
+const DEFAULT_URL = 'https://raw.githubusercontent.com/tabatkins/wordle-list/main/words';
 
 const WORDS_URL = process.env.WORDS_URL || DEFAULT_URL;
 
@@ -23,24 +23,24 @@ function fetchText(url) {
           res.resume();
           return;
         }
-        let data = "";
-        res.setEncoding("utf8");
-        res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => resolve(data));
+        let data = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => resolve(data));
       })
-      .on("error", reject);
+      .on('error', reject);
   });
 }
 
 function sanitizeWords(text) {
-  const lines = String(text || "")
+  const lines = String(text || '')
     .split(/\r?\n/)
     .map((w) => w.trim().toLowerCase())
     .filter(Boolean);
 
   const set = new Set();
   for (const w of lines) {
-    if (/^[a-z]{5}$/.test(w)) set.add(w);
+    if (/^[a-z]{5}$/.test(w)) {set.add(w);}
   }
 
   return Array.from(set).sort();
@@ -48,10 +48,10 @@ function sanitizeWords(text) {
 
 function readLocalWords() {
   try {
-    const raw = fs.readFileSync(OUT_PATH, "utf8");
+    const raw = fs.readFileSync(OUT_PATH, 'utf8');
     const data = JSON.parse(raw);
     const words = Array.isArray(data?.words) ? data.words : [];
-    return words.filter((w) => typeof w === "string" && /^[a-z]{5}$/.test(w));
+    return words.filter((w) => typeof w === 'string' && /^[a-z]{5}$/.test(w));
   } catch {
     return [];
   }
@@ -76,10 +76,10 @@ async function main() {
   if (!words.length) {
     const fallback = readLocalWords();
     if (fallback.length) {
-      console.warn("[fetch-words] Downloaded list was empty; using cached words.");
+      console.warn('[fetch-words] Downloaded list was empty; using cached words.');
       return;
     }
-    console.error("[fetch-words] No valid 5-letter words found.");
+    console.error('[fetch-words] No valid 5-letter words found.');
     process.exit(1);
   }
 

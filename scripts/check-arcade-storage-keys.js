@@ -24,6 +24,6 @@ for (const f of files) {
   }
 }
 
-if (!ok) process.exit(1);
+if (!ok) {process.exit(1);}
 console.log(`[check-arcade-storage-keys] OK (${KEY})`);
 

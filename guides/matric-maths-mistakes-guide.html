@@ -11,8 +11,9 @@
     default-src 'self';
     base-uri 'self';
     object-src 'none';
+    frame-ancestors 'none';
     form-action 'self' https://formspree.io;
-    script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com;
+    script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
     font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:;
     img-src 'self' https: data:;
@@ -41,17 +42,14 @@
         }
         body { font-family: 'Inter', sans-serif; }
     </style>
-    <script>
-  // runtime config (will be overwritten in dist by inject-config.js if you set env vars)
-  window.PO_ERROR_MONITOR = { endpoint: '', sampleRate: 1 };
-</script>
-<script defer src="/assets/error-monitor.js"></script>
+        <script defer src="/assets/error-monitor-config.js"></script>
+        <script defer src="/assets/error-monitor.js"></script>
 
 </head>
 <body class="bg-white text-gray-800">
     <!-- Print/Download Button -->
     <div class="no-print fixed top-4 right-4 z-50">
-        <button onclick="window.print()" class="bg-amber-600 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg flex items-center gap-2">
+        <button id="print-guide" class="bg-amber-600 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
@@ -312,5 +310,6 @@
         <p class="mt-2">Created by Liam Newton &amp; Jaydin Morrison</p>
     </footer>
 
+    <script defer src="/assets/guide-print.js"></script>
 </body>
 </html>

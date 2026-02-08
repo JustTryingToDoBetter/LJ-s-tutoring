@@ -164,6 +164,8 @@ npm run qa:a11y          # Accessibility testing
 - Never commit `.env` file
 - Always update `.env.example` when adding new variables
 - Use different `.env` files for different environments
+- Only the public client values listed in PUBLIC_CONFIG.md are injected into frontend JS
+- Set public client values in DigitalOcean App Platform env vars; keep secrets server-side
 
 ### Code Quality
 - ESLint enforces style consistency

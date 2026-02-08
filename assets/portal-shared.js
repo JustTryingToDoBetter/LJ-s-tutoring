@@ -8,7 +8,7 @@ function getImpersonationToken() {
 
 export function getImpersonationMeta() {
   const raw = localStorage.getItem(IMPERSONATION_META_KEY);
-  if (!raw) return null;
+  if (!raw) {return null;}
   try {
     return JSON.parse(raw);
   } catch {
@@ -17,13 +17,13 @@ export function getImpersonationMeta() {
 }
 
 export function setImpersonationContext(context) {
-  if (!context?.token) return;
+  if (!context?.token) {return;}
   localStorage.setItem(IMPERSONATION_KEY, context.token);
   localStorage.setItem(IMPERSONATION_META_KEY, JSON.stringify({
     tutorId: context.tutorId,
     tutorName: context.tutorName,
     impersonationId: context.impersonationId,
-    startedAt: new Date().toISOString()
+    startedAt: new Date().toISOString(),
   }));
 }
 
@@ -49,9 +49,9 @@ async function request(path, options = {}) {
       ...(impersonationToken && path.startsWith('/tutor/')
         ? { 'X-Impersonation-Token': impersonationToken }
         : {}),
-      ...(options.headers || {})
+      ...(options.headers || {}),
     },
-    ...options
+    ...options,
   });
 
   let data = null;
@@ -79,14 +79,14 @@ export function apiGet(path) {
 export function apiPost(path, payload) {
   return request(path, {
     method: 'POST',
-    body: JSON.stringify(payload || {})
+    body: JSON.stringify(payload || {}),
   });
 }
 
 export function apiPatch(path, payload) {
   return request(path, {
     method: 'PATCH',
-    body: JSON.stringify(payload || {})
+    body: JSON.stringify(payload || {}),
   });
 }
 
@@ -94,7 +94,7 @@ function getCookie(name) {
   const parts = document.cookie.split(';');
   for (const part of parts) {
     const [key, ...rest] = part.trim().split('=');
-    if (key === name) return rest.join('=');
+    if (key === name) {return rest.join('=');}
   }
   return '';
 }
@@ -119,23 +119,25 @@ export function renderStatusEl(status) {
 
 export function createEl(tag, options = {}, children = []) {
   const el = document.createElement(tag);
-  if (options.className) el.className = options.className;
-  if (options.text != null) el.textContent = String(options.text);
+  if (options.className) {el.className = options.className;}
+  if (options.text !== null && options.text !== undefined) {
+    el.textContent = String(options.text);
+  }
   if (options.attrs) {
     Object.entries(options.attrs).forEach(([key, value]) => {
-      if (value == null) return;
+      if (value === null || value === undefined) {return;}
       el.setAttribute(key, String(value));
     });
   }
   if (options.dataset) {
     Object.entries(options.dataset).forEach(([key, value]) => {
-      if (value == null) return;
+      if (value === null || value === undefined) {return;}
       el.dataset[key] = String(value);
     });
   }
   if (Array.isArray(children)) {
     children.forEach((child) => {
-      if (child == null) return;
+      if (child === null || child === undefined) {return;}
       el.append(child);
     });
   }
@@ -143,7 +145,7 @@ export function createEl(tag, options = {}, children = []) {
 }
 
 export function clearChildren(el) {
-  if (!el) return;
+  if (!el) {return;}
   el.replaceChildren();
 }
 
@@ -171,11 +173,11 @@ export function setActiveNav(dataKey) {
 
 export function showBanner(id, show) {
   const el = document.querySelector(id);
-  if (!el) return;
+  if (!el) {return;}
   el.classList.toggle('show', Boolean(show));
 }
 
 export function setText(id, text) {
   const el = document.querySelector(id);
-  if (el) el.textContent = text;
+  if (el) {el.textContent = text;}
 }

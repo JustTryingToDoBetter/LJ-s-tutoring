@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, qs, renderStatusEl, formatMoney, setActiveNav, showBanner, setText, escapeHtml, getImpersonationMeta, clearImpersonationContext, createEl, clearChildren } from '/assets/portal-shared.js';
+import { apiGet, apiPost, apiPatch, qs, renderStatus, renderStatusEl, formatMoney, setActiveNav, showBanner, setText, escapeHtml, getImpersonationMeta, clearImpersonationContext, createEl, clearChildren } from '/assets/portal-shared.js';
 
 const DB_NAME = 'tutor-offline';
 const STORE = 'drafts';
@@ -15,10 +15,10 @@ const toast = (() => {
   let timer = null;
   return (message) => {
     const el = qs('#toast');
-    if (!el) return;
+    if (!el) {return;}
     el.textContent = message;
     el.classList.add('show');
-    if (timer) clearTimeout(timer);
+    if (timer) {clearTimeout(timer);}
     timer = setTimeout(() => {
       el.classList.remove('show');
     }, 2500);
@@ -43,9 +43,9 @@ function openDb() {
 function readAssignmentsCache() {
   try {
     const raw = localStorage.getItem(ASSIGNMENTS_CACHE_KEY);
-    if (!raw) return null;
+    if (!raw) {return null;}
     const parsed = JSON.parse(raw);
-    if (!parsed?.data || !parsed?.ts) return null;
+    if (!parsed?.data || !parsed?.ts) {return null;}
     return parsed;
   } catch {
     return null;
@@ -55,9 +55,9 @@ function readAssignmentsCache() {
 function readSessionsCache() {
   try {
     const raw = localStorage.getItem(SESSIONS_CACHE_KEY);
-    if (!raw) return null;
+    if (!raw) {return null;}
     const parsed = JSON.parse(raw);
-    if (!parsed?.data || !parsed?.ts) return null;
+    if (!parsed?.data || !parsed?.ts) {return null;}
     return parsed;
   } catch {
     return null;
@@ -114,7 +114,7 @@ async function saveDraft(draft) {
 }
 
 async function deleteDrafts(ids) {
-  if (!ids.length) return;
+  if (!ids.length) {return;}
   const db = await openDb();
   if (!db) {
     const existing = JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]');
@@ -139,7 +139,7 @@ async function clearDrafts() {
 
 async function syncDrafts() {
   const drafts = await getDrafts();
-  if (!drafts.length) return { synced: 0, deduped: 0, failed: 0 };
+  if (!drafts.length) {return { synced: 0, deduped: 0, failed: 0 };}
 
   let synced = 0;
   let deduped = 0;
@@ -172,7 +172,7 @@ function listenOnlineSync() {
   const syncBtn = qs('#syncDraftsBtn');
   const syncCard = qs('#syncCard');
   const syncMsg = qs('#syncMsg');
-  if (!syncBtn || !syncCard) return;
+  if (!syncBtn || !syncCard) {return;}
 
   const updateSyncUI = async () => {
     const drafts = await getDrafts();
@@ -182,18 +182,18 @@ function listenOnlineSync() {
   };
 
   const runSync = async () => {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine) {return;}
     syncBtn.disabled = true;
     const result = await syncDrafts();
     await updateSyncUI();
     syncBtn.disabled = !navigator.onLine;
     if (result.synced || result.deduped) {
       toast(`${result.synced} synced, ${result.deduped} already synced.`);
-      if (syncMsg) syncMsg.textContent = 'Drafts synced. They remain as server drafts.';
+      if (syncMsg) {syncMsg.textContent = 'Drafts synced. They remain as server drafts.';}
       document.dispatchEvent(new CustomEvent('drafts-synced'));
     }
     if (result.failed) {
-      if (syncMsg) syncMsg.textContent = 'Some drafts could not sync yet. Try again later.';
+      if (syncMsg) {syncMsg.textContent = 'Some drafts could not sync yet. Try again later.';}
     }
   };
 
@@ -204,13 +204,13 @@ function listenOnlineSync() {
   });
   window.addEventListener('offline', updateSyncUI);
   updateSyncUI().then(() => {
-    if (navigator.onLine) runSync();
+    if (navigator.onLine) {runSync();}
   });
 }
 
 function initImpersonationBanner() {
   const meta = getImpersonationMeta();
-  if (!meta) return;
+  if (!meta) {return;}
 
   showBanner('#impersonationBanner', true);
   setText('#impersonationName', meta.tutorName || 'Tutor');
@@ -232,8 +232,8 @@ async function initLogin() {
   const form = qs('#loginForm');
   const msg = qs('#loginMsg');
   const banner = qs('#impersonationBanner');
-  if (banner) banner.remove();
-  if (!form) return;
+  if (banner) {banner.remove();}
+  if (!form) {return;}
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -283,7 +283,7 @@ async function initTutorHome() {
       panel.append(
         createEl('span', { text: a.subject }),
         document.createTextNode(' with '),
-        createEl('span', { text: a.full_name })
+        createEl('span', { text: a.full_name }),
       );
       frag.append(panel);
     });
@@ -410,7 +410,7 @@ async function initSessions() {
   const formatTimeLocal = (date) => date.toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false
+    hour12: false,
   });
 
   const formatDateLocal = (date) => date.toLocaleDateString('en-CA');
@@ -432,7 +432,7 @@ async function initSessions() {
   };
 
   const updateTimerStatus = (state, label) => {
-    if (!timerState) return;
+    if (!timerState) {return;}
     timerState.textContent = state;
     timerState.classList.toggle('running', state === 'Running');
     timerState.classList.toggle('paused', state === 'Paused');
@@ -449,20 +449,20 @@ async function initSessions() {
       endTime: qs('#endTime').value,
       mode: qs('#mode').value,
       location: qs('#location').value,
-      notes: qs('#notes').value
+      notes: qs('#notes').value,
     };
   };
 
   const applyDraftToForm = (draft) => {
-    if (!draft) return;
-    if (draft.assignmentId) assignmentSelect.value = draft.assignmentId;
+    if (!draft) {return;}
+    if (draft.assignmentId) {assignmentSelect.value = draft.assignmentId;}
     assignmentSelect.dispatchEvent(new Event('change'));
-    if (draft.date) qs('#date').value = draft.date;
-    if (draft.startTime) qs('#startTime').value = draft.startTime;
-    if (draft.endTime) qs('#endTime').value = draft.endTime;
-    if (draft.mode) qs('#mode').value = draft.mode;
-    if (draft.location) qs('#location').value = draft.location;
-    if (draft.notes) qs('#notes').value = draft.notes;
+    if (draft.date) {qs('#date').value = draft.date;}
+    if (draft.startTime) {qs('#startTime').value = draft.startTime;}
+    if (draft.endTime) {qs('#endTime').value = draft.endTime;}
+    if (draft.mode) {qs('#mode').value = draft.mode;}
+    if (draft.location) {qs('#location').value = draft.location;}
+    if (draft.notes) {qs('#notes').value = draft.notes;}
   };
 
   const renderAssignments = (assignments) => {
@@ -475,7 +475,7 @@ async function initSessions() {
       assignmentIndex.set(a.id, {
         studentName: a.full_name,
         subject: a.subject,
-        studentId: a.student_id
+        studentId: a.student_id,
       });
     });
 
@@ -498,7 +498,7 @@ async function initSessions() {
 
     if (cached?.data?.assignments?.length) {
       renderAssignments(cached.data.assignments);
-      if (isFresh) return;
+      if (isFresh) {return;}
     }
 
     try {
@@ -516,14 +516,14 @@ async function initSessions() {
 
   const updateRecentStudents = (assignmentId) => {
     const assignment = assignmentIndex.get(assignmentId);
-    if (!assignment) return;
+    if (!assignment) {return;}
     const existing = readRecentStudents().filter((item) => item.studentId !== assignment.studentId);
     const next = [{
       studentId: assignment.studentId,
       studentName: assignment.studentName,
       assignmentId,
       subject: assignment.subject,
-      lastUsed: Date.now()
+      lastUsed: Date.now(),
     }, ...existing].slice(0, 8);
     writeRecentStudents(next);
   };
@@ -536,7 +536,7 @@ async function initSessions() {
     if (pickerBtn) {
       pickerBtn.textContent = studentName === '--' ? 'Choose student' : `${studentName} • ${subject}`;
     }
-    if (option?.value) updateRecentStudents(option.value);
+    if (option?.value) {updateRecentStudents(option.value);}
   };
 
   assignmentSelect.addEventListener('change', updateStudentLabel);
@@ -556,11 +556,11 @@ async function initSessions() {
 
   const updateConnectivityUI = () => {
     const offline = !navigator.onLine;
-    if (offlineBanner) showBanner('#offlineBanner', offline);
-    if (saveDraftBtn) saveDraftBtn.textContent = offline ? 'Save draft offline' : 'Save draft';
-    if (offlineHelper) offlineHelper.style.display = offline ? 'block' : 'none';
+    if (offlineBanner) {showBanner('#offlineBanner', offline);}
+    if (saveDraftBtn) {saveDraftBtn.textContent = offline ? 'Save draft offline' : 'Save draft';}
+    if (offlineHelper) {offlineHelper.style.display = offline ? 'block' : 'none';}
     list?.querySelectorAll('[data-submit-session]').forEach((button) => {
-      if (!(button instanceof HTMLButtonElement)) return;
+      if (!(button instanceof HTMLButtonElement)) {return;}
       button.disabled = offline;
       button.setAttribute('aria-disabled', offline ? 'true' : 'false');
       button.title = offline ? 'Submit disabled while offline.' : '';
@@ -568,14 +568,14 @@ async function initSessions() {
   };
 
   const setTimeError = (message) => {
-    if (timeError) timeError.textContent = message || '';
+    if (timeError) {timeError.textContent = message || '';}
     const isError = Boolean(message);
     qs('#startTime')?.setAttribute('aria-invalid', isError ? 'true' : 'false');
     qs('#endTime')?.setAttribute('aria-invalid', isError ? 'true' : 'false');
   };
 
   const renderRecentChips = () => {
-    if (!recentContainer) return;
+    if (!recentContainer) {return;}
     const recents = readRecentStudents().sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
     if (!recents.length) {
       recentContainer.innerHTML = '<div class="note">No recent students yet.</div>';
@@ -597,7 +597,7 @@ async function initSessions() {
   };
 
   const renderPickerList = () => {
-    if (!pickerList) return;
+    if (!pickerList) {return;}
     const filtered = getFilteredAssignments();
     if (!filtered.length) {
       pickerList.innerHTML = '<div class="note">No students match your search.</div>';
@@ -612,7 +612,7 @@ async function initSessions() {
   };
 
   const openPicker = () => {
-    if (!picker || !pickerOverlay) return;
+    if (!picker || !pickerOverlay) {return;}
     pickerOverlay.hidden = false;
     picker.classList.add('open');
     picker.setAttribute('aria-hidden', 'false');
@@ -623,7 +623,7 @@ async function initSessions() {
   };
 
   const closePicker = () => {
-    if (!picker || !pickerOverlay) return;
+    if (!picker || !pickerOverlay) {return;}
     picker.classList.remove('open');
     picker.setAttribute('aria-hidden', 'true');
     pickerOverlay.hidden = true;
@@ -631,7 +631,7 @@ async function initSessions() {
   };
 
   const selectAssignment = (assignmentId) => {
-    if (!assignmentId) return;
+    if (!assignmentId) {return;}
     assignmentSelect.value = assignmentId;
     assignmentSelect.dispatchEvent(new Event('change'));
     closePicker();
@@ -680,7 +680,7 @@ async function initSessions() {
 
     if (preferCache && cached?.data?.sessions?.length) {
       renderSessions(cached.data, drafts);
-      if (isFresh || !navigator.onLine) return;
+      if (isFresh || !navigator.onLine) {return;}
     }
 
     const data = await apiGet('/tutor/sessions');
@@ -702,12 +702,12 @@ async function initSessions() {
   subjectFilter?.addEventListener('change', renderPickerList);
   recentContainer?.addEventListener('click', (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLButtonElement)) return;
+    if (!(target instanceof HTMLButtonElement)) {return;}
     selectAssignment(target.dataset.assignmentId);
   });
   pickerList?.addEventListener('click', (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof HTMLElement)) {return;}
     const button = target.closest('[data-assignment-id]');
     if (button instanceof HTMLButtonElement) {
       selectAssignment(button.dataset.assignmentId);
@@ -730,13 +730,13 @@ async function initSessions() {
   startBtn?.addEventListener('click', () => {
     timerStart = new Date();
     const dateEl = qs('#date');
-    if (!dateEl.value) dateEl.value = formatDateLocal(timerStart);
+    if (!dateEl.value) {dateEl.value = formatDateLocal(timerStart);}
     qs('#startTime').value = formatTimeLocal(timerStart);
     qs('#endTime').value = '';
     updateTimerStatus('Running', 'Timer running...');
     stopBtn.disabled = false;
     startBtn.disabled = true;
-    if (timerInterval) clearInterval(timerInterval);
+    if (timerInterval) {clearInterval(timerInterval);}
     timerInterval = setInterval(() => {
       const diff = Math.floor((Date.now() - timerStart.getTime()) / 60000);
       timerLabel.textContent = `Timer running: ${diff} min`;
@@ -744,32 +744,32 @@ async function initSessions() {
     saveTimerState({
       running: true,
       startedAt: timerStart.getTime(),
-      draft: getDraftFromForm()
+      draft: getDraftFromForm(),
     });
   });
 
   stopBtn?.addEventListener('click', () => {
-    if (!timerStart) return;
+    if (!timerStart) {return;}
     const end = new Date();
     qs('#endTime').value = formatTimeLocal(end);
     const diff = Math.max(1, Math.floor((end.getTime() - timerStart.getTime()) / 60000));
     updateTimerStatus('Stopped', `Timer stopped. Duration ${diff} min.`);
     stopBtn.disabled = true;
     startBtn.disabled = false;
-    if (timerInterval) clearInterval(timerInterval);
+    if (timerInterval) {clearInterval(timerInterval);}
     timerStart = null;
     clearTimerState();
   });
 
   resumeBtn?.addEventListener('click', () => {
     const state = loadTimerState();
-    if (!state?.startedAt) return;
+    if (!state?.startedAt) {return;}
     timerStart = new Date(state.startedAt);
     showBanner('#resumeBanner', false);
     stopBtn.disabled = false;
     startBtn.disabled = true;
     updateTimerStatus('Running', 'Timer running...');
-    if (timerInterval) clearInterval(timerInterval);
+    if (timerInterval) {clearInterval(timerInterval);}
     timerInterval = setInterval(() => {
       const diff = Math.floor((Date.now() - timerStart.getTime()) / 60000);
       timerLabel.textContent = `Timer running: ${diff} min`;
@@ -777,7 +777,7 @@ async function initSessions() {
     saveTimerState({
       running: true,
       startedAt: timerStart.getTime(),
-      draft: getDraftFromForm()
+      draft: getDraftFromForm(),
     });
   });
 
@@ -799,7 +799,7 @@ async function initSessions() {
       if (state?.running) {
         saveTimerState({
           ...state,
-          draft: getDraftFromForm()
+          draft: getDraftFromForm(),
         });
       }
     });
@@ -829,7 +829,7 @@ async function initSessions() {
       mode: qs('#mode').value,
       location: qs('#location').value,
       notes: qs('#notes').value,
-      idempotencyKey: draftKey
+      idempotencyKey: draftKey,
     };
 
     if (payload.startTime && payload.endTime && payload.startTime >= payload.endTime) {
@@ -854,7 +854,7 @@ async function initSessions() {
           id: draftKey,
           payload: { ...payload, idempotencyKey: draftKey },
           createdAt: Date.now(),
-          status: OFFLINE_STATUS
+          status: OFFLINE_STATUS,
         });
         editingDraftId = draftKey;
         msg.textContent = 'Offline: draft saved locally.';
@@ -868,11 +868,11 @@ async function initSessions() {
 
   list?.addEventListener('click', async (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof HTMLElement)) {return;}
 
     const submitBtn = target.closest('[data-submit-session]');
     if (submitBtn instanceof HTMLButtonElement) {
-      if (!navigator.onLine) return;
+      if (!navigator.onLine) {return;}
       submitBtn.disabled = true;
       try {
         await apiPost(`/tutor/sessions/${submitBtn.dataset.submitSession}/submit`);
@@ -888,7 +888,7 @@ async function initSessions() {
     const editBtn = target.closest('[data-edit-draft]');
     if (editBtn instanceof HTMLButtonElement) {
       const draft = latestDrafts.find((item) => item.id === editBtn.dataset.editDraft);
-      if (!draft) return;
+      if (!draft) {return;}
       applyDraftToForm(draft.payload || draft);
       editingDraftId = draft.id;
       msg.textContent = 'Offline draft loaded. Edit and save when ready.';
@@ -897,9 +897,9 @@ async function initSessions() {
 
   qs('.tag-row')?.addEventListener('click', (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLButtonElement)) return;
+    if (!(target instanceof HTMLButtonElement)) {return;}
     const tag = target.dataset.tag;
-    if (!tag) return;
+    if (!tag) {return;}
     const notes = qs('#notes');
     const prefix = notes.value.trim().length ? `${notes.value.trim()}\n` : '';
     notes.value = `${prefix}${tag}: `;
@@ -908,7 +908,7 @@ async function initSessions() {
       saveTimerState({
         running: true,
         startedAt: timerStart?.getTime() || Date.now(),
-        draft: getDraftFromForm()
+        draft: getDraftFromForm(),
       });
     }
   });
@@ -918,9 +918,9 @@ const page = document.body.dataset.page;
 
 initImpersonationBanner();
 
-if (page === 'login') initLogin();
-if (page === 'home') initTutorHome();
-if (page === 'sessions') initSessions();
-if (page === 'assignments') initAssignments();
-if (page === 'payroll') initPayroll();
-if (page === 'invoices') initInvoices();
+if (page === 'login') {initLogin();}
+if (page === 'home') {initTutorHome();}
+if (page === 'sessions') {initSessions();}
+if (page === 'assignments') {initAssignments();}
+if (page === 'payroll') {initPayroll();}
+if (page === 'invoices') {initInvoices();}

@@ -2,29 +2,29 @@
    Registers the root service worker and shows an update toast when a new SW is waiting.
 */
 (() => {
-  "use strict";
+  'use strict';
 
-  if (!("serviceWorker" in navigator)) return;
+  if (!('serviceWorker' in navigator)) {return;}
 
-  const SW_URL = "/sw.js";
+  const SW_URL = '/sw.js';
   let didPrompt = false;
 
   function el(tag, attrs = {}, children = []) {
     const n = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
-      if (k === "class") n.className = v;
-      else if (k === "text") n.textContent = v;
-      else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2).toLowerCase(), v);
-      else if (v !== false && v != null) n.setAttribute(k, String(v));
+      if (k === 'class') {n.className = v;}
+      else if (k === 'text') {n.textContent = v;}
+      else if (k.startsWith('on') && typeof v === 'function') {n.addEventListener(k.slice(2).toLowerCase(), v);}
+      else if (v !== false && v !== null && v !== undefined) {n.setAttribute(k, String(v));}
     }
-    for (const c of children) n.append(c);
+    for (const c of children) {n.append(c);}
     return n;
   }
 
   function ensureToastStyles() {
-    if (document.getElementById("po-sw-toast-styles")) return;
+    if (document.getElementById('po-sw-toast-styles')) {return;}
 
-    const style = el("style", { id: "po-sw-toast-styles" });
+    const style = el('style', { id: 'po-sw-toast-styles' });
     style.textContent = `
       .po-sw-toast {
         position: fixed;
@@ -67,30 +67,30 @@
   }
 
   function showUpdateToast(reg) {
-    if (didPrompt) return;
+    if (didPrompt) {return;}
     didPrompt = true;
 
     ensureToastStyles();
 
-    const toast = el("div", { class: "po-sw-toast", role: "status", "aria-live": "polite" }, [
-      el("div", { class: "po-sw-toast__text" }, [
-        el("div", { class: "po-sw-toast__title", text: "Update available" }),
-        el("div", { class: "po-sw-toast__sub", text: "Refresh to get the latest version." }),
+    const toast = el('div', { class: 'po-sw-toast', role: 'status', 'aria-live': 'polite' }, [
+      el('div', { class: 'po-sw-toast__text' }, [
+        el('div', { class: 'po-sw-toast__title', text: 'Update available' }),
+        el('div', { class: 'po-sw-toast__sub', text: 'Refresh to get the latest version.' }),
       ]),
-      el("div", { class: "po-sw-toast__actions" }, [
-        el("button", {
-          class: "po-sw-btn",
-          type: "button",
+      el('div', { class: 'po-sw-toast__actions' }, [
+        el('button', {
+          class: 'po-sw-btn',
+          type: 'button',
           onClick: () => toast.remove(),
-        }, ["Later"]),
-        el("button", {
-          class: "po-sw-btn po-sw-btn--primary",
-          type: "button",
+        }, ['Later']),
+        el('button', {
+          class: 'po-sw-btn po-sw-btn--primary',
+          type: 'button',
           onClick: () => {
             toast.remove();
-            reg.waiting?.postMessage({ type: "SKIP_WAITING" });
+            reg.waiting?.postMessage({ type: 'SKIP_WAITING' });
           },
-        }, ["Update"]),
+        }, ['Update']),
       ]),
     ]);
 
@@ -99,18 +99,18 @@
 
   async function registerSW() {
     try {
-      const reg = await navigator.serviceWorker.register(SW_URL, { scope: "/" });
+      const reg = await navigator.serviceWorker.register(SW_URL, { scope: '/' });
 
       // If an update is already waiting (common immediately after deploy)
-      if (reg.waiting) showUpdateToast(reg);
+      if (reg.waiting) {showUpdateToast(reg);}
 
-      reg.addEventListener("updatefound", () => {
+      reg.addEventListener('updatefound', () => {
         const next = reg.installing;
-        if (!next) return;
+        if (!next) {return;}
 
-        next.addEventListener("statechange", () => {
+        next.addEventListener('statechange', () => {
           // "installed" + has controller => this is an update (not first install)
-          if (next.state === "installed" && navigator.serviceWorker.controller) {
+          if (next.state === 'installed' && navigator.serviceWorker.controller) {
             showUpdateToast(reg);
           }
         });
@@ -118,15 +118,15 @@
 
       // Reload once when the new SW takes control
       let refreshing = false;
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (refreshing) return;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) {return;}
         refreshing = true;
         window.location.reload();
       });
     } catch (e) {
-      console.warn("[SW] registration failed:", e);
+      console.warn('[SW] registration failed:', e);
     }
   }
 
-  window.addEventListener("load", registerSW, { once: true });
+  window.addEventListener('load', registerSW, { once: true });
 })();

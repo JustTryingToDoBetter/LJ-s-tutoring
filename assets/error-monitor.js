@@ -24,6 +24,16 @@
     maxDedupe: 64,
   };
 
+  const CONSENT_KEY = 'po_ga_consent';
+
+  function isConsentGranted() {
+    try {
+      return localStorage.getItem(CONSENT_KEY) === 'granted';
+    } catch (_) {
+      return false;
+    }
+  }
+
   function safeGetConfig() {
     const cfg = (window && window.PO_ERROR_MONITOR) || {};
     const endpoint = typeof cfg.endpoint === 'string' ? cfg.endpoint : DEFAULTS.endpoint;
@@ -47,14 +57,24 @@
     return s.length > maxLen ? s.slice(0, maxLen) + '…' : s;
   }
 
+  function toSafeUrl(raw) {
+    if (!raw) {return '';}
+    try {
+      const url = new URL(raw, window.location.origin);
+      return url.origin + url.pathname;
+    } catch (_) {
+      return '';
+    }
+  }
+
   function getPageContext() {
     const loc = window.location;
     const nav = window.navigator;
 
     return {
-      url: loc && loc.href ? loc.href : '',
+      url: toSafeUrl(loc && loc.href ? loc.href : ''),
       path: loc && loc.pathname ? loc.pathname : '',
-      referrer: document && document.referrer ? document.referrer : '',
+      referrer: toSafeUrl(document && document.referrer ? document.referrer : ''),
       userAgent: nav && nav.userAgent ? nav.userAgent : '',
       language: nav && nav.language ? nav.language : '',
       viewport: {
@@ -170,6 +190,8 @@
     if (seenRecently(key)) {return;}
     send(payload);
   }
+
+  if (!isConsentGranted()) {return;}
 
   window.addEventListener('error', function (event) {
     try {

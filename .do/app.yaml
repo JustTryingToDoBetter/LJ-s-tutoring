@@ -16,5 +16,18 @@ static_sites:
       deploy_on_push: true
     routes:
       - path: /
+        headers:
+          - name: Strict-Transport-Security
+            value: "max-age=31536000; includeSubDomains; preload"
+          - name: X-Content-Type-Options
+            value: "nosniff"
+          - name: Referrer-Policy
+            value: "strict-origin-when-cross-origin"
+          - name: Permissions-Policy
+            value: "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+          - name: X-Frame-Options
+            value: "DENY"
+          - name: Content-Security-Policy
+            value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://formspree.io; script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' https: data:; connect-src 'self' https://formspree.io https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com; upgrade-insecure-requests"
     catchall_document: 404.html
     environment_slug: html

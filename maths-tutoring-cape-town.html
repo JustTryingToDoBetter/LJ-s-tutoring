@@ -31,49 +31,19 @@
     default-src 'self';
     base-uri 'self';
     object-src 'none';
+    frame-ancestors 'none';
     form-action 'self' https://formspree.io;
-    script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com;
+    script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
     font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:;
     img-src 'self' https: data:;
     connect-src 'self' https://formspree.io https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com;
     upgrade-insecure-requests">
     
-    <!-- Schema -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "LocalBusiness",
-        "name": "Project Odysseus Maths Tutoring Cape Town",
-        "description": "Private maths tutoring for Grade 8-12 students in Cape Town. CAPS curriculum specialists.",
-        "url": "https://projectodysseus.live/maths-tutoring-cape-town.html",
-        "telephone": "+27679327754",
-        "email": "projectodysseus10@gmail.com",
-        "priceRange": "R180-R250/hour",
-        "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Cape Town",
-            "addressRegion": "Western Cape",
-            "addressCountry": "ZA"
-        },
-        "geo": {
-            "@type": "GeoCoordinates",
-            "latitude": "-33.9249",
-            "longitude": "18.4241"
-        },
-        "openingHoursSpecification": [
-            {
-                "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday"],
-                "opens": "17:00",
-                "closes": "20:00"
-            }
-        ]
-    }
-    </script>
+    <script defer src="/assets/seo-maths.js"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&amp;display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha384-3B6NwesSXE7YJlcLI9RpRqGf2p/EgVH8BgoKTaUrmKNDkHPStTQ3EyoYjCGXaOTS" crossorigin="anonymous">
 
     <link rel="stylesheet" href="/assets/tailwind-input.css">
     <style>
