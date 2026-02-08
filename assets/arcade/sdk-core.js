@@ -158,6 +158,7 @@ export function createSettingsStore() {
     sfxVolume: 0.7,
     musicVolume: 0.5,
     reducedMotion: prefersReducedMotion(),
+    crt: false,
   };
 
   let settings = { ...defaults };

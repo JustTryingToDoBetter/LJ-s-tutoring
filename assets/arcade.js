@@ -37,6 +37,19 @@
     return adManagerPromise;
   }
 
+  function readArcadeSettings() {
+    try {
+      const raw = localStorage.getItem("odyssey_arcade_settings_v1");
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function setCrtMode(enabled) {
+    document.body.classList.toggle("po-arcade--crt", Boolean(enabled));
+  }
+
 const GAMES = [
   {
     id: "quickmath",
@@ -536,6 +549,9 @@ const GAMES = [
     safeText($("#arcade-stat-sessions"), localStorage.getItem(LS.sessions) || "0");
     safeText($("#arcade-stat-best"), getBestTodayScore());
 
+    const settings = readArcadeSettings();
+    setCrtMode(settings?.crt);
+
     const hero = $(".po-arcade__hero");
     if (hero && !$("#arcade-ad-banner")) {
       const slot = document.createElement("div");
@@ -784,6 +800,7 @@ const GAMES = [
       const { createArcadeStore, createAudioManager, createInputManager, prefersReducedMotion, createSettingsStore, createStorageManager } = sdkCore;
       const settingsStore = createSettingsStore();
       const audio = createAudioManager(settingsStore);
+      setCrtMode(settingsStore.get().crt);
 
       if (!game) throw new Error(`Game module has no valid mount export for "${gameId}".`);
 
@@ -853,6 +870,10 @@ const GAMES = [
           if (Object.prototype.hasOwnProperty.call(patch, "musicVolume")) audio.setMusicVolume(patch.musicVolume);
           if (Object.prototype.hasOwnProperty.call(patch, "reducedMotion")) {
             settingsStore.set({ reducedMotion: patch.reducedMotion });
+          }
+          if (Object.prototype.hasOwnProperty.call(patch, "crt")) {
+            settingsStore.set({ crt: patch.crt });
+            setCrtMode(patch.crt);
           }
         };
 

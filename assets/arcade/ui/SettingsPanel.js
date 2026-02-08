@@ -8,6 +8,7 @@ const defaults = {
   sfxVolume: 0.7,
   musicVolume: 0.5,
   reducedMotion: false,
+  crt: false,
 };
 
 export function loadArcadeSettings() {
@@ -76,6 +77,18 @@ export function createSettingsPanel({ settings = {}, onChange } = {}) {
     },
   });
 
+  const crtBtn = createButton({
+    label: state.crt ? "CRT Effect: On" : "CRT Effect: Off",
+    variant: "default",
+    onClick: () => {
+      state.crt = !state.crt;
+      crtBtn.querySelector(".arc-btn__label").textContent = state.crt
+        ? "CRT Effect: On"
+        : "CRT Effect: Off";
+      emit({ crt: state.crt });
+    },
+  });
+
   sfxRange.addEventListener("input", () => emit({ sfxVolume: Number(sfxRange.value) }));
   musicRange.addEventListener("input", () => emit({ musicVolume: Number(musicRange.value) }));
 
@@ -95,6 +108,10 @@ export function createSettingsPanel({ settings = {}, onChange } = {}) {
     el("div", { class: "arc-settings__row" }, [
       el("div", { class: "arc-settings__label", text: "Reduced Motion" }),
       motionBtn,
+    ]),
+    el("div", { class: "arc-settings__row" }, [
+      el("div", { class: "arc-settings__label", text: "CRT Effect" }),
+      crtBtn,
     ]),
   ]);
 

@@ -115,7 +115,7 @@ export function createGameFrame({ mount, title = "Game", subtitle = "Odyssey Arc
     modal = null;
   }
 
-  function showModal({ title: header, body, content, actions = [], onClose, closeOnBackdrop } = {}) {
+  function showModal({ title: header, body, content, actions = [], onClose, closeOnBackdrop, variant, adSlot } = {}) {
     closeModal();
 
     modal = createModal({
@@ -125,6 +125,8 @@ export function createGameFrame({ mount, title = "Game", subtitle = "Odyssey Arc
       actions,
       onClose,
       closeOnBackdrop,
+      variant,
+      adSlot,
     });
 
     overlay.append(modal.root);
@@ -138,11 +140,26 @@ export function createGameFrame({ mount, title = "Game", subtitle = "Odyssey Arc
     showModal({
       title: "Paused",
       body: "Take a breather. Your progress is safe.",
+      variant: "pause",
+      adSlot: true,
       actions: [
         { label: "Settings", onClick: onSettings, keepOpen: true },
         { label: "Restart", onClick: onRestart },
         { label: "Quit", onClick: onQuit },
         { label: "Resume", onClick: onResume, primary: true },
+      ],
+    });
+  }
+
+  function showEnd({ title: endTitle = "Game Over", summary = "", onRestart, onBack } = {}) {
+    showModal({
+      title: endTitle,
+      body: summary || "Nice run.",
+      variant: "end",
+      adSlot: true,
+      actions: [
+        { label: "Back", onClick: onBack },
+        { label: "Restart", onClick: onRestart, primary: true },
       ],
     });
   }
@@ -204,6 +221,7 @@ export function createGameFrame({ mount, title = "Game", subtitle = "Odyssey Arc
     showHowTo,
     showSettings,
     showError,
+    showEnd,
     destroy,
   };
 }

@@ -8,8 +8,11 @@ export function createModal({
   actions = [],
   onClose,
   closeOnBackdrop = true,
+  variant,
+  adSlot = false,
 } = {}) {
-  const dialog = el("div", { class: "arc-modal", role: "dialog", "aria-modal": "true" });
+  const classes = ["arc-modal", variant ? `arc-modal--${variant}` : ""].filter(Boolean).join(" ");
+  const dialog = el("div", { class: classes, role: "dialog", "aria-modal": "true" });
 
   if (title) {
     dialog.append(el("h3", { class: "arc-modal__title", text: title }));
@@ -19,6 +22,14 @@ export function createModal({
     ? content
     : el("p", { class: "arc-modal__body", text: String(body ?? "") });
   dialog.append(bodyNode);
+
+  if (adSlot) {
+    dialog.append(
+      el("div", { class: "arc-ad-safe" }, [
+        el("div", { class: "arc-ad-safe__label", text: "Ad safe zone" }),
+      ])
+    );
+  }
 
   const actionsRow = el("div", { class: "arc-modal__actions" });
   for (const action of actions) {

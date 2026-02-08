@@ -72,6 +72,10 @@ export function createConsoleRuntime({ gameId, mountEl, surfaceEl, page }) {
     } catch {}
   };
 
+  const setCrtMode = (enabled) => {
+    document.body.classList.toggle("po-arcade--crt", Boolean(enabled));
+  };
+
   const ctx = createGameContext({ root: mountEl, gameId });
   const store = createArcadeStore();
   const settingsStore = createSettingsStore();
@@ -79,6 +83,8 @@ export function createConsoleRuntime({ gameId, mountEl, surfaceEl, page }) {
   const storage = createStorageManager(store, gameId, { legacyKeys: legacyKeysFor(gameId) });
   const input = createInputManager(ctx);
   const toastManager = createToastManager(surfaceEl);
+
+  setCrtMode(settingsStore.get().crt);
 
   const adManager = initAdManager({ apiBase: "" });
   adManager.bindGameEvents();
@@ -98,6 +104,36 @@ export function createConsoleRuntime({ gameId, mountEl, surfaceEl, page }) {
         actions: actions || [],
         onClose,
         closeOnBackdrop,
+      });
+      surfaceEl.append(modal.root);
+      return modal;
+    },
+    showPause: ({ onResume, onRestart, onSettings, onQuit } = {}) => {
+      const modal = createModal({
+        title: "Paused",
+        body: "Take a breather. Your progress is safe.",
+        variant: "pause",
+        adSlot: true,
+        actions: [
+          { label: "Settings", onClick: onSettings, keepOpen: true },
+          { label: "Restart", onClick: onRestart },
+          { label: "Quit", onClick: onQuit },
+          { label: "Resume", onClick: onResume, primary: true },
+        ],
+      });
+      surfaceEl.append(modal.root);
+      return modal;
+    },
+    showEnd: ({ title = "Game Over", summary = "", onRestart, onBack } = {}) => {
+      const modal = createModal({
+        title,
+        body: summary || "Nice run.",
+        variant: "end",
+        adSlot: true,
+        actions: [
+          { label: "Back", onClick: onBack },
+          { label: "Restart", onClick: onRestart, primary: true },
+        ],
       });
       surfaceEl.append(modal.root);
       return modal;
@@ -126,6 +162,10 @@ export function createConsoleRuntime({ gameId, mountEl, surfaceEl, page }) {
       if (Object.prototype.hasOwnProperty.call(patch, "reducedMotion")) {
         settingsStore.set({ reducedMotion: patch.reducedMotion });
         ctx.prefs.reducedMotion = patch.reducedMotion;
+      }
+      if (Object.prototype.hasOwnProperty.call(patch, "crt")) {
+        settingsStore.set({ crt: patch.crt });
+        setCrtMode(patch.crt);
       }
     };
 

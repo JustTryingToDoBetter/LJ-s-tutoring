@@ -164,21 +164,37 @@ export function createGameUI(ctx, {
       }, ms);
     },
 
-    showModal({ title, body, actions = [] }) {
+    showModal({ title, body, actions = [], variant, adSlot = false } = {}) {
       api.closeModal();
 
+      const modalClass = ["po-modal", variant ? `po-modal--${variant}` : ""]
+        .filter(Boolean)
+        .join(" ");
+
+      const adSafe = () =>
+        el("div", { class: "po-ad-safe" }, [
+          el("div", { class: "po-ad-safe__label", text: "Ad safe zone" }),
+        ]);
+
+      const modalChildren = [
+        el("h3", { text: String(title || "") }),
+        el("p", { text: String(body || "") }),
+      ];
+
+      if (adSlot) modalChildren.push(adSafe());
+
+      modalChildren.push(
+        el("div", { class: "po-modal-actions" }, actions.map(a =>
+          el("button", {
+            class: `po-btn ${a.primary ? "po-btn--primary" : ""}`,
+            type: "button",
+            onClick: () => { a.onClick?.(); if (!a.keepOpen) api.closeModal(); },
+          }, [a.label])
+        ))
+      );
+
       modalEl = el("div", { class: "po-modal-backdrop" }, [
-        el("div", { class: "po-modal" }, [
-          el("h3", { text: String(title || "") }),
-          el("p", { text: String(body || "") }),
-          el("div", { class: "po-modal-actions" }, actions.map(a =>
-            el("button", {
-              class: `po-btn ${a.primary ? "po-btn--primary" : ""}`,
-              type: "button",
-              onClick: () => { a.onClick?.(); if (!a.keepOpen) api.closeModal(); },
-            }, [a.label])
-          )),
-        ]),
+        el("div", { class: modalClass }, modalChildren),
       ]);
 
       // tap outside to close
@@ -200,6 +216,8 @@ export function createGameUI(ctx, {
       api.showModal({
         title: "Paused",
         body: "Take a breather. Your progress is safe.",
+        variant: "pause",
+        adSlot: true,
         actions: [
           { label: "Settings", onClick: onSettings, keepOpen: true },
           { label: "Quit", onClick: onQuit },
@@ -212,6 +230,8 @@ export function createGameUI(ctx, {
       api.showModal({
         title,
         body: summary || "Nice run.",
+        variant: "end",
+        adSlot: true,
         actions: [
           { label: "Back", onClick: onBack },
           { label: "Restart", onClick: onRestart, primary: true },

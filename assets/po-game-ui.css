@@ -12,12 +12,40 @@
   --po-radius: 16px;
   --po-radius-sm: 12px;
   --po-gap: 12px;
+.po-modal--pause{
+  border-color: rgba(245, 193, 90, 0.35);
+  box-shadow: 0 0 30px rgba(245, 193, 90, 0.18);
+}
+.po-modal--end{
+  border-color: rgba(60, 240, 255, 0.4);
+  box-shadow: 0 0 34px rgba(60, 240, 255, 0.2);
+}
   --po-hit: 44px;
   --po-glow: 0 0 18px rgba(60,240,255,.2);
 }
 
 .po-game-shell{
   min-height: 100%;
+
+.po-ad-safe{
+  border-radius: 14px;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  padding: 12px;
+  background: rgba(8, 12, 20, 0.6);
+  text-align: center;
+}
+.po-ad-safe__label{
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.8);
+  font-weight: 800;
+}
+
+@media (max-width: 640px){
+  .po-arcade{ --po-hit: 52px; }
+  .po-btn{ font-size: 14px; }
+}
   padding: 12px;
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
   display: grid;
