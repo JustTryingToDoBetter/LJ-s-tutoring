@@ -41,13 +41,24 @@ export default {
 
     // Controls (not hardcoded: can be read from config later)
     let dir = { x: 1, y: 0 };
+    let tickIndex = 0;
+    const emitInput = (next) => {
+      sdk.emitDeterministicEvent("input", { dir: next }, tickIndex);
+    };
+
+    const setDir = (next) => {
+      if (next.x === -dir.x && next.y === -dir.y) return;
+      if (dir.x === next.x && dir.y === next.y) return;
+      dir = next;
+      emitInput(next);
+    };
     ui.setControls({
       type: "dpad",
       on: {
-        up: () => { if (dir.y !== 1) dir = { x: 0, y: -1 }; },
-        down: () => { if (dir.y !== -1) dir = { x: 0, y: 1 }; },
-        left: () => { if (dir.x !== 1) dir = { x: -1, y: 0 }; },
-        right: () => { if (dir.x !== -1) dir = { x: 1, y: 0 }; },
+        up: () => setDir({ x: 0, y: -1 }),
+        down: () => setDir({ x: 0, y: 1 }),
+        left: () => setDir({ x: -1, y: 0 }),
+        right: () => setDir({ x: 1, y: 0 }),
       },
       extras: [{ label: "Seed", onClick: () => ui.toast(sdk.runSeed.slice(0, 18) + "…") }],
     });
@@ -64,8 +75,12 @@ export default {
       for (let tries = 0; tries < 200; tries++) {
         const x = sdk.rng.int(0, grid.w - 1);
         const y = sdk.rng.int(0, grid.h - 1);
-        if (!snake.some(s => s.x === x && s.y === y)) return { x, y, ...kind };
+        if (!snake.some(s => s.x === x && s.y === y)) {
+          sdk.emitDeterministicEvent("spawn", { x, y, type: kind.type }, tickIndex);
+          return { x, y, ...kind };
+        }
       }
+      sdk.emitDeterministicEvent("spawn", { x: 10, y: 8, type: "food" }, tickIndex);
       return { x: 10, y: 8, type: "food", points: 1, grow: 1 };
     }
 
@@ -90,6 +105,7 @@ export default {
     }
 
     function step() {
+      tickIndex += 1;
       const head = snake[0];
       const nx = (head.x + dir.x + grid.w) % grid.w;
       const ny = (head.y + dir.y + grid.h) % grid.h;
@@ -139,6 +155,7 @@ export default {
     }
 
     function end(reason) {
+      sdk.emitDeterministicEvent("end", { reason, score: sdk.state.score }, tickIndex);
       ui.showEnd({
         title: "Game Over",
         summary: `${reason} • Score ${sdk.state.score} • Seed ${sdk.runSeed.slice(0, 12)}…`,

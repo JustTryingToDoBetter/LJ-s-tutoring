@@ -199,6 +199,49 @@ Potential improvements not yet implemented:
 6. **E2E Testing**: Playwright or Cypress integration
 7. **Performance Budget**: Lighthouse CI integration
 
+## 🕹️ Arcade Multiplayer Readiness
+
+This project includes deterministic event hooks for future multiplayer and server-side validation. No multiplayer gameplay is implemented yet.
+
+### Event Contract (Deterministic)
+
+Events are recorded via the shared game SDK and emitted to the arcade shell:
+
+```js
+sdk.emitDeterministicEvent("input", { dir: { x: 0, y: -1 } }, tickIndex);
+sdk.emitDeterministicEvent("spawn", { x: 12, y: 4, type: "food" }, tickIndex);
+sdk.emitDeterministicEvent("end", { reason: "Self collision", score: 42 }, tickIndex);
+```
+
+Event shape:
+
+```json
+{
+   "type": "input",
+   "payload": { "dir": { "x": 0, "y": -1 } },
+   "frame": 128
+}
+```
+
+Recommended rules:
+- Only emit deterministic events (input, spawn, state transitions).
+- Include a frame/tick index from the game loop, not wall clock time.
+- Avoid random values in payloads unless they come from the seeded RNG.
+
+Reference implementation:
+- [assets/games/snake/index.js](assets/games/snake/index.js)
+- [assets/arcade/game-sdk.js](assets/arcade/game-sdk.js)
+
+### Server Hooks (Not Implemented)
+
+The backend exposes explicit, non-implemented hooks for future multiplayer:
+- POST `/api/arcade/match/events` (accepts event batches)
+- POST `/api/arcade/match/validate` (server-side validation stub)
+
+Schemas live in:
+- [lms-api/src/lib/schemas.ts](lms-api/src/lib/schemas.ts)
+- [lms-api/src/routes/arcade.ts](lms-api/src/routes/arcade.ts)
+
 ## 🐛 Troubleshooting
 
 ### Build fails with "command not found"
