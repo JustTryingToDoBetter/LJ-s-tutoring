@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /*
   Build-time word list fetcher (offline-safe).
   - Downloads a curated 5-letter word list

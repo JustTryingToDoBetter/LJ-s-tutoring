@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const base = (process.env.ARCADE_SMOKE_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 async function fetchText(url) {

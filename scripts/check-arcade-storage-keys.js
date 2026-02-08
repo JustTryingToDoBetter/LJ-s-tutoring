@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 /**
  * Sanity check: the Arcade "best today" stat key must be consistent between
  * the arcade shell (reader) and at least one game (writer).

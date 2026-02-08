@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, qs, renderStatus, renderStatusEl, formatMoney, setActiveNav, showBanner, setText, escapeHtml, getImpersonationMeta, clearImpersonationContext, createEl, clearChildren } from '/assets/portal-shared.js';
+import { apiGet, apiPost, qs, renderStatus, renderStatusEl, formatMoney, setActiveNav, showBanner, setText, escapeHtml, getImpersonationMeta, clearImpersonationContext, createEl, clearChildren } from '/assets/portal-shared.js';
 
 const DB_NAME = 'tutor-offline';
 const STORE = 'drafts';
@@ -127,16 +127,6 @@ async function deleteDrafts(ids) {
   ids.forEach((id) => store.delete(id));
 }
 
-async function clearDrafts() {
-  const db = await openDb();
-  if (!db) {
-    localStorage.removeItem(DRAFTS_KEY);
-    return;
-  }
-  const tx = db.transaction(STORE, 'readwrite');
-  tx.objectStore(STORE).clear();
-}
-
 async function syncDrafts() {
   const drafts = await getDrafts();
   if (!drafts.length) {return { synced: 0, deduped: 0, failed: 0 };}
@@ -239,7 +229,6 @@ async function initLogin() {
     event.preventDefault();
     msg.textContent = '';
 
-    const idempotencyKey = crypto.randomUUID();
     try {
       const email = qs('#email').value.trim();
       await apiPost('/auth/request-link', { email });
@@ -395,7 +384,6 @@ async function initSessions() {
   const startBtn = qs('#startTimer');
   const stopBtn = qs('#stopTimer');
   const timerState = qs('#timerState');
-  const resumeBanner = qs('#resumeBanner');
   const resumeBtn = qs('#resumeTimerBtn');
   const discardBtn = qs('#discardTimerBtn');
 
@@ -692,6 +680,7 @@ async function initSessions() {
   updateConnectivityUI();
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
     const elapsed = Math.round(perfStart ? performance.now() - perfStart : 0);
+    // eslint-disable-next-line no-console
     console.info(`[perf] sessions TTI ${elapsed}ms`);
   }
 

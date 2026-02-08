@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 /**
  * Build-time JS parse check for injected files.
  * Fails with a clear error if the generated JS is invalid.

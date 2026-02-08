@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 
 const fs = require('fs');
 const path = require('path');
@@ -28,7 +29,7 @@ function sanitizeId(value) {
 }
 
 function replaceConst(content, name, value) {
-  const pattern = new RegExp(`const\s+${name}\s*=\s*['\"][^'\"]+['\"]\s*;`);
+  const pattern = new RegExp(`const\\s+${name}\\s*=\\s*['"][^'"]+['"]\\s*;`);
   if (!pattern.test(content)) {return { changed: false, next: content };}
   const next = content.replace(pattern, `const ${name} = "${value}";`);
   return { changed: next !== content, next };
