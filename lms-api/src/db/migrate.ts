@@ -7,7 +7,9 @@ import {Pool } from 'pg';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = [process.env.DATABASE_URL_TEST, process.env.DATABASE_URL]
+  .map((value) => (value ?? '').trim())
+  .find(Boolean);
 if (!DATABASE_URL) {
   console.error('Missing DATABASE_URL');
   process.exit(1);
