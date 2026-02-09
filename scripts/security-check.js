@@ -37,15 +37,10 @@ function read(filePath) {
   return fs.readFileSync(filePath, 'utf8');
 }
 
-function checkCspUnsafeInline(html, filePath) {
-  const cspMetaPattern = /<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*content=["']([\s\S]*?)["'][^>]*>/gi;
-  let match;
-  while ((match = cspMetaPattern.exec(html)) !== null) {
-    const content = match[1];
-    if (content.includes('unsafe-inline')) {
-      errors.push(`CSP contains unsafe-inline in ${path.relative(root, filePath)}`);
-      return;
-    }
+function checkCspMeta(html, filePath) {
+  const cspMetaPattern = /<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/i;
+  if (cspMetaPattern.test(html)) {
+    errors.push(`CSP meta tag found in ${path.relative(root, filePath)}`);
   }
 }
 
@@ -68,7 +63,7 @@ function checkHtmlFiles() {
     if (!filePath.endsWith('.html')) {return;}
     if (filePath.startsWith(distDir + path.sep)) {return;}
     const html = read(filePath);
-    checkCspUnsafeInline(html, filePath);
+    checkCspMeta(html, filePath);
     checkInlineScript(html, filePath);
     checkInlineHandlers(html, filePath);
   });
