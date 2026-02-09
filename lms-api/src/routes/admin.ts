@@ -409,6 +409,9 @@ export async function adminRoutes(app: FastifyInstance) {
     const client = await pool.connect();
     try {
       const result = await createTutor(client, parsed.data);
+      if ('error' in result) {
+        return reply.code(409).send({ error: result.error, invalidSubjects: result.invalidSubjects });
+      }
       return reply.code(201).send(result);
     } catch (err: any) {
       if (err?.code === '23505') return reply.code(409).send({ error: 'email_already_exists' });
@@ -433,6 +436,9 @@ export async function adminRoutes(app: FastifyInstance) {
 
     const updated = await updateTutor(pool, tutorId, parsed.data);
     if (!updated) return reply.code(404).send({ error: 'tutor_not_found' });
+    if ('error' in updated) {
+      return reply.code(409).send({ error: updated.error, invalidSubjects: updated.invalidSubjects });
+    }
     return reply.send({ tutor: updated });
   });
 
@@ -710,7 +716,12 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
     const result = await createAssignment(pool, parsed.data);
-    if ('error' in result) return reply.code(404).send({ error: result.error });
+    if ('error' in result) {
+      if (result.error === 'tutor_not_found' || result.error === 'student_not_found') {
+        return reply.code(404).send({ error: result.error });
+      }
+      return reply.code(409).send({ error: result.error });
+    }
     return reply.code(201).send({ assignment: result.assignment });
   });
 
@@ -727,6 +738,12 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     const updated = await updateAssignment(pool, assignmentId, parsed.data);
     if (!updated) return reply.code(404).send({ error: 'assignment_not_found' });
+    if ('error' in updated) {
+      if (updated.error === 'tutor_not_found' || updated.error === 'student_not_found') {
+        return reply.code(404).send({ error: updated.error });
+      }
+      return reply.code(409).send({ error: updated.error });
+    }
     return reply.send({ assignment: updated });
   });
 

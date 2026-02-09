@@ -4,6 +4,24 @@ export async function initAssignments() {
   setActiveNav('assignments');
   const list = qs('#assignmentList');
   const form = qs('#assignmentForm');
+  const formError = qs('#assignmentFormError');
+
+  const capsSubjects = [
+    'Mathematics',
+    'Mathematical Literacy',
+    'Physical Sciences',
+    'Life Sciences',
+    'Accounting',
+    'English Home Language',
+    'Afrikaans Home Language'
+  ];
+
+  const subjectList = qs('#capsSubjects');
+  if (subjectList) {
+    subjectList.innerHTML = capsSubjects
+      .map((subject) => `<option value="${escapeHtml(subject)}"></option>`)
+      .join('');
+  }
 
   const [tutors, students] = await Promise.all([
     apiGet('/admin/tutors'),
@@ -31,6 +49,7 @@ export async function initAssignments() {
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    formError.textContent = '';
     const allowedDays = Array.from(document.querySelectorAll('input[name="allowedDay"]:checked'))
       .map((i) => Number(i.value));
     const payload = {
@@ -45,8 +64,13 @@ export async function initAssignments() {
         { start: qs('#rangeStart').value, end: qs('#rangeEnd').value }
       ]
     };
-    await apiPost('/admin/assignments', payload);
-    form.reset();
-    await load();
+    try {
+      await apiPost('/admin/assignments', payload);
+      form.reset();
+      await load();
+    } catch (err) {
+      const message = err?.message || 'Unable to create assignment.';
+      formError.textContent = message.replace(/_/g, ' ');
+    }
   });
 }

@@ -17,6 +17,9 @@ export type TutorSummary = {
   phone: string | null;
   default_hourly_rate: number;
   active: boolean;
+  status?: string;
+  qualification_band?: string | null;
+  qualified_subjects_json?: unknown;
   email?: string | null;
 };
 

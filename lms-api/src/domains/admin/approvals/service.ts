@@ -178,6 +178,13 @@ export async function approveSession(
   const currentRes = await client.query(`select * from sessions where id = $1`, [sessionId]);
   if (currentRes.rowCount === 0) return { error: 'session_not_found' } as const;
   const current = currentRes.rows[0];
+  const tutorRes = await client.query(
+    `select active, status from tutor_profiles where id = $1`,
+    [current.tutor_id]
+  );
+  if (tutorRes.rowCount === 0) return { error: 'tutor_not_found' } as const;
+  const tutor = tutorRes.rows[0];
+  if (!tutor.active || tutor.status !== 'ACTIVE') return { error: 'tutor_not_active' } as const;
   if (await isDateLocked(client, current.date)) {
     return { error: 'pay_period_locked' } as const;
   }
@@ -277,12 +284,28 @@ export async function bulkApprove(
     );
     const sessionById = new Map(res.rows.map((row) => [row.id, row]));
 
+    const tutorIds = Array.from(new Set(res.rows.map((row) => row.tutor_id)));
+    const tutorRes = tutorIds.length
+      ? await client.query(
+          `select id, active, status
+           from tutor_profiles
+           where id = any($1::uuid[])`,
+          [tutorIds]
+        )
+      : { rows: [] };
+    const tutorById = new Map(tutorRes.rows.map((row: any) => [row.id, row]));
+
     const results: Array<{ sessionId: string; status: string; reason?: string }> = [];
 
     for (const sessionId of input.sessionIds) {
       const current = sessionById.get(sessionId);
       if (!current) {
         results.push({ sessionId, status: 'error', reason: 'not_found' });
+        continue;
+      }
+      const tutor = tutorById.get(current.tutor_id);
+      if (!tutor || !tutor.active || tutor.status !== 'ACTIVE') {
+        results.push({ sessionId, status: 'error', reason: 'tutor_not_active' });
         continue;
       }
       if (await isDateLocked(client, current.date)) {

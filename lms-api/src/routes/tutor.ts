@@ -44,6 +44,23 @@ export async function tutorRoutes(app: FastifyInstance) {
   const getSignedAmount = (type: string, amount: number) =>
     type === 'PENALTY' ? -Math.abs(amount) : Math.abs(amount);
 
+  const ensureTutorActive = async (tutorId: string, reply: any) => {
+    const res = await pool.query(
+      `select active, status from tutor_profiles where id = $1`,
+      [tutorId]
+    );
+    if (res.rowCount === 0) {
+      reply.code(404).send({ error: 'tutor_not_found' });
+      return false;
+    }
+    const tutor = res.rows[0];
+    if (!tutor.active || tutor.status !== 'ACTIVE') {
+      reply.code(409).send({ error: 'tutor_not_active' });
+      return false;
+    }
+    return true;
+  };
+
   app.get('/tutor/me', async (req, reply) => {
     const userId = req.user!.userId;
     const res = await pool.query(
@@ -173,6 +190,7 @@ export async function tutorRoutes(app: FastifyInstance) {
 
   app.post('/tutor/sessions', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
+    if (!(await ensureTutorActive(tutorId, reply))) return reply;
     const parsed = CreateSessionSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
@@ -243,6 +261,7 @@ export async function tutorRoutes(app: FastifyInstance) {
 
   app.patch('/tutor/sessions/:id', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
+    if (!(await ensureTutorActive(tutorId, reply))) return reply;
     const params = IdParamSchema.safeParse(req.params);
     if (!params.success) {
       return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
@@ -337,6 +356,7 @@ export async function tutorRoutes(app: FastifyInstance) {
 
   app.post('/tutor/sessions/:id/submit', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
+    if (!(await ensureTutorActive(tutorId, reply))) return reply;
     const params = IdParamSchema.safeParse(req.params);
     if (!params.success) {
       return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });

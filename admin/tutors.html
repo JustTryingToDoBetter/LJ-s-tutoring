@@ -58,10 +58,39 @@
               <label for="tutorRate">Default hourly rate</label>
               <input id="tutorRate" type="number" min="0" step="0.01" required>
             </div>
+            <div class="field">
+              <label for="tutorStatus">Status</label>
+              <select id="tutorStatus" required>
+                <option value="INVITED" selected>Invited</option>
+                <option value="VERIFIED">Verified</option>
+                <option value="ACTIVE">Active</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="tutorBand">Qualification band</label>
+              <select id="tutorBand" required>
+                <option value="GRADES_6_9" selected>Grades 6-9</option>
+                <option value="GRADES_10_12">Grades 10-12</option>
+                <option value="BOTH">Both</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Qualified subjects</label>
+              <div class="split">
+                <label><input type="checkbox" name="qualifiedSubject" value="Mathematics"> Mathematics</label>
+                <label><input type="checkbox" name="qualifiedSubject" value="Mathematical Literacy"> Mathematical Literacy</label>
+                <label><input type="checkbox" name="qualifiedSubject" value="Physical Sciences"> Physical Sciences</label>
+                <label><input type="checkbox" name="qualifiedSubject" value="Life Sciences"> Life Sciences</label>
+                <label><input type="checkbox" name="qualifiedSubject" value="Accounting"> Accounting</label>
+                <label><input type="checkbox" name="qualifiedSubject" value="English Home Language"> English Home Language</label>
+                <label><input type="checkbox" name="qualifiedSubject" value="Afrikaans Home Language"> Afrikaans Home Language</label>
+              </div>
+            </div>
             <label class="field">
               <span>Active</span>
-              <input id="tutorActive" type="checkbox" checked>
+              <input id="tutorActive" type="checkbox">
             </label>
+            <p id="tutorFormError" class="note" role="alert"></p>
             <button class="button" type="submit">Create tutor</button>
           </form>
         </div>

@@ -3,6 +3,8 @@ import { z } from 'zod';
 const DateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const TimeString = z.string().regex(/^\d{2}:\d{2}$/);
 const SessionStatusSchema = z.enum(['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED']);
+const TutorStatusSchema = z.enum(['INVITED', 'VERIFIED', 'ACTIVE']);
+const QualificationBandSchema = z.enum(['GRADES_6_9', 'GRADES_10_12', 'BOTH']);
 
 export const EmailSchema = z.string().email().transform((s) => s.trim().toLowerCase());
 
@@ -39,6 +41,9 @@ export const CreateTutorSchema = z.object({
   phone: z.string().trim().max(40).optional(),
   defaultHourlyRate: z.number().min(0).max(10000),
   active: z.boolean().optional().default(true),
+  qualificationBand: QualificationBandSchema,
+  qualifiedSubjects: z.array(z.string().trim().min(1).max(120)).min(1),
+  status: TutorStatusSchema.optional().default('INVITED'),
 });
 
 export const UpdateTutorSchema = z.object({
@@ -46,6 +51,9 @@ export const UpdateTutorSchema = z.object({
   phone: z.string().trim().max(40).optional().nullable(),
   defaultHourlyRate: z.number().min(0).max(10000).optional(),
   active: z.boolean().optional(),
+  qualificationBand: QualificationBandSchema.optional(),
+  qualifiedSubjects: z.array(z.string().trim().min(1).max(120)).min(1).optional(),
+  status: TutorStatusSchema.optional(),
 });
 
 export const CreateStudentSchema = z.object({

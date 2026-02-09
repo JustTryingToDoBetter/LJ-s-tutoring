@@ -52,7 +52,8 @@
             </div>
             <div class="field">
               <label for="assignmentSubject">Subject</label>
-              <input id="assignmentSubject" required>
+              <input id="assignmentSubject" list="capsSubjects" required>
+              <datalist id="capsSubjects"></datalist>
             </div>
             <div class="split">
               <div class="field">
@@ -90,6 +91,7 @@
                 <input id="rangeEnd" type="time" required>
               </div>
             </div>
+            <p id="assignmentFormError" class="note" role="alert"></p>
             <button class="button" type="submit">Create assignment</button>
           </form>
         </div>

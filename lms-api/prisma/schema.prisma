@@ -245,6 +245,9 @@ model TutorProfile {
   phone             String?
   defaultHourlyRate Decimal @map("default_hourly_rate") @db.Numeric(10, 2)
   active            Boolean @default(true)
+  status            String  @default("ACTIVE")
+  qualificationBand String? @map("qualification_band")
+  qualifiedSubjects Json?   @map("qualified_subjects_json")
 
   user        User?
   assignments Assignment[]

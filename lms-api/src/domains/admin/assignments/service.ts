@@ -1,15 +1,47 @@
 import type { DbClient } from '../shared/types.js';
 import type { CreateAssignmentInput, UpdateAssignmentInput, AssignmentSummary } from './contracts.js';
 import { parsePagination } from '../../../lib/pagination.js';
+import {
+  parseGrade,
+  getGradeBand,
+  isSubjectAllowedForGrade,
+  isTutorQualifiedForGradeBand,
+  isTutorQualifiedForSubject
+} from '../../../lib/caps.js';
 
 export async function createAssignment(client: DbClient, input: CreateAssignmentInput) {
   const [tutorRes, studentRes] = await Promise.all([
-    client.query(`select 1 from tutor_profiles where id = $1`, [input.tutorId]),
-    client.query(`select 1 from students where id = $1`, [input.studentId])
+    client.query(
+      `select id, active, status, qualification_band, qualified_subjects_json
+       from tutor_profiles where id = $1`,
+      [input.tutorId]
+    ),
+    client.query(`select id, grade from students where id = $1`, [input.studentId])
   ]);
 
   if (tutorRes.rowCount === 0) return { error: 'tutor_not_found' } as const;
   if (studentRes.rowCount === 0) return { error: 'student_not_found' } as const;
+
+  const tutor = tutorRes.rows[0];
+  if (!tutor.active || tutor.status !== 'ACTIVE') return { error: 'tutor_not_active' } as const;
+  const grade = parseGrade(studentRes.rows[0]?.grade);
+  if (!grade) return { error: 'student_grade_missing' } as const;
+
+  const gradeBand = getGradeBand(grade);
+  if (!gradeBand) return { error: 'student_grade_invalid' } as const;
+  if (!isSubjectAllowedForGrade(input.subject, grade)) {
+    return { error: 'subject_grade_invalid' } as const;
+  }
+
+  const tutorBand = tutor.qualification_band as string | null;
+  const tutorSubjects = Array.isArray(tutor.qualified_subjects_json) ? tutor.qualified_subjects_json : [];
+  if (!tutorBand) return { error: 'tutor_not_qualified' } as const;
+  if (!isTutorQualifiedForGradeBand(tutorBand as any, gradeBand)) {
+    return { error: 'tutor_not_qualified' } as const;
+  }
+  if (!isTutorQualifiedForSubject(input.subject, tutorSubjects as string[])) {
+    return { error: 'tutor_not_qualified' } as const;
+  }
 
   const res = await client.query(
     `insert into assignments
@@ -88,6 +120,41 @@ export async function updateAssignment(client: DbClient, assignmentId: string, i
   const currentRes = await client.query(`select * from assignments where id = $1`, [assignmentId]);
   if (currentRes.rowCount === 0) return null;
   const current = currentRes.rows[0];
+
+  const [tutorRes, studentRes] = await Promise.all([
+    client.query(
+      `select id, active, status, qualification_band, qualified_subjects_json
+       from tutor_profiles where id = $1`,
+      [current.tutor_id]
+    ),
+    client.query(`select id, grade from students where id = $1`, [current.student_id])
+  ]);
+
+  if (tutorRes.rowCount === 0) return { error: 'tutor_not_found' } as const;
+  if (studentRes.rowCount === 0) return { error: 'student_not_found' } as const;
+
+  const tutor = tutorRes.rows[0];
+  if (!tutor.active || tutor.status !== 'ACTIVE') return { error: 'tutor_not_active' } as const;
+
+  const grade = parseGrade(studentRes.rows[0]?.grade);
+  if (!grade) return { error: 'student_grade_missing' } as const;
+  const gradeBand = getGradeBand(grade);
+  if (!gradeBand) return { error: 'student_grade_invalid' } as const;
+
+  const subject = input.subject ?? current.subject;
+  if (!isSubjectAllowedForGrade(subject, grade)) {
+    return { error: 'subject_grade_invalid' } as const;
+  }
+
+  const tutorBand = tutor.qualification_band as string | null;
+  const tutorSubjects = Array.isArray(tutor.qualified_subjects_json) ? tutor.qualified_subjects_json : [];
+  if (!tutorBand) return { error: 'tutor_not_qualified' } as const;
+  if (!isTutorQualifiedForGradeBand(tutorBand as any, gradeBand)) {
+    return { error: 'tutor_not_qualified' } as const;
+  }
+  if (!isTutorQualifiedForSubject(subject, tutorSubjects as string[])) {
+    return { error: 'tutor_not_qualified' } as const;
+  }
 
   const res = await client.query(
     `update assignments
