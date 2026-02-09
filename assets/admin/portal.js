@@ -1,9 +1,11 @@
-import { apiGet, apiPost, qs, formatMoney, setActiveNav, escapeHtml } from '/assets/portal-shared.js';
+import { apiGet, apiPost, qs, setActiveNav, escapeHtml } from '/assets/portal-shared.js';
 import { initTutors } from '/assets/admin/domains/tutors.js';
 import { initStudents } from '/assets/admin/domains/students.js';
 import { initAssignments } from '/assets/admin/domains/assignments.js';
 import { initApprovals } from '/assets/admin/domains/approvals.js';
 import { initPayroll } from '/assets/admin/domains/payroll.js';
+import { initReconciliation } from '/assets/admin/domains/reconciliation.js';
+import { initRetention } from '/assets/admin/domains/retention.js';
 
 async function initDashboard() {
   setActiveNav('dashboard');
@@ -128,116 +130,6 @@ async function initAudit() {
   });
 
   await load();
-}
-
-async function initReconciliation() {
-  setActiveNav('reconciliation');
-  const form = qs('#reconForm');
-  const status = qs('#reconStatus');
-  const report = qs('#reconReport');
-  const adjustmentsEl = qs('#reconAdjustments');
-
-  const renderList = (title, items, renderItem) => {
-    const content = items.length
-      ? items.map(renderItem).join('')
-      : '<div class="note">None found.</div>';
-    return `<div class="panel">
-      <div><strong>${title}</strong></div>
-      <div style="margin-top:8px;">${content}</div>
-    </div>`;
-  };
-
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    report.innerHTML = '';
-    adjustmentsEl.innerHTML = '';
-    const weekStart = qs('#reconWeek').value;
-
-    const [integrity, adjustments] = await Promise.all([
-      apiGet(`/admin/integrity/pay-period/${weekStart}`),
-      apiGet(`/admin/pay-periods/${weekStart}/adjustments`)
-    ]);
-
-    status.textContent = `Week status: ${integrity.payPeriod?.status || 'OPEN'}`;
-
-    report.innerHTML = [
-      renderList('Overlapping sessions', integrity.overlaps, (row) =>
-        `<div class="note">${escapeHtml(row.session_id)} overlaps ${escapeHtml(row.overlap_id)} (${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)})</div>`
-      ),
-      renderList('Outside assignment window', integrity.outsideAssignmentWindow, (row) =>
-        `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)}</div>`
-      ),
-      renderList('Approved sessions missing invoice lines', integrity.missingInvoiceLines, (row) =>
-        `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)}</div>`
-      ),
-      renderList('Invoice totals mismatched', integrity.invoiceTotalMismatches, (row) =>
-        `<div class="note">${escapeHtml(row.invoice_number)} total ${formatMoney(row.total_amount)} vs lines ${formatMoney(row.line_total)}</div>`
-      ),
-      renderList('Pending submitted sessions', integrity.pendingSubmissions, (row) =>
-        `<div class="note">${escapeHtml(row.tutor_name)}: ${row.pending}</div>`
-      ),
-      renderList('Duplicate sessions', integrity.duplicateSessions, (row) =>
-        `<div class="note">${escapeHtml(row.tutor_id)} / ${escapeHtml(row.student_id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)} (x${row.count})</div>`
-      )
-    ].join('');
-
-    const adjustmentItems = adjustments.adjustments || [];
-    adjustmentsEl.innerHTML = renderList('Adjustments', adjustmentItems, (row) => {
-      const voided = row.voided_at ? ' (voided)' : '';
-      return `<div class="note">${escapeHtml(row.tutor_name)}: ${escapeHtml(row.type)} ${formatMoney(row.signed_amount)} - ${escapeHtml(row.reason)}${voided}</div>`;
-    });
-  });
-}
-
-async function initRetention() {
-  setActiveNav('retention');
-  const configEl = qs('#retentionConfig');
-  const eligibleEl = qs('#retentionEligible');
-
-  const data = await apiGet('/admin/retention/summary');
-  const config = data.config || {};
-  const cutoffs = data.cutoffs || {};
-  const eligible = data.eligible || {};
-
-  const configRows = [
-    ['Sessions', `${config.sessionsYears} years`, cutoffs.sessionsBefore],
-    ['Session history', `${config.sessionHistoryYears} years`, cutoffs.sessionHistoryBefore],
-    ['Invoices', `${config.invoicesYears} years`, cutoffs.invoicesBefore],
-    ['Audit log', `${config.auditYears} years`, cutoffs.auditBefore],
-    ['Magic link tokens', `${config.magicLinkDays} days`, cutoffs.magicLinkBefore],
-    ['Privacy requests', `${config.privacyRequestsYears} years`, cutoffs.privacyRequestsBefore]
-  ];
-
-  if (configEl) {
-    configEl.innerHTML = configRows.map((row) => {
-      const label = escapeHtml(row[0]);
-      const value = escapeHtml(String(row[1] ?? ''));
-      const cutoff = row[2] ? escapeHtml(new Date(row[2]).toISOString()) : '—';
-      return `<div class="panel">
-        <div><strong>${label}</strong></div>
-        <div class="note">Retention: ${value}</div>
-        <div class="note">Cutoff: ${cutoff}</div>
-      </div>`;
-    }).join('');
-  }
-
-  if (eligibleEl) {
-    eligibleEl.innerHTML = [
-      ['Magic link tokens', eligible.magicLinkTokens],
-      ['Audit log entries', eligible.auditLogs],
-      ['Session history entries', eligible.sessionHistory],
-      ['Invoices', eligible.invoices],
-      ['Sessions', eligible.sessions],
-      ['Privacy requests', eligible.privacyRequests]
-    ].map((row) => {
-      const label = escapeHtml(row[0]);
-      const count = Number(row[1] || 0);
-      return `<div class="panel">
-        <div><strong>${label}</strong></div>
-        <div class="note">${count} eligible</div>
-      </div>`;
-    }).join('');
-  }
 }
 
 async function initPrivacyRequests() {
