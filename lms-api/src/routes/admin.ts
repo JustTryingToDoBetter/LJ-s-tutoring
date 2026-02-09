@@ -18,6 +18,21 @@ import {
   updateAssignment
 } from '../domains/admin/assignments/index.js';
 import {
+  listSessions,
+  getSessionHistory,
+  bulkApprove,
+  bulkReject,
+  approveSession,
+  rejectSession
+} from '../domains/admin/approvals/index.js';
+import {
+  generatePayrollWeek,
+  lockPayPeriod,
+  createAdjustment,
+  listAdjustments,
+  deleteAdjustment
+} from '../domains/admin/payroll/index.js';
+import {
   AdminSessionsQuerySchema,
   AssignmentSchema,
   AuditLogQuerySchema,
@@ -50,10 +65,6 @@ import { anonymizeStudent, anonymizeTutor, exportStudentData, exportTutorData } 
 
 function toDateString(value: Date) {
   return value.toISOString().slice(0, 10);
-}
-
-function getSignedAmount(type: string, amount: number) {
-  return type === 'PENALTY' ? -Math.abs(amount) : Math.abs(amount);
 }
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -128,189 +139,6 @@ export async function adminRoutes(app: FastifyInstance) {
     };
   };
 
-  const fieldLabels: Record<string, string> = {
-    date: 'Date',
-    start_time: 'Start time',
-    end_time: 'End time',
-    duration_minutes: 'Duration',
-    status: 'Status',
-    mode: 'Mode',
-    location: 'Location',
-    notes: 'Notes',
-    assignment_id: 'Assignment',
-    tutor_id: 'Tutor',
-    student_id: 'Student',
-    approved_by: 'Approved by',
-    approved_at: 'Approved at',
-    submitted_at: 'Submitted at',
-    created_at: 'Created at',
-    reject_reason: 'Reject reason'
-  };
-
-  const importantFields = new Set([
-    'status',
-    'date',
-    'start_time',
-    'end_time',
-    'assignment_id',
-    'student_id',
-    'tutor_id',
-    'approved_by'
-  ]);
-
-  const orderedFields = [
-    'status',
-    'date',
-    'start_time',
-    'end_time',
-    'duration_minutes',
-    'assignment_id',
-    'student_id',
-    'tutor_id',
-    'mode',
-    'location',
-    'notes',
-    'approved_by',
-    'approved_at',
-    'submitted_at',
-    'created_at',
-    'reject_reason'
-  ];
-
-  const stableStringify = (value: any): string => {
-    if (value === undefined) return 'null';
-    if (value == null) return '';
-    if (Array.isArray(value)) return JSON.stringify(value.map((item) => JSON.parse(stableStringify(item) || 'null')));
-    if (typeof value === 'object') {
-      const keys = Object.keys(value).sort();
-      const normalized: Record<string, any> = {};
-      for (const key of keys) {
-        normalized[key] = JSON.parse(stableStringify(value[key]) || 'null');
-      }
-      return JSON.stringify(normalized);
-    }
-    return JSON.stringify(value);
-  };
-
-  const normalizeDateValue = (value: any) => {
-    if (!value) return null;
-    if (value instanceof Date) return value.toISOString().slice(0, 10);
-    if (typeof value === 'string') {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-      const asDate = new Date(value);
-      if (!Number.isNaN(asDate.getTime())) return asDate.toISOString().slice(0, 10);
-    }
-    return value;
-  };
-
-  const normalizeTimeValue = (value: any) => {
-    if (!value) return null;
-    if (value instanceof Date) return value.toISOString().slice(11, 16);
-    if (typeof value === 'string') {
-      const match = value.match(/^(\d{2}:\d{2})/);
-      if (match) return match[1];
-    }
-    return value;
-  };
-
-  const normalizeComparable = (field: string, value: any) => {
-    if (value == null) return null;
-    if (field === 'date' || field.endsWith('_date')) return normalizeDateValue(value);
-    if (field === 'start_time' || field === 'end_time') return normalizeTimeValue(value);
-    if (field.endsWith('_at')) {
-      if (value instanceof Date) return value.toISOString();
-      if (typeof value === 'string') return value;
-    }
-    if (typeof value === 'number') return Number(value);
-    if (typeof value === 'string') return value.trim();
-    if (Array.isArray(value) || typeof value === 'object') return stableStringify(value);
-    return value;
-  };
-
-  const summarizeComplex = (value: any) => {
-    if (value == null) return '—';
-    if (Array.isArray(value)) {
-      if (value.length <= 3) return JSON.stringify(value);
-      return `${value.length} items`;
-    }
-    if (typeof value === 'object') {
-      const keys = Object.keys(value);
-      if (keys.length === 0) return '{}';
-      const preview = keys.slice(0, 3).join(', ');
-      const more = keys.length > 3 ? ` (+${keys.length - 3})` : '';
-      return `Keys: ${preview}${more}`;
-    }
-    return String(value);
-  };
-
-  const formatDisplay = (field: string, value: any) => {
-    if (value == null || value === '') return '—';
-    if (field === 'date' || field.endsWith('_date')) return String(normalizeDateValue(value));
-    if (field === 'start_time' || field === 'end_time') return String(normalizeTimeValue(value));
-    if (field === 'duration_minutes') return `${Number(value)} min`;
-    if (Array.isArray(value) || typeof value === 'object') return summarizeComplex(value);
-    return String(value);
-  };
-
-  const toLabel = (field: string) => {
-    if (fieldLabels[field]) return fieldLabels[field];
-    return field
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase());
-  };
-
-  const computeDiffs = (beforeRaw: any, afterRaw: any) => {
-    const before = normalizeJson(beforeRaw) ?? {};
-    const after = normalizeJson(afterRaw) ?? {};
-    const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-
-    const known = orderedFields.filter((key) => keys.has(key));
-    const rest = Array.from(keys)
-      .filter((key) => !orderedFields.includes(key))
-      .sort();
-
-    const diffs = [] as Array<{
-      field: string;
-      label: string;
-      before: string;
-      after: string;
-      important: boolean;
-    }>;
-
-    for (const field of [...known, ...rest]) {
-      const beforeValue = before[field];
-      const afterValue = after[field];
-      const normBefore = normalizeComparable(field, beforeValue);
-      const normAfter = normalizeComparable(field, afterValue);
-      if (normBefore === normAfter) continue;
-
-      diffs.push({
-        field,
-        label: toLabel(field),
-        before: formatDisplay(field, beforeValue),
-        after: formatDisplay(field, afterValue),
-        important: importantFields.has(field)
-      });
-    }
-
-    return diffs;
-  };
-
-  const getOrCreatePayPeriod = async (client: any, weekStart: string, weekEnd: string) => {
-    await client.query(
-      `insert into pay_periods (period_start_date, period_end_date, status)
-       values ($1::date, $2::date, 'OPEN')
-       on conflict (period_start_date) do nothing`,
-      [weekStart, weekEnd]
-    );
-
-    const res = await client.query(
-      `select id, status, period_start_date, period_end_date
-       from pay_periods where period_start_date = $1::date`,
-      [weekStart]
-    );
-    return res.rows[0] as { id: string; status: string; period_start_date: Date; period_end_date: Date } | undefined;
-  };
 
   const applyTutorCorrection = async (client: any, tutorId: string, payload: any) => {
     const currentRes = await client.query(`select * from tutor_profiles where id = $1`, [tutorId]);
@@ -408,122 +236,6 @@ export async function adminRoutes(app: FastifyInstance) {
     return invoiceLine.rowCount === 0;
   };
 
-  const isDateLocked = async (client: any, dateValue: Date) => {
-    const weekStart = getPayPeriodStart(toDateString(dateValue));
-    const res = await client.query(
-      `select status from pay_periods where period_start_date = $1::date`,
-      [weekStart]
-    );
-    return res.rowCount > 0 && res.rows[0].status === 'LOCKED';
-  };
-
-  const generateInvoicesForWeek = async (client: any, weekStart: string, weekEnd: string) => {
-    const payPeriod = await getOrCreatePayPeriod(client, weekStart, weekEnd);
-    const periodId = payPeriod?.id;
-
-    const tutorRes = await client.query(
-      `select distinct t.id as tutor_id, t.full_name, t.default_hourly_rate
-       from tutor_profiles t
-       where exists (
-         select 1 from sessions s
-         where s.tutor_id = t.id
-           and s.status = 'APPROVED'
-           and s.date between $1::date and $2::date
-       )
-       or exists (
-         select 1 from adjustments a
-         where a.tutor_id = t.id
-           and a.pay_period_id = $3
-           and a.status = 'APPROVED'
-           and a.voided_at is null
-       )`,
-      [weekStart, weekEnd, periodId]
-    );
-
-    const invoices: Array<{ id: string; invoice_number: string; total_amount: number }> = [];
-
-    for (const tutor of tutorRes.rows) {
-      const linesRes = await client.query(
-        `select s.id, s.duration_minutes, s.date, s.start_time, s.end_time,
-                coalesce(a.rate_override, $3) as rate,
-                st.full_name as student_name, a.subject
-         from sessions s
-         join assignments a on a.id = s.assignment_id
-         join students st on st.id = s.student_id
-         where s.tutor_id = $1
-           and s.status = 'APPROVED'
-           and s.date between $2::date and $4::date
-         order by s.date asc, s.start_time asc`,
-        [tutor.tutor_id, weekStart, tutor.default_hourly_rate, weekEnd]
-      );
-
-      const adjustmentsRes = await client.query(
-        `select a.id, a.type, a.amount, a.reason, a.related_session_id
-         from adjustments a
-         where a.tutor_id = $1
-           and a.pay_period_id = $2
-           and a.status = 'APPROVED'
-           and a.voided_at is null
-         order by a.created_at asc`,
-        [tutor.tutor_id, periodId]
-      );
-
-      if (linesRes.rowCount === 0 && adjustmentsRes.rowCount === 0) continue;
-
-      const invoiceNumber = `INV-${weekStart.replaceAll('-', '')}-${String(tutor.tutor_id).slice(0, 8)}`;
-      let totalAmount = 0;
-
-      const sessionLines = linesRes.rows.map((line: any) => {
-        const amount = (Number(line.duration_minutes) / 60) * Number(line.rate);
-        totalAmount += amount;
-        return {
-          sessionId: line.id,
-          lineType: 'SESSION',
-          adjustmentId: null,
-          description: `${line.subject} - ${line.student_name} (${line.date.toISOString().slice(0, 10)} ${line.start_time}-${line.end_time})`,
-          minutes: line.duration_minutes,
-          rate: Number(line.rate),
-          amount
-        };
-      });
-
-      const adjustmentLines = adjustmentsRes.rows.map((adj: any) => {
-        const signedAmount = getSignedAmount(adj.type, Number(adj.amount));
-        totalAmount += signedAmount;
-        return {
-          sessionId: null,
-          lineType: 'ADJUSTMENT',
-          adjustmentId: adj.id,
-          description: `Adjustment (${adj.type}): ${adj.reason}`,
-          minutes: 0,
-          rate: 0,
-          amount: signedAmount
-        };
-      });
-
-      const invoiceRes = await client.query(
-        `insert into invoices (tutor_id, period_start, period_end, invoice_number, total_amount, status)
-         values ($1, $2::date, $3::date, $4, $5, 'ISSUED')
-         returning id, invoice_number, total_amount`,
-        [tutor.tutor_id, weekStart, weekEnd, invoiceNumber, totalAmount]
-      );
-
-      const invoiceId = invoiceRes.rows[0].id as string;
-      const allLines = [...sessionLines, ...adjustmentLines];
-
-      for (const line of allLines) {
-        await client.query(
-          `insert into invoice_lines (invoice_id, session_id, adjustment_id, line_type, description, minutes, rate, amount)
-           values ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [invoiceId, line.sessionId, line.adjustmentId, line.lineType, line.description, line.minutes, line.rate, line.amount]
-        );
-      }
-
-      invoices.push(invoiceRes.rows[0]);
-    }
-
-    return invoices;
-  };
 
   app.get('/admin/dashboard', async (_req, reply) => {
     const [tutors, students, sessions] = await Promise.all([
@@ -888,140 +600,8 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-
-    const {
-      status,
-      from,
-      to,
-      tutorId,
-      studentId,
-      q,
-      sort,
-      order,
-      page,
-      pageSize
-    } = parsed.data;
-
-    const baseParams: any[] = [];
-    const baseFilters: string[] = [];
-
-    if (from) {
-      baseParams.push(from);
-      baseFilters.push(`s.date >= $${baseParams.length}::date`);
-    }
-    if (to) {
-      baseParams.push(to);
-      baseFilters.push(`s.date <= $${baseParams.length}::date`);
-    }
-    if (tutorId) {
-      baseParams.push(tutorId);
-      baseFilters.push(`s.tutor_id = $${baseParams.length}`);
-    }
-    if (studentId) {
-      baseParams.push(studentId);
-      baseFilters.push(`s.student_id = $${baseParams.length}`);
-    }
-    if (q) {
-      baseParams.push(`%${q}%`);
-      baseFilters.push(`(t.full_name ilike $${baseParams.length} or st.full_name ilike $${baseParams.length} or coalesce(s.notes, '') ilike $${baseParams.length})`);
-    }
-
-    const buildWhere = (includeStatus: boolean) => {
-      const params = [...baseParams];
-      const filters = [...baseFilters];
-      if (includeStatus && status) {
-        params.push(status);
-        filters.push(`s.status = $${params.length}`);
-      }
-      return {
-        params,
-        where: filters.length ? `where ${filters.join(' and ')}` : ''
-      };
-    };
-
-    const sortColumn = (() => {
-      switch (sort) {
-        case 'createdAt':
-          return 's.created_at';
-        case 'tutor':
-          return 't.full_name';
-        case 'student':
-          return 'st.full_name';
-        case 'date':
-        default:
-          return 's.date';
-      }
-    })();
-    const orderSql = order === 'asc' ? 'asc' : 'desc';
-    const offset = (page - 1) * pageSize;
-
-    const listQuery = buildWhere(true);
-    const listParams = [...listQuery.params, pageSize, offset];
-    const listRes = await pool.query(
-      `select s.id, s.date, s.start_time, s.end_time, s.duration_minutes, s.status,
-              s.created_at, s.notes, s.mode,
-              t.full_name as tutor_name,
-              st.full_name as student_name,
-              a.subject,
-              coalesce(a.rate_override, t.default_hourly_rate) as rate
-       from sessions s
-       join tutor_profiles t on t.id = s.tutor_id
-       join students st on st.id = s.student_id
-       join assignments a on a.id = s.assignment_id
-       ${listQuery.where}
-       order by ${sortColumn} ${orderSql}, s.date desc, s.start_time desc
-       limit $${listQuery.params.length + 1}
-       offset $${listQuery.params.length + 2}`,
-      listParams
-    );
-
-    const totalRes = await pool.query(
-      `select count(*)
-       from sessions s
-       join tutor_profiles t on t.id = s.tutor_id
-       join students st on st.id = s.student_id
-       ${listQuery.where}`,
-      listQuery.params
-    );
-
-    const aggQuery = buildWhere(false);
-    const aggRes = await pool.query(
-      `select
-        count(*) filter (where s.status = 'DRAFT') as draft_count,
-        count(*) filter (where s.status = 'SUBMITTED') as submitted_count,
-        count(*) filter (where s.status = 'APPROVED') as approved_count,
-        count(*) filter (where s.status = 'REJECTED') as rejected_count,
-        coalesce(sum(case when s.status = 'SUBMITTED' then s.duration_minutes else 0 end), 0) as submitted_minutes,
-        coalesce(sum(case when s.status = 'APPROVED' then s.duration_minutes else 0 end), 0) as approved_minutes,
-        coalesce(sum(case when s.status = 'REJECTED' then s.duration_minutes else 0 end), 0) as rejected_minutes,
-        coalesce(sum(s.duration_minutes), 0) as total_minutes
-       from sessions s
-       join tutor_profiles t on t.id = s.tutor_id
-       join students st on st.id = s.student_id
-       ${aggQuery.where}`,
-      aggQuery.params
-    );
-
-    const agg = aggRes.rows[0];
-
-    return reply.send({
-      items: listRes.rows,
-      total: Number(totalRes.rows[0].count),
-      page,
-      pageSize,
-      aggregates: {
-        countsByStatus: {
-          DRAFT: Number(agg.draft_count),
-          SUBMITTED: Number(agg.submitted_count),
-          APPROVED: Number(agg.approved_count),
-          REJECTED: Number(agg.rejected_count)
-        },
-        totalMinutes: Number(agg.total_minutes),
-        totalMinutesSubmitted: Number(agg.submitted_minutes),
-        totalMinutesApproved: Number(agg.approved_minutes),
-        totalMinutesRejected: Number(agg.rejected_minutes)
-      }
-    });
+    const result = await listSessions(pool, parsed.data);
+    return reply.send(result);
   });
 
   app.get('/admin/sessions/:id/history', async (req, reply) => {
@@ -1031,33 +611,7 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     const sessionId = params.data.id;
-    const res = await pool.query(
-      `select h.id, h.change_type, h.before_json, h.after_json, h.created_at,
-              u.id as actor_id, u.email as actor_email, u.role as actor_role,
-              t.full_name as actor_name
-       from session_history h
-       left join users u on u.id = h.changed_by_user_id
-       left join tutor_profiles t on t.id = u.tutor_profile_id
-       where h.session_id = $1
-       order by h.created_at desc`,
-      [sessionId]
-    );
-
-    const history = res.rows.map((row) => ({
-      id: row.id,
-      changeType: row.change_type,
-      createdAt: row.created_at,
-      actor: row.actor_id ? {
-        id: row.actor_id,
-        email: row.actor_email,
-        role: row.actor_role,
-        name: row.actor_name
-      } : null,
-      beforeJson: normalizeJson(row.before_json),
-      afterJson: normalizeJson(row.after_json),
-      diffs: computeDiffs(row.before_json, row.after_json)
-    }));
-
+    const history = await getSessionHistory(pool, sessionId);
     return reply.send({ history });
   });
 
@@ -1255,64 +809,15 @@ export async function adminRoutes(app: FastifyInstance) {
     const adminId = req.user!.userId;
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-
-      const res = await client.query(
-        `select * from sessions where id = any($1::uuid[])`,
-        [sessionIds]
+      const result = await bulkApprove(
+        client,
+        { sessionIds },
+        adminId,
+        { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        logAuditSafe
       );
-      const sessionById = new Map(res.rows.map((row) => [row.id, row]));
-
-      const results: Array<{ sessionId: string; status: string; reason?: string }> = [];
-
-      for (const sessionId of sessionIds) {
-        const current = sessionById.get(sessionId);
-        if (!current) {
-          results.push({ sessionId, status: 'error', reason: 'not_found' });
-          continue;
-        }
-        if (await isDateLocked(client, current.date)) {
-          results.push({ sessionId, status: 'error', reason: 'pay_period_locked' });
-          continue;
-        }
-        if (current.status !== 'SUBMITTED') {
-          results.push({ sessionId, status: 'skipped', reason: 'status_not_submitted' });
-          continue;
-        }
-
-        const updatedRes = await client.query(
-          `update sessions
-           set status = 'APPROVED', approved_at = now(), approved_by = $1
-           where id = $2
-           returning *`,
-          [adminId, sessionId]
-        );
-
-        await client.query(
-          `insert into session_history (session_id, changed_by_user_id, change_type, before_json, after_json)
-           values ($1, $2, 'approve', $3, $4)`,
-          [sessionId, adminId, current, updatedRes.rows[0]]
-        );
-
-        await logAuditSafe(client, {
-          actorUserId: adminId,
-          actorRole: 'ADMIN',
-          action: 'session.approve',
-          entityType: 'session',
-          entityId: sessionId,
-          meta: safeAuditMeta({ status: 'APPROVED', bulk: true }),
-          ip: req.ip,
-          userAgent: req.headers['user-agent'] as string | undefined,
-          correlationId: req.id,
-        });
-
-        results.push({ sessionId, status: 'approved' });
-      }
-
-      await client.query('COMMIT');
-      return reply.send({ results });
+      return reply.send(result);
     } catch (err: any) {
-      await client.query('ROLLBACK');
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -1330,69 +835,15 @@ export async function adminRoutes(app: FastifyInstance) {
     const adminId = req.user!.userId;
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-
-      const res = await client.query(
-        `select * from sessions where id = any($1::uuid[])`,
-        [sessionIds]
+      const result = await bulkReject(
+        client,
+        { sessionIds, reason },
+        adminId,
+        { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        logAuditSafe
       );
-      const sessionById = new Map(res.rows.map((row) => [row.id, row]));
-
-      const results: Array<{ sessionId: string; status: string; reason?: string }> = [];
-
-      for (const sessionId of sessionIds) {
-        const current = sessionById.get(sessionId);
-        if (!current) {
-          results.push({ sessionId, status: 'error', reason: 'not_found' });
-          continue;
-        }
-        if (await isDateLocked(client, current.date)) {
-          results.push({ sessionId, status: 'error', reason: 'pay_period_locked' });
-          continue;
-        }
-        if (current.status !== 'SUBMITTED') {
-          results.push({ sessionId, status: 'skipped', reason: 'status_not_submitted' });
-          continue;
-        }
-
-        const updatedRes = await client.query(
-          `update sessions
-           set status = 'REJECTED'
-           where id = $1
-           returning *`,
-          [sessionId]
-        );
-
-        await client.query(
-          `insert into session_history (session_id, changed_by_user_id, change_type, before_json, after_json)
-           values ($1, $2, 'reject', $3, $4)`,
-          [
-            sessionId,
-            adminId,
-            current,
-            { ...updatedRes.rows[0], reject_reason: reason ?? null }
-          ]
-        );
-
-        await logAuditSafe(client, {
-          actorUserId: adminId,
-          actorRole: 'ADMIN',
-          action: 'session.reject',
-          entityType: 'session',
-          entityId: sessionId,
-          meta: safeAuditMeta({ status: 'REJECTED', reason: reason ?? null, bulk: true }),
-          ip: req.ip,
-          userAgent: req.headers['user-agent'] as string | undefined,
-          correlationId: req.id,
-        });
-
-        results.push({ sessionId, status: 'rejected' });
-      }
-
-      await client.query('COMMIT');
-      return reply.send({ results });
+      return reply.send(result);
     } catch (err: any) {
-      await client.query('ROLLBACK');
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -1407,42 +858,18 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     const sessionId = params.data.id;
     const adminId = req.user!.userId;
-
-    const currentRes = await pool.query(`select * from sessions where id = $1`, [sessionId]);
-    if (currentRes.rowCount === 0) return reply.code(404).send({ error: 'session_not_found' });
-    const current = currentRes.rows[0];
-    if (await isDateLocked(pool, current.date)) {
-      return reply.code(409).send({ error: 'pay_period_locked' });
+    const result = await approveSession(
+      pool,
+      sessionId,
+      adminId,
+      { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+      logAuditSafe
+    );
+    if ('error' in result) {
+      if (result.error === 'session_not_found') return reply.code(404).send({ error: result.error });
+      return reply.code(409).send({ error: result.error });
     }
-    if (current.status !== 'SUBMITTED') return reply.code(409).send({ error: 'only_submitted_approvable' });
-
-    const updatedRes = await pool.query(
-      `update sessions
-       set status = 'APPROVED', approved_at = now(), approved_by = $1
-       where id = $2
-       returning *`,
-      [adminId, sessionId]
-    );
-
-    await pool.query(
-      `insert into session_history (session_id, changed_by_user_id, change_type, before_json, after_json)
-       values ($1, $2, 'approve', $3, $4)`,
-      [sessionId, adminId, current, updatedRes.rows[0]]
-    );
-
-    await logAuditSafe(pool, {
-      actorUserId: adminId,
-      actorRole: 'ADMIN',
-      action: 'session.approve',
-      entityType: 'session',
-      entityId: sessionId,
-      meta: safeAuditMeta({ status: 'APPROVED' }),
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] as string | undefined,
-      correlationId: req.id,
-    });
-
-    return reply.send({ session: updatedRes.rows[0] });
+    return reply.send(result);
   });
 
   app.post('/admin/sessions/:id/reject', async (req, reply) => {
@@ -1456,47 +883,19 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-
-    const currentRes = await pool.query(`select * from sessions where id = $1`, [sessionId]);
-    if (currentRes.rowCount === 0) return reply.code(404).send({ error: 'session_not_found' });
-    const current = currentRes.rows[0];
-    if (await isDateLocked(pool, current.date)) {
-      return reply.code(409).send({ error: 'pay_period_locked' });
+    const result = await rejectSession(
+      pool,
+      sessionId,
+      parsed.data,
+      adminId,
+      { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+      logAuditSafe
+    );
+    if ('error' in result) {
+      if (result.error === 'session_not_found') return reply.code(404).send({ error: result.error });
+      return reply.code(409).send({ error: result.error });
     }
-    if (current.status !== 'SUBMITTED') return reply.code(409).send({ error: 'only_submitted_rejectable' });
-
-    const updatedRes = await pool.query(
-      `update sessions
-       set status = 'REJECTED'
-       where id = $1
-       returning *`,
-      [sessionId]
-    );
-
-    await pool.query(
-      `insert into session_history (session_id, changed_by_user_id, change_type, before_json, after_json)
-       values ($1, $2, 'reject', $3, $4)`,
-      [
-        sessionId,
-        adminId,
-        current,
-        { ...updatedRes.rows[0], reject_reason: parsed.data.reason ?? null }
-      ]
-    );
-
-    await logAuditSafe(pool, {
-      actorUserId: adminId,
-      actorRole: 'ADMIN',
-      action: 'session.reject',
-      entityType: 'session',
-      entityId: sessionId,
-      meta: safeAuditMeta({ status: 'REJECTED', reason: parsed.data.reason ?? null }),
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] as string | undefined,
-      correlationId: req.id,
-    });
-
-    return reply.send({ session: updatedRes.rows[0] });
+    return reply.send(result);
   });
 
   app.post('/admin/payroll/generate-week', {
@@ -1511,32 +910,14 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-
-    const weekStart = parsed.data.weekStart;
-    const range = getPayPeriodRange(weekStart);
-
-    const existing = await pool.query(
-      `select 1 from invoices where period_start = $1::date`,
-      [weekStart]
-    );
-    if ((existing.rowCount ?? 0) > 0) return reply.code(409).send({ error: 'invoices_already_generated' });
-
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-
-      const payPeriod = await getOrCreatePayPeriod(client, weekStart, range.end);
-      if (payPeriod?.status === 'LOCKED') {
-        await client.query('ROLLBACK');
-        return reply.code(409).send({ error: 'pay_period_locked' });
+      const result = await generatePayrollWeek(client, parsed.data);
+      if ('error' in result) {
+        return reply.code(409).send({ error: result.error });
       }
-
-      const invoices = await generateInvoicesForWeek(client, weekStart, range.end);
-
-      await client.query('COMMIT');
-      return reply.send({ invoices });
+      return reply.send(result);
     } catch (err: any) {
-      await client.query('ROLLBACK');
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -1557,56 +938,19 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_week_start' });
     }
     const weekStart = params.data.weekStart;
-
-    const range = getPayPeriodRange(weekStart);
     const adminId = req.user!.userId;
 
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-
-      const payPeriod = await getOrCreatePayPeriod(client, weekStart, range.end);
-      if (!payPeriod) {
-        await client.query('ROLLBACK');
-        return reply.code(500).send({ error: 'internal_error' });
+      const result = await lockPayPeriod(client, weekStart, adminId);
+      if ('error' in result) {
+        if (result.error === 'internal_error') {
+          return reply.code(500).send({ error: result.error });
+        }
+        return reply.code(409).send({ error: result.error });
       }
-      if (payPeriod.status === 'LOCKED') {
-        await client.query('ROLLBACK');
-        return reply.code(409).send({ error: 'pay_period_locked' });
-      }
-
-      const pendingRes = await client.query(
-        `select count(*) as pending
-         from sessions
-         where status = 'SUBMITTED'
-           and date between $1::date and $2::date`,
-        [weekStart, range.end]
-      );
-      if (Number(pendingRes.rows[0].pending) > 0) {
-        await client.query('ROLLBACK');
-        return reply.code(409).send({ error: 'pending_sessions' });
-      }
-
-      const invoicesRes = await client.query(
-        `select 1 from invoices where period_start = $1::date limit 1`,
-        [weekStart]
-      );
-      if ((invoicesRes.rowCount ?? 0) === 0) {
-        await generateInvoicesForWeek(client, weekStart, range.end);
-      }
-
-      const lockedRes = await client.query(
-        `update pay_periods
-         set status = 'LOCKED', locked_at = now(), locked_by_user_id = $2
-         where period_start_date = $1::date
-         returning id, status, locked_at, locked_by_user_id`,
-        [weekStart, adminId]
-      );
-
-      await client.query('COMMIT');
-      return reply.send({ payPeriod: lockedRes.rows[0] });
+      return reply.send(result);
     } catch (err: any) {
-      await client.query('ROLLBACK');
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -1627,70 +971,29 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_week_start' });
     }
     const weekStart = params.data.weekStart;
-
     const parsed = AdjustmentCreateSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-
-    const range = getPayPeriodRange(weekStart);
     const adminId = req.user!.userId;
 
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-
-      const tutorRes = await client.query(`select 1 from tutor_profiles where id = $1`, [parsed.data.tutorId]);
-      if (tutorRes.rowCount === 0) {
-        await client.query('ROLLBACK');
-        return reply.code(404).send({ error: 'tutor_not_found' });
-      }
-
-      if (parsed.data.relatedSessionId) {
-        const sessionRes = await client.query(
-          `select 1 from sessions
-           where id = $1 and tutor_id = $2
-             and date between $3::date and $4::date`,
-          [parsed.data.relatedSessionId, parsed.data.tutorId, weekStart, range.end]
-        );
-        if (sessionRes.rowCount === 0) {
-          await client.query('ROLLBACK');
-          return reply.code(400).send({ error: 'related_session_invalid' });
-        }
-      }
-
-      const payPeriod = await getOrCreatePayPeriod(client, weekStart, range.end);
-      if (!payPeriod) {
-        await client.query('ROLLBACK');
-        return reply.code(500).send({ error: 'internal_error' });
-      }
-
-      const res = await client.query(
-        `insert into adjustments
-         (tutor_id, pay_period_id, type, amount, reason, status, created_by_user_id, approved_by_user_id, approved_at, related_session_id)
-         values ($1, $2, $3, $4, $5, 'APPROVED', $6, $6, now(), $7)
-         returning *`,
-        [
-          parsed.data.tutorId,
-          payPeriod.id,
-          parsed.data.type,
-          parsed.data.amount,
-          parsed.data.reason,
-          adminId,
-          parsed.data.relatedSessionId ?? null
-        ]
+      const result = await createAdjustment(
+        client,
+        weekStart,
+        parsed.data,
+        adminId,
+        { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        logAuditSafe
       );
-
-      await client.query('COMMIT');
-      const adjustment = res.rows[0];
-      return reply.code(201).send({
-        adjustment: {
-          ...adjustment,
-          signed_amount: getSignedAmount(adjustment.type, Number(adjustment.amount))
-        }
-      });
+      if ('error' in result) {
+        if (result.error === 'tutor_not_found') return reply.code(404).send({ error: result.error });
+        if (result.error === 'related_session_invalid') return reply.code(400).send({ error: result.error });
+        if (result.error === 'internal_error') return reply.code(500).send({ error: result.error });
+      }
+      return reply.code(201).send(result);
     } catch (err: any) {
-      await client.query('ROLLBACK');
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -1704,23 +1007,8 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_week_start' });
     }
     const weekStart = params.data.weekStart;
-
-    const res = await pool.query(
-      `select a.*, t.full_name as tutor_name
-       from adjustments a
-       join pay_periods p on p.id = a.pay_period_id
-       join tutor_profiles t on t.id = a.tutor_id
-       where p.period_start_date = $1::date
-       order by a.created_at asc`,
-      [weekStart]
-    );
-
-    const adjustments = res.rows.map((row) => ({
-      ...row,
-      signed_amount: getSignedAmount(row.type, Number(row.amount))
-    }));
-
-    return reply.send({ adjustments });
+    const result = await listAdjustments(pool, weekStart);
+    return reply.send(result);
   });
 
   app.delete('/admin/adjustments/:id', async (req, reply) => {
@@ -1734,29 +1022,19 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     const adjustmentId = params.data.id;
     const adminId = req.user!.userId;
-    const reason = parsed.data.reason ?? 'deleted_by_admin';
-
-    const res = await pool.query(
-      `select a.id, p.status
-       from adjustments a
-       join pay_periods p on p.id = a.pay_period_id
-       where a.id = $1`,
-      [adjustmentId]
+    const result = await deleteAdjustment(
+      pool,
+      adjustmentId,
+      parsed.data,
+      adminId,
+      { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+      logAuditSafe
     );
-
-    if (res.rowCount === 0) return reply.code(404).send({ error: 'adjustment_not_found' });
-    if (res.rows[0].status === 'LOCKED') return reply.code(409).send({ error: 'pay_period_locked' });
-
-    const updateRes = await pool.query(
-      `update adjustments
-       set voided_at = now(), voided_by_user_id = $2, void_reason = $3
-       where id = $1 and voided_at is null
-       returning id, voided_at, voided_by_user_id`,
-      [adjustmentId, adminId, reason]
-    );
-
-    if (updateRes.rowCount === 0) return reply.code(409).send({ error: 'adjustment_already_voided' });
-    return reply.send({ adjustment: updateRes.rows[0] });
+    if ('error' in result) {
+      if (result.error === 'adjustment_not_found') return reply.code(404).send({ error: result.error });
+      return reply.code(409).send({ error: result.error });
+    }
+    return reply.send(result);
   });
 
   app.get('/admin/payroll/week/:weekStart.csv', {
