@@ -3,6 +3,7 @@ import { pool } from '../db/pool.js';
 import { normalizeEmail, generateCsrfToken, generateMagicToken, hashToken } from '../lib/security.js';
 import { MagicLinkRequestSchema, RegisterAdminSchema, TestLoginSchema } from '../lib/schemas.js';
 import { sendMagicLink } from '../lib/email.js';
+import { safeAuditMeta, writeAuditLog } from '../lib/audit.js';
 
 function sessionCookieOptions() {
   const isProd = process.env.NODE_ENV === 'production';
@@ -39,7 +40,7 @@ export async function authRoutes(app: FastifyInstance) {
   const requestMaxPerEmail = 5;
   const verifyAttempts = new Map<string, { count: number; resetAt: number }>();
   const verifyWindowMs = 60 * 1000;
-  const verifyMax = 10;
+  const verifyMax = 5;
 
   const checkRequestLimit = (key: string) => {
     const now = Date.now();
@@ -122,6 +123,116 @@ export async function authRoutes(app: FastifyInstance) {
     return reply.send({ ok: true });
   });
 
+  const getCountryCode = (req: any) => {
+    const header = (name: string) => {
+      const value = req.headers?.[name];
+      return Array.isArray(value) ? value[0] : value;
+    };
+    const raw = header('cf-ipcountry')
+      || header('x-vercel-ip-country')
+      || header('x-country-code');
+    if (!raw || typeof raw !== 'string') return null;
+    const normalized = raw.trim().toUpperCase();
+    if (!normalized || normalized === 'XX' || normalized === 'UNKNOWN') return null;
+    return normalized;
+  };
+
+  const getDeviceHash = (req: any) => {
+    const userAgent = Array.isArray(req.headers?.['user-agent'])
+      ? req.headers['user-agent'][0]
+      : req.headers?.['user-agent'] || '';
+    const acceptLanguage = Array.isArray(req.headers?.['accept-language'])
+      ? req.headers['accept-language'][0]
+      : req.headers?.['accept-language'] || '';
+    return hashToken(`${userAgent}|${acceptLanguage}`);
+  };
+
+  const countRecentFailures = async (ip: string, now: Date) => {
+    const res = await pool.query(
+      `select count(*) as count
+       from auth_event_log
+       where ip = $1
+         and success = false
+         and created_at >= $2::timestamptz`,
+      [ip, now.toISOString()]
+    );
+    return Number(res.rows[0]?.count || 0);
+  };
+
+  const computeRiskScore = async (userId: string | null, ip: string, req: any) => {
+    const now = new Date();
+    const deviceHash = getDeviceHash(req);
+    const country = getCountryCode(req);
+    const flags: Record<string, boolean> = {
+      newDevice: false,
+      geoAnomaly: false,
+      rapidRetries: false
+    };
+
+    if (userId) {
+      const lastRes = await pool.query(
+        `select device_hash, country
+         from auth_event_log
+         where user_id = $1 and success = true
+         order by created_at desc
+         limit 1`,
+        [userId]
+      );
+      if (lastRes.rowCount > 0) {
+        const last = lastRes.rows[0];
+        if (last.device_hash && last.device_hash !== deviceHash) {
+          flags.newDevice = true;
+        }
+        if (country && last.country && last.country !== country) {
+          flags.geoAnomaly = true;
+        }
+      }
+    }
+
+    const recentFailures = await countRecentFailures(ip, now);
+    if (recentFailures >= 4) {
+      flags.rapidRetries = true;
+    }
+
+    let score = 0;
+    if (flags.newDevice) score += 20;
+    if (flags.geoAnomaly) score += 30;
+    if (flags.rapidRetries) score += 40;
+
+    return { score, flags, deviceHash, country };
+  };
+
+  const writeAuthEvent = async (entry: {
+    userId: string | null;
+    ip: string;
+    userAgent: string | undefined;
+    deviceHash: string | null;
+    country: string | null;
+    success: boolean;
+    riskScore: number;
+    flags: Record<string, any>;
+  }) => {
+    try {
+      await pool.query(
+        `insert into auth_event_log
+         (user_id, ip, user_agent, device_hash, country, success, risk_score, flags_json)
+         values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)`,
+        [
+          entry.userId,
+          entry.ip,
+          entry.userAgent ?? null,
+          entry.deviceHash,
+          entry.country,
+          entry.success,
+          entry.riskScore,
+          JSON.stringify(entry.flags)
+        ]
+      );
+    } catch (err) {
+      app.log?.error?.(err, 'auth_event_log_write_failed');
+    }
+  };
+
   const handleVerify = async (token: string | undefined, req: any, reply: any) => {
     if (!token) return reply.code(400).send({ error: 'missing_token' });
 
@@ -148,6 +259,25 @@ export async function authRoutes(app: FastifyInstance) {
          where token_hash = $1`,
         [tokenHash]
       );
+
+      const userAgent = Array.isArray(req.headers?.['user-agent'])
+        ? req.headers['user-agent'][0]
+        : req.headers?.['user-agent'];
+      const risk = await computeRiskScore(null, ip, req);
+      const failureReason = statusRes.rowCount === 0
+        ? 'invalid_token'
+        : (statusRes.rows[0].used_at ? 'token_used' : 'token_expired');
+
+      await writeAuthEvent({
+        userId: null,
+        ip,
+        userAgent,
+        deviceHash: risk.deviceHash,
+        country: risk.country,
+        success: false,
+        riskScore: risk.score,
+        flags: { ...risk.flags, failureReason }
+      });
 
       if (statusRes.rowCount === 0) {
         return reply.code(400).send({ error: 'invalid_token' });
@@ -182,6 +312,45 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(500).send({ error: 'tutor_profile_missing' });
     }
 
+    const risk = await computeRiskScore(row.user_id, ip, req);
+    const userAgent = Array.isArray(req.headers?.['user-agent'])
+      ? req.headers['user-agent'][0]
+      : req.headers?.['user-agent'];
+
+    await writeAuthEvent({
+      userId: row.user_id,
+      ip,
+      userAgent,
+      deviceHash: risk.deviceHash,
+      country: risk.country,
+      success: true,
+      riskScore: risk.score,
+      flags: risk.flags
+    });
+
+    if (risk.score >= 50 || risk.flags.newDevice || risk.flags.geoAnomaly || risk.flags.rapidRetries) {
+      try {
+        await writeAuditLog(pool, {
+          actorUserId: row.user_id,
+          actorRole: row.role,
+          action: 'auth.risk.flag',
+          entityType: 'auth',
+          entityId: row.user_id,
+          meta: safeAuditMeta({
+            riskScore: risk.score,
+            flags: risk.flags,
+            country: risk.country,
+            ip
+          }),
+          ip,
+          userAgent,
+          correlationId: req.id
+        });
+      } catch (err) {
+        req.log?.error?.(err, 'auth_risk_audit_failed');
+      }
+    }
+
     const jwt = await app.jwt.sign({
       userId: row.user_id,
       role: row.role,
@@ -196,7 +365,7 @@ export async function authRoutes(app: FastifyInstance) {
   app.get('/auth/verify', {
     config: {
       rateLimit: {
-        max: 20,
+        max: 10,
         timeWindow: '1 minute'
       }
     }
@@ -208,7 +377,7 @@ export async function authRoutes(app: FastifyInstance) {
   app.post('/auth/verify', {
     config: {
       rateLimit: {
-        max: 20,
+        max: 10,
         timeWindow: '1 minute'
       }
     }

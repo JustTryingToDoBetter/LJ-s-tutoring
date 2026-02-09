@@ -104,6 +104,103 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   };
 
+  const shouldLogAlert = async (action: string, adminId: string, windowMinutes: number) => {
+    const res = await pool.query(
+      `select 1
+       from audit_log
+       where actor_user_id = $1
+         and action = $2
+         and created_at >= now() - ($3 * interval '1 minute')
+       limit 1`,
+      [adminId, action, windowMinutes]
+    );
+    return res.rowCount === 0;
+  };
+
+  const maybeLogAlert = async (action: string, adminId: string, windowMinutes: number, meta: any, context: any) => {
+    try {
+      const ok = await shouldLogAlert(action, adminId, windowMinutes);
+      if (!ok) return;
+      await logAuditSafe(pool, {
+        actorUserId: adminId,
+        actorRole: 'ADMIN',
+        action,
+        entityType: 'alert',
+        entityId: adminId,
+        meta: safeAuditMeta(meta),
+        ip: context.ip,
+        userAgent: context.userAgent,
+        correlationId: context.correlationId,
+      });
+    } catch (err) {
+      app.log?.error?.(err);
+    }
+  };
+
+  const checkApprovalAlerts = async (adminId: string, context: any) => {
+    const ratioRes = await pool.query(
+      `select
+        count(*) filter (where change_type = 'approve') as approvals,
+        count(*) filter (where change_type = 'reject') as rejections
+       from session_history
+       where changed_by_user_id = $1
+         and created_at >= now() - interval '1 hour'`,
+      [adminId]
+    );
+    const approvals = Number(ratioRes.rows[0]?.approvals || 0);
+    const rejections = Number(ratioRes.rows[0]?.rejections || 0);
+    const total = approvals + rejections;
+    if (total >= 20) {
+      const rejectionRatio = total > 0 ? rejections / total : 0;
+      if (rejectionRatio >= 0.8 || rejectionRatio <= 0.05) {
+        await maybeLogAlert('alert.approval_ratio', adminId, 60, {
+          approvals,
+          rejections,
+          total,
+          rejectionRatio,
+          windowMinutes: 60
+        }, context);
+      }
+    }
+
+    const overrideRes = await pool.query(
+      `select count(*) as count
+       from session_history
+       where changed_by_user_id = $1
+         and change_type in ('approve', 'reject')
+         and created_at >= now() - interval '10 minutes'`,
+      [adminId]
+    );
+    const overrideCount = Number(overrideRes.rows[0]?.count || 0);
+    if (overrideCount >= 30) {
+      await maybeLogAlert('alert.admin_override_spike', adminId, 10, {
+        approvalsAndRejections: overrideCount,
+        windowMinutes: 10
+      }, context);
+    }
+  };
+
+  const checkPayrollAdjustmentAlerts = async (adminId: string, context: any) => {
+    const res = await pool.query(
+      `select
+        count(*) filter (where created_by_user_id = $1 and created_at >= now() - interval '1 hour') as created_count,
+        count(*) filter (where voided_by_user_id = $1 and voided_at >= now() - interval '1 hour') as voided_count
+       from adjustments`,
+      [adminId]
+    );
+    const createdCount = Number(res.rows[0]?.created_count || 0);
+    const voidedCount = Number(res.rows[0]?.voided_count || 0);
+    const total = createdCount + voidedCount;
+    if (total >= 5) {
+      await maybeLogAlert('alert.payroll_adjustment_spike', adminId, 60, {
+        createdCount,
+        voidedCount,
+        total,
+        windowMinutes: 60
+      }, context);
+    }
+  };
+
   const buildAuditFilters = (data: {
     from?: string;
     to?: string;
@@ -819,7 +916,14 @@ export async function adminRoutes(app: FastifyInstance) {
     reply.raw.end();
   });
 
-  app.post('/admin/sessions/bulk-approve', async (req, reply) => {
+  app.post('/admin/sessions/bulk-approve', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     const parsed = BulkApproveSessionsSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
@@ -836,6 +940,11 @@ export async function adminRoutes(app: FastifyInstance) {
         { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
         logAuditSafe
       );
+      await checkApprovalAlerts(adminId, {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id
+      });
       return reply.send(result);
     } catch (err: any) {
       req.log?.error?.(err);
@@ -845,7 +954,14 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post('/admin/sessions/bulk-reject', async (req, reply) => {
+  app.post('/admin/sessions/bulk-reject', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     const parsed = BulkRejectSessionsSchema.safeParse(req.body ?? {});
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
@@ -862,6 +978,11 @@ export async function adminRoutes(app: FastifyInstance) {
         { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
         logAuditSafe
       );
+      await checkApprovalAlerts(adminId, {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id
+      });
       return reply.send(result);
     } catch (err: any) {
       req.log?.error?.(err);
@@ -871,7 +992,14 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post('/admin/sessions/:id/approve', async (req, reply) => {
+  app.post('/admin/sessions/:id/approve', {
+    config: {
+      rateLimit: {
+        max: 30,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     const params = IdParamSchema.safeParse(req.params);
     if (!params.success) {
       return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
@@ -889,10 +1017,22 @@ export async function adminRoutes(app: FastifyInstance) {
       if (result.error === 'session_not_found') return reply.code(404).send({ error: result.error });
       return reply.code(409).send({ error: result.error });
     }
+    await checkApprovalAlerts(adminId, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string | undefined,
+      correlationId: req.id
+    });
     return reply.send(result);
   });
 
-  app.post('/admin/sessions/:id/reject', async (req, reply) => {
+  app.post('/admin/sessions/:id/reject', {
+    config: {
+      rateLimit: {
+        max: 30,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     const params = IdParamSchema.safeParse(req.params);
     if (!params.success) {
       return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
@@ -915,13 +1055,18 @@ export async function adminRoutes(app: FastifyInstance) {
       if (result.error === 'session_not_found') return reply.code(404).send({ error: result.error });
       return reply.code(409).send({ error: result.error });
     }
+    await checkApprovalAlerts(adminId, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string | undefined,
+      correlationId: req.id
+    });
     return reply.send(result);
   });
 
   app.post('/admin/payroll/generate-week', {
     config: {
       rateLimit: {
-        max: 10,
+        max: 5,
         timeWindow: '1 minute'
       }
     }
@@ -954,7 +1099,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.post('/admin/pay-periods/:weekStart/lock', {
     config: {
       rateLimit: {
-        max: 10,
+        max: 5,
         timeWindow: '1 minute'
       }
     }
@@ -993,7 +1138,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.post('/admin/pay-periods/:weekStart/adjustments', {
     config: {
       rateLimit: {
-        max: 10,
+        max: 5,
         timeWindow: '1 minute'
       }
     }
@@ -1024,6 +1169,11 @@ export async function adminRoutes(app: FastifyInstance) {
         if (result.error === 'related_session_invalid') return reply.code(400).send({ error: result.error });
         if (result.error === 'internal_error') return reply.code(500).send({ error: result.error });
       }
+      await checkPayrollAdjustmentAlerts(adminId, {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id
+      });
       return reply.code(201).send(result);
     } catch (err: any) {
       req.log?.error?.(err);
@@ -1043,7 +1193,14 @@ export async function adminRoutes(app: FastifyInstance) {
     return reply.send(result);
   });
 
-  app.delete('/admin/adjustments/:id', async (req, reply) => {
+  app.delete('/admin/adjustments/:id', {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     const params = IdParamSchema.safeParse(req.params);
     if (!params.success) {
       return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
@@ -1066,6 +1223,11 @@ export async function adminRoutes(app: FastifyInstance) {
       if (result.error === 'adjustment_not_found') return reply.code(404).send({ error: result.error });
       return reply.code(409).send({ error: result.error });
     }
+    await checkPayrollAdjustmentAlerts(adminId, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string | undefined,
+      correlationId: req.id
+    });
     return reply.send(result);
   });
 
