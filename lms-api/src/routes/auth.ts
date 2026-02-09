@@ -220,6 +220,7 @@ export async function authRoutes(app: FastifyInstance) {
   app.post('/auth/logout', async (_req, reply) => {
     reply.clearCookie('session', { path: '/' });
     reply.clearCookie('csrf', { path: '/' });
+    reply.clearCookie('impersonation', { path: '/' });
     return reply.send({ ok: true });
   });
 

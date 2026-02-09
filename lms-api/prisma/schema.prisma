@@ -171,6 +171,29 @@ model AuditLog {
   @@index([entityType, entityId])
 }
 
+model ImpersonationSession {
+  id              String   @id @db.Uuid
+  adminUserId     String   @map("admin_user_id") @db.Uuid
+  tutorId         String   @map("tutor_id") @db.Uuid
+  tutorUserId     String   @map("tutor_user_id") @db.Uuid
+  sessionHash     String   @map("session_hash")
+  mode            String
+  expiresAt       DateTime @map("expires_at") @db.Timestamptz
+  revokedAt       DateTime? @map("revoked_at") @db.Timestamptz
+  revokedByUserId String?  @map("revoked_by_user_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  adminUser User @relation(fields: [adminUserId], references: [id])
+  tutor     TutorProfile @relation(fields: [tutorId], references: [id])
+  tutorUser User @relation(fields: [tutorUserId], references: [id])
+  revokedBy User? @relation(fields: [revokedByUserId], references: [id])
+
+  @@map("impersonation_sessions")
+  @@index([adminUserId, createdAt(sort: Desc)])
+  @@index([tutorId, createdAt(sort: Desc)])
+  @@index([expiresAt])
+}
+
 model TutorProfile {
   id                String  @id @default(uuid()) @db.Uuid
   fullName          String  @map("full_name")

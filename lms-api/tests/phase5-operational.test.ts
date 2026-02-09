@@ -282,14 +282,18 @@ describe('Phase 5 operational readiness', () => {
     });
 
     expect(startRes.statusCode).toBe(200);
-    const token = startRes.json().impersonationToken as string;
     const impersonationId = startRes.json().impersonationId as string;
+    const setCookie = startRes.headers['set-cookie'];
+    const rawCookies = Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : [];
+    const impersonationCookie = rawCookies.find((cookie) => cookie.startsWith('impersonation='));
+    expect(impersonationCookie).toBeTruthy();
+    expect(impersonationCookie).toContain('HttpOnly');
 
     const readRes = await app.inject({
       method: 'GET',
       url: '/tutor/me',
       headers: {
-        'X-Impersonation-Token': token
+        cookie: `${adminAuth.cookie}; ${impersonationCookie?.split(';')[0]}`
       }
     });
 
@@ -299,7 +303,7 @@ describe('Phase 5 operational readiness', () => {
       method: 'POST',
       url: '/tutor/sessions',
       headers: {
-        'X-Impersonation-Token': token
+        cookie: `${adminAuth.cookie}; ${impersonationCookie?.split(';')[0]}`
       },
       payload: {
         assignmentId: assignment.id,
@@ -320,6 +324,16 @@ describe('Phase 5 operational readiness', () => {
       headers: adminAuth.headers,
       payload: { impersonationId }
     });
+
+    const revokedRes = await app.inject({
+      method: 'GET',
+      url: '/tutor/me',
+      headers: {
+        cookie: `${adminAuth.cookie}; ${impersonationCookie?.split(';')[0]}`
+      }
+    });
+
+    expect(revokedRes.statusCode).toBe(401);
 
     const auditRes = await pool.query(
       `select action from audit_log where action like 'impersonation.%' order by created_at asc`

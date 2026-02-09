@@ -49,7 +49,6 @@ async function initTutors() {
     try {
       const res = await apiPost('/admin/impersonate/start', { tutorId: target.dataset.impersonate });
       setImpersonationContext({
-        token: res.impersonationToken,
         tutorId: res.tutor.id,
         tutorName: res.tutor.name,
         impersonationId: res.impersonationId

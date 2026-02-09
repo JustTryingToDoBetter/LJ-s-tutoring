@@ -7,26 +7,29 @@ function resolveApiBase() {
 }
 
 const API_BASE = resolveApiBase();
-const IMPERSONATION_KEY = 'impersonationToken';
 const IMPERSONATION_META_KEY = 'impersonationMeta';
-
-function getImpersonationToken() {
-  return localStorage.getItem(IMPERSONATION_KEY) || '';
-}
 
 export function getImpersonationMeta() {
   const raw = localStorage.getItem(IMPERSONATION_META_KEY);
   if (!raw) {return null;}
   try {
-    return JSON.parse(raw);
+    const meta = JSON.parse(raw);
+    const startedAt = meta?.startedAt ? Date.parse(meta.startedAt) : NaN;
+    if (Number.isFinite(startedAt)) {
+      const maxAgeMs = 10 * 60 * 1000;
+      if (Date.now() - startedAt > maxAgeMs) {
+        localStorage.removeItem(IMPERSONATION_META_KEY);
+        return null;
+      }
+    }
+    return meta;
   } catch {
     return null;
   }
 }
 
 export function setImpersonationContext(context) {
-  if (!context?.token) {return;}
-  localStorage.setItem(IMPERSONATION_KEY, context.token);
+  if (!context?.impersonationId) {return;}
   localStorage.setItem(IMPERSONATION_META_KEY, JSON.stringify({
     tutorId: context.tutorId,
     tutorName: context.tutorName,
@@ -36,15 +39,14 @@ export function setImpersonationContext(context) {
 }
 
 export function clearImpersonationContext() {
-  localStorage.removeItem(IMPERSONATION_KEY);
   localStorage.removeItem(IMPERSONATION_META_KEY);
 }
 
 async function request(path, options = {}) {
   const method = String(options.method || 'GET').toUpperCase();
   const csrfToken = getCookie('csrf');
-  const impersonationToken = getImpersonationToken();
-  if (impersonationToken && !['GET', 'HEAD'].includes(method) && path.startsWith('/tutor/')) {
+  const impersonationMeta = getImpersonationMeta();
+  if (impersonationMeta && !['GET', 'HEAD'].includes(method) && path.startsWith('/tutor/')) {
     throw new Error('impersonation_read_only');
   }
   const res = await fetch(`${API_BASE}${path}`, {
@@ -53,9 +55,6 @@ async function request(path, options = {}) {
       'Content-Type': 'application/json',
       ...(csrfToken && !['GET', 'HEAD'].includes(method)
         ? { 'X-CSRF-Token': csrfToken }
-        : {}),
-      ...(impersonationToken && path.startsWith('/tutor/')
-        ? { 'X-Impersonation-Token': impersonationToken }
         : {}),
       ...(options.headers || {}),
     },

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { pool } from '../db/pool.js';
-import { normalizeEmail } from '../lib/security.js';
+import { hashToken, normalizeEmail } from '../lib/security.js';
 import {
   AdminSessionsQuerySchema,
   AssignmentSchema,
@@ -45,6 +45,17 @@ export async function adminRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate);
   app.addHook('preHandler', requireAuth);
   app.addHook('preHandler', requireRole('ADMIN'));
+
+  const impersonationCookieOptions = () => {
+    const isProd = process.env.NODE_ENV === 'production';
+    return {
+      httpOnly: true,
+      sameSite: 'strict' as const,
+      secure: isProd,
+      path: '/',
+      maxAge: 60 * 10
+    };
+  };
 
   const normalizeJson = (value: any) => {
     if (value == null) return null;
@@ -1195,14 +1206,36 @@ export async function adminRoutes(app: FastifyInstance) {
 
     if (tutorRes.rowCount === 0) return reply.code(404).send({ error: 'tutor_not_found' });
     const tutor = tutorRes.rows[0];
+    const sessionToken = req.cookies?.session;
+    if (!sessionToken) return reply.code(401).send({ error: 'unauthorized' });
+
     const impersonationId = crypto.randomUUID();
+    const sessionHash = hashToken(sessionToken);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await pool.query(
+      `insert into impersonation_sessions
+       (id, admin_user_id, tutor_id, tutor_user_id, session_hash, mode, expires_at)
+       values ($1, $2, $3, $4, $5, $6, $7::timestamptz)`,
+      [
+        impersonationId,
+        adminId,
+        tutor.tutor_id,
+        tutor.tutor_user_id,
+        sessionHash,
+        'READ_ONLY',
+        expiresAt.toISOString()
+      ]
+    );
+
     const token = app.jwt.sign({
       adminUserId: adminId,
       tutorId: tutor.tutor_id,
       tutorUserId: tutor.tutor_user_id,
       impersonationId,
+      sessionHash,
       mode: 'READ_ONLY'
-    }, { expiresIn: '15m' });
+    }, { expiresIn: '10m' });
 
     await logAuditSafe(pool, {
       actorUserId: adminId,
@@ -1216,8 +1249,8 @@ export async function adminRoutes(app: FastifyInstance) {
       correlationId: req.id,
     });
 
+    reply.setCookie('impersonation', token, impersonationCookieOptions());
     return reply.send({
-      impersonationToken: token,
       impersonationId,
       tutor: {
         id: tutor.tutor_id,
@@ -1233,13 +1266,34 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
+    let impersonationId = parsed.data.impersonationId ?? null;
+    if (!impersonationId && req.cookies?.impersonation) {
+      try {
+        const decoded = await app.jwt.verify<{ impersonationId: string }>(req.cookies.impersonation);
+        impersonationId = decoded.impersonationId;
+      } catch {
+        impersonationId = null;
+      }
+    }
+
+    if (impersonationId) {
+      await pool.query(
+        `update impersonation_sessions
+         set revoked_at = now(), revoked_by_user_id = $2
+         where id = $1`,
+        [impersonationId, req.user!.userId]
+      );
+    }
+
+    reply.clearCookie('impersonation', { path: '/' });
+
     await logAuditSafe(pool, {
       actorUserId: req.user!.userId,
       actorRole: 'ADMIN',
       action: 'impersonation.stop',
       entityType: 'impersonation',
-      entityId: parsed.data.impersonationId ?? null,
-      meta: safeAuditMeta({ impersonationId: parsed.data.impersonationId ?? null }),
+      entityId: impersonationId ?? null,
+      meta: safeAuditMeta({ impersonationId: impersonationId ?? null }),
       ip: req.ip,
       userAgent: req.headers['user-agent'] as string | undefined,
       correlationId: req.id,
