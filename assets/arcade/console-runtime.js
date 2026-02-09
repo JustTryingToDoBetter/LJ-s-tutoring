@@ -7,6 +7,7 @@ import {
   prefersReducedMotion,
 } from "/assets/arcade/sdk-core.js";
 import { initAdManager } from "/assets/arcade/ad-manager.js";
+import { initArcadeTelemetry } from "/assets/arcade/telemetry.js";
 import { createModal } from "/assets/arcade/ui/Modal.js";
 import { createSettingsPanel } from "/assets/arcade/ui/SettingsPanel.js";
 import { createToastManager } from "/assets/arcade/ui/Toast.js";
@@ -80,7 +81,34 @@ export function createConsoleRuntime({ gameId, mountEl, surfaceEl, page }) {
   const store = createArcadeStore();
   const settingsStore = createSettingsStore();
   const audio = createAudioManager(settingsStore);
-  const storage = createStorageManager(store, gameId, { legacyKeys: legacyKeysFor(gameId) });
+  const telemetry = initArcadeTelemetry();
+  telemetry.bindAdEvents();
+  const sessionStartMs = Date.now();
+  const title = document.title || gameId;
+  telemetry.startSession({ gameId, gameTitle: title, source: "console" });
+
+  window.addEventListener("beforeunload", () => {
+    telemetry.endSession({ reason: "unload", source: "console" });
+  }, { once: true });
+
+  let lastScoreSent = -1;
+  let lastScoreAt = 0;
+  const storage = createStorageManager(store, gameId, {
+    legacyKeys: legacyKeysFor(gameId),
+    onScore: (value) => {
+      const now = Date.now();
+      if (value <= lastScoreSent && now - lastScoreAt < 15000) return;
+      lastScoreSent = value;
+      lastScoreAt = now;
+      telemetry.submitScore({
+        score: value,
+        gameId,
+        gameTitle: title,
+        source: "console",
+        telemetry: { durationMs: now - sessionStartMs },
+      });
+    },
+  });
   const input = createInputManager(ctx);
   const toastManager = createToastManager(surfaceEl);
 
@@ -88,8 +116,13 @@ export function createConsoleRuntime({ gameId, mountEl, surfaceEl, page }) {
 
   const adManager = initAdManager({ apiBase: "" });
   adManager.bindGameEvents();
-  adManager.setGameState({ active: true, gameId });
+  adManager.setGameState({ active: true, mode: "active", gameId });
   emitArcadeEvent("arcade:game:start", { gameId, source: "console" });
+
+  ctx.onCleanup(() => {
+    emitArcadeEvent("arcade:game:over", { gameId, source: "console" });
+    telemetry.endSession({ reason: "exit", source: "console" });
+  });
 
   ctx.ui = {
     setHUD: (chips) => page?.setHUD?.(chips),
@@ -114,6 +147,7 @@ export function createConsoleRuntime({ gameId, mountEl, surfaceEl, page }) {
         body: "Take a breather. Your progress is safe.",
         variant: "pause",
         adSlot: true,
+        adPlacement: "pause_screen_banner",
         actions: [
           { label: "Settings", onClick: onSettings, keepOpen: true },
           { label: "Restart", onClick: onRestart },
@@ -130,6 +164,7 @@ export function createConsoleRuntime({ gameId, mountEl, surfaceEl, page }) {
         body: summary || "Nice run.",
         variant: "end",
         adSlot: true,
+        adPlacement: "post_run_reward",
         actions: [
           { label: "Back", onClick: onBack },
           { label: "Restart", onClick: onRestart, primary: true },

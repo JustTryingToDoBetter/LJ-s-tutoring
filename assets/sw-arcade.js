@@ -23,6 +23,8 @@ const PRECACHE = [
   '/assets/arcade/frame.js',
   '/assets/arcade/sdk-core.js',
   '/assets/arcade/console-runtime.js',
+  '/assets/arcade/telemetry.js',
+  '/assets/arcade/ad-manager.js',
   '/assets/arcade/ui/arcade-ui.css',
   '/assets/arcade/ui/Button.js',
   '/assets/arcade/ui/ConsolePage.js',
@@ -93,6 +95,9 @@ const PRECACHE = [
   '/arcade/packs/quickmath-rules.json',
   '/arcade/packs/wordle-words.json',
   '/assets/data/words-5.json',
+
+  '/arcade/ads/house.html',
+  '/arcade/ads/house.js',
 
   '/favicon.svg',
 ];

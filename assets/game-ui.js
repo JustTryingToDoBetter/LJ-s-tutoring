@@ -218,6 +218,7 @@ export function createGameUI(ctx, {
         body: "Take a breather. Your progress is safe.",
         variant: "pause",
         adSlot: true,
+        adPlacement: "pause_screen_banner",
         actions: [
           { label: "Settings", onClick: onSettings, keepOpen: true },
           { label: "Quit", onClick: onQuit },
@@ -232,6 +233,7 @@ export function createGameUI(ctx, {
         body: summary || "Nice run.",
         variant: "end",
         adSlot: true,
+        adPlacement: "post_run_reward",
         actions: [
           { label: "Back", onClick: onBack },
           { label: "Restart", onClick: onRestart, primary: true },

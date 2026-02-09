@@ -28,5 +28,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run retention cleanup
-        run: npm run retention:cleanup --prefix lms-api
+      - name: Enqueue retention cleanup
+        run: npm run retention:queue --prefix lms-api
+
+      - name: Process retention job
+        run: npm run job:worker --prefix lms-api

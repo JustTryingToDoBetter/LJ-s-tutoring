@@ -230,18 +230,35 @@ export const ArcadeSessionStartSchema = z.object({
   playerId: z.string().uuid(),
   gameId: z.string().trim().min(1).max(80),
   gameTitle: z.string().trim().min(1).max(120).optional(),
+  clientFingerprint: z.string().trim().min(1).max(200).optional(),
+  source: z.string().trim().min(1).max(40).optional(),
 });
 
 export const ArcadeSessionEndSchema = z.object({
   sessionId: z.string().uuid(),
   endedAt: z.string().datetime().optional(),
+  reason: z.string().trim().max(120).optional(),
+});
+
+export const ArcadeEventSchema = z.object({
+  type: z.string().trim().min(1).max(80),
+  payload: z.record(z.any()).optional().default({}),
+  frame: z.number().int().min(0).max(1000000).optional().nullable(),
 });
 
 export const ArcadeScoreSchema = z.object({
   playerId: z.string().uuid(),
   gameId: z.string().trim().min(1).max(80),
   gameTitle: z.string().trim().min(1).max(120).optional(),
+  sessionId: z.string().uuid(),
+  sessionToken: z.string().trim().min(10).max(2048),
   score: z.number().int().min(0).max(100000000),
+  telemetry: z.object({
+    runSeed: z.string().trim().min(1).max(120).optional(),
+    durationMs: z.number().int().min(0).max(10000000).optional(),
+    eventCount: z.number().int().min(0).max(1000000).optional(),
+    events: z.array(ArcadeEventSchema).optional(),
+  }).optional(),
 });
 
 export const ArcadeLeaderboardParamSchema = z.object({
@@ -252,10 +269,37 @@ export const ArcadeLeaderboardQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 });
 
-export const ArcadeEventSchema = z.object({
-  type: z.string().trim().min(1).max(80),
+const ArcadeBaseEventSchema = z.object({
+  eventId: z.string().uuid(),
+  eventType: z.enum([
+    'ad_impression',
+    'ad_click',
+    'reward_completed',
+    'game_session_start',
+    'game_session_end',
+    'score_submitted',
+    'score_validated',
+  ]),
+  occurredAt: z.string().datetime(),
+  sessionId: z.string().uuid().optional().nullable(),
+  userId: z.string().uuid().optional().nullable(),
+  anonId: z.string().trim().min(1).max(120).optional().nullable(),
+  source: z.string().trim().max(40).optional().nullable(),
+  dedupeKey: z.string().trim().min(8).max(200),
   payload: z.record(z.any()).optional().default({}),
-  frame: z.number().int().min(0).max(1000000).optional().nullable(),
+}).superRefine((val, ctx) => {
+  if (!val.userId && !val.anonId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'user_id_or_anon_id_required' });
+  }
+});
+
+export const ArcadeGameplayEventSchema = ArcadeBaseEventSchema;
+
+export const ArcadeAdEventSchema = ArcadeBaseEventSchema.extend({
+  placement: z.string().trim().min(1).max(80).optional().nullable(),
+  provider: z.string().trim().min(1).max(80).optional().nullable(),
+  creativeId: z.string().trim().min(1).max(120).optional().nullable(),
+  variantId: z.string().trim().min(1).max(120).optional().nullable(),
 });
 
 export const ArcadeMatchEventSchema = z.object({

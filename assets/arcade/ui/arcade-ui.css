@@ -164,6 +164,24 @@
   text-align: center;
 }
 
+.arc-ad-slot{
+  width: min(100%, var(--ad-slot-width, 320px));
+  height: var(--ad-slot-height, 250px);
+  border-radius: 12px;
+  border: 1px solid rgba(60, 240, 255, 0.18);
+  background: rgba(8, 12, 20, 0.7);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.arc-ad-frame{
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
 .arc-ad-safe__label{
   font-size: 11px;
   letter-spacing: 0.12em;

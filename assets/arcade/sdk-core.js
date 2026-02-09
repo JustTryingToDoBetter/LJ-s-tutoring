@@ -238,7 +238,7 @@ export function createAudioManager(settingsStore = createSettingsStore()) {
   };
 }
 
-export function createStorageManager(store, gameId, { legacyKeys = [] } = {}) {
+export function createStorageManager(store, gameId, { legacyKeys = [], onScore, onPlay } = {}) {
   const normalize = (g = {}) => ({
     plays: Number.isFinite(g.plays) ? g.plays : 0,
     lastPlayed: g.lastPlayed || null,
@@ -279,17 +279,21 @@ export function createStorageManager(store, gameId, { legacyKeys = [] } = {}) {
     },
     recordPlay() {
       const now = Date.now();
-      return store.updateGame(gameId, (g) => {
+      const next = store.updateGame(gameId, (g) => {
         const base = normalize(migrateLegacy(g));
         return { ...base, plays: base.plays + 1, lastPlayed: now };
       });
+      onPlay?.(next.games?.[gameId] ?? null);
+      return next;
     },
     recordScore(score) {
       const value = Number(score) || 0;
-      return store.updateGame(gameId, (g) => {
+      const next = store.updateGame(gameId, (g) => {
         const base = normalize(migrateLegacy(g));
         return { ...base, bestScore: Math.max(base.bestScore, value) };
       });
+      onScore?.(value, next.games?.[gameId] ?? null);
+      return next;
     },
     setSettings(patch) {
       return store.updateGame(gameId, (g) => {

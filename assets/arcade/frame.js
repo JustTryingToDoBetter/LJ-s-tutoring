@@ -142,6 +142,7 @@ export function createGameFrame({ mount, title = "Game", subtitle = "Odyssey Arc
       body: "Take a breather. Your progress is safe.",
       variant: "pause",
       adSlot: true,
+      adPlacement: "pause_screen_banner",
       actions: [
         { label: "Settings", onClick: onSettings, keepOpen: true },
         { label: "Restart", onClick: onRestart },
@@ -157,6 +158,7 @@ export function createGameFrame({ mount, title = "Game", subtitle = "Odyssey Arc
       body: summary || "Nice run.",
       variant: "end",
       adSlot: true,
+      adPlacement: "post_run_reward",
       actions: [
         { label: "Back", onClick: onBack },
         { label: "Restart", onClick: onRestart, primary: true },

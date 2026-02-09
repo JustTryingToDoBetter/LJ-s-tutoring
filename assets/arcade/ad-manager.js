@@ -1,11 +1,22 @@
-const STORAGE_KEY = "po_arcade_ad_state_v1";
-const RULES_ENDPOINT = "/api/arcade/ad-rules";
+const STORAGE_KEY = "po_arcade_ad_state_v2";
+const CONFIG_ENDPOINT = "/api/arcade/ad-config";
 
 const DEFAULT_RULES = [
-  { placement: "interstitial", cooldownSeconds: 120, maxPerDay: 10 },
-  { placement: "rewarded", cooldownSeconds: 60, maxPerDay: 20 },
-  { placement: "banner", cooldownSeconds: 0, maxPerDay: 1000 },
+  { placement: "menu_banner", cooldownSeconds: 60, maxPerDay: 1000 },
+  { placement: "pause_screen_banner", cooldownSeconds: 90, maxPerDay: 40 },
+  { placement: "post_run_reward", cooldownSeconds: 120, maxPerDay: 20 },
 ];
+
+const DEFAULT_GUARDRAILS = {
+  maxCreativeKb: 256,
+  maxLoadMs: 2500,
+};
+
+const DEFAULT_SLOTS = {
+  menu_banner: { width: 728, height: 90 },
+  pause_screen_banner: { width: 480, height: 90 },
+  post_run_reward: { width: 320, height: 250 },
+};
 
 const MULTIPLAYER_GAMES = new Set(["pong", "chess", "tictactoe"]);
 
@@ -54,6 +65,12 @@ function updatePlacementState(state, placement) {
   return next;
 }
 
+function emitEvent(name, detail = {}) {
+  try {
+    window.dispatchEvent(new CustomEvent(name, { detail }));
+  } catch {}
+}
+
 function normalizeRules(list) {
   const map = new Map();
   for (const rule of list) {
@@ -70,103 +87,54 @@ function normalizeRules(list) {
   return Array.from(map.values());
 }
 
-function emitEvent(name, detail = {}) {
-  try {
-    window.dispatchEvent(new CustomEvent(name, { detail }));
-  } catch {}
-}
+function createAdFrame({ placement, provider, creativeId, variantId, slot }) {
+  const frame = document.createElement("iframe");
+  frame.className = "arc-ad-frame";
+  frame.setAttribute("title", "Sponsored");
+  frame.setAttribute("sandbox", "allow-scripts allow-forms allow-popups");
+  frame.setAttribute("referrerpolicy", "no-referrer");
+  frame.setAttribute("loading", "lazy");
+  frame.width = String(slot?.width || 320);
+  frame.height = String(slot?.height || 250);
 
-function buildBannerAd({ placement }) {
-  const wrap = document.createElement("div");
-  wrap.className = "po-ad po-ad--banner";
-  wrap.setAttribute("role", "region");
-  wrap.setAttribute("aria-label", "Sponsored");
-
-  const label = document.createElement("div");
-  label.className = "po-ad__label";
-  label.textContent = "Sponsored";
-
-  const body = document.createElement("div");
-  body.className = "po-ad__body";
-  body.textContent = "Arcade gear, desk setups, and study tools.";
-
-  const cta = document.createElement("button");
-  cta.className = "po-ad__cta";
-  cta.type = "button";
-  cta.textContent = "Learn more";
-  cta.addEventListener("click", () => {
-    emitEvent("arcade:ad:click", { placement });
+  const params = new URLSearchParams({
+    placement,
+    provider,
+    creativeId,
+    variantId,
   });
+  frame.src = `/arcade/ads/house.html?${params.toString()}`;
 
-  wrap.append(label, body, cta);
-  return wrap;
-}
-
-function buildInterstitialAd({ placement }) {
-  const overlay = document.createElement("div");
-  overlay.className = "po-ad-overlay";
-  overlay.setAttribute("role", "dialog");
-  overlay.setAttribute("aria-modal", "true");
-
-  const card = document.createElement("div");
-  card.className = "po-ad po-ad--interstitial";
-
-  const label = document.createElement("div");
-  label.className = "po-ad__label";
-  label.textContent = "Sponsored";
-
-  const title = document.createElement("div");
-  title.className = "po-ad__title";
-  title.textContent = "Unlock more brain-boosting challenges.";
-
-  const body = document.createElement("div");
-  body.className = "po-ad__body";
-  body.textContent = "Try the Odyssey weekly challenge pack.";
-
-  const actions = document.createElement("div");
-  actions.className = "po-ad__actions";
-
-  const skip = document.createElement("button");
-  skip.className = "po-ad__cta po-ad__cta--ghost";
-  skip.type = "button";
-  skip.textContent = "Skip";
-
-  const cta = document.createElement("button");
-  cta.className = "po-ad__cta";
-  cta.type = "button";
-  cta.textContent = "Check it out";
-  cta.addEventListener("click", () => {
-    emitEvent("arcade:ad:click", { placement });
-  });
-
-  actions.append(skip, cta);
-  card.append(label, title, body, actions);
-  overlay.append(card);
-
-  return { overlay, skip };
+  return frame;
 }
 
 export function initAdManager({ apiBase = "", multiplayerGameIds = MULTIPLAYER_GAMES } = {}) {
   if (window.__poAdManager) return window.__poAdManager;
 
   let rules = DEFAULT_RULES;
+  let guardrails = DEFAULT_GUARDRAILS;
+  let allowlist = ["house"];
+  let blockedCreatives = [];
   let rulesLoaded = false;
-  let gameActive = false;
+  let gameState = "idle"; // idle | active | paused | ended
   let multiplayer = false;
 
-  const loadRules = async () => {
-    if (rulesLoaded) return rules;
+  const loadConfig = async () => {
+    if (rulesLoaded) return { rules, guardrails, allowlist, blockedCreatives };
     try {
-      const res = await fetch(`${apiBase}${RULES_ENDPOINT}`, { cache: "no-store" });
+      const res = await fetch(`${apiBase}${CONFIG_ENDPOINT}`, { cache: "no-store" });
       if (res.ok) {
         const payload = await res.json();
-        rules = normalizeRules(Array.isArray(payload?.rules) ? payload.rules : []);
+        rules = normalizeRules(Array.isArray(payload?.placements) ? payload.placements : []);
+        guardrails = payload?.guardrails || DEFAULT_GUARDRAILS;
+        allowlist = Array.isArray(payload?.allowlist) ? payload.allowlist : allowlist;
+        blockedCreatives = Array.isArray(payload?.blockedCreatives) ? payload.blockedCreatives : [];
       }
     } catch {
       rules = normalizeRules(DEFAULT_RULES);
     }
     rulesLoaded = true;
-    return rules;
+    return { rules, guardrails, allowlist, blockedCreatives };
   };
 
   const getRule = (placement) => {
@@ -174,9 +142,18 @@ export function initAdManager({ apiBase = "", multiplayerGameIds = MULTIPLAYER_G
     return match || DEFAULT_RULES.find((r) => r.placement === placement) || DEFAULT_RULES[0];
   };
 
+  const isBlockedCreative = (provider, creativeId) =>
+    blockedCreatives.some((item) => item.provider === provider && item.creative_id === creativeId);
+
   const canShow = (placement) => {
-    if (gameActive) return { ok: false, reason: "game_active" };
+    if (gameState === "active") return { ok: false, reason: "game_active" };
     if (multiplayer) return { ok: false, reason: "multiplayer" };
+    if (placement === "pause_screen_banner" && gameState !== "paused") {
+      return { ok: false, reason: "not_paused" };
+    }
+    if (placement === "post_run_reward" && gameState !== "ended") {
+      return { ok: false, reason: "not_ended" };
+    }
 
     const rule = getRule(placement);
     const state = readState();
@@ -194,116 +171,129 @@ export function initAdManager({ apiBase = "", multiplayerGameIds = MULTIPLAYER_G
     return { ok: true };
   };
 
-  const recordImpression = (placement) => {
+  const recordImpression = (placement, meta) => {
     const state = readState();
     const next = updatePlacementState(state, placement);
     writeState(next);
-    emitEvent("arcade:ad:impression", { placement });
+    emitEvent("arcade:ad:impression", { placement, ...meta });
   };
 
-  const showInterstitial = async ({ placement = "interstitial" } = {}) => {
-    await loadRules();
-    const verdict = canShow(placement);
-    if (!verdict.ok) {
-      emitEvent("arcade:ad:blocked", { placement, reason: verdict.reason });
-      return false;
-    }
-
-    const { overlay, skip } = buildInterstitialAd({ placement });
-
-    return new Promise((resolve) => {
-      const close = () => {
-        overlay.remove();
-        resolve(true);
-      };
-
-      skip.addEventListener("click", close, { once: true });
-      overlay.addEventListener("click", (event) => {
-        if (event.target === overlay) close();
-      });
-
-      document.body.appendChild(overlay);
-      recordImpression(placement);
-    });
-  };
-
-  const showRewarded = async ({ placement = "rewarded", onReward } = {}) => {
-    await loadRules();
-    const verdict = canShow(placement);
-    if (!verdict.ok) {
-      emitEvent("arcade:ad:blocked", { placement, reason: verdict.reason });
-      return { ok: false };
-    }
-
-    const { overlay, skip } = buildInterstitialAd({ placement });
-    const label = overlay.querySelector(".po-ad__label");
-    if (label) label.textContent = "Rewarded";
-
-    return new Promise((resolve) => {
-      const grant = () => {
-        overlay.remove();
-        onReward?.();
-        resolve({ ok: true });
-      };
-      skip.textContent = "No thanks";
-      skip.addEventListener("click", () => {
-        overlay.remove();
-        resolve({ ok: false });
-      }, { once: true });
-
-      document.body.appendChild(overlay);
-      recordImpression(placement);
-      setTimeout(grant, 1500);
-    });
-  };
-
-  const mountBanner = async ({ container, placement = "banner" } = {}) => {
+  const renderAd = async ({ container, placement, provider = "house", creativeId = "house-default", variantId = "control", creativeMeta } = {}) => {
     if (!container) return false;
-    await loadRules();
-    const verdict = canShow(placement);
-    if (!verdict.ok) {
-      emitEvent("arcade:ad:blocked", { placement, reason: verdict.reason });
+    await loadConfig();
+
+    if (!allowlist.includes(provider)) {
+      emitEvent("arcade:ad:blocked", { placement, reason: "provider_not_allowlisted", provider, creativeId });
       return false;
     }
+
+    if (isBlockedCreative(provider, creativeId)) {
+      emitEvent("arcade:ad:blocked", { placement, reason: "creative_blocked", provider, creativeId });
+      return false;
+    }
+
+    const meta = creativeMeta || { sizeKb: 40, loadMs: 800 };
+    if (meta.sizeKb > guardrails.maxCreativeKb || meta.loadMs > guardrails.maxLoadMs) {
+      emitEvent("arcade:ad:blocked", { placement, reason: "creative_guardrail", provider, creativeId, creativeMeta: meta });
+      return false;
+    }
+
+    const verdict = canShow(placement);
+    if (!verdict.ok) {
+      emitEvent("arcade:ad:blocked", { placement, reason: verdict.reason, provider, creativeId });
+      return false;
+    }
+
+    const slot = DEFAULT_SLOTS[placement] || DEFAULT_SLOTS.menu_banner;
+    const frame = createAdFrame({ placement, provider, creativeId, variantId, slot });
 
     container.innerHTML = "";
-    container.appendChild(buildBannerAd({ placement }));
-    recordImpression(placement);
+    container.classList.add("arc-ad-slot");
+    container.style.setProperty("--ad-slot-width", `${slot.width}px`);
+    container.style.setProperty("--ad-slot-height", `${slot.height}px`);
+    container.appendChild(frame);
+
+    recordImpression(placement, { provider, creativeId, variantId, creativeMeta: meta });
     return true;
   };
 
-  const setGameState = ({ active, gameId } = {}) => {
-    if (typeof active === "boolean") gameActive = active;
+  const showRewarded = async ({ placement = "post_run_reward", onReward, provider, creativeId, variantId } = {}) => {
+    const slot = DEFAULT_SLOTS.post_run_reward;
+    const modalSlot = document.querySelector("[data-ad-slot][data-ad-placement='post_run_reward']");
+    if (!modalSlot) return { ok: false };
+
+    const ok = await renderAd({
+      container: modalSlot,
+      placement,
+      provider,
+      creativeId,
+      variantId,
+    });
+
+    if (!ok) return { ok: false };
+
+    setTimeout(() => {
+      emitEvent("arcade:ad:reward", { placement, provider: provider || "house", creativeId: creativeId || "house-default" });
+      onReward?.();
+    }, 1500);
+
+    return { ok: true };
+  };
+
+  const mountBanner = async ({ container, placement = "menu_banner", provider, creativeId, variantId } = {}) => {
+    return renderAd({ container, placement, provider, creativeId, variantId });
+  };
+
+  const setGameState = ({ active, mode, gameId } = {}) => {
+    if (typeof active === "boolean") gameState = active ? "active" : "idle";
+    if (mode) gameState = mode;
     if (gameId) multiplayer = multiplayerGameIds.has(gameId);
   };
 
-  const handleGameEvent = (eventName, detail = {}) => {
-    if (eventName === "arcade:game:start" || eventName === "arcade:game:restart") {
-      setGameState({ active: true, gameId: detail.gameId });
-    }
-    if (eventName === "arcade:game:over") {
-      setGameState({ active: false, gameId: detail.gameId });
-    }
-  };
-
   const bindGameEvents = () => {
-    const events = ["arcade:game:start", "arcade:game:restart", "arcade:game:over"];
+    const events = ["arcade:game:start", "arcade:game:restart", "arcade:game:pause", "arcade:game:resume", "arcade:game:over"];
     for (const name of events) {
       window.addEventListener(name, (e) => {
-        handleGameEvent(name, e?.detail || {});
+        const detail = e?.detail || {};
+        if (name === "arcade:game:start" || name === "arcade:game:restart") {
+          setGameState({ active: true, mode: "active", gameId: detail.gameId });
+        }
+        if (name === "arcade:game:pause") {
+          setGameState({ active: false, mode: "paused", gameId: detail.gameId });
+          const slot = document.querySelector("[data-ad-slot][data-ad-placement='pause_screen_banner']");
+          if (slot) mountBanner({ container: slot, placement: "pause_screen_banner" });
+        }
+        if (name === "arcade:game:resume") {
+          setGameState({ active: true, mode: "active", gameId: detail.gameId });
+        }
         if (name === "arcade:game:over") {
-          showInterstitial({ placement: "interstitial" });
+          setGameState({ active: false, mode: "ended", gameId: detail.gameId });
+          showRewarded({ placement: "post_run_reward" });
         }
       });
     }
   };
 
+  const bindMessageEvents = () => {
+    window.addEventListener("message", (event) => {
+      const data = event?.data || {};
+      if (data.type !== "arcade_ad_click") return;
+      emitEvent("arcade:ad:click", {
+        placement: data.placement,
+        provider: data.provider,
+        creativeId: data.creativeId,
+        variantId: data.variantId,
+      });
+    });
+  };
+
+  bindMessageEvents();
+
   const api = {
-    loadRules,
+    loadConfig,
     canShow,
-    showInterstitial,
-    showRewarded,
     mountBanner,
+    showRewarded,
     setGameState,
     bindGameEvents,
   };

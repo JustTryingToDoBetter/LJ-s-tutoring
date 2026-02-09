@@ -21,6 +21,7 @@
   };
 
   let adManagerPromise = null;
+  let telemetryPromise = null;
 
   function emitArcadeEvent(name, detail = {}) {
     try {
@@ -35,6 +36,15 @@
         .catch(() => null);
     }
     return adManagerPromise;
+  }
+
+  function getTelemetry() {
+    if (!telemetryPromise) {
+      telemetryPromise = import(`${ASSET_BASE}/arcade/telemetry.js`)
+        .then((mod) => mod.initArcadeTelemetry())
+        .catch(() => null);
+    }
+    return telemetryPromise;
   }
 
   function readArcadeSettings() {
@@ -552,20 +562,16 @@ const GAMES = [
     const settings = readArcadeSettings();
     setCrtMode(settings?.crt);
 
-    const hero = $(".po-arcade__hero");
-    if (hero && !$("#arcade-ad-banner")) {
-      const slot = document.createElement("div");
-      slot.id = "arcade-ad-banner";
-      slot.className = "po-arcade__ad-slot";
-      hero.appendChild(slot);
-    }
-
     getAdManager().then((adManager) => {
       if (!adManager) return;
       adManager.bindGameEvents();
-      adManager.setGameState({ active: false });
-      const slot = $("#arcade-ad-banner");
-      if (slot) adManager.mountBanner({ container: slot, placement: "banner" });
+      adManager.setGameState({ active: false, mode: "idle" });
+      const slot = $("#arcade-ad-slot");
+      if (slot) adManager.mountBanner({ container: slot, placement: "menu_banner" });
+    });
+
+    getTelemetry().then((telemetry) => {
+      telemetry?.bindAdEvents?.();
     });
 
     // build cards
@@ -680,6 +686,9 @@ const GAMES = [
     const gameId = getQueryParam("g");
     const meta = GAMES.find((x) => x.id === gameId);
 
+    const telemetry = await getTelemetry();
+    telemetry?.bindAdEvents?.();
+
     safeText($("#play-title"), meta ? meta.title : "Game");
     safeText($("#play-sub"), meta ? meta.desc : "Odyssey Arcade");
 
@@ -703,10 +712,17 @@ const GAMES = [
     const adManager = await getAdManager();
     if (adManager) {
       adManager.bindGameEvents();
-      adManager.setGameState({ active: true, gameId });
+      adManager.setGameState({ active: true, mode: "active", gameId });
     }
 
     emitArcadeEvent("arcade:game:start", { gameId, source: "play" });
+
+    let sessionStartMs = Date.now();
+    await telemetry?.startSession?.({ gameId, gameTitle: meta?.title, source: "play" });
+
+    window.addEventListener("beforeunload", () => {
+      telemetry?.endSession?.({ reason: "unload", source: "play" });
+    }, { once: true });
 
     // Create frame + tiny app context
     const ctx = createArcadeCtx();
@@ -726,6 +742,10 @@ const GAMES = [
       frame = null;
       isGameActive = false;
       setNoScroll(false);
+      if (gameId) {
+        emitArcadeEvent("arcade:game:over", { gameId, source: "play" });
+      }
+      telemetry?.endSession?.({ reason: "exit", source: "play" });
     };
 
     $("#play-exit")?.addEventListener("click", () => {
@@ -809,6 +829,8 @@ const GAMES = [
       ]);
 
       const store = createArcadeStore();
+      let lastScoreSent = -1;
+      let lastScoreAt = 0;
       const storage = createStorageManager(store, gameId, {
         legacyKeys: [
           `po_arcade_${gameId}_v1`,
@@ -817,6 +839,19 @@ const GAMES = [
           `po_arcade_${gameId}_v4`,
           `po_arcade_${gameId}`,
         ],
+        onScore: (value) => {
+          const now = Date.now();
+          if (value <= lastScoreSent && now - lastScoreAt < 15000) return;
+          lastScoreSent = value;
+          lastScoreAt = now;
+          telemetry?.submitScore?.({
+            score: value,
+            gameId,
+            gameTitle: meta?.title,
+            source: "play",
+            telemetry: { durationMs: now - sessionStartMs },
+          });
+        },
       });
 
       runtime = createGameRuntime({
@@ -841,11 +876,22 @@ const GAMES = [
 
       activeGame = {
         resize: runtime.resize,
-        pause: () => { runtime.pause(); setPauseUI(true); },
-        resume: () => { runtime.resume(); setPauseUI(false); },
+        pause: () => {
+          runtime.pause();
+          setPauseUI(true);
+          emitArcadeEvent("arcade:game:pause", { gameId, source: "play" });
+        },
+        resume: () => {
+          runtime.resume();
+          setPauseUI(false);
+          emitArcadeEvent("arcade:game:resume", { gameId, source: "play" });
+        },
         destroy: runtime.destroyActive,
         restart: async () => {
           await runtime.destroyActive();
+          await telemetry?.endSession?.({ reason: "restart", source: "play" });
+          await telemetry?.startSession?.({ gameId, gameTitle: meta?.title, source: "play" });
+          sessionStartMs = Date.now();
           await mountWithRuntime();
           setPauseUI(false);
           frame?.focusStage?.();

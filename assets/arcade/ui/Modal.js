@@ -10,6 +10,7 @@ export function createModal({
   closeOnBackdrop = true,
   variant,
   adSlot = false,
+  adPlacement,
 } = {}) {
   const classes = ["arc-modal", variant ? `arc-modal--${variant}` : ""].filter(Boolean).join(" ");
   const dialog = el("div", { class: classes, role: "dialog", "aria-modal": "true" });
@@ -24,8 +25,9 @@ export function createModal({
   dialog.append(bodyNode);
 
   if (adSlot) {
+    const placement = adPlacement ? String(adPlacement) : "unknown";
     dialog.append(
-      el("div", { class: "arc-ad-safe" }, [
+      el("div", { class: "arc-ad-safe", "data-ad-slot": "true", "data-ad-placement": placement }, [
         el("div", { class: "arc-ad-safe__label", text: "Ad safe zone" }),
       ])
     );
