@@ -20,6 +20,20 @@ export async function resetDb() {
         if to_regclass('public.students') is not null then execute 'delete from students'; end if;
         if to_regclass('public.users') is not null then execute 'delete from users'; end if;
 
+        if to_regclass('public.arcade_ad_events') is not null then execute 'delete from arcade_ad_events'; end if;
+        if to_regclass('public.arcade_gameplay_events') is not null then execute 'delete from arcade_gameplay_events'; end if;
+        if to_regclass('public.arcade_score_validations') is not null then execute 'delete from arcade_score_validations'; end if;
+        if to_regclass('public.arcade_score_quarantine') is not null then execute 'delete from arcade_score_quarantine'; end if;
+        if to_regclass('public.arcade_scores') is not null then execute 'delete from arcade_scores'; end if;
+        if to_regclass('public.arcade_session_tokens') is not null then execute 'delete from arcade_session_tokens'; end if;
+        if to_regclass('public.arcade_sessions') is not null then execute 'delete from arcade_sessions'; end if;
+        if to_regclass('public.arcade_players') is not null then execute 'delete from arcade_players'; end if;
+        if to_regclass('public.arcade_games') is not null then execute 'delete from arcade_games'; end if;
+        if to_regclass('public.arcade_ad_blocklist') is not null then execute 'delete from arcade_ad_blocklist'; end if;
+        if to_regclass('public.arcade_ad_providers') is not null then execute 'delete from arcade_ad_providers'; end if;
+        if to_regclass('public.arcade_reconciliation_reports') is not null then execute 'delete from arcade_reconciliation_reports'; end if;
+        if to_regclass('public.job_queue') is not null then execute 'delete from job_queue'; end if;
+
         if to_regclass('public.tutoring_session_current') is not null then execute 'delete from tutoring_session_current'; end if;
         if to_regclass('public.tutoring_session_log') is not null then execute 'delete from tutoring_session_log'; end if;
         if to_regclass('public.tutoring_sessions') is not null then execute 'delete from tutoring_sessions'; end if;
