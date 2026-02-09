@@ -10,6 +10,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  csp-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify CSP header on production
+        run: node scripts/check-live-csp.js
+
   lint:
     runs-on: ubuntu-latest
     steps:
