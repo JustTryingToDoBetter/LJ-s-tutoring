@@ -1,5 +1,6 @@
 import type { DbClient } from '../shared/types.js';
 import type { CreateAssignmentInput, UpdateAssignmentInput, AssignmentSummary } from './contracts.js';
+import { parsePagination } from '../../../lib/pagination.js';
 
 export async function createAssignment(client: DbClient, input: CreateAssignmentInput) {
   const [tutorRes, studentRes] = await Promise.all([
@@ -31,15 +32,44 @@ export async function createAssignment(client: DbClient, input: CreateAssignment
   return { assignment: res.rows[0] } as const;
 }
 
-export async function listAssignments(client: DbClient): Promise<{ assignments: AssignmentSummary[] }> {
+export async function listAssignments(
+  client: DbClient,
+  query: { page?: unknown; pageSize?: unknown; q?: string } = {}
+): Promise<{ assignments: AssignmentSummary[]; items: AssignmentSummary[]; total: number; page: number; pageSize: number }> {
+  const { page, pageSize, offset, limit } = parsePagination(query);
+  const q = query.q?.trim();
+  const filters: string[] = [];
+  const params: any[] = [];
+
+  if (q) {
+    params.push(`%${q}%`);
+    filters.push(`(a.subject ilike $${params.length} or t.full_name ilike $${params.length} or s.full_name ilike $${params.length})`);
+  }
+
+  const where = filters.length ? `where ${filters.join(' and ')}` : '';
+
   const res = await client.query(
     `select a.*, t.full_name as tutor_name, s.full_name as student_name
      from assignments a
      join tutor_profiles t on t.id = a.tutor_id
      join students s on s.id = a.student_id
-     order by a.start_date desc`
+     ${where}
+     order by a.start_date desc
+     limit $${params.length + 1} offset $${params.length + 2}`,
+    [...params, limit, offset]
   );
-  return { assignments: res.rows };
+
+  const totalRes = await client.query(
+    `select count(*)
+     from assignments a
+     join tutor_profiles t on t.id = a.tutor_id
+     join students s on s.id = a.student_id
+     ${where}`,
+    params
+  );
+
+  const total = Number(totalRes.rows[0]?.count || 0);
+  return { assignments: res.rows, items: res.rows, total, page, pageSize };
 }
 
 function normalizeJson(value: any) {

@@ -1,4 +1,4 @@
-import { apiGet, qs, setActiveNav, escapeHtml } from '/assets/portal-shared.js';
+import { apiGet, apiPost, qs, setActiveNav, escapeHtml } from '/assets/portal-shared.js';
 
 export async function initAudit() {
   setActiveNav('audit');
@@ -12,6 +12,7 @@ export async function initAudit() {
   const applyBtn = qs('#auditApply');
   const resetBtn = qs('#auditReset');
   const exportBtn = qs('#auditExport');
+  const exportStatus = qs('#auditExportStatus');
   const prevBtn = qs('#auditPrev');
   const nextBtn = qs('#auditNext');
   const pageMeta = qs('#auditPageMeta');
@@ -32,6 +33,20 @@ export async function initAudit() {
     params.set('page', String(state.page));
     params.set('pageSize', String(state.pageSize));
     return params;
+  };
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const waitForJob = async (jobId, { onUpdate } = {}) => {
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const data = await apiGet(`/admin/jobs/${jobId}`);
+      const job = data.job;
+      if (onUpdate) {onUpdate(job);}
+      if (job.status === 'COMPLETED') return job;
+      if (job.status === 'FAILED') throw new Error(job.error || 'job_failed');
+      await sleep(2000);
+    }
+    throw new Error('job_timeout');
   };
 
   const updatePageMeta = () => {
@@ -110,7 +125,26 @@ export async function initAudit() {
     const params = buildParams();
     params.delete('page');
     params.delete('pageSize');
-    window.location.href = `/admin/audit/export.csv?${params.toString()}`;
+    const payload = Object.fromEntries(params.entries());
+    if (exportStatus) exportStatus.textContent = 'Queued export...';
+    exportBtn.disabled = true;
+    apiPost('/admin/jobs/audit-export', payload)
+      .then((res) => waitForJob(res.jobId, {
+        onUpdate: (jobUpdate) => {
+          if (exportStatus) exportStatus.textContent = `Export ${jobUpdate.status.toLowerCase()}...`;
+        }
+      }))
+      .then((job) => {
+        if (exportStatus) exportStatus.textContent = 'Export ready. Downloading...';
+        window.location.href = `/admin/jobs/${job.id}/download`;
+        if (exportStatus) exportStatus.textContent = 'Download started.';
+      })
+      .catch((err) => {
+        if (exportStatus) exportStatus.textContent = `Export failed: ${err.message}`;
+      })
+      .finally(() => {
+        exportBtn.disabled = false;
+      });
   });
 
   await load();

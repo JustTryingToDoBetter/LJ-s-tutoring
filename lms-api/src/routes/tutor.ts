@@ -5,6 +5,7 @@ import { CreateSessionSchema, DateRangeQuerySchema, IdParamSchema, TutorSessions
 import { durationMinutes, isWithinAssignmentWindow } from '../lib/scheduling.js';
 import { buildInvoicePdf, renderInvoiceHtml } from '../lib/invoices.js';
 import { getPayPeriodStart } from '../lib/pay-periods.js';
+import { parsePagination } from '../lib/pagination.js';
 
 export async function tutorRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate);
@@ -59,31 +60,62 @@ export async function tutorRoutes(app: FastifyInstance) {
 
   app.get('/tutor/assignments', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
+    const { page, pageSize, offset, limit } = parsePagination(req.query as any, { pageSize: 200 });
     const res = await pool.query(
       `select a.id, a.subject, a.start_date, a.end_date, a.rate_override, a.allowed_days_json, a.allowed_time_ranges_json, a.active,
               s.id as student_id, s.full_name, s.grade
        from assignments a
        join students s on s.id = a.student_id
        where a.tutor_id = $1
-       order by a.start_date desc`,
+       order by a.start_date desc
+       limit $2 offset $3`,
+      [tutorId, limit, offset]
+    );
+
+    const totalRes = await pool.query(
+      `select count(*)
+       from assignments a
+       where a.tutor_id = $1`,
       [tutorId]
     );
 
-    return reply.send({ assignments: res.rows });
+    return reply.send({
+      assignments: res.rows,
+      items: res.rows,
+      total: Number(totalRes.rows[0]?.count || 0),
+      page,
+      pageSize
+    });
   });
 
   app.get('/tutor/students', async (req, reply) => {
     const tutorId = req.user!.tutorId!;
+    const { page, pageSize, offset, limit } = parsePagination(req.query as any, { pageSize: 200 });
     const res = await pool.query(
       `select distinct s.id, s.full_name, s.grade, s.active
        from assignments a
        join students s on s.id = a.student_id
        where a.tutor_id = $1 and a.active = true and s.active = true
-       order by s.full_name asc`,
+       order by s.full_name asc
+       limit $2 offset $3`,
+      [tutorId, limit, offset]
+    );
+
+    const totalRes = await pool.query(
+      `select count(distinct s.id) as count
+       from assignments a
+       join students s on s.id = a.student_id
+       where a.tutor_id = $1 and a.active = true and s.active = true`,
       [tutorId]
     );
 
-    return reply.send({ students: res.rows });
+    return reply.send({
+      students: res.rows,
+      items: res.rows,
+      total: Number(totalRes.rows[0]?.count || 0),
+      page,
+      pageSize
+    });
   });
 
   app.get('/tutor/sessions', async (req, reply) => {
@@ -93,6 +125,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
     const { from, to, status } = parsed.data;
+    const { page, pageSize, offset, limit } = parsePagination(req.query as any, { pageSize: 200 });
 
     const params: any[] = [tutorId];
     const filters: string[] = ['s.tutor_id = $1'];
@@ -117,11 +150,25 @@ export async function tutorRoutes(app: FastifyInstance) {
        from sessions s
        join students st on st.id = s.student_id
        where ${filters.join(' and ')}
-       order by s.date desc, s.start_time desc`,
+       order by s.date desc, s.start_time desc
+       limit $${params.length + 1} offset $${params.length + 2}`,
+      [...params, limit, offset]
+    );
+
+    const totalRes = await pool.query(
+      `select count(*)
+       from sessions s
+       where ${filters.join(' and ')}`,
       params
     );
 
-    return reply.send({ sessions: res.rows });
+    return reply.send({
+      sessions: res.rows,
+      items: res.rows,
+      total: Number(totalRes.rows[0]?.count || 0),
+      page,
+      pageSize
+    });
   });
 
   app.post('/tutor/sessions', async (req, reply) => {
@@ -333,6 +380,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
     const { from, to } = parsed.data;
+    const { page, pageSize } = parsePagination(req.query as any, { pageSize: 200 });
 
     const params: any[] = [tutorId];
     const filters: string[] = [`s.tutor_id = $1`, `s.status = 'APPROVED'`];
@@ -434,7 +482,16 @@ export async function tutorRoutes(app: FastifyInstance) {
     }
 
     const response = Array.from(weeks.values()).sort((a, b) => b.week_start.localeCompare(a.week_start));
-    return reply.send({ weeks: response });
+    const total = response.length;
+    const offset = (page - 1) * pageSize;
+    const paged = response.slice(offset, offset + pageSize);
+    return reply.send({
+      weeks: paged,
+      items: paged,
+      total,
+      page,
+      pageSize
+    });
   });
 
   app.get('/tutor/invoices', async (req, reply) => {
@@ -444,6 +501,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
     const { from, to } = parsed.data;
+    const { page, pageSize, offset, limit } = parsePagination(req.query as any, { pageSize: 200 });
 
     const params: any[] = [tutorId];
     const filters: string[] = ['i.tutor_id = $1'];
@@ -461,11 +519,25 @@ export async function tutorRoutes(app: FastifyInstance) {
       `select i.id, i.period_start, i.period_end, i.invoice_number, i.total_amount, i.status, i.created_at
        from invoices i
        where ${filters.join(' and ')}
-       order by i.period_start desc`,
+       order by i.period_start desc
+       limit $${params.length + 1} offset $${params.length + 2}`,
+      [...params, limit, offset]
+    );
+
+    const totalRes = await pool.query(
+      `select count(*)
+       from invoices i
+       where ${filters.join(' and ')}`,
       params
     );
 
-    return reply.send({ invoices: res.rows });
+    return reply.send({
+      invoices: res.rows,
+      items: res.rows,
+      total: Number(totalRes.rows[0]?.count || 0),
+      page,
+      pageSize
+    });
   });
 
   app.get('/tutor/invoices/:id', async (req, reply) => {

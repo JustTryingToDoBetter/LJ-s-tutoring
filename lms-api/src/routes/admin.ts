@@ -62,6 +62,8 @@ import { safeAuditMeta, writeAuditLog } from '../lib/audit.js';
 import { getRetentionConfig, getRetentionCutoffs } from '../lib/retention.js';
 import { anonymizeStudent, anonymizeTutor, exportStudentData, exportTutorData } from '../lib/privacy.js';
 import { PII_CLASSIFICATION_MAP } from '../lib/data-classification.js';
+import { parsePagination } from '../lib/pagination.js';
+import { enqueueJob, getJob } from '../lib/job-queue.js';
 
 
 function toDateString(value: Date) {
@@ -417,8 +419,8 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get('/admin/tutors', async (_req, reply) => {
-    const result = await listTutors(pool);
+  app.get('/admin/tutors', async (req, reply) => {
+    const result = await listTutors(pool, req.query as any);
     return reply.send(result);
   });
 
@@ -493,6 +495,7 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
+    const { page, pageSize, offset, limit } = parsePagination(req.query as any, { pageSize: 200 });
     const params: any[] = [];
     const filters: string[] = [];
     if (parsed.data.status) {
@@ -510,10 +513,25 @@ export async function adminRoutes(app: FastifyInstance) {
 
     const where = filters.length ? `where ${filters.join(' and ')}` : '';
     const res = await pool.query(
-      `select * from privacy_requests ${where} order by created_at desc`,
+      `select * from privacy_requests ${where}
+       order by created_at desc
+       limit $${params.length + 1} offset $${params.length + 2}`,
+      [...params, limit, offset]
+    );
+
+    const totalRes = await pool.query(
+      `select count(*) from privacy_requests ${where}`,
       params
     );
-    return reply.send({ requests: res.rows });
+
+    const total = Number(totalRes.rows[0]?.count || 0);
+    return reply.send({
+      requests: res.rows,
+      items: res.rows,
+      total,
+      page,
+      pageSize
+    });
   });
 
   app.get('/admin/privacy-requests/:id/export', async (req, reply) => {
@@ -670,8 +688,8 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get('/admin/students', async (_req, reply) => {
-    const result = await listStudents(pool);
+  app.get('/admin/students', async (req, reply) => {
+    const result = await listStudents(pool, req.query as any);
     return reply.send(result);
   });
 
@@ -696,8 +714,8 @@ export async function adminRoutes(app: FastifyInstance) {
     return reply.code(201).send({ assignment: result.assignment });
   });
 
-  app.get('/admin/assignments', async (_req, reply) => {
-    const result = await listAssignments(pool);
+  app.get('/admin/assignments', async (req, reply) => {
+    const result = await listAssignments(pool, req.query as any);
     return reply.send(result);
   });
 
@@ -914,6 +932,128 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     reply.raw.end();
+  });
+
+  app.post('/admin/jobs/audit-export', async (req, reply) => {
+    const parsed = AuditLogQuerySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const adminId = req.user!.userId;
+    const job = await enqueueJob(pool, 'audit_export_csv', {
+      filters: parsed.data,
+      adminId
+    });
+
+    await logAuditSafe(pool, {
+      actorUserId: adminId,
+      actorRole: 'ADMIN',
+      action: 'job.enqueue',
+      entityType: 'job',
+      entityId: job.id,
+      meta: safeAuditMeta({ jobType: job.job_type }),
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string | undefined,
+      correlationId: req.id,
+    });
+
+    return reply.code(202).send({ jobId: job.id, status: job.status });
+  });
+
+  app.post('/admin/jobs/payroll-generate', async (req, reply) => {
+    const parsed = PayrollGenerateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const adminId = req.user!.userId;
+    const job = await enqueueJob(pool, 'payroll_generate', {
+      weekStart: parsed.data.weekStart,
+      adminId
+    });
+
+    await logAuditSafe(pool, {
+      actorUserId: adminId,
+      actorRole: 'ADMIN',
+      action: 'job.enqueue',
+      entityType: 'job',
+      entityId: job.id,
+      meta: safeAuditMeta({ jobType: job.job_type, weekStart: parsed.data.weekStart }),
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string | undefined,
+      correlationId: req.id,
+    });
+
+    return reply.code(202).send({ jobId: job.id, status: job.status });
+  });
+
+  app.post('/admin/jobs/payroll-csv', async (req, reply) => {
+    const parsed = WeekStartParamSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_week_start' });
+    }
+
+    const adminId = req.user!.userId;
+    const job = await enqueueJob(pool, 'payroll_week_csv', {
+      weekStart: parsed.data.weekStart,
+      adminId
+    });
+
+    await logAuditSafe(pool, {
+      actorUserId: adminId,
+      actorRole: 'ADMIN',
+      action: 'job.enqueue',
+      entityType: 'job',
+      entityId: job.id,
+      meta: safeAuditMeta({ jobType: job.job_type, weekStart: parsed.data.weekStart }),
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string | undefined,
+      correlationId: req.id,
+    });
+
+    return reply.code(202).send({ jobId: job.id, status: job.status });
+  });
+
+  app.get('/admin/jobs/:id', async (req, reply) => {
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+
+    const job = await getJob(pool, params.data.id);
+    if (!job) return reply.code(404).send({ error: 'job_not_found' });
+
+    return reply.send({
+      job: {
+        id: job.id,
+        status: job.status,
+        jobType: job.job_type,
+        createdAt: job.created_at,
+        startedAt: job.started_at,
+        finishedAt: job.finished_at,
+        result: job.result_json ?? null,
+        error: job.error_text ?? null
+      }
+    });
+  });
+
+  app.get('/admin/jobs/:id/download', async (req, reply) => {
+    const params = IdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
+    }
+
+    const job = await getJob(pool, params.data.id);
+    if (!job) return reply.code(404).send({ error: 'job_not_found' });
+    if (job.status !== 'COMPLETED') return reply.code(409).send({ error: 'job_not_ready' });
+
+    const result = job.result_json || {};
+    if (!result.csv) return reply.code(404).send({ error: 'job_result_missing' });
+
+    reply.header('Content-Type', result.contentType || 'text/csv');
+    reply.header('Content-Disposition', `attachment; filename="${result.filename || 'export.csv'}"`);
+    return reply.send(result.csv);
   });
 
   app.post('/admin/sessions/bulk-approve', {

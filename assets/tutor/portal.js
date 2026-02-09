@@ -72,6 +72,17 @@ function writeAssignmentsCache(data) {
   localStorage.setItem(ASSIGNMENTS_CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
 }
 
+function formatAge(ts) {
+  const diffMs = Date.now() - ts;
+  const minutes = Math.max(1, Math.round(diffMs / 60000));
+  return `${minutes} min ago`;
+}
+
+function setStaleBanner(bannerId, textId, show, message) {
+  if (message) {setText(textId, message);}
+  showBanner(bannerId, show);
+}
+
 function readRecentStudents() {
   try {
     const raw = localStorage.getItem(RECENT_STUDENTS_KEY);
@@ -285,19 +296,38 @@ async function initTutorHome() {
 async function initAssignments() {
   setActiveNav('assignments');
   const list = qs('#assignmentList');
+  const renderList = (assignments) => {
+    clearChildren(list);
+    const frag = document.createDocumentFragment();
+    assignments.forEach((a) => {
+      const panel = createEl('div', { className: 'panel' });
+      const title = createEl('div');
+      const subject = createEl('strong', { text: a.subject });
+      title.append(subject, document.createTextNode(' - '), createEl('span', { text: a.full_name }));
+      const note = createEl('div', { className: 'note', text: `${a.start_date} to ${a.end_date || 'open-ended'}` });
+      panel.append(title, note);
+      frag.append(panel);
+    });
+    list.append(frag);
+  };
+
+  const cached = readAssignmentsCache();
+  const isFresh = cached?.ts && (Date.now() - cached.ts) < ASSIGNMENTS_TTL;
+  if (cached?.data?.assignments?.length) {
+    renderList(cached.data.assignments);
+    if (!isFresh) {
+      setStaleBanner('#assignmentsStaleBanner', '#assignmentsStaleText', true, `Showing cached assignments from ${formatAge(cached.ts)}. Updating...`);
+    } else {
+      setStaleBanner('#assignmentsStaleBanner', '#assignmentsStaleText', false);
+    }
+  }
+
   const data = await apiGet('/tutor/assignments');
-  clearChildren(list);
-  const frag = document.createDocumentFragment();
-  data.assignments.forEach((a) => {
-    const panel = createEl('div', { className: 'panel' });
-    const title = createEl('div');
-    const subject = createEl('strong', { text: a.subject });
-    title.append(subject, document.createTextNode(' - '), createEl('span', { text: a.full_name }));
-    const note = createEl('div', { className: 'note', text: `${a.start_date} to ${a.end_date || 'open-ended'}` });
-    panel.append(title, note);
-    frag.append(panel);
-  });
-  list.append(frag);
+  if (data?.assignments?.length) {
+    renderList(data.assignments);
+    writeAssignmentsCache(data);
+  }
+  setStaleBanner('#assignmentsStaleBanner', '#assignmentsStaleText', false);
 }
 
 async function initPayroll() {
@@ -486,6 +516,11 @@ async function initSessions() {
 
     if (cached?.data?.assignments?.length) {
       renderAssignments(cached.data.assignments);
+      if (!isFresh) {
+        setStaleBanner('#staleBanner', '#staleBannerText', true, `Showing cached assignments from ${formatAge(cached.ts)}. Updating...`);
+      } else {
+        setStaleBanner('#staleBanner', '#staleBannerText', false);
+      }
       if (isFresh) {return;}
     }
 
@@ -495,6 +530,7 @@ async function initSessions() {
         renderAssignments(fresh.assignments);
         writeAssignmentsCache(fresh);
       }
+      setStaleBanner('#staleBanner', '#staleBannerText', false);
     } catch {
       // Prefer cached assignments on failure.
     }
@@ -668,12 +704,18 @@ async function initSessions() {
 
     if (preferCache && cached?.data?.sessions?.length) {
       renderSessions(cached.data, drafts);
+      if (!isFresh) {
+        setStaleBanner('#staleBanner', '#staleBannerText', true, `Showing cached sessions from ${formatAge(cached.ts)}. Updating...`);
+      } else {
+        setStaleBanner('#staleBanner', '#staleBannerText', false);
+      }
       if (isFresh || !navigator.onLine) {return;}
     }
 
     const data = await apiGet('/tutor/sessions');
     writeSessionsCache(data);
     renderSessions(data, drafts);
+    setStaleBanner('#staleBanner', '#staleBannerText', false);
   };
 
   await loadSessions({ preferCache: true });

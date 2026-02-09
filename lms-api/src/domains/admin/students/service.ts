@@ -1,5 +1,6 @@
 import type { DbClient } from '../shared/types.js';
 import type { CreateStudentInput, UpdateStudentInput, StudentSummary } from './contracts.js';
+import { parsePagination } from '../../../lib/pagination.js';
 
 export async function createStudent(client: DbClient, input: CreateStudentInput) {
   const res = await client.query(
@@ -19,13 +20,40 @@ export async function createStudent(client: DbClient, input: CreateStudentInput)
   return res.rows[0];
 }
 
-export async function listStudents(client: DbClient): Promise<{ students: StudentSummary[] }> {
+export async function listStudents(
+  client: DbClient,
+  query: { page?: unknown; pageSize?: unknown; q?: string } = {}
+): Promise<{ students: StudentSummary[]; items: StudentSummary[]; total: number; page: number; pageSize: number }> {
+  const { page, pageSize, offset, limit } = parsePagination(query);
+  const q = query.q?.trim();
+  const filters: string[] = [];
+  const params: any[] = [];
+
+  if (q) {
+    params.push(`%${q}%`);
+    filters.push(`(full_name ilike $${params.length} or guardian_name ilike $${params.length})`);
+  }
+
+  const where = filters.length ? `where ${filters.join(' and ')}` : '';
+
   const res = await client.query(
     `select id, full_name, grade, guardian_name, guardian_phone, notes, is_active as active
      from students
-     order by full_name asc`
+     ${where}
+     order by full_name asc
+     limit $${params.length + 1} offset $${params.length + 2}`,
+    [...params, limit, offset]
   );
-  return { students: res.rows };
+
+  const totalRes = await client.query(
+    `select count(*)
+     from students
+     ${where}`,
+    params
+  );
+
+  const total = Number(totalRes.rows[0]?.count || 0);
+  return { students: res.rows, items: res.rows, total, page, pageSize };
 }
 
 export async function updateStudent(client: DbClient, studentId: string, input: UpdateStudentInput) {

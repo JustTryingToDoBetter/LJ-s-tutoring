@@ -3,6 +3,7 @@ import type { DbClient, AuditContext, AuditLogWriter } from '../shared/types.js'
 import type { CreateTutorInput, UpdateTutorInput, ImpersonateStartInput, ImpersonateStopInput, ImpersonationStartResult, TutorSummary } from './contracts.js';
 import { safeAuditMeta } from '../../../lib/audit.js';
 import { createImpersonationSession, normalizeTutorEmail } from './internal.js';
+import { parsePagination } from '../../../lib/pagination.js';
 
 export async function createTutor(
   client: DbClient,
@@ -35,14 +36,42 @@ export async function createTutor(
   }
 }
 
-export async function listTutors(client: DbClient): Promise<{ tutors: TutorSummary[] }> {
+export async function listTutors(
+  client: DbClient,
+  query: { page?: unknown; pageSize?: unknown; q?: string } = {}
+): Promise<{ tutors: TutorSummary[]; items: TutorSummary[]; total: number; page: number; pageSize: number }> {
+  const { page, pageSize, offset, limit } = parsePagination(query);
+  const q = query.q?.trim();
+  const filters: string[] = [];
+  const params: any[] = [];
+
+  if (q) {
+    params.push(`%${q}%`);
+    filters.push(`(t.full_name ilike $${params.length} or u.email ilike $${params.length})`);
+  }
+
+  const where = filters.length ? `where ${filters.join(' and ')}` : '';
+
   const res = await client.query(
     `select t.id, t.full_name, t.phone, t.default_hourly_rate, t.active, u.email
      from tutor_profiles t
      left join users u on u.tutor_profile_id = t.id
-     order by t.full_name asc`
+     ${where}
+     order by t.full_name asc
+     limit $${params.length + 1} offset $${params.length + 2}`,
+    [...params, limit, offset]
   );
-  return { tutors: res.rows };
+
+  const totalRes = await client.query(
+    `select count(*)
+     from tutor_profiles t
+     left join users u on u.tutor_profile_id = t.id
+     ${where}`,
+    params
+  );
+
+  const total = Number(totalRes.rows[0]?.count || 0);
+  return { tutors: res.rows, items: res.rows, total, page, pageSize };
 }
 
 export async function updateTutor(

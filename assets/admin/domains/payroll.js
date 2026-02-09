@@ -5,9 +5,26 @@ export async function initPayroll() {
   const form = qs('#payrollForm');
   const list = qs('#payrollList');
   const lockBtn = qs('#lockWeek');
+  const jobStatus = qs('#payrollJobStatus');
+  const csvStatus = qs('#payrollCsvStatus');
   const adjustmentForm = qs('#adjustmentForm');
   const adjustmentList = qs('#adjustmentList');
   const adjustmentTutor = qs('#adjustTutor');
+  const payrollCsv = qs('#payrollCsv');
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const waitForJob = async (jobId, { onUpdate } = {}) => {
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const data = await apiGet(`/admin/jobs/${jobId}`);
+      const job = data.job;
+      if (onUpdate) {onUpdate(job);}
+      if (job.status === 'COMPLETED') return job;
+      if (job.status === 'FAILED') throw new Error(job.error || 'job_failed');
+      await sleep(2000);
+    }
+    throw new Error('job_timeout');
+  };
 
   if (adjustmentTutor) {
     const tutors = await apiGet('/admin/tutors');
@@ -33,15 +50,25 @@ export async function initPayroll() {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const weekStart = qs('#weekStart').value;
-    const res = await apiPost('/admin/payroll/generate-week', { weekStart });
-    list.innerHTML = res.invoices.length
-      ? res.invoices.map((inv) => `<div class="panel">
-          <div><strong>${escapeHtml(inv.invoice_number)}</strong></div>
-          <div>${formatMoney(inv.total_amount)}</div>
-        </div>`).join('')
-      : '<div class="note">No invoices generated.</div>';
-
-    qs('#payrollCsv').href = `/admin/payroll/week/${weekStart}.csv`;
+    try {
+      if (jobStatus) jobStatus.textContent = 'Queued invoice generation...';
+      const res = await apiPost('/admin/jobs/payroll-generate', { weekStart });
+      const job = await waitForJob(res.jobId, {
+        onUpdate: (jobUpdate) => {
+          if (jobStatus) jobStatus.textContent = `Job ${jobUpdate.status.toLowerCase()}...`;
+        }
+      });
+      const invoices = job.result?.invoices || [];
+      list.innerHTML = invoices.length
+        ? invoices.map((inv) => `<div class="panel">
+            <div><strong>${escapeHtml(inv.invoice_number)}</strong></div>
+            <div>${formatMoney(inv.total_amount)}</div>
+          </div>`).join('')
+        : '<div class="note">No invoices generated.</div>';
+      if (jobStatus) jobStatus.textContent = 'Invoice generation complete.';
+    } catch (err) {
+      if (jobStatus) jobStatus.textContent = `Invoice generation failed: ${err.message}`;
+    }
   });
 
   lockBtn?.addEventListener('click', async () => {
@@ -49,6 +76,29 @@ export async function initPayroll() {
     if (!weekStart) return;
     await apiPost(`/admin/pay-periods/${weekStart}/lock`);
     alert(`Week ${weekStart} locked.`);
+  });
+
+  payrollCsv?.addEventListener('click', async (event) => {
+    event.preventDefault();
+    const weekStart = qs('#weekStart').value;
+    if (!weekStart) return;
+    if (csvStatus) csvStatus.textContent = 'Preparing CSV export...';
+    payrollCsv.style.pointerEvents = 'none';
+    try {
+      const jobRes = await apiPost('/admin/jobs/payroll-csv', { weekStart });
+      const job = await waitForJob(jobRes.jobId, {
+        onUpdate: (jobUpdate) => {
+          if (csvStatus) csvStatus.textContent = `Export ${jobUpdate.status.toLowerCase()}...`;
+        }
+      });
+      if (csvStatus) csvStatus.textContent = 'CSV ready. Downloading...';
+      window.location.href = `/admin/jobs/${job.id}/download`;
+      if (csvStatus) csvStatus.textContent = 'CSV download started.';
+    } catch (err) {
+      if (csvStatus) csvStatus.textContent = `CSV export failed: ${err.message}`;
+    } finally {
+      payrollCsv.style.pointerEvents = '';
+    }
   });
 
   if (adjustmentForm) {
