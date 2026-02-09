@@ -8,6 +8,16 @@ import {
   stopImpersonation
 } from '../domains/admin/tutors/index.js';
 import {
+  createStudent,
+  listStudents,
+  updateStudent
+} from '../domains/admin/students/index.js';
+import {
+  createAssignment,
+  listAssignments,
+  updateAssignment
+} from '../domains/admin/assignments/index.js';
+import {
   AdminSessionsQuerySchema,
   AssignmentSchema,
   AuditLogQuerySchema,
@@ -604,22 +614,8 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-
-    const res = await pool.query(
-      `insert into students (full_name, grade, guardian_name, guardian_phone, notes, is_active)
-       values ($1, $2, $3, $4, $5, $6)
-       returning id, full_name, grade, guardian_name, guardian_phone, notes, is_active as active`,
-      [
-        parsed.data.fullName,
-        parsed.data.grade ?? null,
-        parsed.data.guardianName ?? null,
-        parsed.data.guardianPhone ?? null,
-        parsed.data.notes ?? null,
-        parsed.data.active
-      ]
-    );
-
-    return reply.code(201).send({ student: res.rows[0] });
+    const student = await createStudent(pool, parsed.data);
+    return reply.code(201).send({ student });
   });
 
   app.post('/admin/privacy-requests', async (req, reply) => {
@@ -846,12 +842,8 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.get('/admin/students', async (_req, reply) => {
-    const res = await pool.query(
-      `select id, full_name, grade, guardian_name, guardian_phone, notes, is_active as active
-       from students
-       order by full_name asc`
-    );
-    return reply.send({ students: res.rows });
+    const result = await listStudents(pool);
+    return reply.send(result);
   });
 
   app.patch('/admin/students/:id', async (req, reply) => {
@@ -860,33 +852,9 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-
-    const currentRes = await pool.query(`select * from students where id = $1`, [studentId]);
-    if (currentRes.rowCount === 0) return reply.code(404).send({ error: 'student_not_found' });
-    const current = currentRes.rows[0];
-
-    const res = await pool.query(
-      `update students
-       set full_name = $1,
-           grade = $2,
-           guardian_name = $3,
-           guardian_phone = $4,
-           notes = $5,
-           is_active = $6
-       where id = $7
-       returning id, full_name, grade, guardian_name, guardian_phone, notes, is_active as active`,
-      [
-        parsed.data.fullName ?? current.full_name,
-        parsed.data.grade ?? current.grade,
-        parsed.data.guardianName ?? current.guardian_name,
-        parsed.data.guardianPhone ?? current.guardian_phone,
-        parsed.data.notes ?? current.notes,
-        parsed.data.active ?? current.active,
-        studentId
-      ]
-    );
-
-    return reply.send({ student: res.rows[0] });
+    const updated = await updateStudent(pool, studentId, parsed.data);
+    if (!updated) return reply.code(404).send({ error: 'student_not_found' });
+    return reply.send({ student: updated });
   });
 
   app.post('/admin/assignments', async (req, reply) => {
@@ -894,45 +862,14 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-
-    const [tutorRes, studentRes] = await Promise.all([
-      pool.query(`select 1 from tutor_profiles where id = $1`, [parsed.data.tutorId]),
-      pool.query(`select 1 from students where id = $1`, [parsed.data.studentId])
-    ]);
-
-    if (tutorRes.rowCount === 0) return reply.code(404).send({ error: 'tutor_not_found' });
-    if (studentRes.rowCount === 0) return reply.code(404).send({ error: 'student_not_found' });
-
-    const res = await pool.query(
-      `insert into assignments
-       (tutor_id, student_id, subject, start_date, end_date, rate_override, allowed_days_json, allowed_time_ranges_json, active)
-       values ($1, $2, $3, $4::date, $5::date, $6, $7::jsonb, $8::jsonb, $9)
-       returning *`,
-      [
-        parsed.data.tutorId,
-        parsed.data.studentId,
-        parsed.data.subject,
-        parsed.data.startDate,
-        parsed.data.endDate ?? null,
-        parsed.data.rateOverride ?? null,
-        JSON.stringify(parsed.data.allowedDays),
-        JSON.stringify(parsed.data.allowedTimeRanges),
-        parsed.data.active
-      ]
-    );
-
-    return reply.code(201).send({ assignment: res.rows[0] });
+    const result = await createAssignment(pool, parsed.data);
+    if ('error' in result) return reply.code(404).send({ error: result.error });
+    return reply.code(201).send({ assignment: result.assignment });
   });
 
   app.get('/admin/assignments', async (_req, reply) => {
-    const res = await pool.query(
-      `select a.*, t.full_name as tutor_name, s.full_name as student_name
-       from assignments a
-       join tutor_profiles t on t.id = a.tutor_id
-       join students s on s.id = a.student_id
-       order by a.start_date desc`
-    );
-    return reply.send({ assignments: res.rows });
+    const result = await listAssignments(pool);
+    return reply.send(result);
   });
 
   app.patch('/admin/assignments/:id', async (req, reply) => {
@@ -941,35 +878,9 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-
-    const currentRes = await pool.query(`select * from assignments where id = $1`, [assignmentId]);
-    if (currentRes.rowCount === 0) return reply.code(404).send({ error: 'assignment_not_found' });
-    const current = currentRes.rows[0];
-
-    const res = await pool.query(
-      `update assignments
-       set subject = $1,
-           start_date = $2::date,
-           end_date = $3::date,
-           rate_override = $4,
-           allowed_days_json = $5::jsonb,
-           allowed_time_ranges_json = $6::jsonb,
-           active = $7
-       where id = $8
-       returning *`,
-      [
-        parsed.data.subject ?? current.subject,
-        parsed.data.startDate ?? current.start_date,
-        parsed.data.endDate ?? current.end_date,
-        parsed.data.rateOverride ?? current.rate_override,
-        parsed.data.allowedDays ? JSON.stringify(parsed.data.allowedDays) : normalizeJson(current.allowed_days_json),
-        parsed.data.allowedTimeRanges ? JSON.stringify(parsed.data.allowedTimeRanges) : normalizeJson(current.allowed_time_ranges_json),
-        parsed.data.active ?? current.active,
-        assignmentId
-      ]
-    );
-
-    return reply.send({ assignment: res.rows[0] });
+    const updated = await updateAssignment(pool, assignmentId, parsed.data);
+    if (!updated) return reply.code(404).send({ error: 'assignment_not_found' });
+    return reply.send({ assignment: updated });
   });
 
   app.get('/admin/sessions', async (req, reply) => {

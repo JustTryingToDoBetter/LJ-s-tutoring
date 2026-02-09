@@ -1,0 +1,52 @@
+import { apiGet, apiPost, qs, setActiveNav, escapeHtml } from '/assets/portal-shared.js';
+
+export async function initAssignments() {
+  setActiveNav('assignments');
+  const list = qs('#assignmentList');
+  const form = qs('#assignmentForm');
+
+  const [tutors, students] = await Promise.all([
+    apiGet('/admin/tutors'),
+    apiGet('/admin/students')
+  ]);
+
+  qs('#assignmentTutor').innerHTML = tutors.tutors
+    .map((t) => `<option value="${t.id}">${escapeHtml(t.full_name)}</option>`)
+    .join('');
+  qs('#assignmentStudent').innerHTML = students.students
+    .map((s) => `<option value="${s.id}">${escapeHtml(s.full_name)}</option>`)
+    .join('');
+
+  const load = async () => {
+    const data = await apiGet('/admin/assignments');
+    list.innerHTML = data.assignments
+      .map((a) => `<div class="panel">
+          <div><strong>${escapeHtml(a.subject)}</strong> - ${escapeHtml(a.student_name)}</div>
+          <div class="note">Tutor: ${escapeHtml(a.tutor_name)} | ${escapeHtml(a.start_date)} to ${escapeHtml(a.end_date || 'open-ended')}</div>
+        </div>`)
+      .join('');
+  };
+
+  await load();
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const allowedDays = Array.from(document.querySelectorAll('input[name="allowedDay"]:checked'))
+      .map((i) => Number(i.value));
+    const payload = {
+      tutorId: qs('#assignmentTutor').value,
+      studentId: qs('#assignmentStudent').value,
+      subject: qs('#assignmentSubject').value,
+      startDate: qs('#assignmentStart').value,
+      endDate: qs('#assignmentEnd').value || null,
+      rateOverride: qs('#assignmentRate').value ? Number(qs('#assignmentRate').value) : null,
+      allowedDays,
+      allowedTimeRanges: [
+        { start: qs('#rangeStart').value, end: qs('#rangeEnd').value }
+      ]
+    };
+    await apiPost('/admin/assignments', payload);
+    form.reset();
+    await load();
+  });
+}
