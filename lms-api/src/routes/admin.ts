@@ -1,7 +1,12 @@
 import type { FastifyInstance } from 'fastify';
-import crypto from 'node:crypto';
 import { pool } from '../db/pool.js';
-import { hashToken, normalizeEmail } from '../lib/security.js';
+import {
+  createTutor,
+  listTutors,
+  updateTutor,
+  startImpersonation,
+  stopImpersonation
+} from '../domains/admin/tutors/index.js';
 import {
   AdminSessionsQuerySchema,
   AssignmentSchema,
@@ -564,31 +569,11 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const email = normalizeEmail(parsed.data.email);
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-
-      const tutorRes = await client.query(
-        `insert into tutor_profiles (full_name, phone, default_hourly_rate, active)
-         values ($1, $2, $3, $4)
-         returning id, full_name, phone, default_hourly_rate, active`,
-        [parsed.data.fullName, parsed.data.phone ?? null, parsed.data.defaultHourlyRate, parsed.data.active]
-      );
-
-      const tutorId = tutorRes.rows[0].id as string;
-
-      const userRes = await client.query(
-        `insert into users (email, role, tutor_profile_id)
-         values ($1, 'TUTOR', $2)
-         returning id, email, role, tutor_profile_id`,
-        [email, tutorId]
-      );
-
-      await client.query('COMMIT');
-      return reply.code(201).send({ tutor: tutorRes.rows[0], user: userRes.rows[0] });
+      const result = await createTutor(client, parsed.data);
+      return reply.code(201).send(result);
     } catch (err: any) {
-      await client.query('ROLLBACK');
       if (err?.code === '23505') return reply.code(409).send({ error: 'email_already_exists' });
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
@@ -598,13 +583,8 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.get('/admin/tutors', async (_req, reply) => {
-    const res = await pool.query(
-      `select t.id, t.full_name, t.phone, t.default_hourly_rate, t.active, u.email
-       from tutor_profiles t
-       left join users u on u.tutor_profile_id = t.id
-       order by t.full_name asc`
-    );
-    return reply.send({ tutors: res.rows });
+    const result = await listTutors(pool);
+    return reply.send(result);
   });
 
   app.patch('/admin/tutors/:id', async (req, reply) => {
@@ -614,28 +594,9 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const currentRes = await pool.query(`select * from tutor_profiles where id = $1`, [tutorId]);
-    if (currentRes.rowCount === 0) return reply.code(404).send({ error: 'tutor_not_found' });
-    const current = currentRes.rows[0];
-
-    const res = await pool.query(
-      `update tutor_profiles
-       set full_name = $1,
-           phone = $2,
-           default_hourly_rate = $3,
-           active = $4
-       where id = $5
-       returning id, full_name, phone, default_hourly_rate, active`,
-      [
-        parsed.data.fullName ?? current.full_name,
-        parsed.data.phone ?? current.phone,
-        parsed.data.defaultHourlyRate ?? current.default_hourly_rate,
-        parsed.data.active ?? current.active,
-        tutorId
-      ]
-    );
-
-    return reply.send({ tutor: res.rows[0] });
+    const updated = await updateTutor(pool, tutorId, parsed.data);
+    if (!updated) return reply.code(404).send({ error: 'tutor_not_found' });
+    return reply.send({ tutor: updated });
   });
 
   app.post('/admin/students', async (req, reply) => {
@@ -1195,68 +1156,29 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const adminId = req.user!.userId;
-    const tutorRes = await pool.query(
-      `select t.id as tutor_id, t.full_name, u.id as tutor_user_id, u.email
-       from tutor_profiles t
-       join users u on u.tutor_profile_id = t.id
-       where t.id = $1`,
-      [parsed.data.tutorId]
-    );
-
-    if (tutorRes.rowCount === 0) return reply.code(404).send({ error: 'tutor_not_found' });
-    const tutor = tutorRes.rows[0];
     const sessionToken = req.cookies?.session;
     if (!sessionToken) return reply.code(401).send({ error: 'unauthorized' });
 
-    const impersonationId = crypto.randomUUID();
-    const sessionHash = hashToken(sessionToken);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-    await pool.query(
-      `insert into impersonation_sessions
-       (id, admin_user_id, tutor_id, tutor_user_id, session_hash, mode, expires_at)
-       values ($1, $2, $3, $4, $5, $6, $7::timestamptz)`,
-      [
-        impersonationId,
-        adminId,
-        tutor.tutor_id,
-        tutor.tutor_user_id,
-        sessionHash,
-        'READ_ONLY',
-        expiresAt.toISOString()
-      ]
+    const result = await startImpersonation(
+      app,
+      pool,
+      parsed.data,
+      {
+        adminId: req.user!.userId,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id
+      },
+      sessionToken,
+      logAuditSafe
     );
 
-    const token = app.jwt.sign({
-      adminUserId: adminId,
-      tutorId: tutor.tutor_id,
-      tutorUserId: tutor.tutor_user_id,
-      impersonationId,
-      sessionHash,
-      mode: 'READ_ONLY'
-    }, { expiresIn: '10m' });
+    if (!result) return reply.code(404).send({ error: 'tutor_not_found' });
 
-    await logAuditSafe(pool, {
-      actorUserId: adminId,
-      actorRole: 'ADMIN',
-      action: 'impersonation.start',
-      entityType: 'tutor',
-      entityId: tutor.tutor_id,
-      meta: safeAuditMeta({ impersonationId, tutorName: tutor.full_name }),
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] as string | undefined,
-      correlationId: req.id,
-    });
-
-    reply.setCookie('impersonation', token, impersonationCookieOptions());
+    reply.setCookie('impersonation', result.token, impersonationCookieOptions());
     return reply.send({
-      impersonationId,
-      tutor: {
-        id: tutor.tutor_id,
-        name: tutor.full_name,
-        email: tutor.email
-      }
+      impersonationId: result.impersonationId,
+      tutor: result.tutor
     });
   });
 
@@ -1277,27 +1199,20 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     if (impersonationId) {
-      await pool.query(
-        `update impersonation_sessions
-         set revoked_at = now(), revoked_by_user_id = $2
-         where id = $1`,
-        [impersonationId, req.user!.userId]
+      await stopImpersonation(
+        pool,
+        { impersonationId },
+        {
+          adminId: req.user!.userId,
+          ip: req.ip,
+          userAgent: req.headers['user-agent'] as string | undefined,
+          correlationId: req.id
+        },
+        logAuditSafe
       );
     }
 
     reply.clearCookie('impersonation', { path: '/' });
-
-    await logAuditSafe(pool, {
-      actorUserId: req.user!.userId,
-      actorRole: 'ADMIN',
-      action: 'impersonation.stop',
-      entityType: 'impersonation',
-      entityId: impersonationId ?? null,
-      meta: safeAuditMeta({ impersonationId: impersonationId ?? null }),
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] as string | undefined,
-      correlationId: req.id,
-    });
 
     return reply.send({ ok: true });
   });

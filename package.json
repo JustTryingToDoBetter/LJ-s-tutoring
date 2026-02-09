@@ -44,7 +44,7 @@
     "build:arcade": "cpy \"arcade/**/*\" dist/arcade",
     "build:assets": "cpy \"assets/*.js\" \"assets/*.css\" dist/assets --flat",
     "build:admin": "cpy \"admin/*.html\" dist/admin",
-    "build:admin-assets": "cpy \"assets/admin/*.js\" dist/assets/admin",
+    "build:admin-assets": "cpy \"assets/admin/**/*.js\" dist/assets/admin",
     "build:arcade-modules": "cpy \"assets/arcade/**/*.js\" \"assets/arcade/**/*.css\" \"assets/arcade/**/*.svg\" \"assets/arcade/**/*.png\" dist/assets/arcade",
     "build:games": "cpy \"assets/games/*.js\" dist/assets/games",
     "build:lib": "cpy \"assets/lib/*.js\" dist/assets/lib",
