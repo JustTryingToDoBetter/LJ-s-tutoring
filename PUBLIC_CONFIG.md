@@ -10,6 +10,7 @@ These values are injected into client-side JavaScript during build and are visib
 - `COUNTDOWN_DATE` - Public countdown date string.
 - `ERROR_MONITOR_ENDPOINT` - Public endpoint for client error monitoring (if enabled).
 - `ERROR_MONITOR_SAMPLE_RATE` - Sampling value between 0 and 1.
+- `PO_API_BASE` - Public LMS/API base URL for admin/tutor portals.
 
 ## Server-Only Secrets (Never Public)
 

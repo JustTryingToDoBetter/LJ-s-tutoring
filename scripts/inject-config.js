@@ -38,6 +38,7 @@ const countdownDate = new Date(countdownDateStr);
 
 const errorMonitorEndpoint = process.env.ERROR_MONITOR_ENDPOINT || '';
 const errorMonitorSampleRate = Number(process.env.ERROR_MONITOR_SAMPLE_RATE || 1);
+const portalApiBase = process.env.PO_API_BASE || '';
 
 const configReplacement = `  const CONFIG = {
     whatsappNumber: '${process.env.WHATSAPP_NUMBER || '27679327754'}',
@@ -97,4 +98,25 @@ function injectErrorMonitorConfigAsset() {
 }
 
 injectErrorMonitorConfigAsset();
+
+function injectPortalConfig() {
+  const assetPath = path.join(distAssetsDir, 'portal-config.js');
+  if (!fs.existsSync(assetPath)) {
+    console.warn('⚠️  Warning: portal-config.js not found in dist/assets/');
+    console.warn('    Portal config injection skipped.');
+    return;
+  }
+
+  const content = fs.readFileSync(assetPath, 'utf8');
+  const replacement = `window.__PO_API_BASE__ = '${escapeJsString(portalApiBase)}';`;
+  const next = content.replace(/window\.__PO_API_BASE__\s*=\s*['"][^'"]*['"];?/, replacement);
+  if (next !== content) {
+    fs.writeFileSync(assetPath, next, 'utf8');
+    console.log('✅ Injected PO_API_BASE into portal-config.js');
+  } else {
+    console.warn('⚠️  Warning: Could not find PO_API_BASE assignment in portal-config.js');
+  }
+}
+
+injectPortalConfig();
 

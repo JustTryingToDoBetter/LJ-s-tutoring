@@ -1,4 +1,12 @@
-const API_BASE = (window.PO_API_BASE || window.__PO_API_BASE__ || 'http://localhost:3001').replace(/\/$/, '');
+function resolveApiBase() {
+  const raw = window.__PO_API_BASE__;
+  if (!raw || raw === '__PO_API_BASE__') {
+    throw new Error('api_base_missing');
+  }
+  return String(raw).replace(/\/$/, '');
+}
+
+const API_BASE = resolveApiBase();
 const IMPERSONATION_KEY = 'impersonationToken';
 const IMPERSONATION_META_KEY = 'impersonationMeta';
 

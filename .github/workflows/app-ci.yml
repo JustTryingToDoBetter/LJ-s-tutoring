@@ -171,6 +171,9 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          NODE_ENV: production
+          PO_API_BASE: ${{ secrets.PO_API_BASE }}
         run: npm run build
 
   playwright-e2e:
