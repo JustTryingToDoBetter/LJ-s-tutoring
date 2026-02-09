@@ -66,3 +66,23 @@ npm run retention:cleanup --prefix lms-api
 ```
 
 Ensure `DATABASE_URL` and retention env vars are set in the runtime environment.
+
+## Backup Encryption and Retention
+
+Backups must be encrypted at rest. The API repository includes an encrypted backup helper:
+
+```bash
+BACKUP_PASSPHRASE=change_me DATABASE_URL=... \
+	./lms-api/scripts/backup-encrypted.sh
+```
+
+Store encrypted backups in a restricted location with access limited to admins.
+
+Suggested schedule:
+
+- Nightly encrypted backup with 30-day retention.
+- Monthly encrypted backup with 12-month retention.
+
+## Retention Verification Evidence
+
+Each cleanup run writes an evidence record to the `retention_events` table. The admin Retention page surfaces the latest event and deletion counts for audit readiness.

@@ -19,6 +19,11 @@ export type RetentionSummary = {
   privacyRequestsDeleted: number;
 };
 
+export type RetentionEvent = {
+  id: string;
+  ranAt: Date;
+};
+
 export async function runRetentionCleanup(client: Queryable, now = new Date()) {
   const config = getRetentionConfig();
   const cutoffs = getRetentionCutoffs(now);
@@ -133,5 +138,17 @@ export async function runRetentionCleanup(client: Queryable, now = new Date()) {
     summary.studentsAnonymized += 1;
   }
 
-  return { config, cutoffs, summary };
+  const eventRes = await client.query(
+    `insert into retention_events (config_json, cutoffs_json, summary_json)
+     values ($1::jsonb, $2::jsonb, $3::jsonb)
+     returning id, ran_at`,
+    [JSON.stringify(config), JSON.stringify(cutoffs), JSON.stringify(summary)]
+  );
+
+  const event: RetentionEvent = {
+    id: eventRes.rows[0].id,
+    ranAt: eventRes.rows[0].ran_at
+  };
+
+  return { config, cutoffs, summary, event };
 }

@@ -4,7 +4,13 @@ import { getPayPeriodRange } from '../../../lib/pay-periods.js';
 import { safeAuditMeta } from '../../../lib/audit.js';
 import { generateInvoicesForWeek, getOrCreatePayPeriod, getSignedAmount } from './internal.js';
 
-export async function generatePayrollWeek(client: DbClient, input: PayrollGenerateInput) {
+export async function generatePayrollWeek(
+  client: DbClient,
+  input: PayrollGenerateInput,
+  adminId: string,
+  context: AuditContext,
+  audit: AuditLogWriter
+) {
   const weekStart = input.weekStart;
   const range = getPayPeriodRange(weekStart);
 
@@ -24,6 +30,18 @@ export async function generatePayrollWeek(client: DbClient, input: PayrollGenera
 
     const invoices = await generateInvoicesForWeek(client, weekStart, range.end);
 
+    await audit(client, {
+      actorUserId: adminId,
+      actorRole: 'ADMIN',
+      action: 'payroll.generate',
+      entityType: 'pay_period',
+      entityId: weekStart,
+      meta: safeAuditMeta({ weekStart, periodEnd: range.end, invoices: invoices.length }),
+      ip: context.ip,
+      userAgent: context.userAgent,
+      correlationId: context.correlationId
+    });
+
     await client.query('COMMIT');
     return { invoices } as const;
   } catch (err) {
@@ -32,7 +50,13 @@ export async function generatePayrollWeek(client: DbClient, input: PayrollGenera
   }
 }
 
-export async function lockPayPeriod(client: DbClient, weekStart: string, adminId: string) {
+export async function lockPayPeriod(
+  client: DbClient,
+  weekStart: string,
+  adminId: string,
+  context: AuditContext,
+  audit: AuditLogWriter
+) {
   const range = getPayPeriodRange(weekStart);
 
   await client.query('BEGIN');
@@ -74,6 +98,18 @@ export async function lockPayPeriod(client: DbClient, weekStart: string, adminId
        returning id, status, locked_at, locked_by_user_id`,
       [weekStart, adminId]
     );
+
+    await audit(client, {
+      actorUserId: adminId,
+      actorRole: 'ADMIN',
+      action: 'pay_period.lock',
+      entityType: 'pay_period',
+      entityId: weekStart,
+      meta: safeAuditMeta({ weekStart, periodEnd: range.end }),
+      ip: context.ip,
+      userAgent: context.userAgent,
+      correlationId: context.correlationId
+    });
 
     await client.query('COMMIT');
     return { payPeriod: lockedRes.rows[0] } as const;

@@ -194,6 +194,17 @@ model ImpersonationSession {
   @@index([expiresAt])
 }
 
+model RetentionEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  ranAt      DateTime @default(now()) @map("ran_at") @db.Timestamptz
+  configJson Json     @map("config_json")
+  cutoffsJson Json    @map("cutoffs_json")
+  summaryJson Json    @map("summary_json")
+
+  @@map("retention_events")
+  @@index([ranAt(sort: Desc)])
+}
+
 model TutorProfile {
   id                String  @id @default(uuid()) @db.Uuid
   fullName          String  @map("full_name")

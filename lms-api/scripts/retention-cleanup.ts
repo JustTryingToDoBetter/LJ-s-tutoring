@@ -17,6 +17,7 @@ async function run() {
     await client.query('COMMIT');
     console.log('[retention] config', result.config);
     console.log('[retention] summary', result.summary);
+    console.log('[retention] event', result.event);
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

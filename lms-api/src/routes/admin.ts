@@ -61,6 +61,7 @@ import { isWithinAssignmentWindow } from '../lib/scheduling.js';
 import { safeAuditMeta, writeAuditLog } from '../lib/audit.js';
 import { getRetentionConfig, getRetentionCutoffs } from '../lib/retention.js';
 import { anonymizeStudent, anonymizeTutor, exportStudentData, exportTutorData } from '../lib/privacy.js';
+import { PII_CLASSIFICATION_MAP } from '../lib/data-classification.js';
 
 
 function toDateString(value: Date) {
@@ -271,9 +272,24 @@ export async function adminRoutes(app: FastifyInstance) {
       pool.query(`select count(*) as count from privacy_requests where created_at < $1`, [cutoffs.privacyRequestsBefore])
     ]);
 
+    const latestEventRes = await pool.query(
+      `select id, ran_at, summary_json
+       from retention_events
+       order by ran_at desc
+       limit 1`
+    );
+    const latestEvent = latestEventRes.rowCount
+      ? {
+          id: latestEventRes.rows[0].id,
+          ranAt: latestEventRes.rows[0].ran_at,
+          summary: latestEventRes.rows[0].summary_json
+        }
+      : null;
+
     return reply.send({
       config,
       cutoffs,
+      latestEvent,
       eligible: {
         magicLinkTokens: Number(magicLinkRes.rows[0].count),
         auditLogs: Number(auditRes.rows[0].count),
@@ -368,6 +384,10 @@ export async function adminRoutes(app: FastifyInstance) {
     });
 
     return reply.code(201).send({ request: res.rows[0] });
+  });
+
+  app.get('/admin/data-classification', async (_req, reply) => {
+    return reply.send({ classifications: PII_CLASSIFICATION_MAP });
   });
 
   app.get('/admin/privacy-requests', async (req, reply) => {
@@ -912,7 +932,13 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     const client = await pool.connect();
     try {
-      const result = await generatePayrollWeek(client, parsed.data);
+      const result = await generatePayrollWeek(
+        client,
+        parsed.data,
+        req.user!.userId,
+        { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        logAuditSafe
+      );
       if ('error' in result) {
         return reply.code(409).send({ error: result.error });
       }
@@ -942,7 +968,13 @@ export async function adminRoutes(app: FastifyInstance) {
 
     const client = await pool.connect();
     try {
-      const result = await lockPayPeriod(client, weekStart, adminId);
+      const result = await lockPayPeriod(
+        client,
+        weekStart,
+        adminId,
+        { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        logAuditSafe
+      );
       if ('error' in result) {
         if (result.error === 'internal_error') {
           return reply.code(500).send({ error: result.error });
