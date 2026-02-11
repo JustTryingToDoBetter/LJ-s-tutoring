@@ -85,6 +85,69 @@ const PIECE_VALUES = {
   K: 20000,
 };
 
+const PIECE_SQUARE = {
+  P: [
+    0, 0, 0, 0, 0, 0, 0, 0,
+    50, 50, 50, 50, 50, 50, 50, 50,
+    10, 10, 20, 30, 30, 20, 10, 10,
+    5, 5, 10, 25, 25, 10, 5, 5,
+    0, 0, 0, 20, 20, 0, 0, 0,
+    5, -5, -10, 0, 0, -10, -5, 5,
+    5, 10, 10, -20, -20, 10, 10, 5,
+    0, 0, 0, 0, 0, 0, 0, 0,
+  ],
+  N: [
+    -50, -40, -30, -30, -30, -30, -40, -50,
+    -40, -20, 0, 0, 0, 0, -20, -40,
+    -30, 0, 10, 15, 15, 10, 0, -30,
+    -30, 5, 15, 20, 20, 15, 5, -30,
+    -30, 0, 15, 20, 20, 15, 0, -30,
+    -30, 5, 10, 15, 15, 10, 5, -30,
+    -40, -20, 0, 5, 5, 0, -20, -40,
+    -50, -40, -30, -30, -30, -30, -40, -50,
+  ],
+  B: [
+    -20, -10, -10, -10, -10, -10, -10, -20,
+    -10, 0, 0, 0, 0, 0, 0, -10,
+    -10, 0, 5, 10, 10, 5, 0, -10,
+    -10, 5, 5, 10, 10, 5, 5, -10,
+    -10, 0, 10, 10, 10, 10, 0, -10,
+    -10, 10, 10, 10, 10, 10, 10, -10,
+    -10, 5, 0, 0, 0, 0, 5, -10,
+    -20, -10, -10, -10, -10, -10, -10, -20,
+  ],
+  R: [
+    0, 0, 0, 5, 5, 0, 0, 0,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    5, 10, 10, 10, 10, 10, 10, 5,
+    0, 0, 0, 0, 0, 0, 0, 0,
+  ],
+  Q: [
+    -20, -10, -10, -5, -5, -10, -10, -20,
+    -10, 0, 0, 0, 0, 0, 0, -10,
+    -10, 0, 5, 5, 5, 5, 0, -10,
+    -5, 0, 5, 5, 5, 5, 0, -5,
+    0, 0, 5, 5, 5, 5, 0, -5,
+    -10, 5, 5, 5, 5, 5, 0, -10,
+    -10, 0, 5, 0, 0, 0, 0, -10,
+    -20, -10, -10, -5, -5, -10, -10, -20,
+  ],
+  K: [
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -20, -30, -30, -40, -40, -30, -30, -20,
+    -10, -20, -20, -20, -20, -20, -20, -10,
+    20, 20, 0, 0, 0, 0, 20, 20,
+    20, 30, 10, 0, 0, 10, 30, 20,
+  ],
+};
+
   // --- Tiny DOM helper ------------------------------------------------------
 const el = (tag, attrs = {}, children = []) => {
     const node = document.createElement(tag);
@@ -528,13 +591,25 @@ const saveStats = (stats) => {
     return { done: false, text: (side === "w" ? "White to move." : "Black to move.") };
   }
 
+  function squareValue(piece, index) {
+    const t = typeOf(piece);
+    const table = PIECE_SQUARE[t];
+    if (!table) return 0;
+    if (colorOf(piece) === "w") return table[index];
+    const [r, c] = rcFrom(index);
+    const mirror = idx(7 - r, c);
+    return table[mirror];
+  }
+
   function evaluateBoard(board, botSide) {
     let score = 0;
     for (let i = 0; i < 64; i++) {
       const p = board[i];
       if (!p) continue;
       const val = PIECE_VALUES[typeOf(p)] || 0;
-      score += colorOf(p) === botSide ? val : -val;
+      const ps = squareValue(p, i);
+      const total = val + ps;
+      score += colorOf(p) === botSide ? total : -total;
     }
     return score;
   }
@@ -548,8 +623,31 @@ const saveStats = (stats) => {
     };
   }
 
-  function minimax(state, depth, alpha, beta, botSide, ply) {
+  function boardKey(board) {
+    let s = "";
+    for (let i = 0; i < 64; i++) s += board[i] || ".";
+    return s;
+  }
+
+  function castleKey(castle) {
+    return `${castle.wK ? 1 : 0}${castle.wQ ? 1 : 0}${castle.bK ? 1 : 0}${castle.bQ ? 1 : 0}`;
+  }
+
+  function scoreMoveForOrdering(board, move) {
+    let score = 0;
+    if (move.promo) score += 900;
+    const target = board[move.to];
+    if (target) score += (PIECE_VALUES[typeOf(target)] || 0) * 2;
+    return score;
+  }
+
+  function minimax(state, depth, alpha, beta, botSide, ply, cache) {
     const side = state.turn;
+    if (cache) {
+      const key = `${side}|${castleKey(state.castle)}|${boardKey(state.board)}|${depth}`;
+      const hit = cache.get(key);
+      if (hit != null) return hit;
+    }
     const moves = allLegalMoves(state, side);
 
     if (moves.length === 0) {
@@ -562,15 +660,23 @@ const saveStats = (stats) => {
 
     if (depth === 0) return evaluateBoard(state.board, botSide);
 
+    moves.sort((a, b) => scoreMoveForOrdering(state.board, b) - scoreMoveForOrdering(state.board, a));
+
+    let cut = false;
+
     const maximizing = side === botSide;
     if (maximizing) {
       let value = -Infinity;
       for (const move of moves) {
         const next = nextStateFromMove(state, move, side);
-        const score = minimax(next, depth - 1, alpha, beta, botSide, ply + 1);
+        const score = minimax(next, depth - 1, alpha, beta, botSide, ply + 1, cache);
         value = Math.max(value, score);
         alpha = Math.max(alpha, value);
-        if (beta <= alpha) break;
+        if (beta <= alpha) { cut = true; break; }
+      }
+      if (cache && !cut) {
+        const key = `${side}|${castleKey(state.castle)}|${boardKey(state.board)}|${depth}`;
+        cache.set(key, value);
       }
       return value;
     }
@@ -578,10 +684,14 @@ const saveStats = (stats) => {
     let value = Infinity;
     for (const move of moves) {
       const next = nextStateFromMove(state, move, side);
-      const score = minimax(next, depth - 1, alpha, beta, botSide, ply + 1);
+      const score = minimax(next, depth - 1, alpha, beta, botSide, ply + 1, cache);
       value = Math.min(value, score);
       beta = Math.min(beta, value);
-      if (beta <= alpha) break;
+      if (beta <= alpha) { cut = true; break; }
+    }
+    if (cache && !cut) {
+      const key = `${side}|${castleKey(state.castle)}|${boardKey(state.board)}|${depth}`;
+      cache.set(key, value);
     }
     return value;
   }
@@ -590,12 +700,16 @@ const saveStats = (stats) => {
     const moves = allLegalMoves(state, botSide);
     if (!moves.length) return null;
 
+    moves.sort((a, b) => scoreMoveForOrdering(state.board, b) - scoreMoveForOrdering(state.board, a));
+
+    const cache = new Map();
+
     let bestScore = -Infinity;
     let bestMoves = [];
 
     for (const move of moves) {
       const next = nextStateFromMove(state, move, botSide);
-      const score = minimax(next, depth - 1, -Infinity, Infinity, botSide, 1);
+      const score = minimax(next, depth - 1, -Infinity, Infinity, botSide, 1, cache);
       if (score > bestScore) {
         bestScore = score;
         bestMoves = [move];

@@ -30,6 +30,12 @@ function speedCfg(diff) {
   return { ai: 0.12, ball: 620, maxBall: 920 }; // normal
 }
 
+function aiCfg(diff) {
+  if (diff === "easy") return { reaction: 0.22, maxSpeed: 460, aimError: 18 };
+  if (diff === "hard") return { reaction: 0.10, maxSpeed: 720, aimError: 6 };
+  return { reaction: 0.16, maxSpeed: 580, aimError: 10 };
+}
+
 function freshState() {
   return {
     v: 3,
@@ -141,6 +147,20 @@ export default {
       ball: { x: WORLD.w / 2, y: WORLD.h / 2, vx: 0, vy: 0 },
       inPlay: false,
       lastHit: null, // "p1" | "p2"
+    };
+
+    const ai = {
+      targetY: WORLD.h / 2,
+      reaction: 0,
+      lastDir: 0,
+    };
+
+    const shake = {
+      t: 0,
+      dur: 0.12,
+      mag: 4,
+      x: 0,
+      y: 0,
     };
 
     const setHud = () => {
@@ -348,6 +368,7 @@ export default {
       b.vy = Math.sin(angle) * nextSpeed;
 
       sim.lastHit = who;
+      shake.t = shake.dur;
     };
 
     const scorePoint = (winner) => {
@@ -390,6 +411,9 @@ export default {
       const { cw, ch, sx, sy } = geom;
 
       g.clearRect(0, 0, cw, ch);
+
+      g.save();
+      g.translate(shake.x, shake.y);
 
       // background grid
       g.globalAlpha = 0.30;
@@ -447,6 +471,19 @@ export default {
         g.textBaseline = "middle";
           g.fillText("Tap to Serve", cw / 2, ch / 2);
       }
+
+      g.restore();
+    };
+
+    const predictBallY = (ball, t) => {
+      const top = WORLD.ballR;
+      const bottom = WORLD.h - WORLD.ballR;
+      const height = bottom - top;
+      const period = height * 2;
+      let y = (ball.y - top) + ball.vy * t;
+      let mod = ((y % period) + period) % period;
+      if (mod > height) mod = period - mod;
+      return mod + top;
     };
 
     const update = (dt) => {
@@ -469,13 +506,45 @@ export default {
       sim.p1y = clamp(sim.p1y + p1 * pSpeed * dt, WORLD.padH / 2, WORLD.h - WORLD.padH / 2);
       sim.p2y = clamp(sim.p2y + p2 * pSpeed * dt, WORLD.padH / 2, WORLD.h - WORLD.padH / 2);
 
+      if (shake.t > 0) {
+        shake.t = Math.max(0, shake.t - dt);
+        const k = shake.t / shake.dur;
+        shake.x = (this._rng() * 2 - 1) * shake.mag * k;
+        shake.y = (this._rng() * 2 - 1) * shake.mag * k;
+      } else {
+        shake.x = 0;
+        shake.y = 0;
+      }
+
       // AI (moves paddle 2)
       if (state.mode === "ai") {
-        const cfg = speedCfg(state.diff);
-        const target = sim.ball.y;
-        const err = target - sim.p2y;
-        sim.p2y += err * cfg.ai; // smoothing factor (frame-rate independent-ish)
-        sim.p2y = clamp(sim.p2y, WORLD.padH / 2, WORLD.h - WORLD.padH / 2);
+        const cfg = aiCfg(state.diff);
+        const dir = Math.sign(sim.ball.vx || 0);
+        if (dir !== ai.lastDir) {
+          ai.lastDir = dir;
+          ai.reaction = cfg.reaction;
+        }
+        ai.reaction = Math.max(0, ai.reaction - dt);
+
+        if (ai.reaction === 0) {
+          if (sim.inPlay && sim.ball.vx > 0) {
+            const targetX = paddleX2 - WORLD.padW / 2 - WORLD.ballR;
+            const t = (targetX - sim.ball.x) / sim.ball.vx;
+            if (t > 0) {
+              const predicted = predictBallY(sim.ball, t);
+              const error = (this._rng() * 2 - 1) * cfg.aimError;
+              ai.targetY = predicted + error;
+            } else {
+              ai.targetY = WORLD.h / 2;
+            }
+          } else {
+            ai.targetY = WORLD.h / 2;
+          }
+        }
+
+        const err = ai.targetY - sim.p2y;
+        const maxStep = cfg.maxSpeed * dt;
+        sim.p2y = clamp(sim.p2y + clamp(err, -maxStep, maxStep), WORLD.padH / 2, WORLD.h - WORLD.padH / 2);
       }
 
       if (!sim.inPlay) return;

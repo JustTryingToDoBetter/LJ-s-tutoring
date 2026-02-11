@@ -61,25 +61,46 @@ function winningLine(board, lines) {
   return null;
 }
 
-// 3x3 minimax (O is AI)
-function minimax3(board, lines, isAiTurn, depth) {
+// 3x3 minimax with alpha-beta (O is AI)
+const TTT_ORDER = [4, 0, 2, 6, 8, 1, 3, 5, 7];
+
+function boardKey3(board, isAiTurn) {
+  let s = "";
+  for (let i = 0; i < board.length; i++) s += board[i] || ".";
+  return `${s}|${isAiTurn ? "O" : "X"}`;
+}
+
+function minimax3(board, lines, isAiTurn, depth, alpha, beta, memo) {
   const out = winnerOf(board, lines);
   if (out) {
     if (out === "O") return { score: 10 - depth };
     if (out === "X") return { score: depth - 10 };
     return { score: 0 };
   }
-  const moves = [];
-  for (let i = 0; i < 9; i++) {
+
+  const key = memo ? boardKey3(board, isAiTurn) : null;
+  if (key && memo.has(key)) return memo.get(key);
+
+  let best = { score: isAiTurn ? -Infinity : Infinity, idx: null };
+  for (const i of TTT_ORDER) {
     if (board[i]) continue;
-    const next = board.slice();
-    next[i] = isAiTurn ? "O" : "X";
-    const r = minimax3(next, lines, !isAiTurn, depth + 1);
-    moves.push({ idx: i, score: r.score });
+    board[i] = isAiTurn ? "O" : "X";
+    const r = minimax3(board, lines, !isAiTurn, depth + 1, alpha, beta, memo);
+    board[i] = null;
+
+    if (isAiTurn) {
+      if (r.score > best.score) best = { score: r.score, idx: i };
+      alpha = Math.max(alpha, best.score);
+      if (alpha >= beta) break;
+    } else {
+      if (r.score < best.score) best = { score: r.score, idx: i };
+      beta = Math.min(beta, best.score);
+      if (alpha >= beta) break;
+    }
   }
-  return isAiTurn
-    ? moves.reduce((b, m) => (m.score > b.score ? m : b), moves[0])
-    : moves.reduce((b, m) => (m.score < b.score ? m : b), moves[0]);
+
+  if (key && memo) memo.set(key, best);
+  return best;
 }
 
 // 4x4 heuristic + negamax
@@ -287,7 +308,8 @@ export default {
       if (winnerOf(state.board, lines)) return;
 
       if (state.size === 3) {
-        const best = minimax3(state.board, lines, true, 0);
+        const memo = new Map();
+        const best = minimax3(state.board, lines, true, 0, -Infinity, Infinity, memo);
         if (typeof best.idx === "number") {
           state.board[best.idx] = "O";
           state.lastMove = best.idx;
