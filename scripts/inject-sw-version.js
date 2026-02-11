@@ -23,6 +23,16 @@ function getBuildId() {
   return String(Date.now());
 }
 
+function isGitDirty() {
+  try {
+    execSync('git diff --quiet', { stdio: ['ignore', 'ignore', 'ignore'] });
+    execSync('git diff --cached --quiet', { stdio: ['ignore', 'ignore', 'ignore'] });
+    return false;
+  } catch (_) {
+    return true;
+  }
+}
+
 function sanitizeId(value) {
   const cleaned = String(value).replace(/[^a-zA-Z0-9._-]/g, '');
   return cleaned || 'dev';
@@ -49,7 +59,9 @@ function updateFile(filePath, updater) {
   return false;
 }
 
-const buildId = sanitizeId(getBuildId());
+const baseId = getBuildId();
+const dirtySuffix = isGitDirty() ? `-dirty-${Date.now()}` : "";
+const buildId = sanitizeId(`${baseId}${dirtySuffix}`);
 const swVersion = `po-v${buildId}`;
 const arcadeCache = `po-arcade-${buildId}`;
 
