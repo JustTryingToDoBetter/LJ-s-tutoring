@@ -91,7 +91,7 @@ function createAdFrame({ placement, provider, creativeId, variantId, slot }) {
   const frame = document.createElement("iframe");
   frame.className = "arc-ad-frame";
   frame.setAttribute("title", "Sponsored");
-  frame.setAttribute("sandbox", "allow-scripts allow-forms allow-popups");
+  frame.setAttribute("sandbox", "allow-scripts allow-forms allow-popups allow-same-origin");
   frame.setAttribute("referrerpolicy", "no-referrer");
   frame.setAttribute("loading", "lazy");
   frame.width = String(slot?.width || 320);
@@ -102,8 +102,12 @@ function createAdFrame({ placement, provider, creativeId, variantId, slot }) {
     provider,
     creativeId,
     variantId,
+    width: slot?.width,
+    height: slot?.height,
   });
-  frame.src = `/arcade/ads/house.html?${params.toString()}`;
+
+  const path = provider === "google" ? "/arcade/ads/google.html" : "/arcade/ads/house.html";
+  frame.src = `${path}?${params.toString()}`;
 
   return frame;
 }
@@ -113,7 +117,7 @@ export function initAdManager({ apiBase = "", multiplayerGameIds = MULTIPLAYER_G
 
   let rules = DEFAULT_RULES;
   let guardrails = DEFAULT_GUARDRAILS;
-  let allowlist = ["house"];
+  let allowlist = ["house", "google"];
   let blockedCreatives = [];
   let rulesLoaded = false;
   let gameState = "idle"; // idle | active | paused | ended
@@ -178,7 +182,7 @@ export function initAdManager({ apiBase = "", multiplayerGameIds = MULTIPLAYER_G
     emitEvent("arcade:ad:impression", { placement, ...meta });
   };
 
-  const renderAd = async ({ container, placement, provider = "house", creativeId = "house-default", variantId = "control", creativeMeta } = {}) => {
+  const renderAd = async ({ container, placement, provider = "google", creativeId = "house-default", variantId = "control", creativeMeta } = {}) => {
     if (!container) return false;
     await loadConfig();
 

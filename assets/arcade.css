@@ -534,6 +534,15 @@
   position: relative;
   z-index: 1;
 }
+.po-arcade__ad-safe-zone {
+  --ad-safe-gap: 150px;
+  display: grid;
+  gap: 12px;
+  padding-block: max(var(--ad-safe-gap), 12vh);
+}
+.po-arcade__ad-safe-zone .po-arcade__gamemount {
+  margin-top: 0;
+}
 .po-arcade__playtitle { flex: 1; text-align: center; }
 .po-arcade__playname { font-weight: 900; letter-spacing: -0.02em; }
 .po-arcade__playsub { color: var(--muted); font-size: 12px; margin-top: 2px; }

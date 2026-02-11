@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="/assets/arcade/ui/arcade-ui.css">
   <link rel="stylesheet" href="/assets/po-game-ui.css">
 
+  <meta name="google-adsense-account" content="ca-pub-2921476254208320">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2921476254208320" crossorigin="anonymous"></script>
+
   <link rel="modulepreload" href="/assets/arcade/frame.js">
 
   <script defer src="/assets/arcade.js"></script>
@@ -51,13 +54,15 @@
   </header>
 
   <main class="po-arcade__playwrap" id="play-root" aria-live="polite">
-    <div class="po-arcade__loading" id="play-loading">
-      <div class="po-arcade__spinner" aria-hidden="true"></div>
-      <p class="po-arcade__muted">Loading game…</p>
-    </div>
+    <div class="po-arcade__ad-safe-zone">
+      <div class="po-arcade__loading" id="play-loading">
+        <div class="po-arcade__spinner" aria-hidden="true"></div>
+        <p class="po-arcade__muted">Loading game…</p>
+      </div>
 
-    <!-- Game scripts mount into this area (best-effort) -->
-    <div id="game-mount" class="po-arcade__gamemount"></div>
+      <!-- Game scripts mount into this area (best-effort) -->
+      <div id="game-mount" class="po-arcade__gamemount"></div>
+    </div>
   </main>
 </body>
 </html>

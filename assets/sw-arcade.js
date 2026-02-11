@@ -98,6 +98,7 @@ const PRECACHE = [
 
   '/arcade/ads/house.html',
   '/arcade/ads/house.js',
+  '/arcade/ads/google.html',
 
   '/favicon.svg',
 ];
