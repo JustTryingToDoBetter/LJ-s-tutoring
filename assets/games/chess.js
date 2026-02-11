@@ -61,6 +61,30 @@ const PIECE_LABELS = {
   bP: "Black pawn",
 };
 
+const BOT_LEVELS = {
+  easy: 1,
+  medium: 2,
+  hard: 3,
+};
+
+const BOT_LABELS = {
+  easy: "Easy",
+  medium: "Medium",
+  hard: "Hard",
+};
+
+const BOT_DELAY_MS = 180;
+const MATE_SCORE = 100000;
+
+const PIECE_VALUES = {
+  P: 100,
+  N: 320,
+  B: 330,
+  R: 500,
+  Q: 900,
+  K: 20000,
+};
+
   // --- Tiny DOM helper ------------------------------------------------------
 const el = (tag, attrs = {}, children = []) => {
     const node = document.createElement(tag);
@@ -504,6 +528,85 @@ const saveStats = (stats) => {
     return { done: false, text: (side === "w" ? "White to move." : "Black to move.") };
   }
 
+  function evaluateBoard(board, botSide) {
+    let score = 0;
+    for (let i = 0; i < 64; i++) {
+      const p = board[i];
+      if (!p) continue;
+      const val = PIECE_VALUES[typeOf(p)] || 0;
+      score += colorOf(p) === botSide ? val : -val;
+    }
+    return score;
+  }
+
+  function nextStateFromMove(state, move, side) {
+    const res = applyMove(state.board, move, side, state.castle);
+    return {
+      board: res.board,
+      castle: res.castle,
+      turn: side === "w" ? "b" : "w",
+    };
+  }
+
+  function minimax(state, depth, alpha, beta, botSide, ply) {
+    const side = state.turn;
+    const moves = allLegalMoves(state, side);
+
+    if (moves.length === 0) {
+      if (inCheck(state.board, side)) {
+        const mateScore = MATE_SCORE - ply;
+        return side === botSide ? -mateScore : mateScore;
+      }
+      return 0;
+    }
+
+    if (depth === 0) return evaluateBoard(state.board, botSide);
+
+    const maximizing = side === botSide;
+    if (maximizing) {
+      let value = -Infinity;
+      for (const move of moves) {
+        const next = nextStateFromMove(state, move, side);
+        const score = minimax(next, depth - 1, alpha, beta, botSide, ply + 1);
+        value = Math.max(value, score);
+        alpha = Math.max(alpha, value);
+        if (beta <= alpha) break;
+      }
+      return value;
+    }
+
+    let value = Infinity;
+    for (const move of moves) {
+      const next = nextStateFromMove(state, move, side);
+      const score = minimax(next, depth - 1, alpha, beta, botSide, ply + 1);
+      value = Math.min(value, score);
+      beta = Math.min(beta, value);
+      if (beta <= alpha) break;
+    }
+    return value;
+  }
+
+  function chooseBotMove(state, botSide, depth) {
+    const moves = allLegalMoves(state, botSide);
+    if (!moves.length) return null;
+
+    let bestScore = -Infinity;
+    let bestMoves = [];
+
+    for (const move of moves) {
+      const next = nextStateFromMove(state, move, botSide);
+      const score = minimax(next, depth - 1, -Infinity, Infinity, botSide, 1);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMoves = [move];
+      } else if (score === bestScore) {
+        bestMoves.push(move);
+      }
+    }
+
+    return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+  }
+
 // --- UI -------------------------------------------------------------------
 async function mount(root, ctx) {
   root.innerHTML = "";
@@ -514,10 +617,20 @@ async function mount(root, ctx) {
   const resetBtn = el("button", { class: "po-btn po-btn--primary", type: "button" }, ["New Game"]);
   const undoBtn  = el("button", { class: "po-btn", type: "button" }, ["Undo"]);
   const flipBtn  = el("button", { class: "po-btn", type: "button" }, ["Flip"]);
+  const botModeSelect = el("select", { class: "po-select", "aria-label": "Bot mode" }, [
+    el("option", { value: "off", text: "2P" }),
+    el("option", { value: "b", text: "Bot: Black" }),
+    el("option", { value: "w", text: "Bot: White" }),
+  ]);
+  const botLevelSelect = el("select", { class: "po-select", "aria-label": "Bot level" }, [
+    el("option", { value: "easy", text: "Easy" }),
+    el("option", { value: "medium", text: "Medium" }),
+    el("option", { value: "hard", text: "Hard" }),
+  ]);
   const clearBtn = el("button", { class: "po-btn po-btn--ghost", type: "button" }, ["Clear Save"]);
 
   const controls = el("div", { class: "po-pillrow" }, [
-    resetBtn, undoBtn, flipBtn, clearBtn,
+    resetBtn, undoBtn, flipBtn, botModeSelect, botLevelSelect, clearBtn,
   ]);
 
   ui?.setControls?.(controls);
@@ -570,12 +683,15 @@ async function mount(root, ctx) {
         last: null,
         history: [],
         done: false,
+        bot: { enabled: false, side: "b", level: "medium" },
       };
 
   if (state.done == null) state.done = false;
 
   const stats = loadStats(store);
   let statsRecorded = false;
+  let botThinking = false;
+  let botTimer = null;
 
   function persist() {
     store?.updateGame?.(GAME_ID, () => ({ save: state }));
@@ -605,6 +721,22 @@ async function mount(root, ctx) {
     }
 
     function setStatus(msg) { ui?.setStatus?.(msg); }
+
+    function updateHud() {
+      const botEnabled = Boolean(state.bot?.enabled);
+      const botSideLabel = state.bot?.side === "w" ? "White" : "Black";
+      const hud = [
+        { k: "Mode", v: botEnabled ? `Bot (${botSideLabel})` : "2P" },
+        { k: "Rules", v: "Legal" },
+      ];
+
+      if (botEnabled) {
+        const levelLabel = BOT_LABELS[state.bot?.level] || BOT_LABELS.medium;
+        hud.splice(1, 0, { k: "Level", v: levelLabel });
+      }
+
+      ui?.setHUD?.(hud);
+    }
 
     function createPieceNode(piece) {
       if (!piece) return null;
@@ -706,6 +838,7 @@ async function mount(root, ctx) {
 
       const out = outcomeText(state);
       setStatus(out.text);
+      if (botThinking && !out.done) setStatus("Bot thinking...");
 
       if (out.done && !state.done) {
         state.done = true;
@@ -722,7 +855,9 @@ async function mount(root, ctx) {
           ],
         });
       }
+      updateHud();
       persist();
+      scheduleBotMove();
     }
 
     function setSelected(i) {
@@ -750,6 +885,9 @@ async function mount(root, ctx) {
       state.last = h.last ? { ...h.last } : null;
       state.selected = -1;
       state.done = false;
+      if (botTimer) clearTimeout(botTimer);
+      botTimer = null;
+      botThinking = false;
       render();
     }
 
@@ -778,8 +916,35 @@ async function mount(root, ctx) {
       return true;
     }
 
+    function scheduleBotMove() {
+      if (!state.bot?.enabled || state.done) return;
+      if (state.turn !== state.bot.side) return;
+      if (botThinking) return;
+
+      const depth = BOT_LEVELS[state.bot.level] || BOT_LEVELS.medium;
+      botThinking = true;
+
+      if (botTimer) clearTimeout(botTimer);
+      botTimer = setTimeout(() => {
+        botTimer = null;
+        const move = chooseBotMove({
+          board: state.board,
+          castle: state.castle,
+          turn: state.turn,
+        }, state.bot.side, depth);
+
+        botThinking = false;
+        if (move) {
+          makeMove(move.from, move.to);
+        } else {
+          render();
+        }
+      }, BOT_DELAY_MS);
+    }
+
     function onSquareClick(boardIndex) {
       if (state.done) return;
+      if (state.bot?.enabled && state.turn === state.bot.side) return;
       const side = state.turn;
       const p = state.board[boardIndex];
 
@@ -820,6 +985,9 @@ async function mount(root, ctx) {
       state.history = [];
       state.done = false;
       statsRecorded = false;
+      if (botTimer) clearTimeout(botTimer);
+      botTimer = null;
+      botThinking = false;
       render();
     }
 
@@ -841,6 +1009,22 @@ async function mount(root, ctx) {
       state.selected = -1;
       render();
     });
+    ctx.addEvent(botModeSelect, "change", () => {
+      const mode = botModeSelect.value;
+      state.bot.enabled = mode !== "off";
+      if (mode !== "off") state.bot.side = mode;
+      botLevelSelect.disabled = !state.bot.enabled;
+      state.selected = -1;
+      if (botTimer) clearTimeout(botTimer);
+      botTimer = null;
+      botThinking = false;
+      render();
+    });
+    ctx.addEvent(botLevelSelect, "change", () => {
+      state.bot.level = botLevelSelect.value;
+      updateHud();
+      persist();
+    });
     ctx.addEvent(clearBtn, "click", () => {
       clearLegacy();
       store?.updateGame?.(GAME_ID, () => ({ save: null }));
@@ -861,7 +1045,14 @@ async function mount(root, ctx) {
     if (typeof state.flipped !== "boolean") state.flipped = false;
     if (typeof state.turn !== "string") state.turn = "w";
     if (!Array.isArray(state.board) || state.board.length !== 64) state.board = initialBoard();
+    if (!state.bot || typeof state.bot !== "object") state.bot = { enabled: false, side: "b", level: "medium" };
+    if (state.bot.side !== "w" && state.bot.side !== "b") state.bot.side = "b";
+    if (!BOT_LEVELS[state.bot.level]) state.bot.level = "medium";
     state.selected = -1;
+
+    botModeSelect.value = state.bot.enabled ? state.bot.side : "off";
+    botLevelSelect.value = state.bot.level;
+    botLevelSelect.disabled = !state.bot.enabled;
 
     render();
   }

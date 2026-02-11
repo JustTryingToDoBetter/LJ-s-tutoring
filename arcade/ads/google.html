@@ -26,39 +26,14 @@
       You can also implement logic to pick different slot IDs based on the 'placement' query parameter.
     -->
     <!-- Example using a placeholder script -->
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2921476254208320" crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2921476254208320" crossorigin="anonymous"></script>
     <ins class="adsbygoogle"
          style="display:block"
           data-ad-client="ca-pub-2921476254208320"
           data-ad-slot="REPLACE_WITH_SLOT_ID"
          data-ad-format="auto"
          data-full-width-responsive="true"></ins>
-    <script>
-         (adsbygoogle = window.adsbygoogle || []).push({});
-    </script>
   </div>
-
-  <script>
-    (function() {
-      // Parse query params to optionally dynamic configuration
-      const params = new URLSearchParams(window.location.search);
-      const width = params.get('width');
-      const height = params.get('height');
-      const placement = params.get('placement');
-
-      const container = document.getElementById('ad-container');
-      const ins = container.querySelector('ins');
-
-      if (width && height) {
-        ins.style.width = width + 'px';
-        ins.style.height = height + 'px';
-        ins.removeAttribute('data-ad-format'); 
-        ins.removeAttribute('data-full-width-responsive');
-      }
-
-      // Notify parent of click (if detectable via blur or specific Google listeners if available)
-      // Standard AdSense does not easily expose click events inside iframes due to SOP/privacy.
-    })();
-  </script>
+  <script src="google.js" defer></script>
 </body>
 </html>

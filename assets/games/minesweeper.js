@@ -89,10 +89,11 @@ export default {
     let flaggedCount = 0;
     let minesTotal = MODES[mode].mines;
     let startedAt = null;
-    let timerId = null;
+    let timerOff = null;
     let elapsed = 0;
     let flagMode = false;
     let resultRecorded = false;
+    let gameOver = false;
 
     const wrap = el("div", { class: "po-ms-wrap" });
     const gridEl = el("div", { class: "po-ms-grid", role: "grid", "aria-label": "Minesweeper grid" });
@@ -120,6 +121,12 @@ export default {
 
     const setStatus = (msg) => ui?.setStatus?.(msg);
 
+    const stopTimer = () => {
+      if (!timerOff) return;
+      timerOff();
+      timerOff = null;
+    };
+
     function reset(nextMode = mode) {
       mode = nextMode;
       const cfg = MODES[mode];
@@ -130,18 +137,20 @@ export default {
       startedAt = null;
       elapsed = 0;
       resultRecorded = false;
+      gameOver = false;
       flagMode = false;
       flagBtn.textContent = "Flag: Off";
       modeSelect.value = mode;
+      stopTimer();
       render();
       setStatus("Scan the field.");
       setHud();
     }
 
     function ensureTimer() {
-      if (timerId) return;
+      if (timerOff) return;
       startedAt = Date.now();
-      timerId = ctx.interval(() => {
+      timerOff = ctx.interval(() => {
         elapsed = Math.floor((Date.now() - startedAt) / 1000);
         setHud();
       }, 1000);
@@ -169,6 +178,8 @@ export default {
       if (cell.mine) {
         setStatus("Mine hit. Game over.");
         recordResult(false);
+        gameOver = true;
+        stopTimer();
         revealAll();
         return;
       }
@@ -199,6 +210,8 @@ export default {
       if (revealedCount >= total - minesTotal) {
         setStatus("Field cleared. Victory.");
         recordResult(true);
+        gameOver = true;
+        stopTimer();
         const best = readBest() || {};
         const bestTime = best[mode];
         if (!bestTime || elapsed < bestTime) {
@@ -233,7 +246,7 @@ export default {
           }, [label]);
 
           ctx.addEvent(btn, "click", () => {
-            if (state.paused) return;
+            if (state.paused || gameOver) return;
             if (flagMode) toggleFlag(r, c);
             else reveal(r, c);
             render();

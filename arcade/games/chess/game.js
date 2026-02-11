@@ -2,19 +2,24 @@ import { createConsolePage, lockScroll } from "/assets/arcade/ui/ConsolePage.js"
 import { createConsoleRuntime } from "/assets/arcade/console-runtime.js";
 
 const root = document.getElementById("game-root");
+if (!root) {
+  throw new Error("Chess failed to mount: #game-root not found.");
+}
 lockScroll();
+
+let runtime;
 
 const page = createConsolePage({
   title: "Aegean Chess",
   subtitle: "Local 2‑player",
   onBack: () => (window.location.href = "/arcade/"),
   onRestart: () => window.location.reload(),
-  onPause: () => runtime.showSettings(),
+  onPause: () => runtime?.showSettings?.(),
   howTo: {
     gameId: "chess",
     title: "How to play Chess",
     subtitle: "Local 2‑player. No timers.",
-    steps: ["Tap a piece to see legal moves", "Capture the king to win", "Use Undo and Flip for analysis"],
+    steps: ["Tap a piece to see legal moves", "Checkmate the king to win", "Use Undo and Flip for analysis"],
     controls: ["Tap/click to move", "U = undo", "F = flip"],
   },
 });
@@ -22,7 +27,7 @@ const page = createConsolePage({
 root.append(page.root);
 page.showHowTo();
 
-const runtime = createConsoleRuntime({
+runtime = createConsoleRuntime({
   gameId: "chess",
   mountEl: page.surfaceInner,
   surfaceEl: page.surface,
@@ -40,5 +45,5 @@ await import("/assets/games/chess.js")
   })
   .catch((err) => {
     page.setStatus("Chess failed to load.");
-    throw err;
+    console.error("Chess failed to load.", err);
   });

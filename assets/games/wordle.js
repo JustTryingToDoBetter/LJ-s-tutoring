@@ -194,6 +194,7 @@ export default {
     const rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
     const btns = new Map();
     const keyState = new Map(); // ch -> 0|1|2
+    const usedWords = new Set();
 
     const mkKey = (label, cls = "") => el("button", { class: `po-btn po-wd-key ${cls}`.trim(), type: "button" }, [label]);
 
@@ -260,7 +261,7 @@ export default {
         const m = keyState.get(ch);
         b.removeAttribute("data-m");
         if (m != null) b.setAttribute("data-m", String(m));
-        b.disabled = state.done;
+        b.disabled = state.done || m === 0;
       }
       enterKey.disabled = state.done;
       backKey.disabled = state.done;
@@ -276,7 +277,11 @@ export default {
 
     const resetKeyStateFromRows = () => {
       keyState.clear();
-      for (const row of state.rows) mergeKeyState(keyState, row.guess, row.marks);
+      usedWords.clear();
+      for (const row of state.rows) {
+        mergeKeyState(keyState, row.guess, row.marks);
+        usedWords.add(row.guess);
+      }
     };
 
     const finishIfNeeded = () => {
@@ -333,6 +338,11 @@ export default {
       }
 
       const guess = state.current;
+      if (usedWords.has(guess)) {
+        state.status = "Already tried that word.";
+        renderAll();
+        return;
+      }
       if (!pack.allowedSet.has(guess)) {
         state.status = "Not in word list.";
         renderAll();
@@ -344,6 +354,7 @@ export default {
       state.current = "";
 
       mergeKeyState(keyState, guess, marks);
+      usedWords.add(guess);
 
       state.status = guess === state.answer ? "Perfect." : "Next guess.";
       finishIfNeeded();
