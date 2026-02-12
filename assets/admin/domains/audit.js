@@ -80,10 +80,21 @@ export async function initAudit() {
   };
 
   const load = async () => {
+    if (list) {
+      list.innerHTML = '<tr><td colspan="5" class="note">Loading audit entries...</td></tr>';
+    }
     const params = buildParams();
-    const data = await apiGet(`/admin/audit?${params.toString()}`);
-    state.total = Number(data.total || 0);
-    renderRows(data.items || []);
+    try {
+      const data = await apiGet(`/admin/audit?${params.toString()}`);
+      state.total = Number(data.total || 0);
+      renderRows(data.items || []);
+    } catch (err) {
+      state.total = 0;
+      if (list) {
+        list.innerHTML = `<tr><td colspan="5" class="note">Failed to load audit entries: ${escapeHtml(err?.message || 'request_failed')}</td></tr>`;
+      }
+      updatePageMeta();
+    }
   };
 
   applyBtn?.addEventListener('click', () => {
@@ -140,7 +151,7 @@ export async function initAudit() {
         if (exportStatus) exportStatus.textContent = 'Download started.';
       })
       .catch((err) => {
-        if (exportStatus) exportStatus.textContent = `Export failed: ${err.message}`;
+        if (exportStatus) exportStatus.textContent = `Export failed: ${err?.message || 'request_failed'}`;
       })
       .finally(() => {
         exportBtn.disabled = false;

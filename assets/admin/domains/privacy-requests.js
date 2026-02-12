@@ -1,4 +1,4 @@
-import { apiGet, apiPost, qs, setActiveNav, escapeHtml } from '/assets/portal-shared.js';
+import { apiGet, apiPost, qs, setActiveNav, escapeHtml, renderSkeletonCards, renderStateCard } from '/assets/portal-shared.js';
 
 export async function initPrivacyRequests() {
   setActiveNav('privacy-requests');
@@ -13,10 +13,25 @@ export async function initPrivacyRequests() {
   const load = async () => {
     const params = new URLSearchParams();
     if (filterStatus?.value) params.set('status', filterStatus.value);
-    const data = await apiGet(`/admin/privacy-requests?${params.toString()}`);
     if (!list) return;
+    renderSkeletonCards(list, 3);
+    let data;
+    try {
+      data = await apiGet(`/admin/privacy-requests?${params.toString()}`);
+    } catch (err) {
+      renderStateCard(list, {
+        variant: 'error',
+        title: 'Unable to load privacy requests',
+        description: err?.message || 'Try again.'
+      });
+      return;
+    }
     if (!data.requests?.length) {
-      list.innerHTML = '<div class="note">No privacy requests found.</div>';
+      renderStateCard(list, {
+        variant: 'empty',
+        title: 'No privacy requests found',
+        description: 'Try a different status filter or create a new request.'
+      });
       return;
     }
 
@@ -44,7 +59,10 @@ export async function initPrivacyRequests() {
 
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (requestMsg) requestMsg.textContent = '';
+    if (requestMsg) {
+      requestMsg.textContent = '';
+      requestMsg.className = 'form-feedback';
+    }
     const payload = {
       requestType: qs('#requestType').value,
       subjectType: qs('#subjectType').value,
@@ -54,16 +72,25 @@ export async function initPrivacyRequests() {
     try {
       await apiPost('/admin/privacy-requests', payload);
       form.reset();
-      if (requestMsg) requestMsg.textContent = 'Request created.';
+      if (requestMsg) {
+        requestMsg.textContent = 'Request created.';
+        requestMsg.classList.add('success');
+      }
       await load();
     } catch (err) {
-      if (requestMsg) requestMsg.textContent = err.message || 'Unable to create request.';
+      if (requestMsg) {
+        requestMsg.textContent = err.message || 'Unable to create request.';
+        requestMsg.classList.add('error');
+      }
     }
   });
 
   closeForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (closeMsg) closeMsg.textContent = '';
+    if (closeMsg) {
+      closeMsg.textContent = '';
+      closeMsg.className = 'form-feedback';
+    }
     const requestId = qs('#closeRequestId').value.trim();
     if (!requestId) return;
     let correctionPayload = undefined;
@@ -72,7 +99,10 @@ export async function initPrivacyRequests() {
       try {
         correctionPayload = JSON.parse(rawCorrection);
       } catch {
-        if (closeMsg) closeMsg.textContent = 'Correction JSON is invalid.';
+        if (closeMsg) {
+          closeMsg.textContent = 'Correction JSON is invalid.';
+          closeMsg.classList.add('error');
+        }
         return;
       }
     }
@@ -86,10 +116,16 @@ export async function initPrivacyRequests() {
     try {
       await apiPost(`/admin/privacy-requests/${requestId}/close`, payload);
       closeForm.reset();
-      if (closeMsg) closeMsg.textContent = 'Request closed.';
+      if (closeMsg) {
+        closeMsg.textContent = 'Request closed.';
+        closeMsg.classList.add('success');
+      }
       await load();
     } catch (err) {
-      if (closeMsg) closeMsg.textContent = err.message || 'Unable to close request.';
+      if (closeMsg) {
+        closeMsg.textContent = err.message || 'Unable to close request.';
+        closeMsg.classList.add('error');
+      }
     }
   });
 

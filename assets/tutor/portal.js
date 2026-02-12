@@ -329,8 +329,17 @@ async function initTutorHome() {
 async function initAssignments() {
   setActiveNav('assignments');
   const list = qs('#assignmentList');
+  renderSkeletonCards(list, 3);
   const renderList = (assignments) => {
     clearChildren(list);
+    if (!assignments.length) {
+      renderStateCard(list, {
+        variant: 'empty',
+        title: 'No assignments available',
+        description: 'Assignments from admin will appear here.'
+      });
+      return;
+    }
     const frag = document.createDocumentFragment();
     assignments.forEach((a) => {
       const panel = createEl('div', { className: 'panel' });
@@ -355,71 +364,107 @@ async function initAssignments() {
     }
   }
 
-  const data = await apiGet('/tutor/assignments');
-  if (data?.assignments?.length) {
-    renderList(data.assignments);
-    writeAssignmentsCache(data);
+  try {
+    const data = await apiGet('/tutor/assignments');
+    if (data?.assignments?.length) {
+      renderList(data.assignments);
+      writeAssignmentsCache(data);
+    } else {
+      renderList([]);
+    }
+    setStaleBanner('#assignmentsStaleBanner', '#assignmentsStaleText', false);
+  } catch (err) {
+    renderStateCard(list, {
+      variant: 'error',
+      title: 'Unable to load assignments',
+      description: err?.message || 'Try again.'
+    });
   }
-  setStaleBanner('#assignmentsStaleBanner', '#assignmentsStaleText', false);
 }
 
 async function initPayroll() {
   setActiveNav('payroll');
   const list = qs('#payrollList');
-  const data = await apiGet('/tutor/payroll/weeks');
-  clearChildren(list);
-  if (!data.weeks.length) {
-    list.append(createEl('div', { className: 'note', text: 'No approved sessions yet.' }));
-    return;
-  }
-  const frag = document.createDocumentFragment();
-  data.weeks.forEach((w) => {
-    const panel = createEl('div', { className: 'panel' });
-    const split = createEl('div', { className: 'split' });
-    split.append(createEl('strong', { text: w.week_start }), document.createTextNode(' '), renderStatusEl(w.status));
-    panel.append(split);
-    panel.append(createEl('div', { text: `${w.total_minutes} mins` }));
-    panel.append(createEl('div', { text: formatMoney(w.total_amount) }));
-
-    const adjustments = (w.adjustments || []);
-    if (adjustments.length) {
-      const wrap = createEl('div', { attrs: { style: 'margin-top:8px;' } });
-      adjustments.forEach((adj) => {
-        wrap.append(createEl('div', { className: 'note', text: `${adj.type}: ${formatMoney(adj.signed_amount)} - ${adj.reason}` }));
+  renderSkeletonCards(list, 3);
+  try {
+    const data = await apiGet('/tutor/payroll/weeks');
+    clearChildren(list);
+    if (!data.weeks.length) {
+      renderStateCard(list, {
+        variant: 'empty',
+        title: 'No approved sessions yet',
+        description: 'Payroll totals appear after sessions are approved.'
       });
-      panel.append(wrap);
+      return;
     }
+    const frag = document.createDocumentFragment();
+    data.weeks.forEach((w) => {
+      const panel = createEl('div', { className: 'panel' });
+      const split = createEl('div', { className: 'split' });
+      split.append(createEl('strong', { text: w.week_start }), document.createTextNode(' '), renderStatusEl(w.status));
+      panel.append(split);
+      panel.append(createEl('div', { text: `${w.total_minutes} mins` }));
+      panel.append(createEl('div', { text: formatMoney(w.total_amount) }));
 
-    frag.append(panel);
-  });
-  list.append(frag);
+      const adjustments = (w.adjustments || []);
+      if (adjustments.length) {
+        const wrap = createEl('div', { attrs: { style: 'margin-top:8px;' } });
+        adjustments.forEach((adj) => {
+          wrap.append(createEl('div', { className: 'note', text: `${adj.type}: ${formatMoney(adj.signed_amount)} - ${adj.reason}` }));
+        });
+        panel.append(wrap);
+      }
+
+      frag.append(panel);
+    });
+    list.append(frag);
+  } catch (err) {
+    renderStateCard(list, {
+      variant: 'error',
+      title: 'Unable to load payroll totals',
+      description: err?.message || 'Try again.'
+    });
+  }
 }
 
 async function initInvoices() {
   setActiveNav('invoices');
   const list = qs('#invoiceList');
-  const data = await apiGet('/tutor/invoices');
-  clearChildren(list);
-  if (!data.invoices.length) {
-    list.append(createEl('div', { className: 'note', text: 'No invoices yet.' }));
-    return;
+  renderSkeletonCards(list, 3);
+  try {
+    const data = await apiGet('/tutor/invoices');
+    clearChildren(list);
+    if (!data.invoices.length) {
+      renderStateCard(list, {
+        variant: 'empty',
+        title: 'No invoices yet',
+        description: 'Invoices will appear here once payroll runs are complete.'
+      });
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    data.invoices.forEach((inv) => {
+      const panel = createEl('div', { className: 'panel' });
+      const title = createEl('div');
+      title.append(createEl('strong', { text: inv.invoice_number }));
+      panel.append(title);
+      panel.append(createEl('div', { text: `${inv.period_start} to ${inv.period_end}` }));
+      panel.append(createEl('div', { text: formatMoney(inv.total_amount) }));
+      const note = createEl('div', { className: 'note' });
+      const htmlLink = createEl('a', { attrs: { href: `/tutor/invoices/${inv.id}`, target: '_blank' } , text: 'HTML' });
+      const pdfLink = createEl('a', { attrs: { href: `/tutor/invoices/${inv.id}.pdf` }, text: 'PDF' });
+      note.append(htmlLink, document.createTextNode(' | '), pdfLink);
+      panel.append(note);
+      frag.append(panel);
+    });
+    list.append(frag);
+  } catch (err) {
+    renderStateCard(list, {
+      variant: 'error',
+      title: 'Unable to load invoices',
+      description: err?.message || 'Try again.'
+    });
   }
-  const frag = document.createDocumentFragment();
-  data.invoices.forEach((inv) => {
-    const panel = createEl('div', { className: 'panel' });
-    const title = createEl('div');
-    title.append(createEl('strong', { text: inv.invoice_number }));
-    panel.append(title);
-    panel.append(createEl('div', { text: `${inv.period_start} to ${inv.period_end}` }));
-    panel.append(createEl('div', { text: formatMoney(inv.total_amount) }));
-    const note = createEl('div', { className: 'note' });
-    const htmlLink = createEl('a', { attrs: { href: `/tutor/invoices/${inv.id}`, target: '_blank' } , text: 'HTML' });
-    const pdfLink = createEl('a', { attrs: { href: `/tutor/invoices/${inv.id}.pdf` }, text: 'PDF' });
-    note.append(htmlLink, document.createTextNode(' | '), pdfLink);
-    panel.append(note);
-    frag.append(panel);
-  });
-  list.append(frag);
 }
 
 async function initSessions() {

@@ -178,6 +178,9 @@ export async function initApprovals() {
 
   const load = async () => {
     if (bulkResult) bulkResult.textContent = '';
+    if (list) {
+      list.innerHTML = '<tr><td colspan="6" class="note">Loading sessions...</td></tr>';
+    }
     const params = new URLSearchParams();
     if (statusFilter?.value) params.set('status', statusFilter.value);
     if (fromDate?.value) params.set('from', fromDate.value);
@@ -188,12 +191,25 @@ export async function initApprovals() {
     params.set('page', String(state.page));
     params.set('pageSize', String(state.pageSize));
 
-    const data = await apiGet(`/admin/sessions?${params.toString()}`);
-    state.sessions = data.items || [];
-    state.aggregates = data.aggregates || null;
-    state.total = Number(data.total || 0);
-    state.selected = new Set();
-    renderTable();
+    try {
+      const data = await apiGet(`/admin/sessions?${params.toString()}`);
+      state.sessions = data.items || [];
+      state.aggregates = data.aggregates || null;
+      state.total = Number(data.total || 0);
+      state.selected = new Set();
+      renderTable();
+    } catch (err) {
+      state.sessions = [];
+      state.total = 0;
+      if (list) {
+        list.innerHTML = `<tr><td colspan="6" class="note">Failed to load sessions: ${escapeHtml(err?.message || 'request_failed')}</td></tr>`;
+      }
+      updateSelectionMeta();
+      updatePageMeta();
+      if (bulkResult) {
+        bulkResult.textContent = 'Unable to refresh approval queue.';
+      }
+    }
   };
 
   const openBulkDialog = (action) => {
@@ -415,13 +431,25 @@ export async function initApprovals() {
     const target = event.target;
     if (!target || !target.dataset) return;
     if (target.dataset.approve) {
-      await apiPost(`/admin/sessions/${target.dataset.approve}/approve`);
-      await load();
+      try {
+        await apiPost(`/admin/sessions/${target.dataset.approve}/approve`);
+        if (bulkResult) {bulkResult.textContent = 'Session approved.';}
+        await load();
+      } catch (err) {
+        if (bulkResult) {bulkResult.textContent = `Approval failed: ${err?.message || 'request_failed'}`;}
+      }
     }
     if (target.dataset.reject) {
+      const confirmed = window.confirm('Reject this session?');
+      if (!confirmed) {return;}
       const reason = prompt('Reason for rejection?') || undefined;
-      await apiPost(`/admin/sessions/${target.dataset.reject}/reject`, { reason });
-      await load();
+      try {
+        await apiPost(`/admin/sessions/${target.dataset.reject}/reject`, { reason });
+        if (bulkResult) {bulkResult.textContent = 'Session rejected.';}
+        await load();
+      } catch (err) {
+        if (bulkResult) {bulkResult.textContent = `Rejection failed: ${err?.message || 'request_failed'}`;}
+      }
     }
     if (target.dataset.history) {
       await openHistory(target.dataset.history);

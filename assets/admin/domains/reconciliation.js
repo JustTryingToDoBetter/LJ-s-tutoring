@@ -1,4 +1,4 @@
-import { apiGet, apiPost, qs, formatMoney, setActiveNav, escapeHtml } from '/assets/portal-shared.js';
+import { apiGet, apiPost, qs, formatMoney, setActiveNav, escapeHtml, renderSkeletonCards, renderStateCard } from '/assets/portal-shared.js';
 
 export async function initReconciliation() {
   setActiveNav('reconciliation');
@@ -50,49 +50,74 @@ export async function initReconciliation() {
     report.innerHTML = '';
     adjustmentsEl.innerHTML = '';
     const weekStart = qs('#reconWeek').value;
+    renderSkeletonCards(report, 4);
+    renderSkeletonCards(adjustmentsEl, 1);
 
-    const [integrity, adjustments] = await Promise.all([
-      apiGet(`/admin/integrity/pay-period/${weekStart}`),
-      apiGet(`/admin/pay-periods/${weekStart}/adjustments`)
-    ]);
+    try {
+      const [integrity, adjustments] = await Promise.all([
+        apiGet(`/admin/integrity/pay-period/${weekStart}`),
+        apiGet(`/admin/pay-periods/${weekStart}/adjustments`)
+      ]);
 
-    status.textContent = `Week status: ${integrity.payPeriod?.status || 'OPEN'}`;
+      status.textContent = `Week status: ${integrity.payPeriod?.status || 'OPEN'}`;
 
-    report.innerHTML = [
-      renderList('Overlapping sessions', integrity.overlaps, (row) =>
-        `<div class="note">${escapeHtml(row.session_id)} overlaps ${escapeHtml(row.overlap_id)} (${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)})</div>`
-      ),
-      renderList('Outside assignment window', integrity.outsideAssignmentWindow, (row) =>
-        `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)}</div>`
-      ),
-      renderList('Approved sessions missing invoice lines', integrity.missingInvoiceLines, (row) =>
-        `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)}</div>`
-      ),
-      renderList('Invoice totals mismatched', integrity.invoiceTotalMismatches, (row) =>
-        `<div class="note">${escapeHtml(row.invoice_number)} total ${formatMoney(row.total_amount)} vs lines ${formatMoney(row.line_total)}</div>`
-      ),
-      renderList('Pending submitted sessions', integrity.pendingSubmissions, (row) =>
-        `<div class="note">${escapeHtml(row.tutor_name)}: ${row.pending}</div>`
-      ),
-      renderList('Duplicate sessions', integrity.duplicateSessions, (row) =>
-        `<div class="note">${escapeHtml(row.tutor_id)} / ${escapeHtml(row.student_id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)} (x${row.count})</div>`
-      )
-    ].join('');
+      report.innerHTML = [
+        renderList('Overlapping sessions', integrity.overlaps, (row) =>
+          `<div class="note">${escapeHtml(row.session_id)} overlaps ${escapeHtml(row.overlap_id)} (${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)})</div>`
+        ),
+        renderList('Outside assignment window', integrity.outsideAssignmentWindow, (row) =>
+          `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)}</div>`
+        ),
+        renderList('Approved sessions missing invoice lines', integrity.missingInvoiceLines, (row) =>
+          `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)}</div>`
+        ),
+        renderList('Invoice totals mismatched', integrity.invoiceTotalMismatches, (row) =>
+          `<div class="note">${escapeHtml(row.invoice_number)} total ${formatMoney(row.total_amount)} vs lines ${formatMoney(row.line_total)}</div>`
+        ),
+        renderList('Pending submitted sessions', integrity.pendingSubmissions, (row) =>
+          `<div class="note">${escapeHtml(row.tutor_name)}: ${row.pending}</div>`
+        ),
+        renderList('Duplicate sessions', integrity.duplicateSessions, (row) =>
+          `<div class="note">${escapeHtml(row.tutor_id)} / ${escapeHtml(row.student_id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)} (x${row.count})</div>`
+        )
+      ].join('');
 
-    const adjustmentItems = adjustments.adjustments || [];
-    adjustmentsEl.innerHTML = renderList('Adjustments', adjustmentItems, (row) => {
-      const voided = row.voided_at ? ' (voided)' : '';
-      return `<div class="note">${escapeHtml(row.tutor_name)}: ${escapeHtml(row.type)} ${formatMoney(row.signed_amount)} - ${escapeHtml(row.reason)}${voided}</div>`;
-    });
+      const adjustmentItems = adjustments.adjustments || [];
+      adjustmentsEl.innerHTML = renderList('Adjustments', adjustmentItems, (row) => {
+        const voided = row.voided_at ? ' (voided)' : '';
+        return `<div class="note">${escapeHtml(row.tutor_name)}: ${escapeHtml(row.type)} ${formatMoney(row.signed_amount)} - ${escapeHtml(row.reason)}${voided}</div>`;
+      });
+    } catch (err) {
+      status.textContent = 'Reconciliation check failed.';
+      renderStateCard(report, {
+        variant: 'error',
+        title: 'Unable to run integrity checks',
+        description: err?.message || 'Try again.'
+      });
+      renderStateCard(adjustmentsEl, {
+        variant: 'error',
+        title: 'Unable to load adjustments',
+        description: 'Try again.'
+      });
+    }
   });
 
   if (arcadeRun && arcadeStatus && arcadeReport) {
     arcadeRun.addEventListener('click', async () => {
       arcadeStatus.textContent = 'Running arcade checks...';
-      arcadeReport.innerHTML = '';
-      const result = await apiPost('/admin/arcade/reconciliation/run');
-      arcadeStatus.textContent = `Arcade report generated at ${result.createdAt}`;
-      renderArcadeReport(result.report);
+      renderSkeletonCards(arcadeReport, 3);
+      try {
+        const result = await apiPost('/admin/arcade/reconciliation/run');
+        arcadeStatus.textContent = `Arcade report generated at ${result.createdAt}`;
+        renderArcadeReport(result.report);
+      } catch (err) {
+        arcadeStatus.textContent = 'Arcade report failed.';
+        renderStateCard(arcadeReport, {
+          variant: 'error',
+          title: 'Arcade reconciliation failed',
+          description: err?.message || 'Try again.'
+        });
+      }
     });
 
     try {
@@ -109,7 +134,7 @@ export async function initReconciliation() {
   if (arcadeMetricsForm && arcadeMetricsReport) {
     arcadeMetricsForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      arcadeMetricsReport.innerHTML = '';
+      renderSkeletonCards(arcadeMetricsReport, 2);
 
       const from = qs('#arcadeMetricsFrom')?.value || '';
       const to = qs('#arcadeMetricsTo')?.value || '';
@@ -117,7 +142,17 @@ export async function initReconciliation() {
       if (from) query.set('from', from);
       if (to) query.set('to', to);
 
-      const data = await apiGet(`/admin/arcade/metrics?${query.toString()}`);
+      let data;
+      try {
+        data = await apiGet(`/admin/arcade/metrics?${query.toString()}`);
+      } catch (err) {
+        renderStateCard(arcadeMetricsReport, {
+          variant: 'error',
+          title: 'Unable to load arcade metrics',
+          description: err?.message || 'Try again.'
+        });
+        return;
+      }
 
       const experiments = data.experiments || [];
       const funnel = data.funnel || {};

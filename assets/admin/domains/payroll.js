@@ -1,4 +1,4 @@
-import { apiGet, apiPost, qs, formatMoney, setActiveNav, escapeHtml } from '/assets/portal-shared.js';
+import { apiGet, apiPost, qs, formatMoney, setActiveNav, escapeHtml, renderSkeletonCards, renderStateCard } from '/assets/portal-shared.js';
 
 export async function initPayroll() {
   setActiveNav('payroll');
@@ -35,21 +35,31 @@ export async function initPayroll() {
 
   const loadAdjustments = async (weekStart) => {
     if (!adjustmentList || !weekStart) return;
-    const data = await apiGet(`/admin/pay-periods/${weekStart}/adjustments`);
-    adjustmentList.innerHTML = data.adjustments.length
-      ? data.adjustments.map((adj) => {
-        const voided = adj.voided_at ? ' (voided)' : '';
-        return `<div class="panel">
-                  <div><strong>${escapeHtml(adj.tutor_name)}</strong> ${escapeHtml(adj.type)}${voided}</div>
-                  <div class="note">${formatMoney(adj.signed_amount)} - ${escapeHtml(adj.reason)}</div>
-                </div>`;
-      }).join('')
-      : '<div class="note">No adjustments yet.</div>';
+    renderSkeletonCards(adjustmentList, 2);
+    try {
+      const data = await apiGet(`/admin/pay-periods/${weekStart}/adjustments`);
+      adjustmentList.innerHTML = data.adjustments.length
+        ? data.adjustments.map((adj) => {
+          const voided = adj.voided_at ? ' (voided)' : '';
+          return `<div class="panel">
+                    <div><strong>${escapeHtml(adj.tutor_name)}</strong> ${escapeHtml(adj.type)}${voided}</div>
+                    <div class="note">${formatMoney(adj.signed_amount)} - ${escapeHtml(adj.reason)}</div>
+                  </div>`;
+        }).join('')
+        : '<div class="note">No adjustments yet.</div>';
+    } catch (err) {
+      renderStateCard(adjustmentList, {
+        variant: 'error',
+        title: 'Unable to load adjustments',
+        description: err?.message || 'Try again in a moment.'
+      });
+    }
   };
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const weekStart = qs('#weekStart').value;
+    renderSkeletonCards(list, 3);
     try {
       if (jobStatus) jobStatus.textContent = 'Queued invoice generation...';
       const res = await apiPost('/admin/jobs/payroll-generate', { weekStart });
@@ -59,23 +69,39 @@ export async function initPayroll() {
         }
       });
       const invoices = job.result?.invoices || [];
-      list.innerHTML = invoices.length
-        ? invoices.map((inv) => `<div class="panel">
+      if (invoices.length) {
+        list.innerHTML = invoices.map((inv) => `<div class="panel">
             <div><strong>${escapeHtml(inv.invoice_number)}</strong></div>
             <div>${formatMoney(inv.total_amount)}</div>
-          </div>`).join('')
-        : '<div class="note">No invoices generated.</div>';
+          </div>`).join('');
+      } else {
+        renderStateCard(list, {
+          variant: 'empty',
+          title: 'No invoices generated',
+          description: 'No approved sessions were available for that week.'
+        });
+      }
       if (jobStatus) jobStatus.textContent = 'Invoice generation complete.';
     } catch (err) {
       if (jobStatus) jobStatus.textContent = `Invoice generation failed: ${err.message}`;
+      renderStateCard(list, {
+        variant: 'error',
+        title: 'Invoice generation failed',
+        description: err?.message || 'Try again.'
+      });
     }
   });
 
   lockBtn?.addEventListener('click', async () => {
     const weekStart = qs('#weekStart').value;
     if (!weekStart) return;
+    if (!window.confirm(`Lock week ${weekStart}? This prevents further edits.`)) {
+      return;
+    }
     await apiPost(`/admin/pay-periods/${weekStart}/lock`);
-    alert(`Week ${weekStart} locked.`);
+    if (jobStatus) {
+      jobStatus.textContent = `Week ${weekStart} locked.`;
+    }
   });
 
   payrollCsv?.addEventListener('click', async (event) => {
@@ -112,9 +138,17 @@ export async function initPayroll() {
         reason: qs('#adjustReason').value,
         relatedSessionId: qs('#adjustSession').value || undefined
       };
-      await apiPost(`/admin/pay-periods/${weekStart}/adjustments`, payload);
-      adjustmentForm.reset();
-      await loadAdjustments(weekStart);
+      try {
+        await apiPost(`/admin/pay-periods/${weekStart}/adjustments`, payload);
+        adjustmentForm.reset();
+        await loadAdjustments(weekStart);
+      } catch (err) {
+        renderStateCard(adjustmentList, {
+          variant: 'error',
+          title: 'Could not save adjustment',
+          description: err?.message || 'Try again.'
+        });
+      }
     });
 
     const weekInput = qs('#adjustWeek');

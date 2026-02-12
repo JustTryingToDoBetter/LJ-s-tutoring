@@ -1,4 +1,4 @@
-import { apiGet, qs, setActiveNav, escapeHtml } from '/assets/portal-shared.js';
+import { apiGet, qs, setActiveNav, escapeHtml, renderSkeletonCards, renderStateCard } from '/assets/portal-shared.js';
 
 export async function initRetention() {
   setActiveNav('retention');
@@ -7,7 +7,38 @@ export async function initRetention() {
   const latestEl = qs('#retentionLatest');
   const latestMeta = qs('#retentionLatestMeta');
 
-  const data = await apiGet('/admin/retention/summary');
+  if (configEl) {renderSkeletonCards(configEl, 3);}
+  if (eligibleEl) {renderSkeletonCards(eligibleEl, 3);}
+  if (latestEl) {renderSkeletonCards(latestEl, 2);}
+
+  let data;
+  try {
+    data = await apiGet('/admin/retention/summary');
+  } catch (err) {
+    if (configEl) {
+      renderStateCard(configEl, {
+        variant: 'error',
+        title: 'Unable to load retention settings',
+        description: err?.message || 'Try again.'
+      });
+    }
+    if (eligibleEl) {
+      renderStateCard(eligibleEl, {
+        variant: 'error',
+        title: 'Unable to load eligibility summary',
+        description: 'Try again.'
+      });
+    }
+    if (latestEl) {
+      renderStateCard(latestEl, {
+        variant: 'error',
+        title: 'Unable to load cleanup evidence',
+        description: 'Try again.'
+      });
+    }
+    if (latestMeta) latestMeta.textContent = '';
+    return;
+  }
   const config = data.config || {};
   const cutoffs = data.cutoffs || {};
   const eligible = data.eligible || {};
