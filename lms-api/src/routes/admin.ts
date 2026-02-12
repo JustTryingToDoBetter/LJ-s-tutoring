@@ -44,7 +44,6 @@ import {
   CreateStudentSchema,
   CreateTutorSchema,
   DeleteAdjustmentSchema,
-  DateRangeQuerySchema,
   ImpersonateStartSchema,
   ImpersonateStopSchema,
   AdjustmentCreateSchema,
@@ -56,12 +55,6 @@ import {
   UpdateStudentSchema,
   UpdateTutorSchema
 } from '../lib/schemas.js';
-import {
-  buildArcadeReconciliationReport,
-  getLatestArcadeReconciliationReport,
-  persistArcadeReconciliationReport
-} from '../domains/arcade/reconciliation.js';
-import { getArcadeExperimentMetrics, getArcadeFunnelMetrics } from '../domains/arcade/analytics.js';
 import { requireAuth, requireRole } from '../lib/rbac.js';
 import { getPayPeriodRange, getPayPeriodStart } from '../lib/pay-periods.js';
 import { isWithinAssignmentWindow } from '../lib/scheduling.js';
@@ -1081,32 +1074,6 @@ export async function adminRoutes(app: FastifyInstance) {
     reply.header('Content-Type', result.contentType || 'text/csv');
     reply.header('Content-Disposition', `attachment; filename="${result.filename || 'export.csv'}"`);
     return reply.send(result.csv);
-  });
-
-  app.get('/admin/arcade/reconciliation/latest', async (_req, reply) => {
-    const latest = await getLatestArcadeReconciliationReport(pool);
-    return reply.send({ report: latest?.report_json ?? null, createdAt: latest?.created_at ?? null });
-  });
-
-  app.post('/admin/arcade/reconciliation/run', async (_req, reply) => {
-    const report = await buildArcadeReconciliationReport(pool);
-    const record = await persistArcadeReconciliationReport(pool, report);
-    return reply.send({ ok: true, report, createdAt: record.created_at });
-  });
-
-  app.get('/admin/arcade/metrics', async (req, reply) => {
-    const parsed = DateRangeQuerySchema.safeParse(req.query ?? {});
-    if (!parsed.success) {
-      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
-    }
-
-    const range = { from: parsed.data.from ?? null, to: parsed.data.to ?? null };
-    const [experiments, funnel] = await Promise.all([
-      getArcadeExperimentMetrics(pool, range),
-      getArcadeFunnelMetrics(pool, range),
-    ]);
-
-    return reply.send({ experiments, funnel });
   });
 
   app.post('/admin/sessions/bulk-approve', {

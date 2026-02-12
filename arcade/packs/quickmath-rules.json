@@ -1,9 +1,0 @@
-{
-  "version": 1,
-  "ops": [
-    { "op": "+", "minA": 5, "maxA": 80, "minB": 5, "maxB": 80, "points": 1 },
-    { "op": "-", "minA": 10, "maxA": 120, "minB": 1, "maxB": 110, "points": 2 },
-    { "op": "×", "minA": 2, "maxA": 15, "minB": 2, "maxB": 15, "points": 3 },
-    { "op": "÷", "minB": 2, "maxB": 15, "minQ": 2, "maxQ": 15, "points": 4 }
-  ]
-}

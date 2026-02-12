@@ -1,9 +1,9 @@
-/* sw.js — Project Odysseus PWA Service Worker (offline-first for games)
+/* sw.js — Project Odysseus PWA Service Worker
    Strategy:
    - HTML/documents: Network-first (fallback to cached shell)
    - App assets (JS/CSS/fonts): Cache-first + runtime update
    - Media/images: Stale-while-revalidate
-   - Offline: Works for arcade + games after first visit
+  - Offline: Works for site shell after first visit
 */
 
 // Build script replaces VERSION in dist/sw.js
@@ -18,34 +18,10 @@ const PRECACHE_URLS = [
   `/?v=${VERSION}`,
   `/index.html?v=${VERSION}`,
 
-  `/arcade/?v=${VERSION}`,
-  `/arcade/index.html?v=${VERSION}`,
-  `/arcade/play.html?v=${VERSION}`,
-  `/arcade/games/pong/?v=${VERSION}`,
-  `/arcade/games/snake/?v=${VERSION}`,
-  `/arcade/games/sudoku/?v=${VERSION}`,
-  `/arcade/games/wordle/?v=${VERSION}`,
-  `/arcade/games/hangman/?v=${VERSION}`,
-  `/arcade/games/tictactoe/?v=${VERSION}`,
-  `/arcade/games/chess/?v=${VERSION}`,
-  `/arcade/games/quickmath/?v=${VERSION}`,
-  `/arcade/games/invaders/?v=${VERSION}`,
-  `/arcade/games/asteroids/?v=${VERSION}`,
-  `/arcade/games/2048/?v=${VERSION}`,
-  `/arcade/games/minesweeper/?v=${VERSION}`,
-
   `/assets/site.css?v=${VERSION}`,
-  `/assets/arcade.css?v=${VERSION}`,
   `/assets/po-game-ui.css?v=${VERSION}`,
 
   `/assets/app-critical.js?v=${VERSION}`,
-  `/assets/arcade.js?v=${VERSION}`,
-
-  // Arcade dynamic-imported modules
-  `/assets/arcade/frame.js?v=${VERSION}`,
-  `/assets/arcade/game-sdk.js?v=${VERSION}`,
-  `/assets/arcade/difficulty.js?v=${VERSION}`,
-  `/assets/arcade/run-seed.js?v=${VERSION}`,
 
   `/favicon.svg?v=${VERSION}`,
 ];

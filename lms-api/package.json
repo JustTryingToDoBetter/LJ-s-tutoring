@@ -17,7 +17,6 @@
     "seed:test": "NODE_ENV=test DATABASE_URL=$DATABASE_URL_TEST tsx scripts/seed-test.ts",
     "retention:cleanup": "tsx scripts/retention-cleanup.ts",
     "retention:queue": "tsx scripts/queue-retention-cleanup.ts",
-    "arcade:queue": "tsx scripts/queue-arcade-analytics.ts",
     "job:worker": "tsx scripts/job-worker.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",

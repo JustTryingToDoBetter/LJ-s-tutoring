@@ -63,18 +63,11 @@ const baseId = getBuildId();
 const dirtySuffix = isGitDirty() ? `-dirty-${Date.now()}` : "";
 const buildId = sanitizeId(`${baseId}${dirtySuffix}`);
 const swVersion = `po-v${buildId}`;
-const arcadeCache = `po-arcade-${buildId}`;
 
 const swPath = path.join(distDir, 'sw.js');
-const arcadePath = path.join(distAssetsDir, 'sw-arcade.js');
 
 const swChanged = updateFile(swPath, (content) => {
   const res = replaceConst(content, 'VERSION', swVersion);
-  return res.next;
-});
-
-const arcadeChanged = updateFile(arcadePath, (content) => {
-  const res = replaceConst(content, 'CACHE', arcadeCache);
   return res.next;
 });
 
@@ -82,10 +75,4 @@ if (swChanged) {
   console.log(`✅ Injected SW VERSION: ${swVersion}`);
 } else {
   console.warn('⚠️  Warning: SW VERSION not updated');
-}
-
-if (arcadeChanged) {
-  console.log(`✅ Injected Arcade SW cache: ${arcadeCache}`);
-} else if (fs.existsSync(arcadePath)) {
-  console.warn('⚠️  Warning: Arcade SW cache not updated');
 }

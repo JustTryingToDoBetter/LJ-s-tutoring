@@ -1,9 +1,0 @@
-{
-  "version": 1,
-  "entries": [
-    { "w": "ODYSSEY", "hint": "A long voyage home." },
-    { "w": "ITHACA", "hint": "The home you return to." },
-    { "w": "TRIREME", "hint": "Ancient Greek warship." },
-    { "w": "POSEIDON", "hint": "God of the sea." }
-  ]
-}

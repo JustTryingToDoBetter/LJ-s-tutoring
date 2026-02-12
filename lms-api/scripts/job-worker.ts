@@ -5,8 +5,6 @@ import { buildAuditCsv } from '../src/lib/audit-export.js';
 import { buildPayrollCsv } from '../src/lib/payroll-export.js';
 import { generatePayrollWeek } from '../src/domains/admin/payroll/service.js';
 import { safeAuditMeta, writeAuditLog } from '../src/lib/audit.js';
-import { buildArcadeReconciliationReport, persistArcadeReconciliationReport } from '../src/domains/arcade/reconciliation.js';
-import { refreshArcadeAnalyticsReadModel } from '../src/lib/analytics-read-model.js';
 import { runRetentionCleanup } from '../src/lib/retention-cleanup.js';
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -52,17 +50,6 @@ async function processJob(client: any, job: any) {
   if (job.job_type === 'payroll_week_csv') {
     const csv = await buildPayrollCsv(client, payload.weekStart);
     return { csv, filename: `payroll-${payload.weekStart}.csv`, contentType: 'text/csv' };
-  }
-
-  if (job.job_type === 'arcade_reconciliation') {
-    const report = await buildArcadeReconciliationReport(client);
-    const record = await persistArcadeReconciliationReport(client, report);
-    return { report, createdAt: record.created_at };
-  }
-
-  if (job.job_type === 'arcade_analytics_refresh') {
-    await refreshArcadeAnalyticsReadModel(client);
-    return { refreshedAt: new Date().toISOString() };
   }
 
   if (job.job_type === 'retention_cleanup') {

@@ -79,19 +79,11 @@ function checkEnvFile() {
 function checkSwVersions() {
   if (!fs.existsSync(distDir)) {return;}
   const swPath = path.join(distDir, 'sw.js');
-  const arcadePath = path.join(distDir, 'assets', 'sw-arcade.js');
 
   if (fs.existsSync(swPath)) {
     const content = read(swPath);
     if (content.includes('po-v-dev')) {
       errors.push('dist/sw.js still contains po-v-dev placeholder');
-    }
-  }
-
-  if (fs.existsSync(arcadePath)) {
-    const content = read(arcadePath);
-    if (content.includes('po-arcade-dev')) {
-      errors.push('dist/assets/sw-arcade.js still contains po-arcade-dev placeholder');
     }
   }
 }
