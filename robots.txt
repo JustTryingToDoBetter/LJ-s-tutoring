@@ -15,13 +15,16 @@ Allow: /
 
 Disallow: /admin
 Disallow: /admin/
+Disallow: /admin/*
 Disallow: /tutor
 Disallow: /tutor/
+Disallow: /tutor/*
 Disallow: /tutor-dashboard.html
 Disallow: /internal
 Disallow: /internal/
 Disallow: /api
 Disallow: /api/
+Disallow: /api/*
 
 # Sitemap location
 Sitemap: https://projectodysseus.live/sitemap.xml

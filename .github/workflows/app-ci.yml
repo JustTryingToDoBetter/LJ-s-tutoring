@@ -10,6 +10,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  dependency-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (lockfile-enforced)
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
   lint:
     runs-on: ubuntu-latest
     steps:

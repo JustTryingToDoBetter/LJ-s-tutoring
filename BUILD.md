@@ -24,7 +24,9 @@ Full production build. Runs all build steps in a defined order (currently sequen
    - `build:games` - Copy game modules
    - `build:lib` - Copy shared library modules
    - `build:sw` - Copy service worker
-3. `inject:config` - Inject `.env` configuration into built assets (and built HTML error monitor config)
+3. `check:public-config` - Enforce public config policy (`PUBLIC_*` only, no secret-like names)
+4. `inject:config` - Inject public `.env` configuration into built assets
+5. `check:csp-dist` + `check:headers` - Verify CSP readiness in `dist/*.html` and required Netlify headers
 
 **Output:** `dist/` folder ready for deployment
 
@@ -106,7 +108,13 @@ Injects environment configuration into the built site.
 
 **What it does:**
 - Rewrites the `const CONFIG = { ... }` block in `dist/assets/app-critical.js` using values from `.env`
-- Injects `window.PO_ERROR_MONITOR = { ... }` into built HTML pages in `dist/`
+- Injects `window.PO_ERROR_MONITOR = { ... }` into `dist/assets/error-monitor-config.js`
+- Injects `window.__PO_API_BASE__` into `dist/assets/portal-config.js`
+
+**Security guardrails:**
+- Public client keys must be named `PUBLIC_*`.
+- Legacy non-prefixed public keys fail the build.
+- Secret-like names in `PUBLIC_*` fail the build.
 
 **Notes:**
 - `ERROR_MONITOR_ENDPOINT` and `ERROR_MONITOR_SAMPLE_RATE` are optional; leaving the endpoint blank disables sending.

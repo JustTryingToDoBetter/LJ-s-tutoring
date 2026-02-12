@@ -29,8 +29,17 @@ jobs:
       - name: Security + lint gate
         run: npm run lint
 
+      - name: Dependency audit gate (prod)
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Integration tests
         run: npm run test:api
+
+      - name: Build + static security checks
+        run: |
+          npm run build
+          npm run check:csp-dist
+          npm run check:headers
 
       - name: Install Chromium
         run: |
@@ -42,7 +51,6 @@ jobs:
         env:
           LHCI_CHROME_PATH: ${{ env.CHROME_PATH }}
         run: |
-          npm run build
           npx http-server dist -p 8080 -c-1 --silent &
           npx wait-on --timeout 60000 http://localhost:8080/
           npx lhci autorun --config=./lighthouserc.js

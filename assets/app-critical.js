@@ -41,6 +41,42 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
+  const FORM_THROTTLE_MS = 15000;
+
+  function nowMs() {
+    return Date.now();
+  }
+
+  function getThrottleKey(formId) {
+    return 'po_form_last_submit_' + formId;
+  }
+
+  function isSubmissionThrottled(formId) {
+    try {
+      const raw = sessionStorage.getItem(getThrottleKey(formId));
+      const last = Number(raw || 0);
+      if (!Number.isFinite(last) || last <= 0) {return false;}
+      return nowMs() - last < FORM_THROTTLE_MS;
+    } catch (_err) {
+      return false;
+    }
+  }
+
+  function markSubmission(formId) {
+    try {
+      sessionStorage.setItem(getThrottleKey(formId), String(nowMs()));
+    } catch (_err) {
+      // ignore storage write failures
+    }
+  }
+
+  function isValidName(name) {
+    if (typeof name !== 'string') {return false;}
+    const trimmed = name.trim();
+    if (trimmed.length < 2 || trimmed.length > 80) {return false;}
+    return /^[a-zA-Z\s.'-]+$/.test(trimmed);
+  }
+
   const sanitize = (window && window.PO_SANITIZE) || {};
 
   function containsHtmlTags(value) {
@@ -413,6 +449,11 @@
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
 
+      if (isSubmissionThrottled('contact-form')) {
+        showFormError('Please wait a few seconds before submitting again.');
+        return;
+      }
+
       const btn = form.querySelector('button[type="submit"]');
       const originalState = getButtonState(btn);
 
@@ -424,19 +465,24 @@
       const email = (emailEl && emailEl.value ? emailEl.value : '').trim();
       const grade = gradeEl && gradeEl.value ? gradeEl.value : '';
       const messageEl = $('#message');
-      const message = messageEl && messageEl.value ? messageEl.value : '';
+      const rawMessage = messageEl && messageEl.value ? messageEl.value : '';
+      const message = stripHtmlTags(rawMessage);
 
-      if (containsHtmlTags(name) || containsHtmlTags(message)) {
+      if (containsHtmlTags(name) || containsHtmlTags(rawMessage)) {
         showFormError('Please remove HTML tags from your message.');
         return;
       }
 
-      if (!name || name.length < 2) {
-        showFormError('Please enter a valid name.');
+      if (!isValidName(name)) {
+        showFormError('Please enter a valid name (2-80 letters).');
         return;
       }
-      if (!email || !isValidEmail(email)) {
+      if (!email || email.length > 254 || !isValidEmail(email)) {
         showFormError('Please enter a valid email address.');
+        return;
+      }
+      if (message.length > 2000) {
+        showFormError('Please keep your message under 2000 characters.');
         return;
       }
       if (!grade) {
@@ -452,6 +498,7 @@
       setButtonContent(btn, 'Sending...', 'fas fa-spinner fa-spin mr-2');
       btn.disabled = true;
       formStatus.classList.add('hidden');
+      markSubmission('contact-form');
 
       try {
         if (CONFIG.formspreeEndpoint && !CONFIG.formspreeEndpoint.includes('YOUR_FORM_ID')) {
@@ -525,16 +572,22 @@
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
+
+      if (isSubmissionThrottled('lead-form')) {
+        alert('Please wait a few seconds before submitting again.');
+        return;
+      }
+
       const btn = form.querySelector('button[type="submit"]');
       const originalState = getButtonState(btn);
       const emailInput = $('#lead-email');
-      const email = emailInput ? emailInput.value : '';
+      const email = emailInput ? String(emailInput.value || '').trim() : '';
 
       if (containsHtmlTags(email)) {
         alert('Please remove HTML tags from your email.');
         return;
       }
-      if (!isValidEmail(email)) {
+      if (email.length > 254 || !isValidEmail(email)) {
         alert('Please enter a valid email address.');
         return;
       }
@@ -546,6 +599,7 @@
 
       setButtonContent(btn, 'Sending...', 'fas fa-spinner fa-spin mr-2');
       btn.disabled = true;
+      markSubmission('lead-form');
 
       try {
         if (CONFIG.formspreeEndpoint && !CONFIG.formspreeEndpoint.includes('YOUR_FORM_ID')) {

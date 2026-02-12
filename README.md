@@ -13,7 +13,7 @@ npm install
 
 # 3. Set up environment configuration
 cp .env.example .env
-# Edit .env with your actual values (WhatsApp, Formspree, email, etc.)
+# Edit .env with your PUBLIC_* values (safe client config only)
 
 # 4. Build the project (compiles CSS, copies files, injects config)
 npm run build
@@ -52,13 +52,13 @@ npm run serve
 
 2. **Edit `.env` with your values**:
    ```env
-   WHATSAPP_NUMBER=27679327754          # Your WhatsApp number (country code + number, no +)
-   FORMSPREE_ENDPOINT=https://formspree.io/f/YOUR_FORM_ID
-   CONTACT_EMAIL=your-email@example.com
-   COUNTDOWN_DATE=2026-02-15T17:00:00   # ISO 8601 format
+   PUBLIC_WHATSAPP_NUMBER=27679327754          # Your WhatsApp number (country code + number, no +)
+   PUBLIC_FORMSPREE_ENDPOINT=https://formspree.io/f/YOUR_FORM_ID
+   PUBLIC_CONTACT_EMAIL=your-email@example.com
+   PUBLIC_COUNTDOWN_DATE=2026-02-15T17:00:00   # ISO 8601 format
    # Optional: frontend error monitoring (leave blank to disable)
-   ERROR_MONITOR_ENDPOINT=
-   ERROR_MONITOR_SAMPLE_RATE=1
+   PUBLIC_ERROR_MONITOR_ENDPOINT=
+   PUBLIC_ERROR_MONITOR_SAMPLE_RATE=1
    ```
 
 3. **Never commit `.env`** (already in `.gitignore`)
@@ -67,12 +67,13 @@ npm run serve
 
 | Variable | Purpose | Format | Used In |
 |----------|---------|--------|---------|
-| `WHATSAPP_NUMBER` | WhatsApp contact link | `27679327754` (no + or spaces) | `app-critical.js` |
-| `FORMSPREE_ENDPOINT` | Form submission URL | `https://formspree.io/f/xxxxx` | `app-critical.js` |
-| `CONTACT_EMAIL` | Contact email address | `email@example.com` | `app-critical.js` |
-| `COUNTDOWN_DATE` | Registration countdown target | `YYYY-MM-DDTHH:mm:ss` | `app-critical.js` |
-| `ERROR_MONITOR_ENDPOINT` | Error monitor endpoint (optional) | `https://.../api/errors` | HTML `window.PO_ERROR_MONITOR` |
-| `ERROR_MONITOR_SAMPLE_RATE` | Error monitor sample rate (optional) | `0..1` | HTML `window.PO_ERROR_MONITOR` |
+| `PUBLIC_WHATSAPP_NUMBER` | WhatsApp contact link | `27679327754` (no + or spaces) | `app-critical.js` |
+| `PUBLIC_FORMSPREE_ENDPOINT` | Form submission URL | `https://formspree.io/f/xxxxx` | `app-critical.js` |
+| `PUBLIC_CONTACT_EMAIL` | Contact email address | `email@example.com` | `app-critical.js` |
+| `PUBLIC_COUNTDOWN_DATE` | Registration countdown target | `YYYY-MM-DDTHH:mm:ss` | `app-critical.js` |
+| `PUBLIC_ERROR_MONITOR_ENDPOINT` | Error monitor endpoint (optional) | `https://.../api/errors` | HTML `window.PO_ERROR_MONITOR` |
+| `PUBLIC_ERROR_MONITOR_SAMPLE_RATE` | Error monitor sample rate (optional) | `0..1` | HTML `window.PO_ERROR_MONITOR` |
+| `PUBLIC_PO_API_BASE` | Public API base URL for portal assets | `https://api.example.com` | `portal-config.js` |
 
 ### How Config Injection Works
 
@@ -80,7 +81,8 @@ npm run serve
 - **Injection Script**: `scripts/inject-config.js`
 - **Target**: `dist/assets/app-critical.js` (CONFIG object)
 - **When**: During `npm run inject:config` (part of `npm run build`)
-- **Fallback**: Uses defaults if `.env` missing (fail-safe approach)
+- **Guardrails**: Build fails if legacy non-`PUBLIC_*` client keys are used or secret-like names appear in public config
+- **Fallback**: Uses defaults if `PUBLIC_*` keys are missing (fail-safe approach)
 
 ### Google Analytics Setup
 
@@ -236,6 +238,12 @@ npm run serve
 ```bash
 # Run linters (or let pre-commit hook do it automatically)
 npm run lint
+
+# Validate Netlify headers policy
+npm run check:headers
+
+# Validate dist CSP readiness after a build
+npm run build && npm run check:csp-dist
 
 # Full QA suite (HTML, links, accessibility)
 npm run qa
