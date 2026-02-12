@@ -98,7 +98,11 @@
     </section>
 
     <section class="po-arcade__ad" aria-label="Sponsored">
-      <div class="arc-ad-slot" id="arcade-ad-slot" data-ad-placement="menu_banner"></div>
+      <div class="po-arcade__ad-wrap">
+        <p class="po-arcade__ad-label">Sponsored</p>
+        <p class="po-arcade__ad-note">Ad appears outside gameplay and never blocks controls.</p>
+        <div class="arc-ad-slot" id="arcade-ad-slot" data-ad-placement="menu_banner" aria-label="Sponsored ad slot"></div>
+      </div>
     </section>
 
     <!-- Filters -->
@@ -128,7 +132,7 @@
         <p class="po-arcade__muted">Tap Play — loads instantly, no clutter.</p>
       </div>
 
-      <div class="po-arcade__grid" id="arcade-grid">
+      <div class="po-arcade__grid" id="arcade-grid" aria-live="polite">
         <!-- Cards injected by arcade.js -->
         <noscript>
           <p class="po-arcade__noscript">Enable JavaScript to view and launch games.</p>

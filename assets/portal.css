@@ -1,5 +1,18 @@
 :root {
   color-scheme: light;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 8px 20px rgba(15, 23, 42, 0.22);
+  --shadow-md: 0 18px 40px rgba(15, 23, 42, 0.35);
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 18px;
+  --font-size-xl: 28px;
   --bg: #0b1220;
   --bg-alt: #0f172a;
   --panel: rgba(15, 23, 42, 0.72);
@@ -111,7 +124,7 @@ body {
 }
 
 .page-title {
-  font-size: 28px;
+  font-size: var(--font-size-xl);
   font-family: var(--heading-font);
   margin: 0;
 }
@@ -139,9 +152,9 @@ body {
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.35);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  box-shadow: var(--shadow-md);
 }
 
 .panel-title {
@@ -165,12 +178,20 @@ body {
 .field select,
 .field textarea {
   width: 100%;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid rgba(148, 163, 184, 0.3);
   background: rgba(15, 23, 42, 0.7);
   color: var(--text);
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: var(--font-size-md);
+  min-height: 44px;
+}
+
+.field input[aria-invalid='true'],
+.field select[aria-invalid='true'],
+.field textarea[aria-invalid='true'] {
+  border-color: rgba(239, 68, 68, 0.8);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
 }
 
 .field input:focus,
@@ -186,6 +207,7 @@ body {
   justify-content: center;
   gap: 8px;
   padding: 10px 14px;
+  min-height: 44px;
   border-radius: 999px;
   border: 1px solid transparent;
   background: linear-gradient(135deg, #22c55e, #14b8a6);
@@ -212,6 +234,18 @@ body {
   background: transparent;
   border-color: rgba(148, 163, 184, 0.4);
   color: var(--text);
+}
+
+.button.tertiary {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.button.destructive,
+.button.danger {
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  color: #0f172a;
 }
 
 .button.secondary.active {
@@ -429,6 +463,105 @@ body {
 .picker-item:focus-visible {
   outline: 2px solid rgba(56, 189, 248, 0.8);
   outline-offset: 2px;
+}
+
+.portal-breadcrumbs {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: var(--font-size-sm);
+}
+
+.portal-breadcrumbs-item.current {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.portal-breadcrumbs-sep {
+  opacity: 0.7;
+}
+
+.ds-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.ds-toolbar input,
+.ds-toolbar select {
+  min-height: 44px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.7);
+  color: var(--text);
+  padding: 10px 12px;
+}
+
+.ds-toolbar input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.ds-toolbar select {
+  min-width: 170px;
+}
+
+.ds-state {
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  padding: 14px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.ds-state-title {
+  margin: 0;
+  font-size: 15px;
+}
+
+.ds-state-description {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.ds-state-error {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(127, 29, 29, 0.25);
+}
+
+.ds-state-success {
+  border-color: rgba(34, 197, 94, 0.45);
+  background: rgba(20, 83, 45, 0.25);
+}
+
+.ds-skeleton-card {
+  height: 88px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: linear-gradient(90deg, rgba(30, 41, 59, 0.45) 25%, rgba(51, 65, 85, 0.7) 50%, rgba(30, 41, 59, 0.45) 75%);
+  background-size: 200% 100%;
+  animation: ds-skeleton 1.2s linear infinite;
+}
+
+@keyframes ds-skeleton {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.form-feedback {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.form-feedback.error {
+  color: #fecaca;
+}
+
+.form-feedback.success {
+  color: #86efac;
 }
 
 .toast {

@@ -18,7 +18,7 @@ const DEFAULT_SLOTS = {
   post_run_reward: { width: 320, height: 250 },
 };
 
-const MULTIPLAYER_GAMES = new Set(["pong", "chess", "tictactoe"]);
+const MULTIPLAYER_GAMES = new Set(["pong", "chess", "tictactoe", "Sudoku"]);
 
 function dayKey(date = new Date()) {
   const y = date.getFullYear();
@@ -185,6 +185,10 @@ export function initAdManager({ apiBase = "", multiplayerGameIds = MULTIPLAYER_G
   const renderAd = async ({ container, placement, provider = "google", creativeId = "house-default", variantId = "control", creativeMeta } = {}) => {
     if (!container) return false;
     await loadConfig();
+    const slot = DEFAULT_SLOTS[placement] || DEFAULT_SLOTS.menu_banner;
+    container.classList.add("arc-ad-slot");
+    container.style.setProperty("--ad-slot-width", `${slot.width}px`);
+    container.style.setProperty("--ad-slot-height", `${slot.height}px`);
 
     if (!allowlist.includes(provider)) {
       emitEvent("arcade:ad:blocked", { placement, reason: "provider_not_allowlisted", provider, creativeId });
@@ -208,13 +212,9 @@ export function initAdManager({ apiBase = "", multiplayerGameIds = MULTIPLAYER_G
       return false;
     }
 
-    const slot = DEFAULT_SLOTS[placement] || DEFAULT_SLOTS.menu_banner;
     const frame = createAdFrame({ placement, provider, creativeId, variantId, slot });
 
     container.innerHTML = "";
-    container.classList.add("arc-ad-slot");
-    container.style.setProperty("--ad-slot-width", `${slot.width}px`);
-    container.style.setProperty("--ad-slot-height", `${slot.height}px`);
     container.appendChild(frame);
 
     recordImpression(placement, { provider, creativeId, variantId, creativeMeta: meta });

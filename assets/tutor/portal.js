@@ -1,4 +1,4 @@
-import { apiGet, apiPost, qs, renderStatus, renderStatusEl, formatMoney, setActiveNav, showBanner, setText, escapeHtml, getImpersonationMeta, clearImpersonationContext, createEl, clearChildren } from '/assets/portal-shared.js';
+import { apiGet, apiPost, qs, renderStatus, renderStatusEl, formatMoney, setActiveNav, showBanner, setText, escapeHtml, getImpersonationMeta, clearImpersonationContext, createEl, clearChildren, initPortalUX, renderSkeletonCards, renderStateCard } from '/assets/portal-shared.js';
 
 const DB_NAME = 'tutor-offline';
 const STORE = 'drafts';
@@ -239,13 +239,23 @@ async function initLogin() {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     msg.textContent = '';
+    msg.className = 'form-feedback';
 
     try {
       const email = qs('#email').value.trim();
+      if (!email.includes('@')) {
+        qs('#email').setAttribute('aria-invalid', 'true');
+        msg.textContent = 'Enter a valid email address.';
+        msg.classList.add('error');
+        return;
+      }
+      qs('#email').setAttribute('aria-invalid', 'false');
       await apiPost('/auth/request-link', { email });
       msg.textContent = 'Magic link sent. Check your inbox.';
+      msg.classList.add('success');
     } catch (err) {
       msg.textContent = err.message || 'Unable to send link.';
+      msg.classList.add('error');
     }
   });
 }
@@ -255,41 +265,64 @@ async function initTutorHome() {
   const nameEl = qs('#tutorName');
   const sessionsEl = qs('#todaySessions');
   const upcomingEl = qs('#upcomingAssignments');
+  renderSkeletonCards(sessionsEl, 2);
+  renderSkeletonCards(upcomingEl, 2);
 
-  const me = await apiGet('/tutor/me');
-  nameEl.textContent = me.me.full_name;
+  try {
+    const me = await apiGet('/tutor/me');
+    nameEl.textContent = me.me.full_name;
 
-  const today = new Date().toISOString().slice(0, 10);
-  const sessions = await apiGet(`/tutor/sessions?from=${today}&to=${today}`);
-  clearChildren(sessionsEl);
-  if (sessions.sessions.length) {
-    const frag = document.createDocumentFragment();
-    sessions.sessions.forEach((s) => {
-      const panel = createEl('div', { className: 'panel' });
-      panel.append(createEl('span', { text: s.student_name }), document.createTextNode(' '), renderStatusEl(s.status));
-      frag.append(panel);
+    const today = new Date().toISOString().slice(0, 10);
+    const sessions = await apiGet(`/tutor/sessions?from=${today}&to=${today}`);
+    clearChildren(sessionsEl);
+    if (sessions.sessions.length) {
+      const frag = document.createDocumentFragment();
+      sessions.sessions.forEach((s) => {
+        const panel = createEl('div', { className: 'panel' });
+        panel.append(createEl('span', { text: s.student_name }), document.createTextNode(' '), renderStatusEl(s.status));
+        frag.append(panel);
+      });
+      sessionsEl.append(frag);
+    } else {
+      renderStateCard(sessionsEl, {
+        variant: 'empty',
+        title: 'No sessions logged today',
+        description: 'Start your timer and save a draft when your next session ends.'
+      });
+    }
+
+    const assignments = await apiGet('/tutor/assignments');
+    clearChildren(upcomingEl);
+    if (assignments.assignments.length) {
+      const frag = document.createDocumentFragment();
+      assignments.assignments.slice(0, 3).forEach((a) => {
+        const panel = createEl('div', { className: 'panel' });
+        panel.append(
+          createEl('span', { text: a.subject }),
+          document.createTextNode(' with '),
+          createEl('span', { text: a.full_name }),
+        );
+        frag.append(panel);
+      });
+      upcomingEl.append(frag);
+    } else {
+      renderStateCard(upcomingEl, {
+        variant: 'empty',
+        title: 'No active assignments',
+        description: 'Assignments from admin will appear here automatically.'
+      });
+    }
+  } catch {
+    renderStateCard(sessionsEl, {
+      variant: 'error',
+      title: 'Could not load sessions',
+      description: 'Refresh and try again. If this persists, check your connection.'
     });
-    sessionsEl.append(frag);
-  } else {
-    sessionsEl.append(createEl('div', { className: 'note', text: 'No sessions logged today.' }));
-  }
-
-  const assignments = await apiGet('/tutor/assignments');
-  clearChildren(upcomingEl);
-  if (assignments.assignments.length) {
-    const frag = document.createDocumentFragment();
-    assignments.assignments.slice(0, 3).forEach((a) => {
-      const panel = createEl('div', { className: 'panel' });
-      panel.append(
-        createEl('span', { text: a.subject }),
-        document.createTextNode(' with '),
-        createEl('span', { text: a.full_name }),
-      );
-      frag.append(panel);
+    renderStateCard(upcomingEl, {
+      variant: 'error',
+      title: 'Could not load assignments',
+      description: 'Refresh and try again.'
     });
-    upcomingEl.append(frag);
-  } else {
-    upcomingEl.append(createEl('div', { className: 'note', text: 'No active assignments yet.' }));
   }
 }
 
@@ -946,6 +979,7 @@ async function initSessions() {
 }
 
 const page = document.body.dataset.page;
+initPortalUX();
 
 initImpersonationBanner();
 

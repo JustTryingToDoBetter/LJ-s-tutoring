@@ -257,6 +257,47 @@
     });
   }
 
+  function initSectionNavActive() {
+    const links = Array.from(document.querySelectorAll('.site-nav-link[href^="#"]'));
+    if (!links.length || !('IntersectionObserver' in window)) {return;}
+
+    const sectionById = new Map();
+    links.forEach((link) => {
+      const id = link.getAttribute('href');
+      if (!id || id.length < 2) {return;}
+      const section = document.querySelector(id);
+      if (section) {
+        sectionById.set(section, id);
+      }
+    });
+
+    const setCurrent = (hash) => {
+      links.forEach((link) => {
+        const current = link.getAttribute('href') === hash;
+        if (current) {
+          link.setAttribute('aria-current', 'location');
+        } else {
+          link.removeAttribute('aria-current');
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+      if (!visible.length) {return;}
+      const section = visible[0].target;
+      const hash = sectionById.get(section);
+      if (hash) {setCurrent(hash);}
+    }, {
+      rootMargin: '-40% 0px -45% 0px',
+      threshold: [0.2, 0.5, 0.8]
+    });
+
+    sectionById.forEach((_hash, section) => observer.observe(section));
+  }
+
   // ==========================================
   // CONTACT FORM (critical)
   // ==========================================
@@ -786,6 +827,7 @@
     initDarkMode();
     initCountdown();
     initMobileMenu();
+    initSectionNavActive();
     initFaq();
     initContactForm();
     initLeadForm();

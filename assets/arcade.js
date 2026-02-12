@@ -538,19 +538,63 @@ const GAMES = [
   function applyFilter({ filter, query }) {
     const cards = $$("#arcade-grid .po-arcade__card");
     const q = (query || "").trim().toLowerCase();
+    let visibleCount = 0;
 
     for (const c of cards) {
       const lane = c.dataset.lane || "";
       const title = c.dataset.title || "";
       const passFilter = filter === "all" ? true : lane.includes(filter);
       const passQuery = !q ? true : title.includes(q);
-      c.style.display = passFilter && passQuery ? "" : "none";
+      const show = passFilter && passQuery;
+      c.style.display = show ? "" : "none";
+      if (show) visibleCount += 1;
     }
+
+    const grid = $("#arcade-grid");
+    const previousEmpty = $("#arcade-grid-empty");
+    if (previousEmpty) {
+      previousEmpty.remove();
+    }
+    if (grid && visibleCount === 0) {
+      const empty = document.createElement("p");
+      empty.id = "arcade-grid-empty";
+      empty.className = "po-arcade__empty";
+      empty.textContent = "No games match that filter. Clear search or switch category.";
+      grid.appendChild(empty);
+    }
+  }
+
+  function renderGridSkeleton(grid, count = 6) {
+    if (!grid) return;
+    grid.innerHTML = "";
+    for (let i = 0; i < count; i += 1) {
+      const skeleton = document.createElement("div");
+      skeleton.className = "po-arcade__skeleton";
+      skeleton.setAttribute("aria-hidden", "true");
+      grid.appendChild(skeleton);
+    }
+  }
+
+  function mountMenuAd(adManager) {
+    const slot = $("#arcade-ad-slot");
+    if (!slot || !adManager) return;
+    const mount = () => adManager.mountBanner({ container: slot, placement: "menu_banner" });
+    if (!("IntersectionObserver" in window)) {
+      mount();
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      mount();
+    }, { rootMargin: "280px 0px" });
+    observer.observe(slot);
   }
 
   function initHome() {
     const grid = $("#arcade-grid");
     if (!grid) return;
+    renderGridSkeleton(grid, 6);
 
     // year
     safeText($("#arcade-year"), new Date().getFullYear());
@@ -566,8 +610,7 @@ const GAMES = [
       if (!adManager) return;
       adManager.bindGameEvents();
       adManager.setGameState({ active: false, mode: "idle" });
-      const slot = $("#arcade-ad-slot");
-      if (slot) adManager.mountBanner({ container: slot, placement: "menu_banner" });
+      mountMenuAd(adManager);
     });
 
     getTelemetry().then((telemetry) => {

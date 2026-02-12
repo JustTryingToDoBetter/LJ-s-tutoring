@@ -412,6 +412,25 @@ html {
   z-index: 100;
   transition: top 0.3s;
 }
+
+.site-nav-link,
+.site-nav-cta,
+#mobile-menu a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.site-nav-link[aria-current='location'] {
+  color: #0f172a;
+  font-weight: 700;
+  border-bottom: 2px solid #fbbf24;
+}
+
+.dark .site-nav-link[aria-current='location'] {
+  color: #f8fafc;
+  border-bottom-color: #fbbf24;
+}
 .skip-link:focus {
   top: 0;
 }

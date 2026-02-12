@@ -1,4 +1,4 @@
-import { apiGet, qs, setActiveNav } from '/assets/portal-shared.js';
+import { apiGet, qs, setActiveNav, initPortalUX } from '/assets/portal-shared.js';
 import { initTutors } from '/assets/admin/domains/tutors.js';
 import { initStudents } from '/assets/admin/domains/students.js';
 import { initAssignments } from '/assets/admin/domains/assignments.js';
@@ -11,15 +11,23 @@ import { initPrivacyRequests } from '/assets/admin/domains/privacy-requests.js';
 
 async function initDashboard() {
   setActiveNav('dashboard');
-  const counts = await apiGet('/admin/dashboard');
-  qs('#countTutors').textContent = counts.tutors;
-  qs('#countStudents').textContent = counts.students;
-  qs('#countSessions').textContent = counts.sessions.reduce((acc, row) => acc + Number(row.count), 0);
+  qs('#countTutors').textContent = '…';
+  qs('#countStudents').textContent = '…';
+  qs('#countSessions').textContent = '…';
+  try {
+    const counts = await apiGet('/admin/dashboard');
+    qs('#countTutors').textContent = counts.tutors;
+    qs('#countStudents').textContent = counts.students;
+    qs('#countSessions').textContent = counts.sessions.reduce((acc, row) => acc + Number(row.count), 0);
+  } catch {
+    qs('#countTutors').textContent = '—';
+    qs('#countStudents').textContent = '—';
+    qs('#countSessions').textContent = '—';
+  }
 }
 
-
-
 const page = document.body.dataset.page;
+initPortalUX();
 
 if (page === 'dashboard') initDashboard();
 if (page === 'tutors') initTutors();

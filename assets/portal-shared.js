@@ -174,8 +174,77 @@ export function setActiveNav(dataKey) {
   document.querySelectorAll('.nav-link').forEach((link) => {
     if (link.dataset.nav === dataKey) {
       link.classList.add('active');
+      link.setAttribute('aria-current', 'page');
+    } else {
+      link.removeAttribute('aria-current');
     }
   });
+}
+
+export function renderSkeletonCards(container, count = 3) {
+  if (!container) {return;}
+  const amount = Math.max(1, Number(count) || 1);
+  container.innerHTML = Array.from({ length: amount })
+    .map(() => '<div class="ds-skeleton-card" aria-hidden="true"></div>')
+    .join('');
+}
+
+export function renderStateCard(container, { variant = 'empty', title = '', description = '' } = {}) {
+  if (!container) {return;}
+  const card = createEl('div', {
+    className: `ds-state ds-state-${variant}`,
+    attrs: {
+      role: variant === 'error' ? 'alert' : 'status',
+      'aria-live': variant === 'error' ? 'assertive' : 'polite'
+    }
+  });
+  card.append(
+    createEl('h3', { className: 'ds-state-title', text: title || 'No data yet' }),
+    createEl('p', { className: 'ds-state-description', text: description || 'Try again in a moment.' })
+  );
+  container.replaceChildren(card);
+}
+
+export function initPortalUX() {
+  const pageHeader = document.querySelector('.page-header');
+  const titleEl = pageHeader?.querySelector('.page-title');
+  if (pageHeader && titleEl && !pageHeader.querySelector('.portal-breadcrumbs')) {
+    const path = window.location.pathname;
+    const page = document.body?.dataset?.page || 'dashboard';
+    const area = path.startsWith('/admin/') ? 'Admin' : 'Tutor';
+    const labels = {
+      dashboard: 'Dashboard',
+      home: 'Home',
+      tutors: 'Tutors',
+      students: 'Students',
+      assignments: 'Assignments',
+      approvals: 'Approvals',
+      payroll: 'Payroll',
+      reconciliation: 'Reconciliation',
+      audit: 'Audit',
+      retention: 'Retention',
+      'privacy-requests': 'Privacy requests',
+      'ops-runbook': 'Ops runbook',
+      sessions: 'Sessions',
+      invoices: 'Invoices',
+      login: 'Login'
+    };
+    const currentLabel = labels[page] || page;
+    const nav = createEl('nav', {
+      className: 'portal-breadcrumbs',
+      attrs: { 'aria-label': 'Breadcrumb' }
+    });
+    nav.append(
+      createEl('span', { className: 'portal-breadcrumbs-item', text: area }),
+      createEl('span', { className: 'portal-breadcrumbs-sep', text: '/' }),
+      createEl('span', {
+        className: 'portal-breadcrumbs-item current',
+        attrs: { 'aria-current': 'page' },
+        text: currentLabel
+      })
+    );
+    pageHeader.insertBefore(nav, titleEl);
+  }
 }
 
 export function showBanner(id, show) {
