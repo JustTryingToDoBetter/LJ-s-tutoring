@@ -36,4 +36,20 @@ test.describe("LMS portals", () => {
     expect(jsErrors).toEqual([]);
     expect(guard.blocked.length).toBeGreaterThanOrEqual(0);
   });
+
+  test("student dashboard loads", async ({ page, context, request }) => {
+    const guard = await installNetworkGuard(page);
+    const consoleWatch = watchConsole(page);
+
+    await loginAs(request, context, "STUDENT", "student-ui@test.local");
+
+    await page.goto("/dashboard/", { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator(".page-title")).toContainText(/Welcome back|Smart Dashboard/i);
+    await expect(page.locator("#todayCard")).toBeVisible();
+
+    const jsErrors = consoleWatch.errors.filter((err) => !String(err.message).includes("ERR_FAILED"));
+    expect(jsErrors).toEqual([]);
+    expect(guard.blocked.length).toBeGreaterThanOrEqual(0);
+  });
 });

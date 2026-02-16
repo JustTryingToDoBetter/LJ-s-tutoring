@@ -4,12 +4,13 @@ import { hashToken, generateMagicToken, normalizeEmail } from '../../lib/securit
 
 export type AuthDbClient = Pool | PoolClient;
 
-type UserRole = 'ADMIN' | 'TUTOR';
+type UserRole = 'ADMIN' | 'TUTOR' | 'STUDENT';
 
 type AuthUserRow = {
   id: string;
   role: UserRole;
   tutor_profile_id: string | null;
+  student_id: string | null;
   is_active: boolean;
   password_hash: string | null;
 };
@@ -32,7 +33,8 @@ type VerifySuccess = {
   userId: string;
   role: UserRole;
   tutorId?: string;
-  redirectTo: '/admin' | '/tutor';
+  studentId?: string;
+  redirectTo: '/admin' | '/tutor' | '/dashboard';
 };
 
 type VerifyErrorCode =
@@ -42,7 +44,8 @@ type VerifyErrorCode =
   | 'token_used'
   | 'token_expired'
   | 'account_disabled'
-  | 'tutor_profile_missing';
+  | 'tutor_profile_missing'
+  | 'student_profile_missing';
 
 type VerifyFailure = {
   ok: false;
@@ -60,7 +63,7 @@ type RiskFlags = {
 
 type VerifyMagicLinkDeps = {
   checkVerifyLimit: VerifyRateLimiter;
-  signJwt: (payload: { userId: string; role: UserRole; tutorId?: string }) => Promise<string> | string;
+  signJwt: (payload: { userId: string; role: UserRole; tutorId?: string; studentId?: string }) => Promise<string> | string;
   writeRiskAudit?: (entry: {
     actorUserId: string;
     actorRole: UserRole;
@@ -198,7 +201,7 @@ export async function requestMagicLink(
   }
 
   const userRes = await client.query(
-    `select id, role, tutor_profile_id, is_active
+    `select id, role, tutor_profile_id, student_id, is_active
      from users
      where email = $1`,
     [email]
@@ -294,7 +297,7 @@ export async function verifyMagicLink(
   }
 
   const rowRes = await client.query(
-    `select u.id as user_id, u.role, u.tutor_profile_id, u.is_active
+    `select u.id as user_id, u.role, u.tutor_profile_id, u.student_id, u.is_active
      from users u
      where u.id = $1`,
     [consumeRes.rows[0].user_id]
@@ -308,6 +311,7 @@ export async function verifyMagicLink(
     user_id: string;
     role: UserRole;
     tutor_profile_id: string | null;
+    student_id: string | null;
     is_active: boolean;
   };
 
@@ -317,6 +321,9 @@ export async function verifyMagicLink(
 
   if (row.role === 'TUTOR' && !row.tutor_profile_id) {
     return { ok: false, status: 500, error: 'tutor_profile_missing' };
+  }
+  if (row.role === 'STUDENT' && !row.student_id) {
+    return { ok: false, status: 500, error: 'student_profile_missing' };
   }
 
   const risk = await computeRiskScore(client, row.user_id, ip, context);
@@ -352,7 +359,8 @@ export async function verifyMagicLink(
   const jwt = await deps.signJwt({
     userId: row.user_id,
     role: row.role,
-    tutorId: row.tutor_profile_id ?? undefined
+    tutorId: row.tutor_profile_id ?? undefined,
+    studentId: row.student_id ?? undefined
   });
 
   return {
@@ -361,14 +369,15 @@ export async function verifyMagicLink(
     userId: row.user_id,
     role: row.role,
     tutorId: row.tutor_profile_id ?? undefined,
-    redirectTo: row.role === 'ADMIN' ? '/admin' : '/tutor'
+    studentId: row.student_id ?? undefined,
+    redirectTo: row.role === 'ADMIN' ? '/admin' : row.role === 'STUDENT' ? '/dashboard' : '/tutor'
   };
 }
 
 export async function findUserByEmail(client: AuthDbClient, email: string) {
   const normalized = normalizeEmail(email);
   const res = await client.query(
-    `select id, email, role, tutor_profile_id, password_hash, is_active
+    `select id, email, role, tutor_profile_id, student_id, password_hash, is_active
      from users
      where email = $1`,
     [normalized]

@@ -1,12 +1,13 @@
 import type { FastifyRequest } from 'fastify';
 import '@fastify/cookie';
 
-export type Role = 'ADMIN' | 'TUTOR';
+export type Role = 'ADMIN' | 'TUTOR' | 'STUDENT';
 
 export type AuthUser = {
   userId: string;
   role: Role;
   tutorId?: string;
+  studentId?: string;
 };
 
 export type ImpersonationContext = {

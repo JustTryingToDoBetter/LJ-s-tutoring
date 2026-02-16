@@ -25,6 +25,23 @@ npm run serve
 # 6. For production, deploy dist/ folder to static hosting
 ```
 
+## 🧪 Codespaces (One Command)
+
+Run both the static portal and LMS API in one command:
+
+```bash
+npm run dev
+```
+
+- Static app: `http://localhost:8080`
+- API: `http://localhost:3001`
+- Student dashboard: `http://localhost:8080/dashboard/`
+- Student reports: `http://localhost:8080/reports/`
+- Tutor dashboard: `http://localhost:8080/tutor/dashboard/`
+- Tutor reports: `http://localhost:8080/tutor/reports/`
+
+If you need a fresh DB schema first, run `npm run migrate` before `npm run dev`.
+
 ## 🏗️ Build Process Overview
 
 **The build system follows this sequence:**

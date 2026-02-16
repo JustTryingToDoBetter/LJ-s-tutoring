@@ -97,6 +97,12 @@ export function apiPatch(path, payload) {
   });
 }
 
+export function trackPortalEvent(eventName, params = {}) {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', eventName, params);
+  }
+}
+
 function getCookie(name) {
   const parts = document.cookie.split(';');
   for (const part of parts) {
@@ -211,9 +217,10 @@ export function initPortalUX() {
   if (pageHeader && titleEl && !pageHeader.querySelector('.portal-breadcrumbs')) {
     const path = window.location.pathname;
     const page = document.body?.dataset?.page || 'dashboard';
-    const area = path.startsWith('/admin/') ? 'Admin' : 'Tutor';
+    const area = path.startsWith('/admin/')
+      ? 'Admin'
+      : (path.startsWith('/tutor/') ? 'Tutor' : 'Student');
     const labels = {
-      dashboard: 'Dashboard',
       home: 'Home',
       tutors: 'Tutors',
       students: 'Students',
@@ -227,7 +234,10 @@ export function initPortalUX() {
       'ops-runbook': 'Ops runbook',
       sessions: 'Sessions',
       invoices: 'Invoices',
-      login: 'Login'
+      login: 'Login',
+      dashboard: 'Dashboard',
+      reports: 'Reports',
+      report: 'Report'
     };
     const currentLabel = labels[page] || page;
     const nav = createEl('nav', {

@@ -10,6 +10,10 @@ This schema defines the revenue-grade analytics events for Project Odysseus Arca
 - game_session_end
 - score_submitted
 - score_validated
+- dashboard_viewed
+- report_generated
+- report_viewed
+- streak_credited
 
 ## Required Fields
 - event_id: UUID

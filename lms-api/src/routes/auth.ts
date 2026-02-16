@@ -199,11 +199,15 @@ export async function authRoutes(app: FastifyInstance) {
     if (user.role === 'TUTOR' && !user.tutor_profile_id) {
       return reply.code(500).send({ error: 'tutor_profile_missing' });
     }
+    if (user.role === 'STUDENT' && !user.student_id) {
+      return reply.code(500).send({ error: 'student_profile_missing' });
+    }
 
     const jwt = await app.jwt.sign({
       userId: user.id,
       role: user.role,
-      tutorId: user.tutor_profile_id ?? undefined
+      tutorId: user.tutor_profile_id ?? undefined,
+      studentId: user.student_id ?? undefined
     });
 
     const csrfToken = setAuthCookies(reply, jwt);
@@ -212,7 +216,7 @@ export async function authRoutes(app: FastifyInstance) {
       token: jwt,
       csrfToken,
       role: user.role,
-      redirectTo: user.role === 'ADMIN' ? '/admin' : '/tutor'
+      redirectTo: user.role === 'ADMIN' ? '/admin' : user.role === 'STUDENT' ? '/dashboard' : '/tutor'
     });
   });
 
@@ -235,23 +239,25 @@ export async function authRoutes(app: FastifyInstance) {
       const client = await pool.connect();
       let userId: string | undefined;
       let tutorId: string | null = null;
+      let studentId: string | null = null;
 
       try {
         await client.query('BEGIN');
 
         const existing = await client.query(
-          `select id, role, tutor_profile_id from users where email = $1`,
+          `select id, role, tutor_profile_id, student_id from users where email = $1`,
           [email]
         );
 
         if (Number(existing.rowCount || 0) > 0) {
-          const row = existing.rows[0] as { id: string; role: 'ADMIN' | 'TUTOR'; tutor_profile_id: string | null };
+          const row = existing.rows[0] as { id: string; role: 'ADMIN' | 'TUTOR' | 'STUDENT'; tutor_profile_id: string | null; student_id: string | null };
           if (row.role !== role) {
             await client.query('ROLLBACK');
             return reply.code(409).send({ error: 'role_mismatch' });
           }
           userId = row.id;
           tutorId = row.tutor_profile_id;
+          studentId = row.student_id;
 
           if (role === 'TUTOR' && !tutorId) {
             const tutorRes = await client.query(
@@ -266,6 +272,19 @@ export async function authRoutes(app: FastifyInstance) {
               [tutorId, userId]
             );
           }
+          if (role === 'STUDENT' && !studentId) {
+            const studentRes = await client.query(
+              `insert into students (full_name, grade, is_active)
+               values ($1, $2, true)
+               returning id`,
+              ['Test Student', '10']
+            );
+            studentId = studentRes.rows[0].id as string;
+            await client.query(
+              `update users set student_id = $1 where id = $2`,
+              [studentId, userId]
+            );
+          }
         } else if (role === 'ADMIN') {
           const res = await client.query(
             `insert into users (email, role)
@@ -274,7 +293,7 @@ export async function authRoutes(app: FastifyInstance) {
             [email]
           );
           userId = res.rows[0].id as string;
-        } else {
+        } else if (role === 'TUTOR') {
           const tutorRes = await client.query(
             `insert into tutor_profiles (full_name, phone, default_hourly_rate, active)
              values ($1, null, $2, true)
@@ -287,6 +306,21 @@ export async function authRoutes(app: FastifyInstance) {
              values ($1, 'TUTOR', $2)
              returning id`,
             [email, tutorId]
+          );
+          userId = userRes.rows[0].id as string;
+        } else {
+          const studentRes = await client.query(
+            `insert into students (full_name, grade, is_active)
+             values ($1, $2, true)
+             returning id`,
+            ['Test Student', '10']
+          );
+          studentId = studentRes.rows[0].id as string;
+          const userRes = await client.query(
+            `insert into users (email, role, student_id)
+             values ($1, 'STUDENT', $2)
+             returning id`,
+            [email, studentId]
           );
           userId = userRes.rows[0].id as string;
         }
@@ -303,7 +337,8 @@ export async function authRoutes(app: FastifyInstance) {
       const jwt = await app.jwt.sign({
         userId,
         role,
-        tutorId: tutorId ?? undefined
+        tutorId: tutorId ?? undefined,
+        studentId: studentId ?? undefined
       });
       const csrfToken = setAuthCookies(reply, jwt);
       return reply.send({ ok: true, csrfToken });

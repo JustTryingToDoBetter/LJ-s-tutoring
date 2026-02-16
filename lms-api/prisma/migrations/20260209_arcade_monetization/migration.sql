@@ -134,13 +134,18 @@ create table if not exists arcade_reconciliation_reports (
   created_at timestamptz not null default now()
 );
 
-alter table job_queue
-  add column if not exists attempts int not null default 0,
-  add column if not exists max_attempts int not null default 3,
-  add column if not exists dead_lettered_at timestamptz;
+do $$
+begin
+  if to_regclass('public.job_queue') is not null then
+    alter table job_queue
+      add column if not exists attempts int not null default 0,
+      add column if not exists max_attempts int not null default 3,
+      add column if not exists dead_lettered_at timestamptz;
 
-create index if not exists idx_job_queue_attempts
-  on job_queue (status, attempts, created_at asc);
+    create index if not exists idx_job_queue_attempts
+      on job_queue (status, attempts, created_at asc);
+  end if;
+end $$;
 
 create materialized view if not exists arcade_ad_analytics_daily as
   select

@@ -78,7 +78,7 @@ async function userCanAccessStudent(userId: string, role: 'ADMIN' | 'TUTOR' | 'S
        limit 1`,
       [tutorId, studentId]
     );
-    if (res.rowCount > 0) return true;
+    if (Number(res.rowCount || 0) > 0) return true;
 
     const fallback = await pool.query(
       `select 1
@@ -87,7 +87,7 @@ async function userCanAccessStudent(userId: string, role: 'ADMIN' | 'TUTOR' | 'S
        limit 1`,
       [tutorId, studentId]
     );
-    return fallback.rowCount > 0;
+    return Number(fallback.rowCount || 0) > 0;
   }
   return false;
 }
@@ -153,7 +153,7 @@ async function buildWeeklyReportPayload(studentId: string, weekStart: string, we
        where user_id = $1`,
       [studentMeta.user_id]
     );
-    if (streakRes.rowCount > 0) {
+    if (Number(streakRes.rowCount || 0) > 0) {
       streakSummary = {
         current: Number(streakRes.rows[0].current || 0),
         longest: Number(streakRes.rows[0].longest || 0),
@@ -442,7 +442,7 @@ export async function academicRoutes(app: FastifyInstance) {
           `select id from study_activity_events where user_id = $1 and dedupe_key = $2 limit 1`,
           [userId, parsed.data.dedupeKey]
         );
-        if (existingRes.rowCount > 0) {
+        if (Number(existingRes.rowCount || 0) > 0) {
           await client.query('ROLLBACK');
           return reply.send({ ok: true, deduped: true, credited: false });
         }
@@ -663,10 +663,18 @@ export async function academicRoutes(app: FastifyInstance) {
     const { page, pageSize, offset, limit } = parsePagination(parsed.data as any, { pageSize: 20 });
 
     const params: any[] = [req.user!.tutorId];
-    const filters: string[] = [`exists (
-      select 1 from tutor_student_map tsm
-      where tsm.tutor_id = $1
-        and tsm.student_id = u.student_id
+    const filters: string[] = [`(
+      exists (
+        select 1 from tutor_student_map tsm
+        where tsm.tutor_id = $1
+          and tsm.student_id = u.student_id
+      )
+      or exists (
+        select 1 from assignments a
+        where a.tutor_id = $1
+          and a.student_id = u.student_id
+          and a.active = true
+      )
     )`];
 
     if (parsed.data.studentId) {
