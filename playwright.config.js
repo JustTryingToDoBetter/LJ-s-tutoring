@@ -27,7 +27,7 @@ module.exports = defineConfig({
       timeout: 120000
     },
     {
-      command: "npm run start:test --prefix lms-api > lms-api/test-results/api.log 2>&1",
+      command: "mkdir -p lms-api/test-results && npm run start:test --prefix lms-api > lms-api/test-results/api.log 2>&1",
       url: "http://localhost:3001/health",
       reuseExistingServer: !process.env.CI,
       timeout: 120000,

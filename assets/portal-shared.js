@@ -1,6 +1,10 @@
 function resolveApiBase() {
   const raw = window.__PO_API_BASE__;
   if (!raw || raw === '__PO_API_BASE__') {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return 'http://localhost:3001';
+    }
     throw new Error('api_base_missing');
   }
   return String(raw).replace(/\/$/, '');
