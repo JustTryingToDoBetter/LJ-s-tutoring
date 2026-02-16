@@ -27,8 +27,33 @@ export const LoginSchema = z.object({
 });
 
 export const TestLoginSchema = z.object({
-  role: z.enum(['ADMIN', 'TUTOR']),
+  role: z.enum(['ADMIN', 'TUTOR', 'STUDENT']),
   email: EmailSchema,
+});
+
+export const StudyActivityTypeSchema = z.enum([
+  'practice_completed',
+  'session_attended',
+  'goal_completed',
+  'focus_session'
+]);
+
+export const StudyActivityEventSchema = z.object({
+  type: StudyActivityTypeSchema,
+  occurredAt: z.string().datetime().optional(),
+  dedupeKey: z.string().trim().min(8).max(120).optional(),
+  metadata: z.record(z.unknown()).optional().default({})
+});
+
+export const WeeklyReportGenerateSchema = z.object({
+  studentId: z.string().uuid().optional(),
+  weekStart: DateString.optional()
+});
+
+export const WeeklyReportsQuerySchema = z.object({
+  studentId: z.string().uuid().optional(),
+  page: z.coerce.number().int().min(1).max(500).optional().default(1),
+  pageSize: z.coerce.number().int().min(1).max(200).optional().default(20)
 });
 
 export const MagicLinkRequestSchema = z.object({
