@@ -5,6 +5,11 @@ import { LoginSchema, MagicLinkRequestSchema, RegisterAdminSchema, TestLoginSche
 import { safeAuditMeta, writeAuditLog } from '../lib/audit.js';
 import { findUserByEmail, requestMagicLink, verifyMagicLink } from '../domains/auth/service.js';
 
+function setPrivateNoStore(reply: any) {
+  reply.header('Cache-Control', 'private, no-store, max-age=0');
+  reply.header('Pragma', 'no-cache');
+}
+
 function sessionCookieOptions() {
   const isProd = process.env.NODE_ENV === 'production';
   return {
@@ -225,6 +230,29 @@ export async function authRoutes(app: FastifyInstance) {
     reply.clearCookie('csrf', { path: '/' });
     reply.clearCookie('impersonation', { path: '/' });
     return reply.send({ ok: true });
+  });
+
+  app.get('/auth/session', {
+    preHandler: [app.authenticate],
+  }, async (req, reply) => {
+    setPrivateNoStore(reply);
+    return reply.send({
+      user: {
+        userId: req.user.userId,
+        role: req.user.role,
+        tutorId: req.user.tutorId ?? null,
+        studentId: req.user.studentId ?? null,
+      },
+      impersonation: req.impersonation
+        ? {
+            adminUserId: req.impersonation.adminUserId,
+            tutorId: req.impersonation.tutorId,
+            tutorUserId: req.impersonation.tutorUserId,
+            impersonationId: req.impersonation.impersonationId,
+            mode: req.impersonation.mode,
+          }
+        : null,
+    });
   });
 
   if (process.env.NODE_ENV === 'test') {

@@ -8,6 +8,10 @@ async function initTutorDashboard() {
   const todayEl = qs('#todaySessionsList');
   const attentionEl = qs('#studentsAttentionList');
   const toolsEl = qs('#quickToolsList');
+  const heroStatusEl = qs('#tutorHeroStatus');
+  const priorityCountEl = qs('#priorityCount');
+  const todayCountEl = qs('#todaySessionCount');
+  const attentionCountEl = qs('#attentionCount');
 
   renderSkeletonCards(todayEl, 3);
   renderSkeletonCards(attentionEl, 2);
@@ -15,6 +19,17 @@ async function initTutorDashboard() {
 
   try {
     const data = await apiGet('/tutor/dashboard');
+
+    const todayCount = data.todaySessions?.length || 0;
+    const attentionCount = data.studentsNeedingAttention?.length || 0;
+    if (todayCountEl) todayCountEl.textContent = String(todayCount);
+    if (attentionCountEl) attentionCountEl.textContent = String(attentionCount);
+    if (priorityCountEl) priorityCountEl.textContent = String(attentionCount);
+    if (heroStatusEl) {
+      heroStatusEl.textContent = todayCount
+        ? `${todayCount} session(s) scheduled. Prioritize ${attentionCount || 0} learner(s) requiring intervention.`
+        : 'No scheduled sessions yet. Use quick actions to plan interventions.';
+    }
 
     clearChildren(todayEl);
     if (!data.todaySessions?.length) {
@@ -58,8 +73,15 @@ async function initTutorDashboard() {
       const frag = document.createDocumentFragment();
       data.studentsNeedingAttention.forEach((item) => {
         const row = createEl('div', { className: 'list-row' });
+        const badge = createEl('span', {
+          className: 'pill rejected',
+          text: Number(item.riskScore || 0) >= 70 ? 'high risk' : 'watch'
+        });
         row.append(
-          createEl('strong', { text: item.studentName }),
+          createEl('div', { className: 'row-head' }, [
+            createEl('strong', { text: item.studentName }),
+            badge
+          ]),
           createEl('div', { className: 'note', text: `Current streak: ${item.currentStreak} day(s)` }),
           createEl('div', { className: 'note', text: `Risk: ${item.riskScore ?? '-'} · Momentum: ${item.momentumScore ?? '-'}` }),
           createEl('div', { className: 'note', text: (item.modelReasons || []).slice(0, 1).map((r) => r.label || '').join('') }),
@@ -71,7 +93,7 @@ async function initTutorDashboard() {
     }
 
     clearChildren(toolsEl);
-    const tools = createEl('div', { className: 'session-actions' });
+    const tools = createEl('div', { className: 'metric-chips' });
     (data.quickTools || []).forEach((tool) => {
       tools.append(createEl('a', {
         className: 'button',

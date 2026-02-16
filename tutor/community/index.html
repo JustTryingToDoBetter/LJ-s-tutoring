@@ -33,11 +33,21 @@
       <section class="grid two">
         <article class="panel dashboard-card">
           <h2 class="panel-title">Recent Questions</h2>
+          <div id="communityQuestionFilters" class="metric-chips" role="tablist" aria-label="Question moderation filters">
+            <button type="button" class="filter-pill active" data-filter="all" role="tab" aria-selected="true">All</button>
+            <button type="button" class="filter-pill" data-filter="open" role="tab" aria-selected="false">Open</button>
+            <button type="button" class="filter-pill" data-filter="hidden" role="tab" aria-selected="false">Hidden</button>
+          </div>
           <div id="tutorQuestionsList" class="list-compact"></div>
         </article>
 
         <article class="panel dashboard-card">
           <h2 class="panel-title">Answers for Selected Question</h2>
+          <div id="communityAnswerFilters" class="metric-chips" role="tablist" aria-label="Answer moderation filters">
+            <button type="button" class="filter-pill active" data-filter="all" role="tab" aria-selected="true">All</button>
+            <button type="button" class="filter-pill" data-filter="verified" role="tab" aria-selected="false">Verified</button>
+            <button type="button" class="filter-pill" data-filter="needs_review" role="tab" aria-selected="false">Needs Review</button>
+          </div>
           <p id="tutorSelectedQuestionLabel" class="note">Select a question to moderate answers.</p>
           <div id="tutorAnswersList" class="list-compact"></div>
         </article>

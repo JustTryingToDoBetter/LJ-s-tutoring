@@ -6,6 +6,9 @@ async function initTutorReports() {
 
   const listEl = qs('#tutorReportsList');
   const studentInput = qs('#reportStudentId');
+  const filterRoot = qs('#tutorReportsFilterPills');
+  let currentFilter = 'all';
+  let cachedItems = [];
 
   renderSkeletonCards(listEl, 3);
 
@@ -13,19 +16,27 @@ async function initTutorReports() {
     const studentId = studentInput?.value?.trim();
     const query = studentId ? `?studentId=${encodeURIComponent(studentId)}` : '';
     const data = await apiGet(`/tutor/reports${query}`);
+    cachedItems = data.items || [];
+    const now = Date.now();
+    const items = cachedItems.filter((item) => {
+      if (currentFilter === 'all') {return true;}
+      const createdAt = Date.parse(item.created_at || '');
+      if (!Number.isFinite(createdAt)) {return false;}
+      return now - createdAt <= 14 * 24 * 60 * 60 * 1000;
+    });
     clearChildren(listEl);
 
-    if (!data.items?.length) {
+    if (!items.length) {
       renderStateCard(listEl, {
         variant: 'empty',
-        title: 'No reports found',
-        description: 'Generate one for an assigned student.'
+        title: currentFilter === 'all' ? 'No reports found' : 'No reports in this filter',
+        description: currentFilter === 'all' ? 'Generate one for an assigned student.' : 'Try a broader filter.'
       });
       return;
     }
 
     const frag = document.createDocumentFragment();
-    data.items.forEach((item) => {
+    items.forEach((item) => {
       const row = createEl('div', { className: 'list-row' });
       row.append(
         createEl('div', { className: 'row-head' }, [
@@ -42,6 +53,24 @@ async function initTutorReports() {
     });
     listEl.append(frag);
   };
+
+  filterRoot?.querySelectorAll('.filter-pill').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      currentFilter = pill.dataset.filter || 'all';
+      filterRoot.querySelectorAll('.filter-pill').forEach((item) => {
+        const active = item === pill;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      load().catch(() => {
+        renderStateCard(listEl, {
+          variant: 'error',
+          title: 'Unable to refresh reports',
+          description: 'Try again in a moment.'
+        });
+      });
+    });
+  });
 
   try {
     await load();

@@ -2,8 +2,11 @@ function resolveApiBase() {
   const raw = window.__PO_API_BASE__;
   if (!raw || raw === '__PO_API_BASE__') {
     const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1') {
+    if (host === 'localhost') {
       return 'http://localhost:3001';
+    }
+    if (host === '127.0.0.1') {
+      return 'http://127.0.0.1:3001';
     }
     throw new Error('api_base_missing');
   }
@@ -199,6 +202,66 @@ export function renderSkeletonCards(container, count = 3) {
     .join('');
 }
 
+export function renderSkeletonLines(container, count = 3) {
+  if (!container) {return;}
+  const amount = Math.max(1, Number(count) || 1);
+  container.innerHTML = Array.from({ length: amount })
+    .map(() => '<div class="skeleton-line" aria-hidden="true"></div>')
+    .join('');
+}
+
+export function createCard(children = [], className = '') {
+  return createEl('article', { className: `panel dashboard-card ${className}`.trim() }, children);
+}
+
+export function createStatPill({ icon = '•', label = '', value = '' } = {}) {
+  const pill = createEl('div', { className: 'stat-pill', attrs: { role: 'status' } });
+  pill.append(
+    createEl('span', { text: icon, attrs: { 'aria-hidden': 'true' } }),
+    createEl('span', { text: label }),
+    createEl('strong', { text: value })
+  );
+  return pill;
+}
+
+export function createFilterPill({ label = '', active = false, onClick } = {}) {
+  const btn = createEl('button', {
+    className: `filter-pill ${active ? 'active' : ''}`.trim(),
+    text: label,
+    attrs: {
+      type: 'button',
+      role: 'tab',
+      'aria-selected': active ? 'true' : 'false'
+    }
+  });
+  if (typeof onClick === 'function') {
+    btn.addEventListener('click', onClick);
+  }
+  return btn;
+}
+
+export function createSectionHeader({ title = '', action } = {}) {
+  const wrap = createEl('div', { className: 'section-header' });
+  wrap.append(createEl('h3', { className: 'panel-title', text: title }));
+  if (action) {
+    wrap.append(action);
+  }
+  return wrap;
+}
+
+export function createIconButton({ icon = '•', label = '', attrs = {} } = {}) {
+  return createEl('button', {
+    className: 'icon-button',
+    text: icon,
+    attrs: {
+      type: 'button',
+      'aria-label': label || 'Action',
+      title: label || 'Action',
+      ...attrs,
+    }
+  });
+}
+
 export function renderStateCard(container, { variant = 'empty', title = '', description = '' } = {}) {
   if (!container) {return;}
   const card = createEl('div', {
@@ -216,6 +279,50 @@ export function renderStateCard(container, { variant = 'empty', title = '', desc
 }
 
 export function initPortalUX() {
+  const navLinks = Array.from(document.querySelectorAll('.nav-link'));
+  navLinks.forEach((link) => {
+    const label = (link.textContent || '').trim();
+    if (label && !link.getAttribute('aria-label')) {
+      link.setAttribute('aria-label', label);
+    }
+    if (label) {
+      link.dataset.label = label;
+    }
+  });
+
+  const portalMain = document.querySelector('.portal-main');
+  if (portalMain && !portalMain.querySelector('.portal-utility-row')) {
+    const utilityRow = createEl('div', { className: 'portal-utility-row' });
+    const search = createEl('input', {
+      className: 'portal-search',
+      attrs: {
+        type: 'search',
+        placeholder: 'Search dashboard surfaces',
+        'aria-label': 'Search dashboard surfaces',
+      }
+    });
+
+    search.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+      }
+    });
+
+    const utilityActions = createEl('div', { className: 'utility-actions' }, [
+      createIconButton({ icon: '⌕', label: 'Quick search' }),
+      createIconButton({ icon: '✦', label: 'Notifications' }),
+      createIconButton({ icon: '◉', label: 'Profile menu' }),
+    ]);
+
+    utilityRow.append(search, utilityActions);
+    portalMain.insertBefore(utilityRow, portalMain.firstChild);
+  }
+
+  const shell = document.querySelector('.portal-shell');
+  if (shell && !shell.querySelector('.bottom-nav-spacer')) {
+    shell.append(createEl('div', { className: 'bottom-nav-spacer', attrs: { 'aria-hidden': 'true' } }));
+  }
+
   const pageHeader = document.querySelector('.page-header');
   const titleEl = pageHeader?.querySelector('.page-title');
   if (pageHeader && titleEl && !pageHeader.querySelector('.portal-breadcrumbs')) {

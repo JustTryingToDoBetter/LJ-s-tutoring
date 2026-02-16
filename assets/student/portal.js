@@ -1,4 +1,4 @@
-import { apiGet, apiPost, qs, setActiveNav, renderSkeletonCards, renderStateCard, clearChildren, createEl, initPortalUX, trackPortalEvent } from '/assets/portal-shared.js';
+import { apiGet, apiPost, qs, setActiveNav, renderSkeletonCards, renderSkeletonLines, renderStateCard, clearChildren, createEl, initPortalUX, trackPortalEvent } from '/assets/portal-shared.js';
 
 function renderProgressTopics(container, topics) {
   clearChildren(container);
@@ -31,6 +31,32 @@ function renderProgressTopics(container, topics) {
   container.append(frag);
 }
 
+function renderSparkline(svg, topics) {
+  if (!svg) {return;}
+  const values = (topics || []).slice(0, 6).map((topic) => Math.max(0, Math.min(100, Number(topic.completion || 0))));
+  const points = values.length ? values : [10, 18, 35, 52, 68, 76];
+  const width = 260;
+  const height = 72;
+  const max = 100;
+  const stepX = points.length > 1 ? width / (points.length - 1) : width;
+  const coords = points.map((value, idx) => {
+    const x = idx * stepX;
+    const y = height - (value / max) * (height - 8) - 4;
+    return `${x},${y}`;
+  });
+  const areaPath = `M0,${height} L${coords.join(' L')} L${width},${height} Z`;
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="sparkLineGradient" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#8d4dff"></stop>
+        <stop offset="100%" stop-color="#2cb5ff"></stop>
+      </linearGradient>
+    </defs>
+    <path d="${areaPath}" fill="url(#sparkLineGradient)" opacity="0.16"></path>
+    <polyline points="${coords.join(' ')}" fill="none" stroke="url(#sparkLineGradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+  `;
+}
+
 function renderCalendar(container, streakDays) {
   const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const activeCount = Math.max(0, Math.min(7, Number(streakDays || 0)));
@@ -55,20 +81,28 @@ async function initDashboard() {
   const weekMinutesEl = qs('#weekMinutes');
   const weekSessionsEl = qs('#weekSessions');
   const weekStreakEl = qs('#weekStreak');
+  const streakLongestEl = qs('#streakLongest');
   const progressEl = qs('#progressSnapshot');
+  const sparklineEl = qs('#progressSparkline');
   const recommendedEl = qs('#recommendedNext');
   const greetingEl = qs('#studentGreeting');
   const streakCurrentEl = qs('#streakCurrent');
   const xpEl = qs('#xpCount');
   const calendarEl = qs('#calendarStrip');
+  const heroXpEl = qs('#heroXp');
+  const heroTasksDueEl = qs('#heroTasksDue');
+  const heroTestsDueEl = qs('#heroTestsDue');
+  const heroStreakEl = qs('#heroStreak');
+  const heroQuickStatusEl = qs('#heroQuickStatus');
   const momentumEl = qs('#momentumScore');
+  const momentumDetailEl = qs('#momentumScoreDetail');
   const riskEl = qs('#riskScore');
   const scoreDateEl = qs('#scoreDate');
   const reasonsEl = qs('#predictiveReasons');
   const careerNextStepsEl = qs('#careerNextSteps');
 
   renderSkeletonCards(todayEl, 1);
-  renderSkeletonCards(progressEl, 2);
+  renderSkeletonLines(progressEl, 4);
   renderSkeletonCards(recommendedEl, 1);
   renderSkeletonCards(reasonsEl, 2);
   renderSkeletonCards(careerNextStepsEl, 1);
@@ -111,12 +145,28 @@ async function initDashboard() {
     weekStreakEl.textContent = String(data.thisWeek?.streakDays || 0);
 
     streakCurrentEl.textContent = String(data.streak?.current || 0);
+    if (streakLongestEl) {
+      streakLongestEl.textContent = String(data.streak?.longest || data.streak?.current || 0);
+    }
     xpEl.textContent = String(data.streak?.xp || 0);
     renderCalendar(calendarEl, data.streak?.current || 0);
+    renderSparkline(sparklineEl, data.progressSnapshot || []);
+
+    if (heroXpEl) heroXpEl.textContent = String(data.streak?.xp || 0);
+    if (heroTasksDueEl) heroTasksDueEl.textContent = String(data.today?.tasksDue || 0);
+    if (heroTestsDueEl) heroTestsDueEl.textContent = String(data.today?.testsDue || 0);
+    if (heroStreakEl) heroStreakEl.textContent = String(data.streak?.current || 0);
+    if (heroQuickStatusEl) {
+      const hasUpcoming = Boolean(data.today?.hasUpcoming);
+      heroQuickStatusEl.textContent = hasUpcoming
+        ? `Next session ${data.today.session?.startTime || ''}. Keep momentum above ${data.predictiveScore?.momentumScore || 0}.`
+        : 'No upcoming session booked. Complete one focus block to preserve consistency.';
+    }
 
     renderProgressTopics(progressEl, data.progressSnapshot || []);
 
     if (momentumEl) momentumEl.textContent = String(data.predictiveScore?.momentumScore || 0);
+    if (momentumDetailEl) momentumDetailEl.textContent = String(data.predictiveScore?.momentumScore || 0);
     if (riskEl) riskEl.textContent = String(data.predictiveScore?.riskScore || 0);
     if (scoreDateEl) scoreDateEl.textContent = data.predictiveScore?.date || '-';
 
@@ -176,10 +226,13 @@ async function initDashboard() {
       createEl('button', {
         className: 'button',
         text: data.recommendedNext?.action || 'Start now',
-        attrs: { type: 'button', id: 'focusModeStart', 'aria-label': 'Start focus mode 25 minute timer' }
+        attrs: { type: 'button', id: 'recommendedActionBtn', 'aria-label': 'Start recommended action' }
       })
     );
     recommendedEl.append(recommendation);
+    qs('#recommendedActionBtn')?.addEventListener('click', () => {
+      qs('#focusModeStart')?.click();
+    });
     bindFocusTimer();
   } catch {
     renderStateCard(todayEl, {
@@ -269,6 +322,9 @@ function bindFocusTimer() {
 async function initReports() {
   setActiveNav('reports');
   const listEl = qs('#reportsList');
+  const filterRoot = qs('#reportsFilterPills');
+  let currentFilter = 'all';
+  let cachedItems = [];
   renderSkeletonCards(listEl, 3);
 
   const render = (items) => {
@@ -282,8 +338,34 @@ async function initReports() {
       return;
     }
 
+    const now = Date.now();
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const filtered = items.filter((item) => {
+      if (currentFilter === 'all') {return true;}
+      const createdAt = Date.parse(item.created_at || '');
+      if (!Number.isFinite(createdAt)) {return currentFilter === 'all';}
+      if (currentFilter === 'recent') {
+        return now - createdAt <= 14 * 24 * 60 * 60 * 1000;
+      }
+      if (currentFilter === 'month') {
+        return createdAt >= monthStart.getTime();
+      }
+      return true;
+    });
+
+    if (!filtered.length) {
+      renderStateCard(listEl, {
+        variant: 'empty',
+        title: 'No reports in this filter',
+        description: 'Try a broader filter or generate a new report.'
+      });
+      return;
+    }
+
     const frag = document.createDocumentFragment();
-    items.forEach((item) => {
+    filtered.forEach((item) => {
       const row = createEl('div', { className: 'list-row' });
       row.append(
         createEl('div', { className: 'row-head' }, [
@@ -304,9 +386,22 @@ async function initReports() {
     listEl.append(frag);
   };
 
+  filterRoot?.querySelectorAll('.filter-pill').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      currentFilter = pill.dataset.filter || 'all';
+      filterRoot.querySelectorAll('.filter-pill').forEach((item) => {
+        const active = item === pill;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      render(cachedItems);
+    });
+  });
+
   try {
     const data = await apiGet('/reports?page=1&pageSize=20');
-    render(data.items || []);
+    cachedItems = data.items || [];
+    render(cachedItems);
   } catch {
     renderStateCard(listEl, {
       variant: 'error',
@@ -322,7 +417,8 @@ async function initReports() {
       await apiPost('/reports/generate', {});
       trackPortalEvent('report_generated', { role: 'student' });
       const data = await apiGet('/reports?page=1&pageSize=20');
-      render(data.items || []);
+      cachedItems = data.items || [];
+      render(cachedItems);
     } finally {
       btn.disabled = false;
     }
@@ -354,38 +450,50 @@ async function initReportView() {
     clearChildren(viewEl);
 
     const card = createEl('article', { className: 'panel report-print' });
+    const chips = createEl('div', { className: 'metric-chips' });
+    chips.append(
+      createEl('span', { className: 'metric-chip', text: `Sessions: ${payload.metrics?.sessionsAttended || 0}` }),
+      createEl('span', { className: 'metric-chip', text: `Minutes: ${payload.metrics?.timeStudiedMinutes || 0}` }),
+      createEl('span', { className: 'metric-chip', text: `Streak: ${payload.metrics?.streak || 0} days` }),
+      createEl('span', { className: 'metric-chip', text: `XP: ${payload.metrics?.xp || 0}` })
+    );
+
     card.append(
       createEl('h2', { className: 'panel-title', text: `Weekly report · ${report.weekStart} to ${report.weekEnd}` }),
       createEl('p', { className: 'note', text: `Student: ${payload.student?.name || 'Student'} (${payload.student?.grade || 'N/A'})` }),
-      createEl('p', { text: `Sessions attended: ${payload.metrics?.sessionsAttended || 0}` }),
-      createEl('p', { text: `Time studied: ${payload.metrics?.timeStudiedMinutes || 0} minutes` }),
-      createEl('p', { text: `Streak: ${payload.metrics?.streak || 0} days · XP: ${payload.metrics?.xp || 0}` }),
-      createEl('h3', { className: 'panel-title', text: 'Topic progress' })
+      chips
     );
 
+    const topicsSection = createEl('section', { className: 'report-section' });
+    topicsSection.append(createEl('h3', { className: 'panel-title', text: 'Topic progress' }));
     const topicsWrap = createEl('div', { className: 'grid' });
     renderProgressTopics(topicsWrap, payload.topicProgress || []);
-    card.append(topicsWrap);
+    topicsSection.append(topicsWrap);
+    card.append(topicsSection);
 
     const notes = Array.isArray(payload.tutorNotesSummary) ? payload.tutorNotesSummary : [];
-    card.append(createEl('h3', { className: 'panel-title', text: 'Tutor notes summary' }));
+    const notesSection = createEl('section', { className: 'report-section' });
+    notesSection.append(createEl('h3', { className: 'panel-title', text: 'Tutor notes summary' }));
     if (notes.length) {
       const ul = createEl('ul');
       notes.forEach((line) => ul.append(createEl('li', { text: line })));
-      card.append(ul);
+      notesSection.append(ul);
     } else {
-      card.append(createEl('p', { className: 'note', text: 'No tutor notes captured this week.' }));
+      notesSection.append(createEl('p', { className: 'note', text: 'No tutor notes captured this week.' }));
     }
+    card.append(notesSection);
 
     const goals = Array.isArray(payload.goalsNextWeek) ? payload.goalsNextWeek : [];
-    card.append(createEl('h3', { className: 'panel-title', text: 'Goals for next week' }));
+    const goalsSection = createEl('section', { className: 'report-section' });
+    goalsSection.append(createEl('h3', { className: 'panel-title', text: 'Goals for next week' }));
     if (goals.length) {
       const ul = createEl('ul');
       goals.forEach((goal) => ul.append(createEl('li', { text: goal })));
-      card.append(ul);
+      goalsSection.append(ul);
     } else {
-      card.append(createEl('p', { className: 'note', text: 'No goals generated yet.' }));
+      goalsSection.append(createEl('p', { className: 'note', text: 'No goals generated yet.' }));
     }
+    card.append(goalsSection);
 
     viewEl.append(card);
   } catch {

@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ody-bg: #0b0d12;
+  --ody-surface: #111522;
+  --ody-elevated: #151a2b;
+  --ody-border: rgba(162, 182, 219, 0.24);
+  --ody-text: #edf3ff;
+  --ody-muted: #97a8cb;
+  --ody-grad: linear-gradient(135deg, #8d4dff 0%, #2cb5ff 100%);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  color: var(--ody-text);
+  background:
+    radial-gradient(1200px 680px at -5% -10%, rgba(142, 84, 255, 0.2), transparent 60%),
+    radial-gradient(1000px 560px at 110% -10%, rgba(45, 187, 255, 0.2), transparent 56%),
+    var(--ody-bg);
+}
+
+.ody-card {
+  @apply rounded-xl border p-4 shadow-ody;
+  background: color-mix(in oklab, #151a2b 72%, transparent);
+  border-color: var(--ody-border);
+}
+
+.ody-chip {
+  @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs;
+  border-color: var(--ody-border);
+  background: color-mix(in oklab, #151a2b 80%, transparent);
+}
+
+.ody-btn-primary {
+  @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold text-black transition;
+  background-image: var(--ody-grad);
+}
+
+.ody-btn-secondary {
+  @apply inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm;
+  border-color: var(--ody-border);
+  background: color-mix(in oklab, #151a2b 80%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

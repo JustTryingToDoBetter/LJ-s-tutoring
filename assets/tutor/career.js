@@ -1,5 +1,7 @@
 import { apiGet, clearChildren, createEl, initPortalUX, qs, renderStateCard, setActiveNav, trackPortalEvent } from '/assets/portal-shared.js';
 
+let goalFilter = 'all';
+
 async function loadStudentCareer(studentId) {
   const list = qs('#tutorCareerList');
   clearChildren(list);
@@ -25,8 +27,25 @@ async function loadStudentCareer(studentId) {
       return;
     }
 
+    const selectedGoals = (data.selectedGoals || []).filter((entry) => {
+      const score = Number(entry.latestSnapshot?.alignmentScore ?? 0);
+      if (goalFilter === 'all') {return true;}
+      if (goalFilter === 'high') {return score >= 70;}
+      if (goalFilter === 'watch') {return score < 70;}
+      return true;
+    });
+
+    if (!selectedGoals.length) {
+      renderStateCard(list, {
+        variant: 'empty',
+        title: 'No goals in this filter',
+        description: 'Switch filters to view all alignment bands.'
+      });
+      return;
+    }
+
     const frag = document.createDocumentFragment();
-    data.selectedGoals.forEach((entry) => {
+    selectedGoals.forEach((entry) => {
       const row = createEl('div', { className: 'list-row' });
       row.append(
         createEl('strong', { text: entry.goal.title }),
@@ -46,10 +65,28 @@ async function loadStudentCareer(studentId) {
   }
 }
 
+function bindFilters() {
+  const filterRoot = qs('#careerGoalFilters');
+  filterRoot?.querySelectorAll('.filter-pill').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      goalFilter = pill.dataset.filter || 'all';
+      filterRoot.querySelectorAll('.filter-pill').forEach((item) => {
+        const active = item === pill;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      const studentId = String(qs('#careerStudentId')?.value || '').trim();
+      loadStudentCareer(studentId).catch(() => undefined);
+    });
+  });
+}
+
 async function initTutorCareer() {
   initPortalUX();
   setActiveNav('career');
   trackPortalEvent('tutor_career_viewed', { role: 'tutor' });
+
+  bindFilters();
 
   qs('#loadCareerStudentBtn')?.addEventListener('click', () => {
     const studentId = String(qs('#careerStudentId')?.value || '').trim();

@@ -61,7 +61,10 @@
     "dev:full": "npm-run-all prebuild build:html build:static build:guides build:images build:assets build:admin build:admin-assets build:tutor build:tutor-assets build:student-assets build:dashboard build:reports build:games build:lib build:data build:sw inject:sw-version inject:config",
     "dev:static": "npm-run-all --parallel dev:css serve",
     "dev:api": "npm run dev --prefix lms-api",
-    "dev": "npm-run-all --parallel dev:static dev:api",
+    "dev:web": "npm run dev --prefix web",
+    "dev:legacy": "npm-run-all --parallel dev:static dev:api",
+    "dev:next": "npm-run-all --parallel dev:web dev:api",
+    "dev": "npm run dev:next",
     "migrate": "npm run migrate --prefix lms-api",
     "test": "npm run test --prefix lms-api",
     "test:e2e:api": "npm run test:e2e --prefix lms-api",
@@ -90,6 +93,10 @@
     "qa:quick": "npm-run-all build && (npm run serve --silent & wait-on http://localhost:8080) && npm-run-all --parallel qa:html qa:links",
     "qa": "npm-run-all build && (npm run serve --silent & wait-on http://localhost:8080) && npm-run-all --parallel qa:html qa:links qa:a11y",
     "fetch:words": "node scripts/fetch-words.js",
+    "lint:web": "npm run lint --prefix web",
+    "typecheck:web": "npm run typecheck --prefix web",
+    "test:web": "npm run test --prefix web",
+    "check:web": "npm run lint:web && npm run typecheck:web && npm run test:web",
     "prepare": "husky || true"
   }
 }

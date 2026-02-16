@@ -29,10 +29,15 @@
       </section>
 
       <section class="grid">
-        <article class="panel">
+        <article class="panel dashboard-card">
           <div class="row-head">
             <h2 class="panel-title">Reports</h2>
             <button id="generateReportNow" class="button" type="button" aria-label="Generate weekly report now">Generate now</button>
+          </div>
+          <div id="reportsFilterPills" class="metric-chips" role="tablist" aria-label="Report filters">
+            <button type="button" class="filter-pill active" data-filter="all" role="tab" aria-selected="true">All</button>
+            <button type="button" class="filter-pill" data-filter="recent" role="tab" aria-selected="false">Recent 14 days</button>
+            <button type="button" class="filter-pill" data-filter="month" role="tab" aria-selected="false">This month</button>
           </div>
           <div id="reportsList" class="list-compact"></div>
         </article>

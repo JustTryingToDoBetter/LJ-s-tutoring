@@ -1,0 +1,112 @@
+name: Web Next CI
+
+on:
+  pull_request:
+    paths:
+      - web/**
+      - lms-api/**
+      - .github/workflows/web-next-ci.yml
+  push:
+    branches: [ main ]
+    paths:
+      - web/**
+      - lms-api/**
+      - .github/workflows/web-next-ci.yml
+
+concurrency:
+  group: web-next-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install web dependencies
+        run: npm install --prefix web
+
+      - name: Lint, typecheck, test
+        run: npm run check:web
+
+  auth-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lms_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/lms_test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/lms_test
+      COOKIE_SECRET: test_cookie_secret_value_for_ci
+      PUBLIC_BASE_URL: http://localhost:3001
+      SCORE_CRON_TOKEN: test_score_token
+      API_BASE_URL: http://localhost:3001
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3001
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install web dependencies
+        run: npm install --prefix web
+
+      - name: Prepare test database
+        run: |
+          npm run db:reset:test --prefix lms-api
+          npm run seed:test --prefix lms-api
+
+      - name: Start API
+        run: |
+          npm run dev --prefix lms-api > /tmp/lms-api.log 2>&1 &
+          npx wait-on http://localhost:3001/health --timeout 90000
+
+      - name: Start Next web
+        run: |
+          npm run dev --prefix web > /tmp/web-next.log 2>&1 &
+          npx wait-on http://localhost:3000/login --timeout 90000
+
+      - name: Verify protected routes redirect to login
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/dashboard)
+          if [ "$status" != "307" ] && [ "$status" != "308" ]; then
+            echo "Expected protected route redirect, got status=$status"
+            exit 1
+          fi
+
+      - name: Verify auth session is no-store
+        run: |
+          headers=$(curl -s -D - http://localhost:3000/api/auth/session -o /dev/null)
+          echo "$headers" | grep -i "cache-control: private, no-store, max-age=0"
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-next-ci-logs
+          path: |
+            /tmp/lms-api.log
+            /tmp/web-next.log
+          retention-days: 7

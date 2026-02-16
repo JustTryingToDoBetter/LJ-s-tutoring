@@ -27,20 +27,36 @@ npm run serve
 
 ## 🧪 Codespaces (One Command)
 
-Run both the static portal and LMS API in one command:
+Run unified Next web + LMS API in one command:
 
 ```bash
 npm run dev
 ```
 
-- Static app: `http://localhost:8080`
+- Next web app: `http://localhost:3000`
 - API: `http://localhost:3001`
-- Student dashboard: `http://localhost:8080/dashboard/`
-- Student reports: `http://localhost:8080/reports/`
-- Tutor dashboard: `http://localhost:8080/tutor/dashboard/`
-- Tutor reports: `http://localhost:8080/tutor/reports/`
+- Student dashboard: `http://localhost:3000/dashboard`
+- Student reports: `http://localhost:3000/reports`
+- Tutor dashboard: `http://localhost:3000/tutor/dashboard`
+- Tutor reports: `http://localhost:3000/tutor/reports`
 
-If you need a fresh DB schema first, run `npm run migrate` before `npm run dev`.
+Legacy static portal + API remains available via:
+
+```bash
+npm run dev:legacy
+```
+
+If you need a fresh DB schema first, run `npm run migrate` before starting dev.
+
+## 🧪 Next Migration Checks
+
+Run focused checks for the new Next app:
+
+```bash
+npm run check:web
+```
+
+This runs lint, typecheck, and tests in `web/`.
 
 ## 🏗️ Build Process Overview
 
@@ -238,6 +254,12 @@ npm run job:worker --prefix lms-api
 - If Cloudflare is in front, keep `PUBLIC_BASE_URL` set to the public HTTPS domain used for magic links.
 - Ensure the API sets `COOKIE_SECRET` and the database URL is reachable from the app.
 
+## 🌐 Next App Deployment (DigitalOcean + Cloudflare)
+
+For the staged Next migration deployment guide, see:
+
+- `web/DEPLOYMENT_DO_CLOUDFLARE.md`
+
 ### Staging
 ```bash
 # Create separate staging config
@@ -290,13 +312,16 @@ npm run build
 
 ### Day-to-Day Development
 ```bash
-# Start watch mode (auto-recompile CSS on changes)
+# Preferred: start Next web + API together
 npm run dev
 
-# In another terminal, serve the site
-npm run serve
+# Legacy static portal + API
+npm run dev:legacy
 
-# Visit http://localhost:8080
+# Next migration quality checks
+npm run check:web
+
+# Visit http://localhost:3000
 ```
 
 ### Before Committing
@@ -318,7 +343,9 @@ npm run qa
 
 | Command | Purpose |
 |---------|---------|
-| `npm run dev` | Watch mode: auto-recompile CSS on file changes |
+| `npm run dev` | Start Next web (`web/`) + LMS API |
+| `npm run dev:legacy` | Start legacy static portal + LMS API |
+| `npm run check:web` | Run Next web lint, typecheck, tests |
 | `npm run build` | Full production build (clean, compile, copy, inject) |
 | `npm run serve` | Start local server on http://localhost:8080 |
 | `npm run lint` | Run all linters (JavaScript + HTML) |
@@ -520,6 +547,29 @@ All configured in `netlify.toml`.
 - Website code: © 2026 Project Odysseus. All rights reserved.
 - Images: Ensure you have rights/licenses for all images used
 - Testimonials: Get written permission before publishing
+
+## ✅ UI QA Checklist (Academic OS Refresh)
+
+Run this checklist before each release touching dashboard/report UX.
+
+- [ ] **Responsive shell**: Icon rail on desktop and bottom nav on mobile for `/dashboard`, `/reports`, `/tutor/dashboard`, `/tutor/reports`.
+- [ ] **Loading states**: Skeleton placeholders visible for every async list/card before API data resolves.
+- [ ] **Empty states**: All no-data paths render `ds-state` cards with clear action text.
+- [ ] **Focus visibility**: Keyboard focus ring visible on links, buttons, pills, and form controls.
+- [ ] **ARIA basics**: Icon-only nav/actions have `aria-label`; filter pills expose `role="tab"` and `aria-selected`.
+- [ ] **Contrast pass**: Validate neon accents on dark surfaces meet WCAG AA for text/controls.
+- [ ] **No layout shift**: Reserve card/list space with skeletons; verify no jump when content loads.
+- [ ] **Cache headers (auth pages)**: `Cache-Control: private, no-store, max-age=0` for `/dashboard*`, `/reports*`, `/tutor*`.
+- [ ] **Edge safety**: Confirm Cloudflare (or equivalent CDN) does not cache authenticated portal HTML.
+- [ ] **Performance sanity**: No heavy chart libraries added; sparkline remains lightweight SVG.
+
+Quick checks:
+
+```bash
+npm run check:headers
+npm run lint
+npm run build
+```
 
 ## 🐛 Troubleshooting
 

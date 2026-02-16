@@ -80,6 +80,26 @@
     Cache-Control = "public, max-age=300, s-maxage=300"
 
 [[headers]]
+  for = "/dashboard"
+  [headers.values]
+    Cache-Control = "private, no-store, max-age=0"
+
+[[headers]]
+  for = "/dashboard/*"
+  [headers.values]
+    Cache-Control = "private, no-store, max-age=0"
+
+[[headers]]
+  for = "/reports"
+  [headers.values]
+    Cache-Control = "private, no-store, max-age=0"
+
+[[headers]]
+  for = "/reports/*"
+  [headers.values]
+    Cache-Control = "private, no-store, max-age=0"
+
+[[headers]]
   for = "/admin"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"

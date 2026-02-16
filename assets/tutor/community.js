@@ -1,6 +1,8 @@
 import { apiGet, apiPatch, apiPost, clearChildren, createEl, initPortalUX, qs, renderSkeletonCards, renderStateCard, setActiveNav, trackPortalEvent } from '/assets/portal-shared.js';
 
 let selectedQuestionId = null;
+let questionFilter = 'all';
+let answerFilter = 'all';
 
 async function loadQuestions() {
   const list = qs('#tutorQuestionsList');
@@ -8,19 +10,31 @@ async function loadQuestions() {
 
   try {
     const data = await apiGet('/community/questions?page=1&pageSize=20');
+    const questions = (data.items || []).filter((question) => {
+      if (questionFilter === 'all') {return true;}
+      if (questionFilter === 'open') {
+        return String(question.moderation_state || '').toUpperCase() !== 'HIDDEN';
+      }
+      if (questionFilter === 'hidden') {
+        return String(question.moderation_state || '').toUpperCase() === 'HIDDEN';
+      }
+      return true;
+    });
     clearChildren(list);
 
-    if (!data.items?.length) {
+    if (!questions.length) {
       renderStateCard(list, {
         variant: 'empty',
-        title: 'No peer questions found',
-        description: 'Questions will appear here for tutor moderation.'
+        title: questionFilter === 'all' ? 'No peer questions found' : 'No questions in this filter',
+        description: questionFilter === 'all'
+          ? 'Questions will appear here for tutor moderation.'
+          : 'Try a different filter to broaden results.'
       });
       return;
     }
 
     const frag = document.createDocumentFragment();
-    data.items.forEach((question) => {
+    questions.forEach((question) => {
       const row = createEl('div', { className: 'list-row' });
       row.append(
         createEl('strong', { text: question.title }),
@@ -71,22 +85,34 @@ async function loadAnswers() {
   renderSkeletonCards(list, 2);
   try {
     const data = await apiGet(`/community/questions/${encodeURIComponent(selectedQuestionId)}/answers?page=1&pageSize=20`);
+    const answers = (data.items || []).filter((answer) => {
+      if (answerFilter === 'all') {return true;}
+      if (answerFilter === 'verified') {
+        return Boolean(answer.is_verified);
+      }
+      if (answerFilter === 'needs_review') {
+        return !Boolean(answer.is_verified);
+      }
+      return true;
+    });
     clearChildren(list);
     if (label) {
       label.textContent = `Moderating answers for question ${selectedQuestionId.slice(0, 8)}…`;
     }
 
-    if (!data.items?.length) {
+    if (!answers.length) {
       renderStateCard(list, {
         variant: 'empty',
-        title: 'No answers yet',
-        description: 'This question has no replies yet.'
+        title: answerFilter === 'all' ? 'No answers yet' : 'No answers in this filter',
+        description: answerFilter === 'all'
+          ? 'This question has no replies yet.'
+          : 'Try a different answer filter.'
       });
       return;
     }
 
     const frag = document.createDocumentFragment();
-    data.items.forEach((answer) => {
+    answers.forEach((answer) => {
       const row = createEl('div', { className: 'list-row' });
       row.append(
         createEl('strong', { text: answer.nickname || 'Learner' }),
@@ -121,10 +147,40 @@ async function loadAnswers() {
   }
 }
 
+function bindFilters() {
+  const questionFilters = qs('#communityQuestionFilters');
+  questionFilters?.querySelectorAll('.filter-pill').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      questionFilter = pill.dataset.filter || 'all';
+      questionFilters.querySelectorAll('.filter-pill').forEach((item) => {
+        const active = item === pill;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      loadQuestions().catch(() => undefined);
+    });
+  });
+
+  const answerFilters = qs('#communityAnswerFilters');
+  answerFilters?.querySelectorAll('.filter-pill').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      answerFilter = pill.dataset.filter || 'all';
+      answerFilters.querySelectorAll('.filter-pill').forEach((item) => {
+        const active = item === pill;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      loadAnswers().catch(() => undefined);
+    });
+  });
+}
+
 async function initTutorCommunity() {
   initPortalUX();
   setActiveNav('community');
   trackPortalEvent('tutor_community_viewed', { role: 'tutor' });
+
+  bindFilters();
 
   await Promise.all([
     loadQuestions(),

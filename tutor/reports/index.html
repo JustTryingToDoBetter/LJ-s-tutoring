@@ -31,7 +31,7 @@
       </section>
 
       <section class="grid">
-        <article class="panel">
+        <article class="panel dashboard-card">
           <div class="row-head">
             <div>
               <label for="reportStudentId" class="note">Student ID</label>
@@ -41,6 +41,10 @@
               <button id="generateTutorReport" class="button" type="button" aria-label="Generate report for student">Generate now</button>
               <button id="refreshTutorReports" class="button secondary" type="button" aria-label="Refresh reports">Refresh</button>
             </div>
+          </div>
+          <div id="tutorReportsFilterPills" class="metric-chips" role="tablist" aria-label="Tutor report filters">
+            <button type="button" class="filter-pill active" data-filter="all" role="tab" aria-selected="true">All</button>
+            <button type="button" class="filter-pill" data-filter="recent" role="tab" aria-selected="false">Recent 14 days</button>
           </div>
           <div id="tutorReportsList" class="list-compact"></div>
         </article>

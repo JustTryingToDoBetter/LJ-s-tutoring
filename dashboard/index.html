@@ -28,35 +28,54 @@
         <p class="page-subtitle">Your Smart Dashboard for this week.</p>
       </section>
 
-      <section class="grid two">
-        <article class="panel dashboard-card">
-          <h2 class="panel-title">Today</h2>
-          <div id="todayCard"></div>
+      <section class="grid">
+        <article class="panel dashboard-card hero-card" aria-label="Hero greeting and weekly status">
+          <div class="row-head">
+            <div>
+              <h2 class="panel-title">Weekly Mission</h2>
+              <p class="note" id="heroQuickStatus">Loading your current mission status…</p>
+            </div>
+            <div class="xp-badge" aria-live="polite"><span>⚡</span> <span id="heroXp">0</span> XP</div>
+          </div>
+          <div class="metric-chips" id="heroStatusChips" aria-live="polite">
+            <span class="metric-chip">Tasks due: <strong id="heroTasksDue">0</strong></span>
+            <span class="metric-chip">Tests due: <strong id="heroTestsDue">0</strong></span>
+            <span class="metric-chip">Current streak: <strong id="heroStreak">0</strong> days</span>
+          </div>
         </article>
+      </section>
 
-        <article class="panel dashboard-card">
-          <h2 class="panel-title">This Week</h2>
-          <div class="dashboard-stat-row" aria-live="polite">
-            <div class="dashboard-stat">
-              <div class="dashboard-stat-label">Minutes studied</div>
-              <div id="weekMinutes" class="dashboard-stat-value">0</div>
-            </div>
-            <div class="dashboard-stat">
-              <div class="dashboard-stat-label">Sessions attended</div>
-              <div id="weekSessions" class="dashboard-stat-value">0</div>
-            </div>
-            <div class="dashboard-stat">
-              <div class="dashboard-stat-label">Streak days</div>
-              <div id="weekStreak" class="dashboard-stat-value">0</div>
-            </div>
+      <section class="grid">
+        <article class="panel dashboard-card" aria-label="This week key metrics">
+          <div class="section-header">
+            <h2 class="panel-title">Performance Snapshot</h2>
+          </div>
+          <div id="statPillsRow" class="metric-chips" aria-live="polite">
+            <span class="stat-pill"><span>◷</span><span>Minutes</span><strong id="weekMinutes">0</strong></span>
+            <span class="stat-pill"><span>◎</span><span>Sessions</span><strong id="weekSessions">0</strong></span>
+            <span class="stat-pill"><span>✦</span><span>Streak</span><strong id="weekStreak">0</strong></span>
+            <span class="stat-pill"><span>↗</span><span>Momentum</span><strong id="momentumScore">0</strong></span>
           </div>
         </article>
       </section>
 
       <section class="grid two">
         <article class="panel dashboard-card">
-          <h2 class="panel-title">Progress Snapshot</h2>
+          <h2 class="panel-title">Progress Overview</h2>
+          <svg id="progressSparkline" class="sparkline" viewBox="0 0 260 72" role="img" aria-label="Weekly mastery trend"></svg>
           <div id="progressSnapshot"></div>
+        </article>
+
+        <article class="panel dashboard-card">
+          <h2 class="panel-title">Recommended Next</h2>
+          <div id="recommendedNext"></div>
+        </article>
+      </section>
+
+      <section class="grid two">
+        <article class="panel dashboard-card">
+          <h2 class="panel-title">Upcoming Session</h2>
+          <div id="todayCard"></div>
         </article>
 
         <article class="panel dashboard-card">
@@ -64,6 +83,7 @@
           <div class="streak-widget">
             <div class="streak-count"><span id="streakCurrent">0</span> days</div>
             <div class="xp-badge" aria-label="Total XP"><span>⚡</span> <span id="xpCount">0</span> XP</div>
+            <div class="metric-chip">Longest streak: <strong id="streakLongest">0</strong> days</div>
             <div id="calendarStrip" class="calendar-strip" aria-label="Weekly streak calendar"></div>
           </div>
         </article>
@@ -75,7 +95,7 @@
           <div class="dashboard-stat-row" aria-live="polite">
             <div class="dashboard-stat">
               <div class="dashboard-stat-label">Momentum score</div>
-              <div id="momentumScore" class="dashboard-stat-value">0</div>
+              <div id="momentumScoreDetail" class="dashboard-stat-value">0</div>
             </div>
             <div class="dashboard-stat">
               <div class="dashboard-stat-label">Risk score</div>
@@ -96,11 +116,6 @@
       </section>
 
       <section class="grid two">
-        <article class="panel dashboard-card">
-          <h2 class="panel-title">Recommended Next</h2>
-          <div id="recommendedNext"></div>
-        </article>
-
         <article class="panel dashboard-card">
           <h2 class="panel-title">Focus Mode</h2>
           <p class="note">25-minute timer that logs a study session event.</p>
