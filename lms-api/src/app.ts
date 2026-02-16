@@ -15,6 +15,7 @@ import { initErrorMonitor } from './lib/error-monitor.js';
 import { authRoutes } from './routes/auth.js';
 import { adminRoutes } from './routes/admin.js';
 import { tutorRoutes } from './routes/tutor.js';
+import { academicRoutes } from './routes/academic.js';
 
 export async function buildApp() {
   const logger = process.env.NODE_ENV === 'test'
@@ -235,6 +236,7 @@ export async function buildApp() {
   await app.register(authRoutes);
   await app.register(adminRoutes);
   await app.register(tutorRoutes);
+  await app.register(academicRoutes);
 
   return app;
 }
