@@ -15,12 +15,12 @@ const targets = [
   path.join(distDir, 'tutor'),
   path.join(distDir, 'tutor-dashboard.html'),
   path.join(distDir, 'assets', 'admin'),
-  path.join(distDir, 'assets', 'tutor')
+  path.join(distDir, 'assets', 'tutor'),
 ];
 
 let removed = 0;
 for (const target of targets) {
-  if (!fs.existsSync(target)) continue;
+  if (!fs.existsSync(target)) {continue;}
   fs.rmSync(target, { recursive: true, force: true });
   removed += 1;
 }

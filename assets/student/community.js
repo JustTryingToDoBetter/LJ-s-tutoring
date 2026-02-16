@@ -8,7 +8,7 @@ function renderRooms(container, rooms) {
     renderStateCard(container, {
       variant: 'empty',
       title: 'No study rooms yet',
-      description: 'Create a room by subject and grade to start collaborating.'
+      description: 'Create a room by subject and grade to start collaborating.',
     });
     return;
   }
@@ -18,14 +18,14 @@ function renderRooms(container, rooms) {
     const row = createEl('div', { className: 'list-row' });
     row.append(
       createEl('strong', { text: `${room.subject}${room.grade ? ` · Grade ${room.grade}` : ''}` }),
-      createEl('div', { className: 'note', text: `${room.member_count || 0} members` })
+      createEl('div', { className: 'note', text: `${room.member_count || 0} members` }),
     );
 
     const actions = createEl('div', { className: 'session-actions' });
     actions.append(createEl('button', {
       className: 'button secondary',
       text: room.is_member ? 'Open chat' : 'Join room',
-      attrs: { type: 'button' }
+      attrs: { type: 'button' },
     }));
 
     actions.firstChild?.addEventListener('click', async () => {
@@ -52,7 +52,7 @@ async function loadRooms() {
     renderStateCard(list, {
       variant: 'error',
       title: 'Could not load rooms',
-      description: 'Refresh and try again.'
+      description: 'Refresh and try again.',
     });
   }
 }
@@ -66,7 +66,7 @@ async function loadMessages() {
     renderStateCard(list, {
       variant: 'empty',
       title: 'No room selected',
-      description: 'Join or open a room to view messages.'
+      description: 'Join or open a room to view messages.',
     });
     return;
   }
@@ -83,7 +83,7 @@ async function loadMessages() {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No messages yet',
-        description: 'Start the conversation with a short, focused question.'
+        description: 'Start the conversation with a short, focused question.',
       });
       return;
     }
@@ -94,7 +94,7 @@ async function loadMessages() {
       row.append(
         createEl('strong', { text: item.nickname || 'Learner' }),
         createEl('p', { className: 'note', text: item.content }),
-        createEl('div', { className: 'note', text: new Date(item.created_at).toLocaleString() })
+        createEl('div', { className: 'note', text: new Date(item.created_at).toLocaleString() }),
       );
       frag.append(row);
     });
@@ -103,7 +103,7 @@ async function loadMessages() {
     renderStateCard(list, {
       variant: 'error',
       title: 'Could not load messages',
-      description: 'Open a different room or refresh.'
+      description: 'Open a different room or refresh.',
     });
   }
 }
@@ -120,7 +120,7 @@ async function loadChallenges() {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No active challenges',
-        description: 'New weekly challenges will appear here.'
+        description: 'New weekly challenges will appear here.',
       });
       return;
     }
@@ -131,19 +131,19 @@ async function loadChallenges() {
       row.append(
         createEl('strong', { text: challenge.title }),
         createEl('div', { className: 'note', text: `${challenge.subject}${challenge.grade ? ` · Grade ${challenge.grade}` : ''}` }),
-        createEl('div', { className: 'note', text: `XP reward: ${challenge.xp_reward}` })
+        createEl('div', { className: 'note', text: `XP reward: ${challenge.xp_reward}` }),
       );
 
       const submitBtn = createEl('button', {
         className: 'button secondary',
         text: challenge.has_submitted ? 'Submitted' : 'Submit quick answer',
-        attrs: { type: 'button', 'aria-disabled': challenge.has_submitted ? 'true' : 'false' }
+        attrs: { type: 'button', 'aria-disabled': challenge.has_submitted ? 'true' : 'false' },
       });
 
       if (!challenge.has_submitted) {
         submitBtn.addEventListener('click', async () => {
           const content = window.prompt('Submit your challenge answer:');
-          if (!content) return;
+          if (!content) {return;}
           await apiPost(`/community/challenges/${encodeURIComponent(challenge.id)}/submissions`, { content });
           await loadChallenges();
         });
@@ -157,7 +157,7 @@ async function loadChallenges() {
     renderStateCard(list, {
       variant: 'error',
       title: 'Could not load challenges',
-      description: 'Refresh and try again.'
+      description: 'Refresh and try again.',
     });
   }
 }
@@ -174,7 +174,7 @@ async function loadQuestions() {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No peer questions yet',
-        description: 'Ask your first question and help peers collaborate.'
+        description: 'Ask your first question and help peers collaborate.',
       });
       return;
     }
@@ -194,7 +194,7 @@ async function loadQuestions() {
     renderStateCard(list, {
       variant: 'error',
       title: 'Could not load questions',
-      description: 'Refresh and try again.'
+      description: 'Refresh and try again.',
     });
   }
 }
@@ -202,17 +202,17 @@ async function loadQuestions() {
 function bindActions() {
   qs('#createRoomBtn')?.addEventListener('click', async () => {
     const subject = window.prompt('Subject (e.g. Mathematics):');
-    if (!subject) return;
+    if (!subject) {return;}
     const grade = window.prompt('Grade (optional):') || undefined;
     await apiPost('/community/rooms', { subject, grade });
     await loadRooms();
   });
 
   qs('#sendRoomMessageBtn')?.addEventListener('click', async () => {
-    if (!activeRoomId) return;
+    if (!activeRoomId) {return;}
     const input = qs('#roomMessageInput');
     const content = String(input?.value || '').trim();
-    if (!content) return;
+    if (!content) {return;}
 
     try {
       await apiPost(`/community/rooms/${encodeURIComponent(activeRoomId)}/messages`, { content });

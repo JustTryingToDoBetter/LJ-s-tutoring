@@ -10,7 +10,7 @@ async function loadStudentCareer(studentId) {
     renderStateCard(list, {
       variant: 'empty',
       title: 'Student ID required',
-      description: 'Enter an assigned student ID to load career goals.'
+      description: 'Enter an assigned student ID to load career goals.',
     });
     return;
   }
@@ -22,7 +22,7 @@ async function loadStudentCareer(studentId) {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No career goals selected',
-        description: 'This student has not selected a career roadmap yet.'
+        description: 'This student has not selected a career roadmap yet.',
       });
       return;
     }
@@ -39,7 +39,7 @@ async function loadStudentCareer(studentId) {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No goals in this filter',
-        description: 'Switch filters to view all alignment bands.'
+        description: 'Switch filters to view all alignment bands.',
       });
       return;
     }
@@ -50,7 +50,7 @@ async function loadStudentCareer(studentId) {
       row.append(
         createEl('strong', { text: entry.goal.title }),
         createEl('div', { className: 'note', text: `Alignment: ${entry.latestSnapshot?.alignmentScore ?? 0}%` }),
-        createEl('div', { className: 'note', text: (entry.latestSnapshot?.reasons || []).slice(0, 2).join(' · ') || 'No reasons available.' })
+        createEl('div', { className: 'note', text: (entry.latestSnapshot?.reasons || []).slice(0, 2).join(' · ') || 'No reasons available.' }),
       );
       frag.append(row);
     });
@@ -60,7 +60,7 @@ async function loadStudentCareer(studentId) {
     renderStateCard(list, {
       variant: 'error',
       title: 'Could not load student career view',
-      description: 'Verify the student is assigned to you and try again.'
+      description: 'Verify the student is assigned to you and try again.',
     });
   }
 }

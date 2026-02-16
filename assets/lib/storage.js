@@ -4,17 +4,17 @@
  * Keeps data small + predictable for production use.
  */
 
-const KEY = "po_arcade_v1";
-const LEGACY_KEY = "po_arcade_state_v1";
+const KEY = 'po_arcade_v1';
+const LEGACY_KEY = 'po_arcade_state_v1';
 
 export function loadState() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return migrateLegacy(freshState());
+    if (!raw) {return migrateLegacy(freshState());}
     const parsed = JSON.parse(raw);
 
     // Minimal schema validation (avoid breaking on corrupt storage)
-    if (!parsed || typeof parsed !== "object") return migrateLegacy(freshState());
+    if (!parsed || typeof parsed !== 'object') {return migrateLegacy(freshState());}
     return migrateLegacy({ ...freshState(), ...parsed });
   } catch {
     return migrateLegacy(freshState());
@@ -43,7 +43,7 @@ function freshState() {
       streak: 0,
       completed: 0,
       lastDailyKey: null,
-      theme: "light",
+      theme: 'light',
     },
     daily: {
       // Tracks completion flags per day key.
@@ -69,7 +69,7 @@ function freshState() {
 function migrateLegacy(state) {
   try {
     const raw = localStorage.getItem(LEGACY_KEY);
-    if (!raw) return state;
+    if (!raw) {return state;}
     const legacy = JSON.parse(raw);
     const legacyQuickmath = legacy?.games?.quickmath;
     if (legacyQuickmath && state?.games?.quickmath) {

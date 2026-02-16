@@ -336,8 +336,11 @@
   }
 
   function logGreeting() {
+    // eslint-disable-next-line no-console
     console.log('%c🎓 Project Odysseus', 'font-size: 24px; font-weight: bold; color: #fbbf24;');
+    // eslint-disable-next-line no-console
     console.log('%cNeed a developer? Check out our code!', 'font-size: 14px; color: #64748b;');
+    // eslint-disable-next-line no-console
     console.log('%c💡 Press ? for keyboard shortcuts', 'font-size: 12px; color: #22c55e;');
   }
 

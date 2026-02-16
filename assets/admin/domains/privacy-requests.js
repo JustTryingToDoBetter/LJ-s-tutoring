@@ -12,8 +12,8 @@ export async function initPrivacyRequests() {
 
   const load = async () => {
     const params = new URLSearchParams();
-    if (filterStatus?.value) params.set('status', filterStatus.value);
-    if (!list) return;
+    if (filterStatus?.value) {params.set('status', filterStatus.value);}
+    if (!list) {return;}
     renderSkeletonCards(list, 3);
     let data;
     try {
@@ -22,7 +22,7 @@ export async function initPrivacyRequests() {
       renderStateCard(list, {
         variant: 'error',
         title: 'Unable to load privacy requests',
-        description: err?.message || 'Try again.'
+        description: err?.message || 'Try again.',
       });
       return;
     }
@@ -30,7 +30,7 @@ export async function initPrivacyRequests() {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No privacy requests found',
-        description: 'Try a different status filter or create a new request.'
+        description: 'Try a different status filter or create a new request.',
       });
       return;
     }
@@ -67,7 +67,7 @@ export async function initPrivacyRequests() {
       requestType: qs('#requestType').value,
       subjectType: qs('#subjectType').value,
       subjectId: qs('#subjectId').value.trim(),
-      reason: qs('#requestReason').value.trim() || undefined
+      reason: qs('#requestReason').value.trim() || undefined,
     };
     try {
       await apiPost('/admin/privacy-requests', payload);
@@ -92,7 +92,7 @@ export async function initPrivacyRequests() {
       closeMsg.className = 'form-feedback';
     }
     const requestId = qs('#closeRequestId').value.trim();
-    if (!requestId) return;
+    if (!requestId) {return;}
     let correctionPayload = undefined;
     const rawCorrection = qs('#correctionJson').value.trim();
     if (rawCorrection) {
@@ -110,7 +110,7 @@ export async function initPrivacyRequests() {
     const payload = {
       outcome: qs('#closeOutcome').value || undefined,
       note: qs('#closeNote').value.trim() || undefined,
-      correction: correctionPayload
+      correction: correctionPayload,
     };
 
     try {
@@ -131,7 +131,7 @@ export async function initPrivacyRequests() {
 
   list?.addEventListener('click', (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof HTMLElement)) {return;}
     if (target.dataset.exportRequest) {
       window.open(`/admin/privacy-requests/${target.dataset.exportRequest}/export`, '_blank');
     }

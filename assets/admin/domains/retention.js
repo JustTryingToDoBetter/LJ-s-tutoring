@@ -19,24 +19,24 @@ export async function initRetention() {
       renderStateCard(configEl, {
         variant: 'error',
         title: 'Unable to load retention settings',
-        description: err?.message || 'Try again.'
+        description: err?.message || 'Try again.',
       });
     }
     if (eligibleEl) {
       renderStateCard(eligibleEl, {
         variant: 'error',
         title: 'Unable to load eligibility summary',
-        description: 'Try again.'
+        description: 'Try again.',
       });
     }
     if (latestEl) {
       renderStateCard(latestEl, {
         variant: 'error',
         title: 'Unable to load cleanup evidence',
-        description: 'Try again.'
+        description: 'Try again.',
       });
     }
-    if (latestMeta) latestMeta.textContent = '';
+    if (latestMeta) {latestMeta.textContent = '';}
     return;
   }
   const config = data.config || {};
@@ -50,7 +50,7 @@ export async function initRetention() {
     ['Invoices', `${config.invoicesYears} years`, cutoffs.invoicesBefore],
     ['Audit log', `${config.auditYears} years`, cutoffs.auditBefore],
     ['Magic link tokens', `${config.magicLinkDays} days`, cutoffs.magicLinkBefore],
-    ['Privacy requests', `${config.privacyRequestsYears} years`, cutoffs.privacyRequestsBefore]
+    ['Privacy requests', `${config.privacyRequestsYears} years`, cutoffs.privacyRequestsBefore],
   ];
 
   if (configEl) {
@@ -73,7 +73,7 @@ export async function initRetention() {
       ['Session history entries', eligible.sessionHistory],
       ['Invoices', eligible.invoices],
       ['Sessions', eligible.sessions],
-      ['Privacy requests', eligible.privacyRequests]
+      ['Privacy requests', eligible.privacyRequests],
     ].map((row) => {
       const label = escapeHtml(row[0]);
       const count = Number(row[1] || 0);
@@ -87,7 +87,7 @@ export async function initRetention() {
   if (latestEl) {
     if (!latest) {
       latestEl.innerHTML = '<div class="note">No cleanup evidence recorded yet.</div>';
-      if (latestMeta) latestMeta.textContent = '';
+      if (latestMeta) {latestMeta.textContent = '';}
     } else {
       const summary = latest.summary || {};
       latestEl.innerHTML = [
@@ -101,7 +101,7 @@ export async function initRetention() {
         ['Pay periods deleted', summary.payPeriodsDeleted],
         ['Tutors anonymized', summary.tutorsAnonymized],
         ['Students anonymized', summary.studentsAnonymized],
-        ['Privacy requests deleted', summary.privacyRequestsDeleted]
+        ['Privacy requests deleted', summary.privacyRequestsDeleted],
       ].map((row) => {
         const label = escapeHtml(row[0]);
         const count = Number(row[1] || 0);

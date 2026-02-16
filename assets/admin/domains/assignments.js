@@ -21,7 +21,7 @@ export async function initAssignments() {
     'Life Sciences',
     'Accounting',
     'English Home Language',
-    'Afrikaans Home Language'
+    'Afrikaans Home Language',
   ];
 
   const subjectList = qs('#capsSubjects');
@@ -33,7 +33,7 @@ export async function initAssignments() {
 
   const [tutors, students] = await Promise.all([
     apiGet('/admin/tutors'),
-    apiGet('/admin/students')
+    apiGet('/admin/students'),
   ]);
 
   qs('#assignmentTutor').innerHTML = tutors.tutors
@@ -48,7 +48,7 @@ export async function initAssignments() {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No assignments match',
-        description: 'Try a different search term or create a new assignment.'
+        description: 'Try a different search term or create a new assignment.',
       });
       return;
     }
@@ -81,7 +81,7 @@ export async function initAssignments() {
       renderStateCard(list, {
         variant: 'error',
         title: 'Unable to load assignments',
-        description: 'Refresh and try again.'
+        description: 'Refresh and try again.',
       });
     }
   };
@@ -103,8 +103,8 @@ export async function initAssignments() {
       rateOverride: qs('#assignmentRate').value ? Number(qs('#assignmentRate').value) : null,
       allowedDays,
       allowedTimeRanges: [
-        { start: qs('#rangeStart').value, end: qs('#rangeEnd').value }
-      ]
+        { start: qs('#rangeStart').value, end: qs('#rangeEnd').value },
+      ],
     };
     if (!payload.subject?.trim()) {
       formError.textContent = 'Subject is required.';

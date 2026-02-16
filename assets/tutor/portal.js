@@ -287,7 +287,7 @@ async function initTutorHome() {
       renderStateCard(sessionsEl, {
         variant: 'empty',
         title: 'No sessions logged today',
-        description: 'Start your timer and save a draft when your next session ends.'
+        description: 'Start your timer and save a draft when your next session ends.',
       });
     }
 
@@ -309,19 +309,19 @@ async function initTutorHome() {
       renderStateCard(upcomingEl, {
         variant: 'empty',
         title: 'No active assignments',
-        description: 'Assignments from admin will appear here automatically.'
+        description: 'Assignments from admin will appear here automatically.',
       });
     }
   } catch {
     renderStateCard(sessionsEl, {
       variant: 'error',
       title: 'Could not load sessions',
-      description: 'Refresh and try again. If this persists, check your connection.'
+      description: 'Refresh and try again. If this persists, check your connection.',
     });
     renderStateCard(upcomingEl, {
       variant: 'error',
       title: 'Could not load assignments',
-      description: 'Refresh and try again.'
+      description: 'Refresh and try again.',
     });
   }
 }
@@ -336,7 +336,7 @@ async function initAssignments() {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No assignments available',
-        description: 'Assignments from admin will appear here.'
+        description: 'Assignments from admin will appear here.',
       });
       return;
     }
@@ -377,7 +377,7 @@ async function initAssignments() {
     renderStateCard(list, {
       variant: 'error',
       title: 'Unable to load assignments',
-      description: err?.message || 'Try again.'
+      description: err?.message || 'Try again.',
     });
   }
 }
@@ -393,7 +393,7 @@ async function initPayroll() {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No approved sessions yet',
-        description: 'Payroll totals appear after sessions are approved.'
+        description: 'Payroll totals appear after sessions are approved.',
       });
       return;
     }
@@ -422,7 +422,7 @@ async function initPayroll() {
     renderStateCard(list, {
       variant: 'error',
       title: 'Unable to load payroll totals',
-      description: err?.message || 'Try again.'
+      description: err?.message || 'Try again.',
     });
   }
 }
@@ -438,7 +438,7 @@ async function initInvoices() {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No invoices yet',
-        description: 'Invoices will appear here once payroll runs are complete.'
+        description: 'Invoices will appear here once payroll runs are complete.',
       });
       return;
     }
@@ -462,7 +462,7 @@ async function initInvoices() {
     renderStateCard(list, {
       variant: 'error',
       title: 'Unable to load invoices',
-      description: err?.message || 'Try again.'
+      description: err?.message || 'Try again.',
     });
   }
 }

@@ -7,16 +7,16 @@
 function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
-    if (k === "class") node.className = v;
-    else if (k === "text") node.textContent = v;
-    else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2).toLowerCase(), v);
-    else if (v !== false && v != null) node.setAttribute(k, String(v));
+    if (k === 'class') {node.className = v;}
+    else if (k === 'text') {node.textContent = v;}
+    else if (k.startsWith('on') && typeof v === 'function') {node.addEventListener(k.slice(2).toLowerCase(), v);}
+    else if (v !== false && v !== null) {node.setAttribute(k, String(v));}
   }
-  for (const c of children) node.append(c);
+  for (const c of children) {node.append(c);}
   return node;
 }
 
-function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+function clear(node) { while (node.firstChild) {node.removeChild(node.firstChild);} }
 
 export function createGameUI(ctx, {
   title,
@@ -26,48 +26,48 @@ export function createGameUI(ctx, {
   onPauseToggle,
 } = {}) {
   // Shell
-  const shell = el("div", { class: "po-game-shell" });
+  const shell = el('div', { class: 'po-game-shell' });
 
-  const titleBlock = el("div", { class: "po-game-titleblock" }, [
-    el("div", { class: "po-game-title", text: title || "Game" }),
-    el("div", { class: "po-game-sub", text: subtitle || "" }),
+  const titleBlock = el('div', { class: 'po-game-titleblock' }, [
+    el('div', { class: 'po-game-title', text: title || 'Game' }),
+    el('div', { class: 'po-game-sub', text: subtitle || '' }),
   ]);
 
-  const btnBack = el("button", {
-    class: "po-btn po-btn--ghost",
-    type: "button",
+  const btnBack = el('button', {
+    class: 'po-btn po-btn--ghost',
+    type: 'button',
     onClick: () => onBack?.(),
-    "aria-label": "Back to arcade",
-  }, ["Back"]);
+    'aria-label': 'Back to arcade',
+  }, ['Back']);
 
-  const btnRestart = el("button", {
-    class: "po-btn",
-    type: "button",
+  const btnRestart = el('button', {
+    class: 'po-btn',
+    type: 'button',
     onClick: () => onRestart?.(),
-    "aria-label": "Restart",
-  }, ["Restart"]);
+    'aria-label': 'Restart',
+  }, ['Restart']);
 
-  const btnPause = el("button", {
-    class: "po-btn po-btn--primary",
-    type: "button",
+  const btnPause = el('button', {
+    class: 'po-btn po-btn--primary',
+    type: 'button',
     onClick: () => onPauseToggle?.(),
-    "aria-label": "Pause",
-  }, ["Pause"]);
+    'aria-label': 'Pause',
+  }, ['Pause']);
 
-  const actions = el("div", { class: "po-game-actions" }, [btnBack, btnRestart, btnPause]);
+  const actions = el('div', { class: 'po-game-actions' }, [btnBack, btnRestart, btnPause]);
 
-  const topbar = el("div", { class: "po-game-topbar" }, [titleBlock, actions]);
+  const topbar = el('div', { class: 'po-game-topbar' }, [titleBlock, actions]);
 
-  const hud = el("div", { class: "po-panel po-hud", "aria-label": "HUD" });
-  const hudRow = el("div", { class: "po-hud-row" }, []);
+  const hud = el('div', { class: 'po-panel po-hud', 'aria-label': 'HUD' });
+  const hudRow = el('div', { class: 'po-hud-row' }, []);
   hud.appendChild(hudRow);
 
-  const stage = el("div", { class: "po-stage", "aria-label": "Game stage" });
-  const stageInner = el("div", { class: "po-stage-inner" });
+  const stage = el('div', { class: 'po-stage', 'aria-label': 'Game stage' });
+  const stageInner = el('div', { class: 'po-stage-inner' });
   stage.appendChild(stageInner);
 
-  const controls = el("div", { class: "po-panel po-controls", hidden: true, "aria-label": "Controls" }, []);
-  const controlsBody = el("div", {}, []);
+  const controls = el('div', { class: 'po-panel po-controls', hidden: true, 'aria-label': 'Controls' }, []);
+  const controlsBody = el('div', {}, []);
   controls.appendChild(controlsBody);
 
   shell.append(topbar, hud, stage, controls);
@@ -86,8 +86,8 @@ export function createGameUI(ctx, {
     stageEl: stageInner,
 
     setPauseLabel(isPaused) {
-      btnPause.textContent = isPaused ? "Resume" : "Pause";
-      btnPause.setAttribute("aria-label", isPaused ? "Resume" : "Pause");
+      btnPause.textContent = isPaused ? 'Resume' : 'Pause';
+      btnPause.setAttribute('aria-label', isPaused ? 'Resume' : 'Pause');
     },
 
     setHUD(items = []) {
@@ -95,10 +95,10 @@ export function createGameUI(ctx, {
       clear(hudRow);
       for (const it of items) {
         hudRow.appendChild(
-          el("div", { class: "po-chip" }, [
-            el("span", { class: "po-chip__k", text: String(it.k ?? "") }),
-            el("span", { class: "po-chip__v", text: String(it.v ?? "") }),
-          ])
+          el('div', { class: 'po-chip' }, [
+            el('span', { class: 'po-chip__k', text: String(it.k ?? '') }),
+            el('span', { class: 'po-chip__v', text: String(it.v ?? '') }),
+          ]),
         );
       }
     },
@@ -115,49 +115,49 @@ export function createGameUI(ctx, {
       controls.hidden = false;
       clear(controlsBody);
 
-      if (spec.type === "dpad") {
-        const grid = el("div", { class: "po-controls-grid" }, [
-          el("div", { class: "po-dpad-spacer" }, ["·"]),
-          mkBtn("↑", spec.on?.up),
-          el("div", { class: "po-dpad-spacer" }, ["·"]),
-          mkBtn("←", spec.on?.left),
-          mkBtn("↓", spec.on?.down),
-          mkBtn("→", spec.on?.right),
+      if (spec.type === 'dpad') {
+        const grid = el('div', { class: 'po-controls-grid' }, [
+          el('div', { class: 'po-dpad-spacer' }, ['·']),
+          mkBtn('↑', spec.on?.up),
+          el('div', { class: 'po-dpad-spacer' }, ['·']),
+          mkBtn('←', spec.on?.left),
+          mkBtn('↓', spec.on?.down),
+          mkBtn('→', spec.on?.right),
         ]);
         controlsBody.appendChild(grid);
 
         if (spec.extras?.length) {
-          const row = el("div", { class: "po-pillrow" }, spec.extras.map(x =>
-            el("button", { class: `po-btn ${x.primary ? "po-btn--primary" : ""}`, type: "button", onClick: x.onClick }, [x.label])
+          const row = el('div', { class: 'po-pillrow' }, spec.extras.map(x =>
+            el('button', { class: `po-btn ${x.primary ? 'po-btn--primary' : ''}`, type: 'button', onClick: x.onClick }, [x.label]),
           ));
           controlsBody.appendChild(row);
         }
       }
 
-      if (spec.type === "buttons") {
-        const row = el("div", { class: "po-pillrow" }, spec.buttons.map(x =>
-          el("button", { class: `po-btn ${x.primary ? "po-btn--primary" : ""}`, type: "button", onClick: x.onClick }, [x.label])
+      if (spec.type === 'buttons') {
+        const row = el('div', { class: 'po-pillrow' }, spec.buttons.map(x =>
+          el('button', { class: `po-btn ${x.primary ? 'po-btn--primary' : ''}`, type: 'button', onClick: x.onClick }, [x.label]),
         ));
         controlsBody.appendChild(row);
       }
 
       function mkBtn(label, fn) {
-        return el("button", {
-          class: "po-btn",
-          type: "button",
+        return el('button', {
+          class: 'po-btn',
+          type: 'button',
           onClick: () => fn?.(),
-          "aria-label": `Control ${label}`,
+          'aria-label': `Control ${label}`,
         }, [label]);
       }
     },
 
     toast(message, ms = 1600) {
-      if (toastEl) toastEl.remove();
-      toastEl = el("div", { class: "po-toast", role: "status", "aria-live": "polite", text: String(message) });
+      if (toastEl) {toastEl.remove();}
+      toastEl = el('div', { class: 'po-toast', role: 'status', 'aria-live': 'polite', text: String(message) });
       document.body.appendChild(toastEl);
       ctx.onCleanup(() => toastEl?.remove());
 
-      if (toastTimerOff) toastTimerOff();
+      if (toastTimerOff) {toastTimerOff();}
       toastTimerOff = ctx.timeout(() => {
         toastEl?.remove();
         toastEl = null;
@@ -167,39 +167,39 @@ export function createGameUI(ctx, {
     showModal({ title, body, actions = [], variant, adSlot = false } = {}) {
       api.closeModal();
 
-      const modalClass = ["po-modal", variant ? `po-modal--${variant}` : ""]
+      const modalClass = ['po-modal', variant ? `po-modal--${variant}` : '']
         .filter(Boolean)
-        .join(" ");
+        .join(' ');
 
       const adSafe = () =>
-        el("div", { class: "po-ad-safe" }, [
-          el("div", { class: "po-ad-safe__label", text: "Ad safe zone" }),
+        el('div', { class: 'po-ad-safe' }, [
+          el('div', { class: 'po-ad-safe__label', text: 'Ad safe zone' }),
         ]);
 
       const modalChildren = [
-        el("h3", { text: String(title || "") }),
-        el("p", { text: String(body || "") }),
+        el('h3', { text: String(title || '') }),
+        el('p', { text: String(body || '') }),
       ];
 
-      if (adSlot) modalChildren.push(adSafe());
+      if (adSlot) {modalChildren.push(adSafe());}
 
       modalChildren.push(
-        el("div", { class: "po-modal-actions" }, actions.map(a =>
-          el("button", {
-            class: `po-btn ${a.primary ? "po-btn--primary" : ""}`,
-            type: "button",
-            onClick: () => { a.onClick?.(); if (!a.keepOpen) api.closeModal(); },
-          }, [a.label])
-        ))
+        el('div', { class: 'po-modal-actions' }, actions.map(a =>
+          el('button', {
+            class: `po-btn ${a.primary ? 'po-btn--primary' : ''}`,
+            type: 'button',
+            onClick: () => { a.onClick?.(); if (!a.keepOpen) {api.closeModal();} },
+          }, [a.label]),
+        )),
       );
 
-      modalEl = el("div", { class: "po-modal-backdrop" }, [
-        el("div", { class: modalClass }, modalChildren),
+      modalEl = el('div', { class: 'po-modal-backdrop' }, [
+        el('div', { class: modalClass }, modalChildren),
       ]);
 
       // tap outside to close
-      modalEl.addEventListener("click", (e) => {
-        if (e.target === modalEl) api.closeModal();
+      modalEl.addEventListener('click', (e) => {
+        if (e.target === modalEl) {api.closeModal();}
       });
 
       document.body.appendChild(modalEl);
@@ -207,36 +207,36 @@ export function createGameUI(ctx, {
     },
 
     closeModal() {
-      if (!modalEl) return;
+      if (!modalEl) {return;}
       modalEl.remove();
       modalEl = null;
     },
 
     showPause({ onResume, onQuit, onSettings } = {}) {
       api.showModal({
-        title: "Paused",
-        body: "Take a breather. Your progress is safe.",
-        variant: "pause",
+        title: 'Paused',
+        body: 'Take a breather. Your progress is safe.',
+        variant: 'pause',
         adSlot: true,
-        adPlacement: "pause_screen_banner",
+        adPlacement: 'pause_screen_banner',
         actions: [
-          { label: "Settings", onClick: onSettings, keepOpen: true },
-          { label: "Quit", onClick: onQuit },
-          { label: "Resume", onClick: onResume, primary: true },
+          { label: 'Settings', onClick: onSettings, keepOpen: true },
+          { label: 'Quit', onClick: onQuit },
+          { label: 'Resume', onClick: onResume, primary: true },
         ],
       });
     },
 
-    showEnd({ title = "Game Over", summary = "", onRestart, onBack } = {}) {
+    showEnd({ title = 'Game Over', summary = '', onRestart, onBack } = {}) {
       api.showModal({
         title,
-        body: summary || "Nice run.",
-        variant: "end",
+        body: summary || 'Nice run.',
+        variant: 'end',
         adSlot: true,
-        adPlacement: "post_run_reward",
+        adPlacement: 'post_run_reward',
         actions: [
-          { label: "Back", onClick: onBack },
-          { label: "Restart", onClick: onRestart, primary: true },
+          { label: 'Back', onClick: onBack },
+          { label: 'Restart', onClick: onRestart, primary: true },
         ],
       });
     },

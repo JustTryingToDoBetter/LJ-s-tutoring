@@ -16,7 +16,7 @@ async function initRiskPage() {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No students mapped yet',
-        description: 'Risk analytics populate after student mapping and activity.'
+        description: 'Risk analytics populate after student mapping and activity.',
       });
       return;
     }
@@ -27,7 +27,7 @@ async function initRiskPage() {
       row.append(
         createEl('strong', { text: item.studentName }),
         createEl('div', { className: 'note', text: `Risk: ${item.riskScore ?? '-'} · Momentum: ${item.momentumScore ?? '-'}` }),
-        createEl('div', { className: 'note', text: (item.reasons || []).slice(0, 2).map((r) => r.label).join(' · ') || 'No explainable reasons yet.' })
+        createEl('div', { className: 'note', text: (item.reasons || []).slice(0, 2).map((r) => r.label).join(' · ') || 'No explainable reasons yet.' }),
       );
       frag.append(row);
     });
@@ -36,7 +36,7 @@ async function initRiskPage() {
     renderStateCard(list, {
       variant: 'error',
       title: 'Unable to load risk monitor',
-      description: 'Refresh and try again.'
+      description: 'Refresh and try again.',
     });
   }
 }

@@ -6,7 +6,6 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const distDir = path.join(__dirname, '..', 'dist');
-const distAssetsDir = path.join(distDir, 'assets');
 
 function getBuildId() {
   if (process.env.BUILD_ID) {
@@ -60,7 +59,7 @@ function updateFile(filePath, updater) {
 }
 
 const baseId = getBuildId();
-const dirtySuffix = isGitDirty() ? `-dirty-${Date.now()}` : "";
+const dirtySuffix = isGitDirty() ? `-dirty-${Date.now()}` : '';
 const buildId = sanitizeId(`${baseId}${dirtySuffix}`);
 const swVersion = `po-v${buildId}`;
 

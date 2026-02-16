@@ -29,13 +29,13 @@ async function initDashboard() {
 const page = document.body.dataset.page;
 initPortalUX();
 
-if (page === 'dashboard') initDashboard();
-if (page === 'tutors') initTutors();
-if (page === 'students') initStudents();
-if (page === 'assignments') initAssignments();
-if (page === 'approvals') initApprovals();
-if (page === 'payroll') initPayroll();
-if (page === 'audit') initAudit();
-if (page === 'reconciliation') initReconciliation();
-if (page === 'retention') initRetention();
-if (page === 'privacy-requests') initPrivacyRequests();
+if (page === 'dashboard') {initDashboard();}
+if (page === 'tutors') {initTutors();}
+if (page === 'students') {initStudents();}
+if (page === 'assignments') {initAssignments();}
+if (page === 'approvals') {initApprovals();}
+if (page === 'payroll') {initPayroll();}
+if (page === 'audit') {initAudit();}
+if (page === 'reconciliation') {initReconciliation();}
+if (page === 'retention') {initRetention();}
+if (page === 'privacy-requests') {initPrivacyRequests();}

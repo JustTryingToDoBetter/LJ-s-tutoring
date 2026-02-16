@@ -328,7 +328,7 @@
       if (hash) {setCurrent(hash);}
     }, {
       rootMargin: '-40% 0px -45% 0px',
-      threshold: [0.2, 0.5, 0.8]
+      threshold: [0.2, 0.5, 0.8],
     });
 
     sectionById.forEach((_hash, section) => observer.observe(section));
@@ -539,7 +539,7 @@
             name: name,
             email: email,
             grade: grade,
-          }
+          },
         };
       },
       onAttempt: function () {

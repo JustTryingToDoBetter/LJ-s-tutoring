@@ -219,7 +219,7 @@ export function createStatPill({ icon = '•', label = '', value = '' } = {}) {
   pill.append(
     createEl('span', { text: icon, attrs: { 'aria-hidden': 'true' } }),
     createEl('span', { text: label }),
-    createEl('strong', { text: value })
+    createEl('strong', { text: value }),
   );
   return pill;
 }
@@ -231,8 +231,8 @@ export function createFilterPill({ label = '', active = false, onClick } = {}) {
     attrs: {
       type: 'button',
       role: 'tab',
-      'aria-selected': active ? 'true' : 'false'
-    }
+      'aria-selected': active ? 'true' : 'false',
+    },
   });
   if (typeof onClick === 'function') {
     btn.addEventListener('click', onClick);
@@ -258,7 +258,7 @@ export function createIconButton({ icon = '•', label = '', attrs = {} } = {}) 
       'aria-label': label || 'Action',
       title: label || 'Action',
       ...attrs,
-    }
+    },
   });
 }
 
@@ -268,12 +268,12 @@ export function renderStateCard(container, { variant = 'empty', title = '', desc
     className: `ds-state ds-state-${variant}`,
     attrs: {
       role: variant === 'error' ? 'alert' : 'status',
-      'aria-live': variant === 'error' ? 'assertive' : 'polite'
-    }
+      'aria-live': variant === 'error' ? 'assertive' : 'polite',
+    },
   });
   card.append(
     createEl('h3', { className: 'ds-state-title', text: title || 'No data yet' }),
-    createEl('p', { className: 'ds-state-description', text: description || 'Try again in a moment.' })
+    createEl('p', { className: 'ds-state-description', text: description || 'Try again in a moment.' }),
   );
   container.replaceChildren(card);
 }
@@ -299,7 +299,7 @@ export function initPortalUX() {
         type: 'search',
         placeholder: 'Search dashboard surfaces',
         'aria-label': 'Search dashboard surfaces',
-      }
+      },
     });
 
     search.addEventListener('keydown', (event) => {
@@ -351,12 +351,12 @@ export function initPortalUX() {
       report: 'Report',
       community: 'Community',
       career: 'Career',
-      risk: 'Risk monitor'
+      risk: 'Risk monitor',
     };
     const currentLabel = labels[page] || page;
     const nav = createEl('nav', {
       className: 'portal-breadcrumbs',
-      attrs: { 'aria-label': 'Breadcrumb' }
+      attrs: { 'aria-label': 'Breadcrumb' },
     });
     nav.append(
       createEl('span', { className: 'portal-breadcrumbs-item', text: area }),
@@ -364,8 +364,8 @@ export function initPortalUX() {
       createEl('span', {
         className: 'portal-breadcrumbs-item current',
         attrs: { 'aria-current': 'page' },
-        text: currentLabel
-      })
+        text: currentLabel,
+      }),
     );
     pageHeader.insertBefore(nav, titleEl);
   }

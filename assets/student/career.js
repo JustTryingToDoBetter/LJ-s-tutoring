@@ -10,7 +10,7 @@ function renderGoalLibrary(goals) {
     renderStateCard(container, {
       variant: 'empty',
       title: 'No goals available',
-      description: 'Career goal library is currently unavailable.'
+      description: 'Career goal library is currently unavailable.',
     });
     return;
   }
@@ -23,7 +23,7 @@ function renderGoalLibrary(goals) {
         type: 'checkbox',
         value: goal.id,
         'aria-label': `Select goal ${goal.title}`,
-      }
+      },
     });
     checkbox.checked = selectedGoalIds.has(goal.id);
     checkbox.addEventListener('change', () => {
@@ -38,7 +38,7 @@ function renderGoalLibrary(goals) {
       checkbox,
       createEl('strong', { text: goal.title }),
       createEl('div', { className: 'note', text: `Subjects: ${goal.recommendedSubjects.join(', ')}` }),
-      createEl('div', { className: 'note', text: `Skills: ${goal.skillsChecklist.join(' · ')}` })
+      createEl('div', { className: 'note', text: `Skills: ${goal.skillsChecklist.join(' · ')}` }),
     );
 
     frag.append(row);
@@ -57,7 +57,7 @@ function renderRoadmap(data) {
     renderStateCard(roadmap, {
       variant: 'empty',
       title: data.emptyState.title,
-      description: data.emptyState.description
+      description: data.emptyState.description,
     });
   } else {
     const frag = document.createDocumentFragment();
@@ -68,8 +68,8 @@ function renderRoadmap(data) {
         createEl('div', { className: 'note', text: `Alignment: ${entry.latestSnapshot?.alignmentScore ?? 0}%` }),
         createEl('div', {
           className: 'note',
-          text: (entry.latestSnapshot?.reasons || []).slice(0, 2).join(' · ') || 'No guidance yet.'
-        })
+          text: (entry.latestSnapshot?.reasons || []).slice(0, 2).join(' · ') || 'No guidance yet.',
+        }),
       );
       frag.append(row);
     });
@@ -102,12 +102,12 @@ async function loadCareer() {
     renderStateCard(library, {
       variant: 'error',
       title: 'Could not load goal library',
-      description: 'Refresh and try again.'
+      description: 'Refresh and try again.',
     });
     renderStateCard(roadmap, {
       variant: 'error',
       title: 'Could not load roadmap',
-      description: 'Refresh and try again.'
+      description: 'Refresh and try again.',
     });
   }
 }

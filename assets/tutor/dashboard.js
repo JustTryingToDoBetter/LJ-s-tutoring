@@ -22,9 +22,9 @@ async function initTutorDashboard() {
 
     const todayCount = data.todaySessions?.length || 0;
     const attentionCount = data.studentsNeedingAttention?.length || 0;
-    if (todayCountEl) todayCountEl.textContent = String(todayCount);
-    if (attentionCountEl) attentionCountEl.textContent = String(attentionCount);
-    if (priorityCountEl) priorityCountEl.textContent = String(attentionCount);
+    if (todayCountEl) {todayCountEl.textContent = String(todayCount);}
+    if (attentionCountEl) {attentionCountEl.textContent = String(attentionCount);}
+    if (priorityCountEl) {priorityCountEl.textContent = String(attentionCount);}
     if (heroStatusEl) {
       heroStatusEl.textContent = todayCount
         ? `${todayCount} session(s) scheduled. Prioritize ${attentionCount || 0} learner(s) requiring intervention.`
@@ -36,7 +36,7 @@ async function initTutorDashboard() {
       renderStateCard(todayEl, {
         variant: 'empty',
         title: 'No sessions today',
-        description: 'Use quick tools to prep your next student touchpoint.'
+        description: 'Use quick tools to prep your next student touchpoint.',
       });
     } else {
       const frag = document.createDocumentFragment();
@@ -45,15 +45,15 @@ async function initTutorDashboard() {
         row.append(
           createEl('div', { className: 'row-head' }, [
             createEl('strong', { text: `${item.time} · ${item.studentName}` }),
-            createEl('span', { className: 'note', text: item.status })
-          ])
+            createEl('span', { className: 'note', text: item.status }),
+          ]),
         );
         const actions = createEl('div', { className: 'session-actions' });
         (item.quickActions || []).forEach((action) => {
           actions.append(createEl('a', {
             className: 'button secondary',
             text: action.label,
-            attrs: { href: action.href }
+            attrs: { href: action.href },
           }));
         });
         row.append(actions);
@@ -67,7 +67,7 @@ async function initTutorDashboard() {
       renderStateCard(attentionEl, {
         variant: 'success',
         title: 'No urgent attention needed',
-        description: 'All active students look healthy this week.'
+        description: 'All active students look healthy this week.',
       });
     } else {
       const frag = document.createDocumentFragment();
@@ -75,17 +75,17 @@ async function initTutorDashboard() {
         const row = createEl('div', { className: 'list-row' });
         const badge = createEl('span', {
           className: 'pill rejected',
-          text: Number(item.riskScore || 0) >= 70 ? 'high risk' : 'watch'
+          text: Number(item.riskScore || 0) >= 70 ? 'high risk' : 'watch',
         });
         row.append(
           createEl('div', { className: 'row-head' }, [
             createEl('strong', { text: item.studentName }),
-            badge
+            badge,
           ]),
           createEl('div', { className: 'note', text: `Current streak: ${item.currentStreak} day(s)` }),
           createEl('div', { className: 'note', text: `Risk: ${item.riskScore ?? '-'} · Momentum: ${item.momentumScore ?? '-'}` }),
           createEl('div', { className: 'note', text: (item.modelReasons || []).slice(0, 1).map((r) => r.label || '').join('') }),
-          createEl('div', { className: 'note', text: (item.reasons || []).join(' · ') })
+          createEl('div', { className: 'note', text: (item.reasons || []).join(' · ') }),
         );
         frag.append(row);
       });
@@ -98,7 +98,7 @@ async function initTutorDashboard() {
       tools.append(createEl('a', {
         className: 'button',
         text: tool.label,
-        attrs: { href: tool.href, 'aria-label': tool.label }
+        attrs: { href: tool.href, 'aria-label': tool.label },
       }));
     });
     toolsEl.append(tools);
@@ -106,17 +106,17 @@ async function initTutorDashboard() {
     renderStateCard(todayEl, {
       variant: 'error',
       title: 'Could not load today’s sessions',
-      description: 'Refresh to retry.'
+      description: 'Refresh to retry.',
     });
     renderStateCard(attentionEl, {
       variant: 'error',
       title: 'Could not load student attention list',
-      description: 'Refresh to retry.'
+      description: 'Refresh to retry.',
     });
     renderStateCard(toolsEl, {
       variant: 'error',
       title: 'Could not load quick tools',
-      description: 'Refresh to retry.'
+      description: 'Refresh to retry.',
     });
   }
 }

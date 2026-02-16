@@ -6,7 +6,7 @@ function renderProgressTopics(container, topics) {
     renderStateCard(container, {
       variant: 'empty',
       title: 'No topic progress yet',
-      description: 'Complete a practice or session to populate your progress snapshot.'
+      description: 'Complete a practice or session to populate your progress snapshot.',
     });
     return;
   }
@@ -17,12 +17,12 @@ function renderProgressTopics(container, topics) {
     const head = createEl('div', { className: 'topic-head' });
     head.append(
       createEl('strong', { text: topic.topic }),
-      createEl('span', { text: `${topic.completion}%` })
+      createEl('span', { text: `${topic.completion}%` }),
     );
     const track = createEl('div', { className: 'progress-track' });
     const fill = createEl('div', {
       className: 'progress-fill',
-      attrs: { style: `width:${Math.max(0, Math.min(100, Number(topic.completion || 0)))}%` }
+      attrs: { style: `width:${Math.max(0, Math.min(100, Number(topic.completion || 0)))}%` },
     });
     track.append(fill);
     row.append(head, track);
@@ -66,7 +66,7 @@ function renderCalendar(container, streakDays) {
     const day = createEl('div', {
       className: `calendar-day ${idx < activeCount ? 'active' : ''}`,
       text: label,
-      attrs: { 'aria-label': `Day ${label} ${idx < activeCount ? 'completed' : 'not completed'}` }
+      attrs: { 'aria-label': `Day ${label} ${idx < activeCount ? 'completed' : 'not completed'}` },
     });
     frag.append(day);
   });
@@ -109,7 +109,7 @@ async function initDashboard() {
 
   try {
     const data = await apiGet('/dashboard');
-    if (greetingEl) greetingEl.textContent = data.greeting || 'Welcome back!';
+    if (greetingEl) {greetingEl.textContent = data.greeting || 'Welcome back!';}
 
     clearChildren(todayEl);
     if (data.today?.hasUpcoming) {
@@ -122,7 +122,7 @@ async function initDashboard() {
         card.append(createEl('a', {
           className: 'button',
           text: 'Join session',
-          attrs: { href: data.today.session.joinLink, 'aria-label': 'Join upcoming session' }
+          attrs: { href: data.today.session.joinLink, 'aria-label': 'Join upcoming session' },
         }));
       }
       todayEl.append(card);
@@ -130,12 +130,12 @@ async function initDashboard() {
       renderStateCard(todayEl, {
         variant: 'empty',
         title: data.today?.emptyState?.title || 'No upcoming session',
-        description: 'Take a short focus session to keep your streak alive.'
+        description: 'Take a short focus session to keep your streak alive.',
       });
       const cta = createEl('a', {
         className: 'button secondary',
         text: data.today?.emptyState?.ctaLabel || 'Book session',
-        attrs: { href: data.today?.emptyState?.ctaHref || '/contact' }
+        attrs: { href: data.today?.emptyState?.ctaHref || '/contact' },
       });
       todayEl.append(cta);
     }
@@ -152,10 +152,10 @@ async function initDashboard() {
     renderCalendar(calendarEl, data.streak?.current || 0);
     renderSparkline(sparklineEl, data.progressSnapshot || []);
 
-    if (heroXpEl) heroXpEl.textContent = String(data.streak?.xp || 0);
-    if (heroTasksDueEl) heroTasksDueEl.textContent = String(data.today?.tasksDue || 0);
-    if (heroTestsDueEl) heroTestsDueEl.textContent = String(data.today?.testsDue || 0);
-    if (heroStreakEl) heroStreakEl.textContent = String(data.streak?.current || 0);
+    if (heroXpEl) {heroXpEl.textContent = String(data.streak?.xp || 0);}
+    if (heroTasksDueEl) {heroTasksDueEl.textContent = String(data.today?.tasksDue || 0);}
+    if (heroTestsDueEl) {heroTestsDueEl.textContent = String(data.today?.testsDue || 0);}
+    if (heroStreakEl) {heroStreakEl.textContent = String(data.streak?.current || 0);}
     if (heroQuickStatusEl) {
       const hasUpcoming = Boolean(data.today?.hasUpcoming);
       heroQuickStatusEl.textContent = hasUpcoming
@@ -165,10 +165,10 @@ async function initDashboard() {
 
     renderProgressTopics(progressEl, data.progressSnapshot || []);
 
-    if (momentumEl) momentumEl.textContent = String(data.predictiveScore?.momentumScore || 0);
-    if (momentumDetailEl) momentumDetailEl.textContent = String(data.predictiveScore?.momentumScore || 0);
-    if (riskEl) riskEl.textContent = String(data.predictiveScore?.riskScore || 0);
-    if (scoreDateEl) scoreDateEl.textContent = data.predictiveScore?.date || '-';
+    if (momentumEl) {momentumEl.textContent = String(data.predictiveScore?.momentumScore || 0);}
+    if (momentumDetailEl) {momentumDetailEl.textContent = String(data.predictiveScore?.momentumScore || 0);}
+    if (riskEl) {riskEl.textContent = String(data.predictiveScore?.riskScore || 0);}
+    if (scoreDateEl) {scoreDateEl.textContent = data.predictiveScore?.date || '-';}
 
     clearChildren(reasonsEl);
     const reasons = data.predictiveScore?.reasons || [];
@@ -176,7 +176,7 @@ async function initDashboard() {
       renderStateCard(reasonsEl, {
         variant: 'empty',
         title: 'No predictive reasons yet',
-        description: 'Your score reasons will appear after activity sync.'
+        description: 'Your score reasons will appear after activity sync.',
       });
     } else {
       const reasonFrag = document.createDocumentFragment();
@@ -184,7 +184,7 @@ async function initDashboard() {
         const row = createEl('div', { className: 'list-row' });
         row.append(
           createEl('strong', { text: reason.label || 'Reason' }),
-          createEl('p', { className: 'note', text: reason.detail || 'No details provided.' })
+          createEl('p', { className: 'note', text: reason.detail || 'No details provided.' }),
         );
         reasonFrag.append(row);
       });
@@ -196,12 +196,12 @@ async function initDashboard() {
       renderStateCard(careerNextStepsEl, {
         variant: 'empty',
         title: 'No career goal selected',
-        description: 'Pick a goal in Career Mapping to receive roadmap next steps.'
+        description: 'Pick a goal in Career Mapping to receive roadmap next steps.',
       });
       careerNextStepsEl.append(createEl('a', {
         className: 'button secondary',
         text: 'Open Career Mapping',
-        attrs: { href: '/dashboard/career/' }
+        attrs: { href: '/dashboard/career/' },
       }));
     } else {
       const row = createEl('div', { className: 'list-row' });
@@ -212,8 +212,8 @@ async function initDashboard() {
         createEl('a', {
           className: 'button secondary',
           text: 'View full roadmap',
-          attrs: { href: '/dashboard/career/' }
-        })
+          attrs: { href: '/dashboard/career/' },
+        }),
       );
       careerNextStepsEl.append(row);
     }
@@ -226,8 +226,8 @@ async function initDashboard() {
       createEl('button', {
         className: 'button',
         text: data.recommendedNext?.action || 'Start now',
-        attrs: { type: 'button', id: 'recommendedActionBtn', 'aria-label': 'Start recommended action' }
-      })
+        attrs: { type: 'button', id: 'recommendedActionBtn', 'aria-label': 'Start recommended action' },
+      }),
     );
     recommendedEl.append(recommendation);
     qs('#recommendedActionBtn')?.addEventListener('click', () => {
@@ -238,27 +238,27 @@ async function initDashboard() {
     renderStateCard(todayEl, {
       variant: 'error',
       title: 'Could not load dashboard',
-      description: 'Refresh to try again.'
+      description: 'Refresh to try again.',
     });
     renderStateCard(progressEl, {
       variant: 'error',
       title: 'Progress unavailable',
-      description: 'Try again in a moment.'
+      description: 'Try again in a moment.',
     });
     renderStateCard(recommendedEl, {
       variant: 'error',
       title: 'Suggestions unavailable',
-      description: 'Try again in a moment.'
+      description: 'Try again in a moment.',
     });
     renderStateCard(reasonsEl, {
       variant: 'error',
       title: 'Predictive analytics unavailable',
-      description: 'Try again in a moment.'
+      description: 'Try again in a moment.',
     });
     renderStateCard(careerNextStepsEl, {
       variant: 'error',
       title: 'Career roadmap unavailable',
-      description: 'Try again in a moment.'
+      description: 'Try again in a moment.',
     });
   }
 }
@@ -267,7 +267,7 @@ function bindFocusTimer() {
   const startBtn = qs('#focusModeStart');
   const completeBtn = qs('#focusModeComplete');
   const timerLabel = qs('#focusTimerLabel');
-  if (!startBtn || !completeBtn || !timerLabel) return;
+  if (!startBtn || !completeBtn || !timerLabel) {return;}
 
   let timerId = null;
   let remaining = 25 * 60;
@@ -306,8 +306,8 @@ function bindFocusTimer() {
         dedupeKey: `focus-${new Date().toISOString().slice(0, 10)}`,
         metadata: {
           durationMinutes: 25,
-          source: 'focus_mode_widget'
-        }
+          source: 'focus_mode_widget',
+        },
       });
       trackPortalEvent('streak_credited', { source: 'focus_mode_widget' });
       await initDashboard();
@@ -333,7 +333,7 @@ async function initReports() {
       renderStateCard(listEl, {
         variant: 'empty',
         title: 'No reports yet',
-        description: 'Generate your weekly report to see your latest progress.'
+        description: 'Generate your weekly report to see your latest progress.',
       });
       return;
     }
@@ -359,7 +359,7 @@ async function initReports() {
       renderStateCard(listEl, {
         variant: 'empty',
         title: 'No reports in this filter',
-        description: 'Try a broader filter or generate a new report.'
+        description: 'Try a broader filter or generate a new report.',
       });
       return;
     }
@@ -370,16 +370,16 @@ async function initReports() {
       row.append(
         createEl('div', { className: 'row-head' }, [
           createEl('strong', { text: `Week ${item.week_start} → ${item.week_end}` }),
-          createEl('span', { className: 'note', text: new Date(item.created_at).toLocaleString() })
+          createEl('span', { className: 'note', text: new Date(item.created_at).toLocaleString() }),
         ]),
         createEl('a', {
           className: 'button secondary',
           text: 'View report',
           attrs: {
             href: `/reports/view/?id=${encodeURIComponent(item.id)}`,
-            'aria-label': 'View weekly report'
-          }
-        })
+            'aria-label': 'View weekly report',
+          },
+        }),
       );
       frag.append(row);
     });
@@ -406,7 +406,7 @@ async function initReports() {
     renderStateCard(listEl, {
       variant: 'error',
       title: 'Could not load reports',
-      description: 'Please refresh and try again.'
+      description: 'Please refresh and try again.',
     });
   }
 
@@ -436,7 +436,7 @@ async function initReportView() {
     renderStateCard(viewEl, {
       variant: 'error',
       title: 'Missing report ID',
-      description: 'Open a report from the reports list.'
+      description: 'Open a report from the reports list.',
     });
     return;
   }
@@ -455,13 +455,13 @@ async function initReportView() {
       createEl('span', { className: 'metric-chip', text: `Sessions: ${payload.metrics?.sessionsAttended || 0}` }),
       createEl('span', { className: 'metric-chip', text: `Minutes: ${payload.metrics?.timeStudiedMinutes || 0}` }),
       createEl('span', { className: 'metric-chip', text: `Streak: ${payload.metrics?.streak || 0} days` }),
-      createEl('span', { className: 'metric-chip', text: `XP: ${payload.metrics?.xp || 0}` })
+      createEl('span', { className: 'metric-chip', text: `XP: ${payload.metrics?.xp || 0}` }),
     );
 
     card.append(
       createEl('h2', { className: 'panel-title', text: `Weekly report · ${report.weekStart} to ${report.weekEnd}` }),
       createEl('p', { className: 'note', text: `Student: ${payload.student?.name || 'Student'} (${payload.student?.grade || 'N/A'})` }),
-      chips
+      chips,
     );
 
     const topicsSection = createEl('section', { className: 'report-section' });
@@ -500,7 +500,7 @@ async function initReportView() {
     renderStateCard(viewEl, {
       variant: 'error',
       title: 'Could not load report',
-      description: 'Try opening it again from your reports list.'
+      description: 'Try opening it again from your reports list.',
     });
   }
 
@@ -511,6 +511,6 @@ async function initReportView() {
 
 initPortalUX();
 const page = document.body.dataset.page;
-if (page === 'dashboard') initDashboard();
-if (page === 'reports') initReports();
-if (page === 'report') initReportView();
+if (page === 'dashboard') {initDashboard();}
+if (page === 'reports') {initReports();}
+if (page === 'report') {initReportView();}

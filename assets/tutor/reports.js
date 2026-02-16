@@ -30,7 +30,7 @@ async function initTutorReports() {
       renderStateCard(listEl, {
         variant: 'empty',
         title: currentFilter === 'all' ? 'No reports found' : 'No reports in this filter',
-        description: currentFilter === 'all' ? 'Generate one for an assigned student.' : 'Try a broader filter.'
+        description: currentFilter === 'all' ? 'Generate one for an assigned student.' : 'Try a broader filter.',
       });
       return;
     }
@@ -41,13 +41,13 @@ async function initTutorReports() {
       row.append(
         createEl('div', { className: 'row-head' }, [
           createEl('strong', { text: `${item.student_name || 'Student'} · ${item.week_start} → ${item.week_end}` }),
-          createEl('span', { className: 'note', text: new Date(item.created_at).toLocaleString() })
+          createEl('span', { className: 'note', text: new Date(item.created_at).toLocaleString() }),
         ]),
         createEl('a', {
           className: 'button secondary',
           text: 'View report',
-          attrs: { href: `/reports/view/?id=${encodeURIComponent(item.id)}` }
-        })
+          attrs: { href: `/reports/view/?id=${encodeURIComponent(item.id)}` },
+        }),
       );
       frag.append(row);
     });
@@ -66,7 +66,7 @@ async function initTutorReports() {
         renderStateCard(listEl, {
           variant: 'error',
           title: 'Unable to refresh reports',
-          description: 'Try again in a moment.'
+          description: 'Try again in a moment.',
         });
       });
     });
@@ -78,7 +78,7 @@ async function initTutorReports() {
     renderStateCard(listEl, {
       variant: 'error',
       title: 'Could not load reports',
-      description: 'Please refresh to try again.'
+      description: 'Please refresh to try again.',
     });
   }
 
@@ -88,7 +88,7 @@ async function initTutorReports() {
       renderStateCard(listEl, {
         variant: 'empty',
         title: 'Student ID required',
-        description: 'Enter an assigned student ID, then generate the report.'
+        description: 'Enter an assigned student ID, then generate the report.',
       });
       return;
     }
@@ -109,7 +109,7 @@ async function initTutorReports() {
       renderStateCard(listEl, {
         variant: 'error',
         title: 'Unable to refresh reports',
-        description: 'Try again in a moment.'
+        description: 'Try again in a moment.',
       });
     });
   });

@@ -8,33 +8,33 @@ export function el(tag, attrs = {}, children = []) {
 
 
   for (const [k, v] of Object.entries(attrs)) {
-  if (k === "class") node.className = v;
-  else if (k === "text") node.textContent = String(v ?? "");
-  else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2).toLowerCase(), v);
-  else if (v === true) node.setAttribute(k, "");
-  else if (v !== false && v != null) node.setAttribute(k, String(v));
+    if (k === 'class') {node.className = v;}
+    else if (k === 'text') {node.textContent = String(v ?? '');}
+    else if (k.startsWith('on') && typeof v === 'function') {node.addEventListener(k.slice(2).toLowerCase(), v);}
+    else if (v === true) {node.setAttribute(k, '');}
+    else if (v !== false && v !== null) {node.setAttribute(k, String(v));}
   }
 
 
-  for (const c of children) node.append(c);
+  for (const c of children) {node.append(c);}
   return node;
 }
 
 export function clear(node) {
-  while (node.firstChild) node.removeChild(node.firstChild);
+  while (node.firstChild) {node.removeChild(node.firstChild);}
 }
 
 
 export function sectionTitle(title, subtitle) {
-  return el("div", { class: "po-animate-in" }, [
-  el("div", { class: "po-game-title", text: title }),
-  el("div", { class: "po-game-sub", text: subtitle }),
-]);
+  return el('div', { class: 'po-animate-in' }, [
+    el('div', { class: 'po-game-title', text: title }),
+    el('div', { class: 'po-game-sub', text: subtitle }),
+  ]);
 }
 
 export function gameFrame({ title, subtitle, controls, status, body }) {
-  const frame = document.createElement("section");
-  frame.className = "po-game-frame po-animate-in";
+  const frame = document.createElement('section');
+  frame.className = 'po-game-frame po-animate-in';
 
   frame.innerHTML = `
     <header class="po-game-header">
@@ -47,9 +47,9 @@ export function gameFrame({ title, subtitle, controls, status, body }) {
     <div class="po-game-status"></div>
   `;
 
-  frame.querySelector(".po-game-controls").append(...controls);
-  frame.querySelector(".po-game-body").append(body);
-  frame.querySelector(".po-game-status").append(status);
+  frame.querySelector('.po-game-controls').append(...controls);
+  frame.querySelector('.po-game-body').append(body);
+  frame.querySelector('.po-game-status').append(status);
 
   return frame;
 }

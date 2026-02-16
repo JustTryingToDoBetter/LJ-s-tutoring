@@ -28,7 +28,7 @@ async function loadQuestions() {
         title: questionFilter === 'all' ? 'No peer questions found' : 'No questions in this filter',
         description: questionFilter === 'all'
           ? 'Questions will appear here for tutor moderation.'
-          : 'Try a different filter to broaden results.'
+          : 'Try a different filter to broaden results.',
       });
       return;
     }
@@ -39,7 +39,7 @@ async function loadQuestions() {
       row.append(
         createEl('strong', { text: question.title }),
         createEl('div', { className: 'note', text: `${question.subject} · ${question.topic}` }),
-        createEl('div', { className: 'note', text: `Status: ${question.status} · State: ${question.moderation_state}` })
+        createEl('div', { className: 'note', text: `Status: ${question.status} · State: ${question.moderation_state}` }),
       );
 
       const actions = createEl('div', { className: 'session-actions' });
@@ -64,7 +64,7 @@ async function loadQuestions() {
     renderStateCard(list, {
       variant: 'error',
       title: 'Could not load questions',
-      description: 'Refresh and try again.'
+      description: 'Refresh and try again.',
     });
   }
 }
@@ -77,7 +77,7 @@ async function loadAnswers() {
     renderStateCard(list, {
       variant: 'empty',
       title: 'No question selected',
-      description: 'Choose a question to moderate answers.'
+      description: 'Choose a question to moderate answers.',
     });
     return;
   }
@@ -88,10 +88,10 @@ async function loadAnswers() {
     const answers = (data.items || []).filter((answer) => {
       if (answerFilter === 'all') {return true;}
       if (answerFilter === 'verified') {
-        return Boolean(answer.is_verified);
+        return answer.is_verified;
       }
       if (answerFilter === 'needs_review') {
-        return !Boolean(answer.is_verified);
+        return !answer.is_verified;
       }
       return true;
     });
@@ -106,7 +106,7 @@ async function loadAnswers() {
         title: answerFilter === 'all' ? 'No answers yet' : 'No answers in this filter',
         description: answerFilter === 'all'
           ? 'This question has no replies yet.'
-          : 'Try a different answer filter.'
+          : 'Try a different answer filter.',
       });
       return;
     }
@@ -117,7 +117,7 @@ async function loadAnswers() {
       row.append(
         createEl('strong', { text: answer.nickname || 'Learner' }),
         createEl('p', { className: 'note', text: answer.body }),
-        createEl('div', { className: 'note', text: `Verified: ${answer.is_verified ? 'yes' : 'no'} · State: ${answer.moderation_state}` })
+        createEl('div', { className: 'note', text: `Verified: ${answer.is_verified ? 'yes' : 'no'} · State: ${answer.moderation_state}` }),
       );
 
       const actions = createEl('div', { className: 'session-actions' });
@@ -142,7 +142,7 @@ async function loadAnswers() {
     renderStateCard(list, {
       variant: 'error',
       title: 'Could not load answers',
-      description: 'Refresh and try again.'
+      description: 'Refresh and try again.',
     });
   }
 }

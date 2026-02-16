@@ -22,8 +22,8 @@ export async function initTutors() {
   list.parentElement?.insertBefore(toolbar, list);
 
   const normalizeSubjects = (raw) => {
-    if (!raw) return [];
-    if (Array.isArray(raw)) return raw;
+    if (!raw) {return [];}
+    if (Array.isArray(raw)) {return raw;}
     if (typeof raw === 'string') {
       try {
         const parsed = JSON.parse(raw);
@@ -40,7 +40,7 @@ export async function initTutors() {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No tutors match',
-        description: 'Try another filter or create a tutor profile.'
+        description: 'Try another filter or create a tutor profile.',
       });
       return;
     }
@@ -81,7 +81,7 @@ export async function initTutors() {
       renderStateCard(list, {
         variant: 'error',
         title: 'Unable to load tutors',
-        description: 'Refresh and try again.'
+        description: 'Refresh and try again.',
       });
     }
   };
@@ -108,7 +108,7 @@ export async function initTutors() {
       active: qs('#tutorActive').checked,
       status: qs('#tutorStatus').value,
       qualificationBand: qs('#tutorBand').value,
-      qualifiedSubjects: selectedSubjects
+      qualifiedSubjects: selectedSubjects,
     };
     try {
       await apiPost('/admin/tutors', payload);
@@ -124,14 +124,14 @@ export async function initTutors() {
 
   list.addEventListener('click', async (event) => {
     const target = event.target;
-    if (!target?.dataset?.impersonate) return;
+    if (!target?.dataset?.impersonate) {return;}
     target.disabled = true;
     try {
       const res = await apiPost('/admin/impersonate/start', { tutorId: target.dataset.impersonate });
       setImpersonationContext({
         tutorId: res.tutor.id,
         tutorName: res.tutor.name,
-        impersonationId: res.impersonationId
+        impersonationId: res.impersonationId,
       });
       window.location.href = '/tutor/index.html';
     } finally {
