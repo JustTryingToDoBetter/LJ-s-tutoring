@@ -94,6 +94,20 @@ model User {
   studyStreak         StudyStreak?
   weeklyReports       WeeklyReport[] @relation("weekly_report_owner")
   generatedReports    WeeklyReport[] @relation("weekly_report_creator")
+  scoreSnapshots      StudentScoreSnapshot[]
+  communityProfile    CommunityProfile?
+  studyRoomMessages   StudyRoomMessage[]
+  studyRoomMemberships StudyRoomMember[]
+  challengesCreated   Challenge[] @relation("challenge_creator")
+  challengeSubmissions ChallengeSubmission[]
+  questions           Question[]
+  answers             Answer[] @relation("answer_author")
+  verifiedAnswers     Answer[] @relation("answer_verifier")
+  moderationReports   CommunityReport[] @relation("community_reporter")
+  blockedUsers        CommunityBlock[] @relation("community_blocker")
+  blockedByUsers      CommunityBlock[] @relation("community_blocked")
+  careerGoalSelections CareerGoalSelection[]
+  careerProgressSnapshots CareerProgressSnapshot[]
 
   @@map("users")
 }
@@ -680,4 +694,223 @@ model ArcadeAdRule {
   maxPerDay       Int    @map("max_per_day")
 
   @@map("arcade_ad_rules")
+}
+
+model StudentScoreSnapshot {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  scoreDate         DateTime @map("score_date") @db.Date
+  riskScore         Int      @map("risk_score")
+  momentumScore     Int      @map("momentum_score")
+  reasonsJson       Json     @map("reasons_json")
+  metricsJson       Json     @map("metrics_json")
+  recommendedActionsJson Json @map("recommended_actions_json")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("student_score_snapshots")
+  @@index([userId, scoreDate(sort: Desc)])
+  @@unique([userId, scoreDate])
+}
+
+model CommunityProfile {
+  userId         String   @id @map("user_id") @db.Uuid
+  nickname       String
+  privacySettingsJson Json @map("privacy_settings_json")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("community_profiles")
+}
+
+model StudyRoom {
+  id         String   @id @default(uuid()) @db.Uuid
+  subject    String
+  grade      String?
+  createdBy  String   @map("created_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  memberships StudyRoomMember[]
+  messages    StudyRoomMessage[]
+  resources   StudyRoomPinnedResource[]
+
+  @@map("study_rooms")
+  @@index([subject, grade, createdAt(sort: Desc)])
+}
+
+model StudyRoomMember {
+  roomId     String   @map("room_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  joinedAt   DateTime @default(now()) @map("joined_at") @db.Timestamptz
+
+  room StudyRoom @relation(fields: [roomId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([roomId, userId])
+  @@map("study_room_members")
+  @@index([userId, joinedAt(sort: Desc)])
+}
+
+model StudyRoomMessage {
+  id              String   @id @default(uuid()) @db.Uuid
+  roomId          String   @map("room_id") @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  content         String
+  moderationState String   @default("VISIBLE") @map("moderation_state")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  room StudyRoom @relation(fields: [roomId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("study_room_messages")
+  @@index([roomId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model StudyRoomPinnedResource {
+  id        String   @id @default(uuid()) @db.Uuid
+  roomId    String   @map("room_id") @db.Uuid
+  title     String
+  url       String
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  room StudyRoom @relation(fields: [roomId], references: [id])
+
+  @@map("study_room_pinned_resources")
+  @@index([roomId, createdAt(sort: Desc)])
+}
+
+model Challenge {
+  id        String   @id @default(uuid()) @db.Uuid
+  title     String
+  subject   String
+  grade     String?
+  weekStart DateTime @map("week_start") @db.Date
+  weekEnd   DateTime @map("week_end") @db.Date
+  xpReward  Int      @map("xp_reward")
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  creator     User @relation("challenge_creator", fields: [createdBy], references: [id])
+  submissions ChallengeSubmission[]
+
+  @@map("challenges")
+  @@index([weekStart, weekEnd])
+  @@index([subject, grade, createdAt(sort: Desc)])
+}
+
+model ChallengeSubmission {
+  id          String   @id @default(uuid()) @db.Uuid
+  challengeId String   @map("challenge_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  content     String
+  score       Int?
+  feedback    String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  challenge Challenge @relation(fields: [challengeId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@map("challenge_submissions")
+  @@unique([challengeId, userId])
+  @@index([challengeId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model Question {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  subject         String
+  topic           String
+  title           String
+  body            String
+  status          String   @default("OPEN")
+  moderationState String   @default("VISIBLE") @map("moderation_state")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user    User @relation(fields: [userId], references: [id])
+  answers Answer[]
+
+  @@map("questions")
+  @@index([subject, topic, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model Answer {
+  id              String   @id @default(uuid()) @db.Uuid
+  questionId      String   @map("question_id") @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  body            String
+  isVerified      Boolean  @default(false) @map("is_verified")
+  verifiedBy      String?  @map("verified_by") @db.Uuid
+  moderationState String   @default("VISIBLE") @map("moderation_state")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  question Question @relation(fields: [questionId], references: [id])
+  author   User     @relation("answer_author", fields: [userId], references: [id])
+  verifier User?    @relation("answer_verifier", fields: [verifiedBy], references: [id])
+
+  @@map("answers")
+  @@index([questionId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model CommunityReport {
+  id         String   @id @default(uuid()) @db.Uuid
+  reporterId String   @map("reporter_id") @db.Uuid
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id") @db.Uuid
+  reason     String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  reporter User @relation("community_reporter", fields: [reporterId], references: [id])
+
+  @@map("community_reports")
+  @@index([targetType, targetId, createdAt(sort: Desc)])
+  @@index([reporterId, createdAt(sort: Desc)])
+}
+
+model CommunityBlock {
+  blockerUserId String   @map("blocker_user_id") @db.Uuid
+  blockedUserId String   @map("blocked_user_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  blocker User @relation("community_blocker", fields: [blockerUserId], references: [id])
+  blocked User @relation("community_blocked", fields: [blockedUserId], references: [id])
+
+  @@id([blockerUserId, blockedUserId])
+  @@map("community_blocks")
+  @@index([blockedUserId, blockerUserId])
+}
+
+model CareerGoalSelection {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  goalId    String   @map("goal_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("career_goal_selections")
+  @@unique([userId, goalId])
+  @@index([goalId, createdAt(sort: Desc)])
+}
+
+model CareerProgressSnapshot {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  goalId         String   @map("goal_id")
+  alignmentScore Int      @map("alignment_score")
+  reasonsJson    Json     @map("reasons_json")
+  metricsJson    Json     @map("metrics_json")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("career_progress_snapshots")
+  @@index([userId, goalId, createdAt(sort: Desc)])
 }

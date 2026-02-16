@@ -1,0 +1,72 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-02-16",
+  "goals": [
+    {
+      "id": "engineering-foundations",
+      "title": "Engineering Foundations",
+      "recommendedSubjects": ["Mathematics", "Physical Sciences", "English"],
+      "targetMarks": {
+        "Mathematics": "75-90",
+        "Physical Sciences": "70-90",
+        "English": "65-85"
+      },
+      "skillsChecklist": [
+        "Problem decomposition",
+        "Algebra fluency",
+        "Graph interpretation",
+        "Scientific reasoning"
+      ],
+      "weeklyStudyAllocation": {
+        "mathematics": 210,
+        "science": 180,
+        "revision": 90
+      },
+      "recommendedVaultTags": ["algebra", "functions", "physics-basics", "word-problems"]
+    },
+    {
+      "id": "health-sciences-track",
+      "title": "Health Sciences Track",
+      "recommendedSubjects": ["Life Sciences", "Mathematics", "Physical Sciences"],
+      "targetMarks": {
+        "Life Sciences": "75-90",
+        "Mathematics": "70-85",
+        "Physical Sciences": "65-85"
+      },
+      "skillsChecklist": [
+        "Data interpretation",
+        "Applied mathematics",
+        "Memorisation systems",
+        "Exam pacing"
+      ],
+      "weeklyStudyAllocation": {
+        "lifeSciences": 180,
+        "mathematics": 180,
+        "science": 120
+      },
+      "recommendedVaultTags": ["statistics", "biology-core", "chemistry-basics", "exam-techniques"]
+    },
+    {
+      "id": "commerce-analytics",
+      "title": "Commerce & Analytics",
+      "recommendedSubjects": ["Mathematics", "Accounting", "Economics"],
+      "targetMarks": {
+        "Mathematics": "70-85",
+        "Accounting": "70-90",
+        "Economics": "70-85"
+      },
+      "skillsChecklist": [
+        "Numerical reasoning",
+        "Financial modelling basics",
+        "Trend analysis",
+        "Clear written explanations"
+      ],
+      "weeklyStudyAllocation": {
+        "mathematics": 180,
+        "accounting": 180,
+        "economics": 120
+      },
+      "recommendedVaultTags": ["algebra", "financial-maths", "data-analysis", "problem-solving"]
+    }
+  ]
+}

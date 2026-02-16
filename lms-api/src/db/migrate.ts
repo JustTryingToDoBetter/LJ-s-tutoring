@@ -39,13 +39,24 @@ async function markApplied(client: any, id: string) {
   await client.query('insert into schema_migrations (id) values ($1) on conflict do nothing', [id]);
 }
 
+function migrationPriority(name: string) {
+  const lower = name.toLowerCase();
+  if (lower.includes('baseline')) return 0;
+  if (lower.includes('init')) return 1;
+  return 2;
+}
+
 async function run() {
   const dir = getMigrationsDir();
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   const files = entries
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .sort((a, b) => a.localeCompare(b));
+    .sort((a, b) => {
+      const priorityDelta = migrationPriority(a) - migrationPriority(b);
+      if (priorityDelta !== 0) return priorityDelta;
+      return a.localeCompare(b);
+    });
 
   const client = await pool.connect();
   try {

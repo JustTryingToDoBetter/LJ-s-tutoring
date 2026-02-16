@@ -153,6 +153,7 @@ PUBLIC_BASE_URL=http://localhost:3001
 COOKIE_SECRET=change_me_to_a_long_random_string
 EMAIL_PROVIDER_KEY=
 EMAIL_FROM=projectodysseus10@gmail.com
+SCORE_CRON_TOKEN=change_me_phase3_daily_scores
 ```
 
 ### API Scripts
@@ -182,6 +183,53 @@ npm run test      # Runs API tests (lms-api)
 **Corrections after lock**:
 - Do not edit sessions or approvals.
 - Add a new adjustment with a clear reason.
+
+## 🧠 Phase 3 — Predictive + Community + Career Mapping
+
+### Predictive Analytics
+
+- Daily risk and momentum scoring is persisted in `student_score_snapshots`.
+- Explainable reasons and recommended actions are stored with each snapshot.
+- Endpoints:
+   - `GET /scores/me` (student)
+   - `GET /tutor/scores` (tutor, assigned students only)
+   - `POST /admin/scores/recompute` (admin)
+
+### Community
+
+- Study Rooms: create/join rooms, paginated room chat, pinned resources.
+- Challenge Boards: weekly challenges, student submissions, leaderboard (nickname opt-in).
+- Peer Q&A: questions, answers, tutor verification, moderation/report/block flows.
+- Moderation and safety guardrails:
+   - server-side role checks (student posting, tutor/admin moderation)
+   - posting rate limits
+   - profanity/spam heuristics
+   - hide/delete/report/block APIs
+
+### Career Mapping
+
+- Versioned goal library in `lms-api/data/career-goals.v1.json`.
+- Student goal selection and alignment snapshots in `career_goal_selections` and `career_progress_snapshots`.
+- Endpoints:
+   - `GET /career/goals`
+   - `GET /career/me`
+   - `POST /career/me/goals`
+   - `GET /tutor/students/:studentId/career`
+
+### Daily score scheduling (DigitalOcean cron)
+
+Run a daily cron at `03:00` local server time that enqueues score recomputation:
+
+```bash
+curl -X POST "https://<api-domain>/jobs/scores/daily" \
+   -H "x-cron-token: $SCORE_CRON_TOKEN"
+```
+
+Then run the worker on schedule or continuously:
+
+```bash
+npm run job:worker --prefix lms-api
+```
 
 ## ☁️ DigitalOcean Deployment Notes
 

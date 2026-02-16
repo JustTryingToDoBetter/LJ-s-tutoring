@@ -241,7 +241,10 @@ export function initPortalUX() {
       login: 'Login',
       dashboard: 'Dashboard',
       reports: 'Reports',
-      report: 'Report'
+      report: 'Report',
+      community: 'Community',
+      career: 'Career',
+      risk: 'Risk monitor'
     };
     const currentLabel = labels[page] || page;
     const nav = createEl('nav', {

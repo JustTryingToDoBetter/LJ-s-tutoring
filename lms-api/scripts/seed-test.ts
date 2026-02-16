@@ -98,11 +98,42 @@ async function run() {
     const studentId = await ensureStudent();
     const assignmentId = await ensureAssignment();
 
+    const studentUserRes = await pool.query(
+      `insert into users (email, role, student_id)
+       values ($1, 'STUDENT', $2)
+       on conflict (email) do update set student_id = excluded.student_id
+       returning id`,
+      ['student@test.local', studentId]
+    );
+    const studentUserId = studentUserRes.rows[0].id as string;
+
+    await pool.query(
+      `insert into community_profiles (user_id, nickname, privacy_settings_json)
+       values ($1, $2, $3::jsonb)
+       on conflict (user_id) do nothing`,
+      [studentUserId, 'TestLearner', JSON.stringify({ leaderboardOptIn: true, showFullName: false })]
+    );
+
+    await pool.query(
+      `insert into study_rooms (subject, grade, created_by)
+       values ('Mathematics', '10', $1)
+       on conflict do nothing`,
+      [studentUserId]
+    );
+
+    await pool.query(
+      `insert into career_goal_selections (user_id, goal_id)
+       values ($1, 'engineering-foundations')
+       on conflict (user_id, goal_id) do nothing`,
+      [studentUserId]
+    );
+
     console.log('Seeded test data:', {
       adminId,
       tutorUserId,
       tutorProfileId: ids.tutorProfile,
       studentId,
+      studentUserId,
       assignmentId,
     });
   } finally {

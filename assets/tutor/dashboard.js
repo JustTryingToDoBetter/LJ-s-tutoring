@@ -61,6 +61,8 @@ async function initTutorDashboard() {
         row.append(
           createEl('strong', { text: item.studentName }),
           createEl('div', { className: 'note', text: `Current streak: ${item.currentStreak} day(s)` }),
+          createEl('div', { className: 'note', text: `Risk: ${item.riskScore ?? '-'} · Momentum: ${item.momentumScore ?? '-'}` }),
+          createEl('div', { className: 'note', text: (item.modelReasons || []).slice(0, 1).map((r) => r.label || '').join('') }),
           createEl('div', { className: 'note', text: (item.reasons || []).join(' · ') })
         );
         frag.append(row);

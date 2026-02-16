@@ -285,6 +285,51 @@ export async function academicRoutes(app: FastifyInstance) {
     const weekStats = weekStatsRes.rows[0] ?? { sessions_attended: 0, minutes_studied: 0 };
     const streak = streakRes.rows[0] ?? { current: 0, longest: 0, last_credited_date: null, xp: 0 };
 
+    const scoreRes = await pool.query(
+      `select score_date, risk_score, momentum_score, reasons_json, recommended_actions_json
+       from student_score_snapshots
+       where user_id = $1
+       order by score_date desc
+       limit 1`,
+      [userId]
+    );
+
+    const careerRes = await pool.query(
+      `select cgs.goal_id, cps.alignment_score
+       from career_goal_selections cgs
+       left join lateral (
+         select alignment_score
+         from career_progress_snapshots cps
+         where cps.user_id = cgs.user_id
+           and cps.goal_id = cgs.goal_id
+         order by cps.created_at desc
+         limit 1
+       ) cps on true
+       where cgs.user_id = $1
+       order by cgs.created_at asc
+       limit 3`,
+      [userId]
+    );
+
+    const score = scoreRes.rows[0]
+      ? {
+          date: toDateOnly(new Date(scoreRes.rows[0].score_date)),
+          riskScore: Number(scoreRes.rows[0].risk_score || 0),
+          momentumScore: Number(scoreRes.rows[0].momentum_score || 0),
+          reasons: typeof scoreRes.rows[0].reasons_json === 'string'
+            ? JSON.parse(scoreRes.rows[0].reasons_json)
+            : scoreRes.rows[0].reasons_json,
+          recommendedActions: typeof scoreRes.rows[0].recommended_actions_json === 'string'
+            ? JSON.parse(scoreRes.rows[0].recommended_actions_json)
+            : scoreRes.rows[0].recommended_actions_json,
+        }
+      : null;
+
+    const careerGoals = careerRes.rows.map((row) => ({
+      goalId: row.goal_id,
+      alignmentScore: row.alignment_score == null ? null : Number(row.alignment_score),
+    }));
+
     const upcoming = upcomingRes.rows[0]
       ? {
           hasUpcoming: true,
@@ -318,6 +363,15 @@ export async function academicRoutes(app: FastifyInstance) {
           action: 'Do practice'
         };
 
+      const scoreDrivenRecommendation = score?.recommendedActions?.[0];
+      const goalRecommendation = careerGoals[0]
+        ? {
+            title: `Next step for goal: ${careerGoals[0].goalId}`,
+            description: `Current goal alignment: ${careerGoals[0].alignmentScore ?? 0}%. Keep momentum with one focused practice block.`,
+            action: 'View career roadmap'
+          }
+        : null;
+
     return reply.send({
       greeting: 'Welcome back, Jaydin — let’s keep the streak alive.',
       today: upcoming,
@@ -333,7 +387,15 @@ export async function academicRoutes(app: FastifyInstance) {
         xp: Number(streak.xp || 0),
       },
       progressSnapshot: topics,
-      recommendedNext,
+      recommendedNext: scoreDrivenRecommendation
+        ? {
+            title: scoreDrivenRecommendation.label,
+            description: (score?.reasons?.[0]?.detail || recommendedNext.description),
+            action: 'Open recommendation'
+          }
+        : (goalRecommendation || recommendedNext),
+      predictiveScore: score,
+      careerGoals,
     });
   });
 
@@ -360,15 +422,25 @@ export async function academicRoutes(app: FastifyInstance) {
               max(s.date) as last_session_date,
               max(case when s.status = 'REJECTED' then 1 else 0 end)::int as has_missed,
               coalesce(ss.current, 0)::int as current_streak,
-              max(sae.occurred_at) as last_activity
+              max(sae.occurred_at) as last_activity,
+              latest.risk_score,
+              latest.momentum_score,
+              latest.reasons_json
        from students st
        join tutor_student_map tsm on tsm.student_id = st.id and tsm.tutor_id = $1
        left join users u on u.student_id = st.id
        left join study_streaks ss on ss.user_id = u.id
        left join study_activity_events sae on sae.user_id = u.id
+       left join lateral (
+         select risk_score, momentum_score, reasons_json
+         from student_score_snapshots sss
+         where sss.user_id = u.id
+         order by score_date desc
+         limit 1
+       ) latest on true
        left join sessions s on s.student_id = st.id and s.tutor_id = $1
-       group by st.id, st.full_name, ss.current
-       order by st.full_name asc`,
+       group by st.id, st.full_name, ss.current, latest.risk_score, latest.momentum_score, latest.reasons_json
+       order by latest.risk_score desc nulls last, st.full_name asc`,
       [tutorId]
     );
 
@@ -378,17 +450,29 @@ export async function academicRoutes(app: FastifyInstance) {
         const currentStreak = Number(row.current_streak || 0);
         const hasMissed = Number(row.has_missed || 0) > 0;
         const lastActivity = row.last_activity ? new Date(row.last_activity as string) : null;
+        const riskScore = row.risk_score == null ? null : Number(row.risk_score || 0);
+        const momentumScore = row.momentum_score == null ? null : Number(row.momentum_score || 0);
 
         if (currentStreak === 0) reasons.push('Streak broken');
         if (hasMissed) reasons.push('Missed recent session');
         if (!lastActivity || (Date.now() - lastActivity.getTime()) > 7 * DAY_MS) {
           reasons.push('Low weekly activity');
         }
+        if (riskScore != null && riskScore >= 60) {
+          reasons.push(`High risk score (${riskScore})`);
+        }
+
+        const modelReasons = row.reasons_json
+          ? (typeof row.reasons_json === 'string' ? JSON.parse(row.reasons_json) : row.reasons_json)
+          : [];
 
         return {
           studentId: row.id,
           studentName: row.full_name,
           currentStreak,
+          riskScore,
+          momentumScore,
+          modelReasons,
           reasons,
         };
       })

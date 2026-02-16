@@ -41,17 +41,28 @@ type AdjustmentInput = {
   relatedSessionId?: string | null;
 };
 
+function uniquifyEmail(email: string) {
+  const value = String(email || '').trim();
+  const at = value.indexOf('@');
+  const local = at > 0 ? value.slice(0, at) : (value || 'user');
+  const domain = at > 0 ? value.slice(at + 1) : 'example.com';
+  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${local}+${suffix}@${domain}`;
+}
+
 export async function createAdmin(email = 'admin@example.com') {
+  const uniqueEmail = uniquifyEmail(email);
   const res = await pool.query(
     `insert into users (email, role)
      values ($1, 'ADMIN')
      returning id, email, role`,
-    [email]
+    [uniqueEmail]
   );
   return res.rows[0] as { id: string; email: string; role: 'ADMIN' };
 }
 
 export async function createTutor(input: TutorInput) {
+  const uniqueEmail = uniquifyEmail(input.email);
   const tutorRes = await pool.query(
     `insert into tutor_profiles (full_name, phone, default_hourly_rate, active)
      values ($1, $2, $3, true)
@@ -65,7 +76,7 @@ export async function createTutor(input: TutorInput) {
     `insert into users (email, role, tutor_profile_id)
      values ($1, 'TUTOR', $2)
      returning id, email, role, tutor_profile_id`,
-    [input.email, tutor.id]
+    [uniqueEmail, tutor.id]
   );
 
   return { tutor, user: userRes.rows[0] };

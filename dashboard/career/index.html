@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Weekly Reports | Project Odysseus</title>
+  <title>Career Roadmap | Project Odysseus</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/assets/portal.css">
 </head>
-<body data-page="reports">
+<body data-page="career">
   <div class="portal-shell">
     <nav class="portal-nav">
       <div class="portal-nav-inner">
@@ -24,17 +24,22 @@
 
     <main class="portal-main">
       <section class="page-header">
-        <h1 class="page-title">Weekly Performance Reports</h1>
-        <p class="page-subtitle">Generate and review your learning summary.</p>
+        <h1 class="page-title">Career Mapping</h1>
+        <p class="page-subtitle">Choose your goals and track alignment in your academic roadmap.</p>
       </section>
 
-      <section class="grid">
-        <article class="panel">
-          <div class="row-head">
-            <h2 class="panel-title">Reports</h2>
-            <button id="generateReportNow" class="button" type="button" aria-label="Generate weekly report now">Generate now</button>
-          </div>
-          <div id="reportsList" class="list-compact"></div>
+      <section class="grid two">
+        <article class="panel dashboard-card">
+          <h2 class="panel-title">Goal Picker</h2>
+          <div id="careerGoalLibrary" class="list-compact"></div>
+          <button id="saveCareerGoalsBtn" class="button" type="button">Save selected goals</button>
+        </article>
+
+        <article class="panel dashboard-card">
+          <h2 class="panel-title">Your Roadmap</h2>
+          <div id="careerRoadmapList" class="list-compact"></div>
+          <h3 class="panel-title">Recommended vault tags</h3>
+          <div id="careerVaultTags" class="tag-row"></div>
         </article>
       </section>
     </main>
@@ -42,6 +47,6 @@
 
   <script src="/assets/portal-config.js"></script>
   <script src="/assets/analytics.js"></script>
-  <script type="module" src="/assets/student/portal.js"></script>
+  <script type="module" src="/assets/student/career.js"></script>
 </body>
 </html>

@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tutor Dashboard | Project Odysseus</title>
+  <title>Tutor Career View | Project Odysseus</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/assets/portal.css">
 </head>
-<body data-page="dashboard">
+<body data-page="career">
   <div class="portal-shell">
     <nav class="portal-nav">
       <div class="portal-nav-inner">
@@ -16,8 +16,6 @@
         <div class="nav-links">
           <a class="nav-link" data-nav="dashboard" href="/tutor/dashboard/">Dashboard</a>
           <a class="nav-link" data-nav="home" href="/tutor/index.html">Home</a>
-          <a class="nav-link" data-nav="sessions" href="/tutor/sessions.html">Sessions</a>
-          <a class="nav-link" data-nav="assignments" href="/tutor/assignments.html">Assignments</a>
           <a class="nav-link" data-nav="reports" href="/tutor/reports/">Reports</a>
           <a class="nav-link" data-nav="risk" href="/tutor/risk/">Risk</a>
           <a class="nav-link" data-nav="community" href="/tutor/community/">Community</a>
@@ -28,26 +26,20 @@
 
     <main class="portal-main">
       <section class="page-header">
-        <h1 class="page-title">Tutor Smart Dashboard</h1>
-        <p class="page-subtitle">Today’s sessions, learners needing attention, and quick actions.</p>
-      </section>
-
-      <section class="grid two">
-        <article class="panel dashboard-card">
-          <h2 class="panel-title">Today’s Sessions</h2>
-          <div id="todaySessionsList" class="list-compact"></div>
-        </article>
-
-        <article class="panel dashboard-card">
-          <h2 class="panel-title">Students Needing Attention</h2>
-          <div id="studentsAttentionList" class="list-compact"></div>
-        </article>
+        <h1 class="page-title">Student Career Goals</h1>
+        <p class="page-subtitle">Inspect selected goals and alignment snapshots for assigned students.</p>
       </section>
 
       <section class="grid">
         <article class="panel dashboard-card">
-          <h2 class="panel-title">Quick Tools</h2>
-          <div id="quickToolsList"></div>
+          <div class="row-head">
+            <div class="field">
+              <label for="careerStudentId">Student ID</label>
+              <input id="careerStudentId" type="text" placeholder="Paste student ID" aria-label="Student ID">
+            </div>
+            <button id="loadCareerStudentBtn" class="button" type="button">Load goals</button>
+          </div>
+          <div id="tutorCareerList" class="list-compact"></div>
         </article>
       </section>
     </main>
@@ -55,6 +47,6 @@
 
   <script src="/assets/portal-config.js"></script>
   <script src="/assets/analytics.js"></script>
-  <script type="module" src="/assets/tutor/dashboard.js"></script>
+  <script type="module" src="/assets/tutor/career.js"></script>
 </body>
 </html>

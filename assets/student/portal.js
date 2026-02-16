@@ -61,10 +61,17 @@ async function initDashboard() {
   const streakCurrentEl = qs('#streakCurrent');
   const xpEl = qs('#xpCount');
   const calendarEl = qs('#calendarStrip');
+  const momentumEl = qs('#momentumScore');
+  const riskEl = qs('#riskScore');
+  const scoreDateEl = qs('#scoreDate');
+  const reasonsEl = qs('#predictiveReasons');
+  const careerNextStepsEl = qs('#careerNextSteps');
 
   renderSkeletonCards(todayEl, 1);
   renderSkeletonCards(progressEl, 2);
   renderSkeletonCards(recommendedEl, 1);
+  renderSkeletonCards(reasonsEl, 2);
+  renderSkeletonCards(careerNextStepsEl, 1);
 
   try {
     const data = await apiGet('/dashboard');
@@ -109,6 +116,58 @@ async function initDashboard() {
 
     renderProgressTopics(progressEl, data.progressSnapshot || []);
 
+    if (momentumEl) momentumEl.textContent = String(data.predictiveScore?.momentumScore || 0);
+    if (riskEl) riskEl.textContent = String(data.predictiveScore?.riskScore || 0);
+    if (scoreDateEl) scoreDateEl.textContent = data.predictiveScore?.date || '-';
+
+    clearChildren(reasonsEl);
+    const reasons = data.predictiveScore?.reasons || [];
+    if (!reasons.length) {
+      renderStateCard(reasonsEl, {
+        variant: 'empty',
+        title: 'No predictive reasons yet',
+        description: 'Your score reasons will appear after activity sync.'
+      });
+    } else {
+      const reasonFrag = document.createDocumentFragment();
+      reasons.slice(0, 3).forEach((reason) => {
+        const row = createEl('div', { className: 'list-row' });
+        row.append(
+          createEl('strong', { text: reason.label || 'Reason' }),
+          createEl('p', { className: 'note', text: reason.detail || 'No details provided.' })
+        );
+        reasonFrag.append(row);
+      });
+      reasonsEl.append(reasonFrag);
+    }
+
+    clearChildren(careerNextStepsEl);
+    if (!data.careerGoals?.length) {
+      renderStateCard(careerNextStepsEl, {
+        variant: 'empty',
+        title: 'No career goal selected',
+        description: 'Pick a goal in Career Mapping to receive roadmap next steps.'
+      });
+      careerNextStepsEl.append(createEl('a', {
+        className: 'button secondary',
+        text: 'Open Career Mapping',
+        attrs: { href: '/dashboard/career/' }
+      }));
+    } else {
+      const row = createEl('div', { className: 'list-row' });
+      const goal = data.careerGoals[0];
+      row.append(
+        createEl('strong', { text: `Goal: ${goal.goalId}` }),
+        createEl('p', { className: 'note', text: `Alignment score: ${goal.alignmentScore ?? 0}%` }),
+        createEl('a', {
+          className: 'button secondary',
+          text: 'View full roadmap',
+          attrs: { href: '/dashboard/career/' }
+        })
+      );
+      careerNextStepsEl.append(row);
+    }
+
     clearChildren(recommendedEl);
     const recommendation = createEl('div', { className: 'list-row' });
     recommendation.append(
@@ -136,6 +195,16 @@ async function initDashboard() {
     renderStateCard(recommendedEl, {
       variant: 'error',
       title: 'Suggestions unavailable',
+      description: 'Try again in a moment.'
+    });
+    renderStateCard(reasonsEl, {
+      variant: 'error',
+      title: 'Predictive analytics unavailable',
+      description: 'Try again in a moment.'
+    });
+    renderStateCard(careerNextStepsEl, {
+      variant: 'error',
+      title: 'Career roadmap unavailable',
       description: 'Try again in a moment.'
     });
   }

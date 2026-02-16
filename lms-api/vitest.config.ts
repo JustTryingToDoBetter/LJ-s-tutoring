@@ -4,6 +4,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     testTimeout: 30000,
-    setupFiles: ['tests/setup.ts']
+    setupFiles: ['tests/setup.ts'],
+    fileParallelism: false,
+    maxWorkers: 1,
+    minWorkers: 1,
   }
 });
