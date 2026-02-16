@@ -28,6 +28,7 @@ type VerifyRequestContext = {
 
 type VerifySuccess = {
   ok: true;
+  jwt: string;
   userId: string;
   role: UserRole;
   tutorId?: string;
@@ -59,7 +60,7 @@ type RiskFlags = {
 
 type VerifyMagicLinkDeps = {
   checkVerifyLimit: VerifyRateLimiter;
-  signJwt: (payload: { userId: string; role: UserRole; tutorId?: string }) => Promise<string>;
+  signJwt: (payload: { userId: string; role: UserRole; tutorId?: string }) => Promise<string> | string;
   writeRiskAudit?: (entry: {
     actorUserId: string;
     actorRole: UserRole;
@@ -126,7 +127,7 @@ async function computeRiskScore(
       [userId]
     );
 
-    if (lastRes.rowCount > 0) {
+    if (Number(lastRes.rowCount || 0) > 0) {
       const last = lastRes.rows[0] as { device_hash: string | null; country: string | null };
       if (last.device_hash && last.device_hash !== deviceHash) {
         flags.newDevice = true;
@@ -203,7 +204,7 @@ export async function requestMagicLink(
     [email]
   );
 
-  if (userRes.rowCount === 0) {
+  if (Number(userRes.rowCount || 0) === 0) {
     return { ok: true };
   }
 
@@ -257,7 +258,7 @@ export async function verifyMagicLink(
     [tokenHash]
   );
 
-  if (consumeRes.rowCount === 0) {
+  if (Number(consumeRes.rowCount || 0) === 0) {
     const statusRes = await client.query(
       `select used_at, expires_at
        from magic_link_tokens
@@ -266,7 +267,7 @@ export async function verifyMagicLink(
     );
 
     const risk = await computeRiskScore(client, null, ip, context);
-    const failureReason = statusRes.rowCount === 0
+    const failureReason = Number(statusRes.rowCount || 0) === 0
       ? 'invalid_token'
       : (statusRes.rows[0].used_at ? 'token_used' : 'token_expired');
 
@@ -281,7 +282,7 @@ export async function verifyMagicLink(
       flags: { ...risk.flags, failureReason }
     }, deps.onInternalError);
 
-    if (statusRes.rowCount === 0) {
+    if (Number(statusRes.rowCount || 0) === 0) {
       return { ok: false, status: 400, error: 'invalid_token' };
     }
 
@@ -299,7 +300,7 @@ export async function verifyMagicLink(
     [consumeRes.rows[0].user_id]
   );
 
-  if (rowRes.rowCount === 0) {
+  if (Number(rowRes.rowCount || 0) === 0) {
     return { ok: false, status: 400, error: 'invalid_token' };
   }
 
@@ -356,12 +357,12 @@ export async function verifyMagicLink(
 
   return {
     ok: true,
+    jwt,
     userId: row.user_id,
     role: row.role,
     tutorId: row.tutor_profile_id ?? undefined,
-    redirectTo: row.role === 'ADMIN' ? '/admin' : '/tutor',
-    jwt
-  } as VerifySuccess & { jwt: string };
+    redirectTo: row.role === 'ADMIN' ? '/admin' : '/tutor'
+  };
 }
 
 export async function findUserByEmail(client: AuthDbClient, email: string) {
@@ -373,7 +374,7 @@ export async function findUserByEmail(client: AuthDbClient, email: string) {
     [normalized]
   );
 
-  if (res.rowCount === 0) {
+  if (Number(res.rowCount || 0) === 0) {
     return null;
   }
 
