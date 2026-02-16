@@ -337,6 +337,78 @@
   // ==========================================
   // CONTACT FORM (critical)
   // ==========================================
+  function trackFormEvent(eventName, params) {
+    if (typeof window.gtag !== 'function') {return;}
+    if (localStorage.getItem('po_ga_consent') !== 'granted') {return;}
+    window.gtag('event', eventName, params || {});
+  }
+
+  function attachManagedFormSubmit(form, config) {
+    if (!form) {return;}
+
+    const cfg = config || {};
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      if (isSubmissionThrottled(cfg.formId)) {
+        if (typeof cfg.onThrottle === 'function') {
+          cfg.onThrottle();
+        }
+        return;
+      }
+
+      const btn = form.querySelector('button[type="submit"]');
+      const originalState = getButtonState(btn);
+      const validation = typeof cfg.validate === 'function' ? cfg.validate() : { ok: true, data: {} };
+      if (!validation || validation.ok === false) {return;}
+
+      if (typeof cfg.onAttempt === 'function') {
+        cfg.onAttempt(validation.data || {});
+      }
+
+      setButtonContent(btn, cfg.sendingText || 'Sending...', cfg.sendingIconClass || 'fas fa-spinner fa-spin mr-2');
+      if (btn) {btn.disabled = true;}
+      if (typeof cfg.onSending === 'function') {
+        cfg.onSending(validation.data || {});
+      }
+      markSubmission(cfg.formId);
+
+      try {
+        if (CONFIG.formspreeEndpoint && !CONFIG.formspreeEndpoint.includes('YOUR_FORM_ID')) {
+          const formData = typeof cfg.buildFormData === 'function'
+            ? cfg.buildFormData(form, validation.data || {})
+            : new FormData(form);
+
+          const response = await fetch(CONFIG.formspreeEndpoint, {
+            method: 'POST',
+            body: formData,
+            headers: { Accept: 'application/json' },
+          });
+          if (!response.ok) {
+            throw new Error(cfg.submitErrorMessage || 'Form submission failed');
+          }
+        }
+
+        if (typeof cfg.onSuccess === 'function') {
+          cfg.onSuccess({
+            btn: btn,
+            originalState: originalState,
+            data: validation.data || {},
+          });
+        }
+      } catch (err) {
+        if (typeof cfg.onError === 'function') {
+          cfg.onError({
+            error: err,
+            btn: btn,
+            originalState: originalState,
+            data: validation.data || {},
+          });
+        }
+      }
+    });
+  }
+
   function initContactForm() {
     const form = $('#contact-form');
     if (!form) {return;}
@@ -345,32 +417,6 @@
     formStatus.id = 'form-status';
     formStatus.className = 'mt-4 text-center hidden';
     form.appendChild(formStatus);
-
-    function el(tag, attrs, children) {
-      const node = document.createElement(tag);
-      if (attrs) {
-        Object.keys(attrs).forEach(function (key) {
-          const val = attrs[key];
-          if (val === null || val === undefined) {return;}
-          if (key === 'class') {node.className = val;}
-          else if (key === 'text') {node.textContent = val;}
-          else {node.setAttribute(key, String(val));}
-        });
-      }
-      if (children && children.length) {
-        children.forEach(function (child) {
-          if (child === null || child === undefined) {return;}
-          node.append(child);
-        });
-      }
-      return node;
-    }
-
-    function trackFormEvent(eventName, params) {
-      if (typeof window.gtag !== 'function') {return;}
-      if (localStorage.getItem('po_ga_consent') !== 'granted') {return;}
-      window.gtag('event', eventName, params || {});
-    }
 
     function showFormError(message, options) {
       const opts = options || {};
@@ -446,87 +492,84 @@
       true,
     );
 
-    form.addEventListener('submit', async function (e) {
-      e.preventDefault();
-
-      if (isSubmissionThrottled('contact-form')) {
+    attachManagedFormSubmit(form, {
+      formId: 'contact-form',
+      sendingText: 'Sending...',
+      sendingIconClass: 'fas fa-spinner fa-spin mr-2',
+      submitErrorMessage: 'Form submission failed',
+      onThrottle: function () {
         showFormError('Please wait a few seconds before submitting again.');
-        return;
-      }
+      },
+      validate: function () {
+        const nameEl = $('#name');
+        const emailEl = $('#email');
+        const gradeEl = $('#grade');
+        const messageEl = $('#message');
 
-      const btn = form.querySelector('button[type="submit"]');
-      const originalState = getButtonState(btn);
+        const name = (nameEl && nameEl.value ? nameEl.value : '').trim();
+        const email = (emailEl && emailEl.value ? emailEl.value : '').trim();
+        const grade = gradeEl && gradeEl.value ? gradeEl.value : '';
+        const rawMessage = messageEl && messageEl.value ? messageEl.value : '';
+        const message = stripHtmlTags(rawMessage);
 
-      const nameEl = $('#name');
-      const emailEl = $('#email');
-      const gradeEl = $('#grade');
+        if (containsHtmlTags(name) || containsHtmlTags(rawMessage)) {
+          showFormError('Please remove HTML tags from your message.');
+          return { ok: false };
+        }
+        if (!isValidName(name)) {
+          showFormError('Please enter a valid name (2-80 letters).');
+          return { ok: false };
+        }
+        if (!email || email.length > 254 || !isValidEmail(email)) {
+          showFormError('Please enter a valid email address.');
+          return { ok: false };
+        }
+        if (message.length > 2000) {
+          showFormError('Please keep your message under 2000 characters.');
+          return { ok: false };
+        }
+        if (!grade) {
+          showFormError('Please select a grade.');
+          return { ok: false };
+        }
 
-      const name = (nameEl && nameEl.value ? nameEl.value : '').trim();
-      const email = (emailEl && emailEl.value ? emailEl.value : '').trim();
-      const grade = gradeEl && gradeEl.value ? gradeEl.value : '';
-      const messageEl = $('#message');
-      const rawMessage = messageEl && messageEl.value ? messageEl.value : '';
-      const message = stripHtmlTags(rawMessage);
+        return {
+          ok: true,
+          data: {
+            name: name,
+            email: email,
+            grade: grade,
+          }
+        };
+      },
+      onAttempt: function () {
+        trackFormEvent('form_submit_attempt', {
+          form_id: 'contact-form',
+          page_path: window.location.pathname,
+        });
+      },
+      onSending: function () {
+        formStatus.classList.add('hidden');
+      },
+      onSuccess: function (ctx) {
+        trackFormEvent('form_submit_success', {
+          form_id: 'contact-form',
+          page_path: window.location.pathname,
+        });
 
-      if (containsHtmlTags(name) || containsHtmlTags(rawMessage)) {
-        showFormError('Please remove HTML tags from your message.');
-        return;
-      }
-
-      if (!isValidName(name)) {
-        showFormError('Please enter a valid name (2-80 letters).');
-        return;
-      }
-      if (!email || email.length > 254 || !isValidEmail(email)) {
-        showFormError('Please enter a valid email address.');
-        return;
-      }
-      if (message.length > 2000) {
-        showFormError('Please keep your message under 2000 characters.');
-        return;
-      }
-      if (!grade) {
-        showFormError('Please select a grade.');
-        return;
-      }
-
-      trackFormEvent('form_submit_attempt', {
-        form_id: 'contact-form',
-        page_path: window.location.pathname,
-      });
-
-      setButtonContent(btn, 'Sending...', 'fas fa-spinner fa-spin mr-2');
-      btn.disabled = true;
-      formStatus.classList.add('hidden');
-      markSubmission('contact-form');
-
-      try {
-        if (CONFIG.formspreeEndpoint && !CONFIG.formspreeEndpoint.includes('YOUR_FORM_ID')) {
-          const formData = new FormData(form);
-          const response = await fetch(CONFIG.formspreeEndpoint, {
-            method: 'POST',
-            body: formData,
-            headers: { Accept: 'application/json' },
-          });
-          if (!response.ok) {throw new Error('Form submission failed');}
-
-          trackFormEvent('form_submit_success', {
+        if (typeof window.gtag === 'function' && localStorage.getItem('po_ga_consent') === 'granted') {
+          window.gtag('event', 'generate_lead', {
+            lead_type: 'contact_form',
             form_id: 'contact-form',
             page_path: window.location.pathname,
           });
-
-          if (typeof window.gtag === 'function' && localStorage.getItem('po_ga_consent') === 'granted') {
-            window.gtag('event', 'generate_lead', {
-              lead_type: 'contact_form',
-              form_id: 'contact-form',
-              page_path: window.location.pathname,
-            });
-          }
         }
 
-        setButtonContent(btn, 'Sent Successfully!', 'fas fa-check mr-2');
-        btn.classList.remove('bg-brand-gold', 'hover:bg-yellow-400');
-        btn.classList.add('bg-green-500');
+        setButtonContent(ctx.btn, 'Sent Successfully!', 'fas fa-check mr-2');
+        if (ctx.btn) {
+          ctx.btn.classList.remove('bg-brand-gold', 'hover:bg-yellow-400');
+          ctx.btn.classList.add('bg-green-500');
+        }
 
         const success = el('p', { class: 'text-green-400', text: "Thank you! We'll be in touch within 24 hours." });
         success.prepend(el('i', { class: 'fas fa-check-circle mr-2', 'aria-hidden': 'true' }));
@@ -534,26 +577,29 @@
         formStatus.classList.remove('hidden');
 
         setTimeout(function () {
-          setButtonContent(btn, originalState.text, originalState.iconClass);
-          btn.classList.add('bg-brand-gold', 'hover:bg-yellow-400');
-          btn.classList.remove('bg-green-500');
-          btn.disabled = false;
+          setButtonContent(ctx.btn, ctx.originalState.text, ctx.originalState.iconClass);
+          if (ctx.btn) {
+            ctx.btn.classList.add('bg-brand-gold', 'hover:bg-yellow-400');
+            ctx.btn.classList.remove('bg-green-500');
+            ctx.btn.disabled = false;
+          }
           form.reset();
           formStatus.classList.add('hidden');
         }, 3000);
-      } catch (_err) {
-        setButtonContent(btn, originalState.text, originalState.iconClass);
-        btn.disabled = false;
+      },
+      onError: function (ctx) {
+        setButtonContent(ctx.btn, ctx.originalState.text, ctx.originalState.iconClass);
+        if (ctx.btn) {ctx.btn.disabled = false;}
         trackFormEvent('form_submit_failure', {
           form_id: 'contact-form',
           page_path: window.location.pathname,
         });
         showFormFallback({
-          name: stripHtmlTags(name),
-          email: stripHtmlTags(email),
-          grade: stripHtmlTags(grade),
+          name: stripHtmlTags(ctx.data.name),
+          email: stripHtmlTags(ctx.data.email),
+          grade: stripHtmlTags(ctx.data.grade),
         });
-      }
+      },
     });
   }
 
@@ -564,89 +610,78 @@
     const form = $('#lead-form');
     if (!form) {return;}
 
-    function trackFormEvent(eventName, params) {
-      if (typeof window.gtag !== 'function') {return;}
-      if (localStorage.getItem('po_ga_consent') !== 'granted') {return;}
-      window.gtag('event', eventName, params || {});
-    }
-
-    form.addEventListener('submit', async function (e) {
-      e.preventDefault();
-
-      if (isSubmissionThrottled('lead-form')) {
+    attachManagedFormSubmit(form, {
+      formId: 'lead-form',
+      sendingText: 'Sending...',
+      sendingIconClass: 'fas fa-spinner fa-spin mr-2',
+      submitErrorMessage: 'Lead magnet submission failed',
+      onThrottle: function () {
         alert('Please wait a few seconds before submitting again.');
-        return;
-      }
+      },
+      validate: function () {
+        const emailInput = $('#lead-email');
+        const email = emailInput ? String(emailInput.value || '').trim() : '';
+        if (containsHtmlTags(email)) {
+          alert('Please remove HTML tags from your email.');
+          return { ok: false };
+        }
+        if (email.length > 254 || !isValidEmail(email)) {
+          alert('Please enter a valid email address.');
+          return { ok: false };
+        }
+        return { ok: true, data: { email: email } };
+      },
+      buildFormData: function (formEl) {
+        const formData = new FormData(formEl);
+        formData.append('form_type', 'lead_magnet');
+        return formData;
+      },
+      onAttempt: function () {
+        trackFormEvent('form_submit_attempt', {
+          form_id: 'lead-form',
+          page_path: window.location.pathname,
+        });
+      },
+      onSuccess: function (ctx) {
+        trackFormEvent('form_submit_success', {
+          form_id: 'lead-form',
+          page_path: window.location.pathname,
+        });
 
-      const btn = form.querySelector('button[type="submit"]');
-      const originalState = getButtonState(btn);
-      const emailInput = $('#lead-email');
-      const email = emailInput ? String(emailInput.value || '').trim() : '';
-
-      if (containsHtmlTags(email)) {
-        alert('Please remove HTML tags from your email.');
-        return;
-      }
-      if (email.length > 254 || !isValidEmail(email)) {
-        alert('Please enter a valid email address.');
-        return;
-      }
-
-      trackFormEvent('form_submit_attempt', {
-        form_id: 'lead-form',
-        page_path: window.location.pathname,
-      });
-
-      setButtonContent(btn, 'Sending...', 'fas fa-spinner fa-spin mr-2');
-      btn.disabled = true;
-      markSubmission('lead-form');
-
-      try {
-        if (CONFIG.formspreeEndpoint && !CONFIG.formspreeEndpoint.includes('YOUR_FORM_ID')) {
-          const formData = new FormData(form);
-          formData.append('form_type', 'lead_magnet');
-          const response = await fetch(CONFIG.formspreeEndpoint, {
-            method: 'POST',
-            body: formData,
-            headers: { Accept: 'application/json' },
-          });
-          if (!response.ok) {throw new Error('Lead magnet submission failed');}
-
-          trackFormEvent('form_submit_success', {
+        if (typeof window.gtag === 'function' && localStorage.getItem('po_ga_consent') === 'granted') {
+          window.gtag('event', 'generate_lead', {
+            lead_type: 'lead_magnet',
             form_id: 'lead-form',
             page_path: window.location.pathname,
           });
-
-          if (typeof window.gtag === 'function' && localStorage.getItem('po_ga_consent') === 'granted') {
-            window.gtag('event', 'generate_lead', {
-              lead_type: 'lead_magnet',
-              form_id: 'lead-form',
-              page_path: window.location.pathname,
-            });
-          }
         }
 
-        setButtonContent(btn, 'Check Your Email!', 'fas fa-check mr-2');
-        btn.classList.remove('bg-brand-gold');
-        btn.classList.add('bg-green-500');
+        setButtonContent(ctx.btn, 'Check Your Email!', 'fas fa-check mr-2');
+        if (ctx.btn) {
+          ctx.btn.classList.remove('bg-brand-gold');
+          ctx.btn.classList.add('bg-green-500');
+        }
 
         setTimeout(function () {
           window.open('guides/matric-maths-mistakes-guide.html', '_blank');
-          setButtonContent(btn, originalState.text, originalState.iconClass);
-          btn.classList.add('bg-brand-gold');
-          btn.classList.remove('bg-green-500');
-          btn.disabled = false;
+          setButtonContent(ctx.btn, ctx.originalState.text, ctx.originalState.iconClass);
+          if (ctx.btn) {
+            ctx.btn.classList.add('bg-brand-gold');
+            ctx.btn.classList.remove('bg-green-500');
+            ctx.btn.disabled = false;
+          }
           form.reset();
         }, 1500);
-      } catch (_err) {
-        setButtonContent(btn, originalState.text, originalState.iconClass);
-        btn.disabled = false;
+      },
+      onError: function (ctx) {
+        setButtonContent(ctx.btn, ctx.originalState.text, ctx.originalState.iconClass);
+        if (ctx.btn) {ctx.btn.disabled = false;}
         trackFormEvent('form_submit_failure', {
           form_id: 'lead-form',
           page_path: window.location.pathname,
         });
         alert('Something went wrong. Please try again, or contact us on WhatsApp.');
-      }
+      },
     });
   }
 
