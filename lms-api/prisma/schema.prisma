@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   ADMIN
   TUTOR
+  STUDENT
 }
 
 enum SessionStatus {
@@ -75,9 +76,11 @@ model User {
   email          String        @unique
   role           Role
   tutorProfileId String?       @map("tutor_profile_id") @db.Uuid
+  studentId      String?       @unique @map("student_id") @db.Uuid
   passwordHash   String?       @map("password_hash")
   isActive       Boolean       @default(true) @map("is_active")
   tutorProfile   TutorProfile? @relation(fields: [tutorProfileId], references: [id])
+  student        Student?      @relation(fields: [studentId], references: [id])
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @default(now()) @map("updated_at")
 
@@ -87,6 +90,10 @@ model User {
   invoices        Invoice[]
   adjustmentsCreated Adjustment[] @relation("adjustment_created_by")
   adjustmentsApproved Adjustment[] @relation("adjustment_approved_by")
+  studyActivityEvents StudyActivityEvent[]
+  studyStreak         StudyStreak?
+  weeklyReports       WeeklyReport[] @relation("weekly_report_owner")
+  generatedReports    WeeklyReport[] @relation("weekly_report_creator")
 
   @@map("users")
 }
@@ -257,6 +264,7 @@ model TutorProfile {
   assignments Assignment[]
   sessions    Session[]
   invoices    Invoice[]
+  tutorMap    TutorStudentMap[]
 
   @@map("tutor_profiles")
 }
@@ -274,8 +282,70 @@ model Student {
 
   assignments Assignment[]
   sessions    Session[]
+  user        User?
+  tutorMap    TutorStudentMap[]
 
   @@map("students")
+}
+
+model StudyActivityEvent {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  type         String
+  occurredAt   DateTime @default(now()) @map("occurred_at") @db.Timestamptz
+  metadataJson Json     @default("{}") @map("metadata_json")
+  dedupeKey    String?  @map("dedupe_key")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("study_activity_events")
+  @@index([userId, occurredAt(sort: Desc)])
+  @@unique([userId, dedupeKey])
+}
+
+model StudyStreak {
+  userId           String   @id @map("user_id") @db.Uuid
+  current          Int      @default(0)
+  longest          Int      @default(0)
+  lastCreditedDate DateTime? @map("last_credited_date") @db.Date
+  xp               Int      @default(0)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("study_streaks")
+}
+
+model WeeklyReport {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  weekStart       DateTime @map("week_start") @db.Date
+  weekEnd         DateTime @map("week_end") @db.Date
+  payloadJson     Json     @map("payload_json")
+  createdByUserId String?  @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user      User  @relation("weekly_report_owner", fields: [userId], references: [id])
+  createdBy User? @relation("weekly_report_creator", fields: [createdByUserId], references: [id])
+
+  @@map("weekly_reports")
+  @@index([userId, createdAt(sort: Desc)])
+  @@unique([userId, weekStart, weekEnd])
+}
+
+model TutorStudentMap {
+  tutorId   String   @map("tutor_id") @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tutor   TutorProfile @relation(fields: [tutorId], references: [id])
+  student Student      @relation(fields: [studentId], references: [id])
+
+  @@id([tutorId, studentId])
+  @@map("tutor_student_map")
+  @@index([studentId, tutorId])
 }
 
 model Assignment {
