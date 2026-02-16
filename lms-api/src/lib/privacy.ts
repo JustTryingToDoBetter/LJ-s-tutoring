@@ -28,7 +28,7 @@ export async function exportTutorData(client: Queryable, tutorId: string) {
     [tutorId]
   );
 
-  const sessionIds = sessionsRes.rows.map((row) => row.id);
+  const sessionIds = sessionsRes.rows.map((row: { id: string }) => row.id);
   const historyRes = sessionIds.length
     ? await client.query(
         `select * from session_history where session_id = any($1::uuid[]) order by created_at desc`,
@@ -41,7 +41,7 @@ export async function exportTutorData(client: Queryable, tutorId: string) {
     [tutorId]
   );
 
-  const invoiceIds = invoicesRes.rows.map((row) => row.id);
+  const invoiceIds = invoicesRes.rows.map((row: { id: string }) => row.id);
   const invoiceLinesRes = invoiceIds.length
     ? await client.query(
         `select * from invoice_lines where invoice_id = any($1::uuid[]) order by id asc`,
@@ -82,7 +82,7 @@ export async function exportStudentData(client: Queryable, studentId: string) {
     [studentId]
   );
 
-  const sessionIds = sessionsRes.rows.map((row) => row.id);
+  const sessionIds = sessionsRes.rows.map((row: { id: string }) => row.id);
   const historyRes = sessionIds.length
     ? await client.query(
         `select * from session_history where session_id = any($1::uuid[]) order by created_at desc`,

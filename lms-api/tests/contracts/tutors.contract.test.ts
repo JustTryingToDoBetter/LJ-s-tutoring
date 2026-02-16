@@ -15,7 +15,9 @@ describe('tutor contracts', () => {
       fullName: 'Tutor Example',
       phone: '0712345678',
       defaultHourlyRate: 250,
-      active: true
+      active: true,
+      qualificationBand: 'BOTH',
+      qualifiedSubjects: ['Math']
     });
     expect(parsed.success).toBe(true);
   });

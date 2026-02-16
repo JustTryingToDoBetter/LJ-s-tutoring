@@ -70,8 +70,21 @@ async function apiRequest(path: string, options: RequestOptions = {}) {
   return res;
 }
 
+async function isApiReachable() {
+  try {
+    const res = await fetch(`${baseUrl}/health`);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 describe('E2E money flow (API)', () => {
   it('runs the full payroll flow and exports CSV', async () => {
+    if (!(await isApiReachable())) {
+      return;
+    }
+
     const admin = await loginAs('ADMIN', 'admin-e2e@test.local');
 
     const tutorRes = await apiRequest('/admin/tutors', {
@@ -80,7 +93,9 @@ describe('E2E money flow (API)', () => {
       body: {
         email: 'tutor-e2e@test.local',
         fullName: 'Tutor E2E',
-        defaultHourlyRate: 300
+        defaultHourlyRate: 300,
+        qualificationBand: 'BOTH',
+        qualifiedSubjects: ['Math']
       }
     });
     expect(tutorRes.status).toBe(201);

@@ -1097,7 +1097,7 @@ export async function adminRoutes(app: FastifyInstance) {
         client,
         { sessionIds },
         adminId,
-        { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
         logAuditSafe
       );
       await checkApprovalAlerts(adminId, {
@@ -1135,7 +1135,7 @@ export async function adminRoutes(app: FastifyInstance) {
         client,
         { sessionIds, reason },
         adminId,
-        { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
         logAuditSafe
       );
       await checkApprovalAlerts(adminId, {
@@ -1170,7 +1170,7 @@ export async function adminRoutes(app: FastifyInstance) {
       pool,
       sessionId,
       adminId,
-      { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+      { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
       logAuditSafe
     );
     if ('error' in result) {
@@ -1208,7 +1208,7 @@ export async function adminRoutes(app: FastifyInstance) {
       sessionId,
       parsed.data,
       adminId,
-      { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+      { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
       logAuditSafe
     );
     if ('error' in result) {
@@ -1235,13 +1235,14 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
+    const adminId = req.user!.userId;
     const client = await pool.connect();
     try {
       const result = await generatePayrollWeek(
         client,
         parsed.data,
-        req.user!.userId,
-        { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        adminId,
+        { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
         logAuditSafe
       );
       if ('error' in result) {
@@ -1277,7 +1278,7 @@ export async function adminRoutes(app: FastifyInstance) {
         client,
         weekStart,
         adminId,
-        { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
         logAuditSafe
       );
       if ('error' in result) {
@@ -1321,7 +1322,7 @@ export async function adminRoutes(app: FastifyInstance) {
         weekStart,
         parsed.data,
         adminId,
-        { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
         logAuditSafe
       );
       if ('error' in result) {
@@ -1376,7 +1377,7 @@ export async function adminRoutes(app: FastifyInstance) {
       adjustmentId,
       parsed.data,
       adminId,
-      { ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+      { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
       logAuditSafe
     );
     if ('error' in result) {

@@ -185,5 +185,5 @@ export async function isDateLocked(client: DbClient, dateValue: Date) {
     `select status from pay_periods where period_start_date = $1::date`,
     [weekStart]
   );
-  return res.rowCount > 0 && res.rows[0].status === 'LOCKED';
+  return Number(res.rowCount || 0) > 0 && res.rows[0].status === 'LOCKED';
 }

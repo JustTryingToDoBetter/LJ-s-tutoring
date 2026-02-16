@@ -303,7 +303,8 @@ describe('Phase 5 operational readiness', () => {
       method: 'POST',
       url: '/tutor/sessions',
       headers: {
-        cookie: `${adminAuth.cookie}; ${impersonationCookie?.split(';')[0]}`
+        cookie: `${adminAuth.cookie}; ${impersonationCookie?.split(';')[0]}`,
+        ...(adminAuth.csrfToken ? { 'x-csrf-token': adminAuth.csrfToken } : {})
       },
       payload: {
         assignmentId: assignment.id,

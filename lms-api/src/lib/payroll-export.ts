@@ -16,7 +16,20 @@ export async function buildPayrollCsv(client: Queryable, weekStart: string) {
   );
 
   const header = 'invoice_number,period_start,period_end,tutor_name,session_id,adjustment_id,line_type,description,minutes,rate,amount,total_amount';
-  const lines = res.rows.map((row) => {
+  const lines = res.rows.map((row: {
+    invoice_number: string;
+    period_start: Date;
+    period_end: Date;
+    tutor_name: string | null;
+    session_id: string | null;
+    adjustment_id: string | null;
+    line_type: string;
+    description: string | null;
+    minutes: number | null;
+    rate: number | null;
+    amount: number;
+    total_amount: number;
+  }) => {
     const safe = (value: any) => String(value ?? '').replaceAll('"', '""');
     return [
       row.invoice_number,

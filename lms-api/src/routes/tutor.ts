@@ -38,7 +38,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       `select status from pay_periods where period_start_date = $1::date`,
       [weekStart]
     );
-    return res.rowCount > 0 && res.rows[0].status === 'LOCKED';
+    return Number(res.rowCount || 0) > 0 && res.rows[0].status === 'LOCKED';
   };
 
   const getSignedAmount = (type: string, amount: number) =>
@@ -49,7 +49,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       `select active, status from tutor_profiles where id = $1`,
       [tutorId]
     );
-    if (res.rowCount === 0) {
+    if (Number(res.rowCount || 0) === 0) {
       reply.code(404).send({ error: 'tutor_not_found' });
       return false;
     }
@@ -71,7 +71,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       [userId]
     );
 
-    if (res.rowCount === 0) return reply.code(404).send({ error: 'user_not_found' });
+    if (Number(res.rowCount || 0) === 0) return reply.code(404).send({ error: 'user_not_found' });
     return reply.send({ me: res.rows[0] });
   });
 
@@ -205,7 +205,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       [assignmentId]
     );
 
-    if (assignmentRes.rowCount === 0) return reply.code(404).send({ error: 'assignment_not_found' });
+    if (Number(assignmentRes.rowCount || 0) === 0) return reply.code(404).send({ error: 'assignment_not_found' });
     const assignment = assignmentRes.rows[0];
     if (!requireTutorSelfScope(req, reply, assignment.tutor_id)) return reply;
     if (assignment.student_id !== studentId) return reply.code(400).send({ error: 'student_mismatch' });
@@ -236,14 +236,14 @@ export async function tutorRoutes(app: FastifyInstance) {
       [tutorId, date, startTime, endTime]
     );
 
-    if (overlap.rowCount > 0) return reply.code(409).send({ error: 'overlapping_session' });
+    if (Number(overlap.rowCount || 0) > 0) return reply.code(409).send({ error: 'overlapping_session' });
 
     if (idempotencyKey) {
       const existingRes = await pool.query(
         `select * from sessions where tutor_id = $1 and sync_key = $2 limit 1`,
         [tutorId, idempotencyKey]
       );
-      if (existingRes.rowCount > 0) {
+      if (Number(existingRes.rowCount || 0) > 0) {
         return reply.send({ session: existingRes.rows[0], deduped: true });
       }
     }
@@ -278,7 +278,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       [sessionId, tutorId]
     );
 
-    if (currentRes.rowCount === 0) return reply.code(404).send({ error: 'session_not_found' });
+    if (Number(currentRes.rowCount || 0) === 0) return reply.code(404).send({ error: 'session_not_found' });
     const current = currentRes.rows[0];
     if (current.status !== 'DRAFT') return reply.code(409).send({ error: 'only_draft_editable' });
 
@@ -296,7 +296,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       [current.assignment_id]
     );
 
-    if (assignmentRes.rowCount === 0) return reply.code(404).send({ error: 'assignment_not_found' });
+    if (Number(assignmentRes.rowCount || 0) === 0) return reply.code(404).send({ error: 'assignment_not_found' });
     const assignment = assignmentRes.rows[0];
     if (!assignment.active) return reply.code(409).send({ error: 'assignment_inactive' });
 
@@ -317,7 +317,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       [tutorId, date, sessionId, startTime, endTime]
     );
 
-    if (overlap.rowCount > 0) return reply.code(409).send({ error: 'overlapping_session' });
+    if (Number(overlap.rowCount || 0) > 0) return reply.code(409).send({ error: 'overlapping_session' });
 
     const beforeJson = { ...current };
 
@@ -368,7 +368,7 @@ export async function tutorRoutes(app: FastifyInstance) {
       [sessionId, tutorId]
     );
 
-    if (currentRes.rowCount === 0) return reply.code(404).send({ error: 'session_not_found' });
+    if (Number(currentRes.rowCount || 0) === 0) return reply.code(404).send({ error: 'session_not_found' });
     const current = currentRes.rows[0];
     if (current.status !== 'DRAFT') return reply.code(409).send({ error: 'only_draft_submittable' });
 
