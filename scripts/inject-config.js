@@ -86,6 +86,11 @@ const errorMonitorEndpoint = process.env[PUBLIC_KEYS.errorMonitorEndpoint] || ''
 const errorMonitorSampleRate = Number(process.env[PUBLIC_KEYS.errorMonitorSampleRate] || 1);
 const portalApiBase = process.env[PUBLIC_KEYS.portalApiBase] || '';
 
+if (portalApiBase && !/^https?:\/\//i.test(portalApiBase)) {
+  console.error('❌ PUBLIC_PO_API_BASE must be an absolute http(s) URL.');
+  process.exit(1);
+}
+
 const configReplacement = `  const CONFIG = {
   whatsappNumber: '${process.env[PUBLIC_KEYS.whatsappNumber] || '27679327754'}',
   formspreeEndpoint: '${process.env[PUBLIC_KEYS.formspreeEndpoint] || 'https://formspree.io/f/xreebzqa'}',

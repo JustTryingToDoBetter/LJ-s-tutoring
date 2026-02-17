@@ -22,6 +22,23 @@ Set on the `lms-api` service (existing):
 - `PUBLIC_BASE_URL=https://api.your-domain.com`
 - `SCORE_CRON_TOKEN=...`
 
+Set on API service for role-based portal redirects:
+
+- `ADMIN_PORTAL_URL=https://admin.your-domain.com`
+- `TUTOR_PORTAL_URL=https://tutor.your-domain.com`
+- `STUDENT_PORTAL_URL=https://student.your-domain.com`
+- `CORS_ORIGIN=https://admin.your-domain.com,https://tutor.your-domain.com,https://student.your-domain.com`
+
+## 2.1) Subdomain wiring (DigitalOcean)
+
+- Point `admin.your-domain.com`, `tutor.your-domain.com`, `student.your-domain.com` to your web/static origin.
+- Point `api.your-domain.com` to `lms-api` origin.
+- Add rewrites on the web/static origin:
+  - `admin.*` host root `/` -> `/admin/`
+  - `tutor.*` host root `/` -> `/tutor/dashboard/`
+  - `student.*` host root `/` -> `/dashboard/`
+- Keep API calls targeting `https://api.your-domain.com` via `PUBLIC_PO_API_BASE`.
+
 ## 3) Build and run commands
 
 For `web` service:

@@ -170,7 +170,13 @@ COOKIE_SECRET=change_me_to_a_long_random_string
 EMAIL_PROVIDER_KEY=
 EMAIL_FROM=projectodysseus10@gmail.com
 SCORE_CRON_TOKEN=change_me_phase3_daily_scores
+ADMIN_PORTAL_URL=https://admin.projectodysseus.live
+TUTOR_PORTAL_URL=https://tutor.projectodysseus.live
+STUDENT_PORTAL_URL=https://student.projectodysseus.live
+CORS_ORIGIN=https://admin.projectodysseus.live,https://tutor.projectodysseus.live,https://student.projectodysseus.live
 ```
+
+Role-based login and magic-link redirects now use `ADMIN_PORTAL_URL`, `TUTOR_PORTAL_URL`, and `STUDENT_PORTAL_URL`.
 
 ### API Scripts
 
