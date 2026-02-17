@@ -43,6 +43,11 @@ export function LoginForm() {
         return;
       }
 
+      if (payload.redirectTo?.startsWith('http://') || payload.redirectTo?.startsWith('https://')) {
+        window.location.assign(payload.redirectTo);
+        return;
+      }
+
       if (payload.role === 'STUDENT') {
         router.replace('/dashboard');
       } else if (payload.role === 'TUTOR' || payload.role === 'ADMIN') {
