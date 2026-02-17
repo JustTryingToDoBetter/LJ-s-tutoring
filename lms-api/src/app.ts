@@ -48,10 +48,19 @@ export async function buildApp() {
     secret: process.env.COOKIE_SECRET,
     hook: 'onRequest'
   });
-  const allowedOrigins = (process.env.CORS_ORIGIN ?? '')
+  const configuredOrigins = (process.env.CORS_ORIGIN ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+  const defaultDevOrigins = [
+    'http://localhost:8080',
+    'http://127.0.0.1:8080',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ];
+  const allowedOrigins = configuredOrigins.length > 0
+    ? configuredOrigins
+    : (process.env.NODE_ENV === 'production' ? [] : defaultDevOrigins);
 
   await app.register(cors, {
     origin: (origin, cb) => {

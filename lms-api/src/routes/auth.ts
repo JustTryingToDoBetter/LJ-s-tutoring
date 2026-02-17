@@ -39,6 +39,19 @@ function setAuthCookies(reply: any, jwt: string) {
   return csrfToken;
 }
 
+function portalRedirectTarget(role: 'ADMIN' | 'TUTOR' | 'STUDENT') {
+  if (role === 'ADMIN') {
+    const base = process.env.ADMIN_PORTAL_URL?.replace(/\/$/, '');
+    return base ? `${base}/` : '/admin';
+  }
+  if (role === 'TUTOR') {
+    const base = process.env.TUTOR_PORTAL_URL?.replace(/\/$/, '');
+    return base ? `${base}/dashboard/` : '/tutor';
+  }
+  const base = process.env.STUDENT_PORTAL_URL?.replace(/\/$/, '');
+  return base ? `${base}/dashboard/` : '/dashboard';
+}
+
 export async function authRoutes(app: FastifyInstance) {
   function createWindowLimiter(windowMs: number, maxAttempts: number) {
     const attempts = new Map<string, { count: number; resetAt: number }>();
@@ -221,7 +234,7 @@ export async function authRoutes(app: FastifyInstance) {
       token: jwt,
       csrfToken,
       role: user.role,
-      redirectTo: user.role === 'ADMIN' ? '/admin' : user.role === 'STUDENT' ? '/dashboard' : '/tutor'
+      redirectTo: portalRedirectTarget(user.role)
     });
   });
 

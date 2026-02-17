@@ -34,7 +34,7 @@ type VerifySuccess = {
   role: UserRole;
   tutorId?: string;
   studentId?: string;
-  redirectTo: '/admin' | '/tutor' | '/dashboard';
+  redirectTo: string;
 };
 
 type VerifyErrorCode =
@@ -86,6 +86,26 @@ type RequestMagicLinkDeps = {
   baseUrl?: string;
   sendMagicLinkFn?: (params: { to: string; link: string }) => Promise<void>;
 };
+
+function normalizeBaseUrl(url: string | undefined, fallbackPath: string) {
+  if (!url) {
+    return fallbackPath;
+  }
+  return String(url).replace(/\/$/, '');
+}
+
+function roleRedirectTarget(role: UserRole) {
+  if (role === 'ADMIN') {
+    const adminBase = normalizeBaseUrl(process.env.ADMIN_PORTAL_URL, '');
+    return adminBase ? `${adminBase}/` : '/admin';
+  }
+  if (role === 'TUTOR') {
+    const tutorBase = normalizeBaseUrl(process.env.TUTOR_PORTAL_URL, '');
+    return tutorBase ? `${tutorBase}/dashboard/` : '/tutor';
+  }
+  const studentBase = normalizeBaseUrl(process.env.STUDENT_PORTAL_URL, '');
+  return studentBase ? `${studentBase}/dashboard/` : '/dashboard';
+}
 
 function computeDeviceHash(userAgent: string, acceptLanguage: string) {
   return hashToken(`${userAgent}|${acceptLanguage}`);
@@ -370,7 +390,7 @@ export async function verifyMagicLink(
     role: row.role,
     tutorId: row.tutor_profile_id ?? undefined,
     studentId: row.student_id ?? undefined,
-    redirectTo: row.role === 'ADMIN' ? '/admin' : row.role === 'STUDENT' ? '/dashboard' : '/tutor'
+    redirectTo: roleRedirectTarget(row.role)
   };
 }
 
