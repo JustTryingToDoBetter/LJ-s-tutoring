@@ -66,6 +66,7 @@
     "dev:next": "npm-run-all --parallel dev:web dev:api",
     "dev": "npm run dev:next",
     "migrate": "npm run migrate --prefix lms-api",
+    "db:create:local": "npm run db:create:local --prefix lms-api",
     "test": "npm run test --prefix lms-api",
     "test:e2e:api": "npm run test:e2e --prefix lms-api",
     "db:migrate:test": "npm run db:migrate:test --prefix lms-api",
