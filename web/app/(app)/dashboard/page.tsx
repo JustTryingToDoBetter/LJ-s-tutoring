@@ -1,7 +1,10 @@
+import nextDynamic from 'next/dynamic';
 import { Card, CardTitle } from '@/components/ui/card';
 import { StreakWidget } from '@/components/app/streak-widget';
 import { apiGet } from '@/lib/server-api';
 import { requireSession } from '@/lib/server-auth';
+
+const StudentDashboardClient = nextDynamic(() => import('@/components/app/StudentDashboardClient'), { ssr: false });
 
 export const dynamic = 'force-dynamic';
 
@@ -36,41 +39,8 @@ export default async function StudentDashboardPage() {
         </div>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardTitle>Recommended next</CardTitle>
-          <p className="mt-2 text-sm text-ody-muted">{data.recommendedNext.description}</p>
-          <button className="ody-btn-primary mt-3">{data.recommendedNext.action}</button>
-        </Card>
-
-        <Card>
-          <CardTitle>Upcoming session</CardTitle>
-          {data.today.hasUpcoming && data.today.session ? (
-            <p className="mt-2 text-sm text-ody-muted">
-              {data.today.session.subject} • {data.today.session.startTime} • {data.today.session.mode}
-            </p>
-          ) : (
-            <p className="mt-2 text-sm text-ody-muted">{data.today.emptyState?.title ?? 'No upcoming session'}</p>
-          )}
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardTitle>Topic progress</CardTitle>
-          <div className="mt-3 grid gap-2">
-            {data.progressSnapshot.map((topic) => (
-              <div key={topic.topic}>
-                <div className="mb-1 flex justify-between text-sm"><span>{topic.topic}</span><span>{topic.completion}%</span></div>
-                <div className="h-2 rounded-full bg-slate-800">
-                  <div className="h-2 rounded-full bg-ody-gradient" style={{ width: `${Math.max(0, Math.min(100, topic.completion))}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <StreakWidget streak={data.streak} />
+      <div className="mt-4">
+        <StudentDashboardClient initialData={data} />
       </div>
     </>
   );

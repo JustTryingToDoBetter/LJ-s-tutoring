@@ -72,7 +72,7 @@ test.describe("LMS portals", () => {
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('text=Minutes:')).toBeVisible();
 
-    await loginAs(request, context, 'ADMIN', `admin-ui-smoke-${Date.now()}@test.local`);
+    await loginAs(request, context, 'TUTOR', `tutor-ui-smoke-${Date.now()}@test.local`);
     await page.goto('/tutor/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('text=Today sessions:')).toBeVisible();
   });
