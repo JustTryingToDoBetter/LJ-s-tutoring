@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 const AUTH_PATH_PREFIXES = [
+  '/admin',
   '/dashboard',
   '/reports',
   '/assistant',

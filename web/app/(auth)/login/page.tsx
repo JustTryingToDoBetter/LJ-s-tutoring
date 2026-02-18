@@ -11,7 +11,7 @@ export default async function LoginPage() {
     redirect('/dashboard');
   }
   if (session?.user?.role === 'ADMIN') {
-    redirect('/tutor/dashboard');
+    redirect('/admin');
   }
 
   return (

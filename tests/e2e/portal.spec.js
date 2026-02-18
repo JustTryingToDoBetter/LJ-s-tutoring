@@ -21,11 +21,11 @@ test.describe("LMS portals", () => {
 
     await loginAs(request, context, "ADMIN", "admin-ui@test.local");
 
-    await page.goto("/admin/index.html", { waitUntil: "domcontentloaded" });
+    await page.goto("/admin", { waitUntil: "domcontentloaded" });
 
-    await expect(page.locator("h1.page-title")).toContainText("Admin dashboard");
-    await expect(page.locator("#countTutors")).not.toHaveText("");
-    await expect(page.locator("#countStudents")).not.toHaveText("");
+    await expect(page.getByRole('heading', { name: /admin dashboard/i })).toBeVisible();
+    await expect(page.locator('text=Tutors:')).toBeVisible();
+    await expect(page.locator('text=Students:')).toBeVisible();
 
     const jsErrors = consoleWatch.errors.filter((err) => !isBenignConsoleError(err.message));
     expect(jsErrors).toEqual([]);
@@ -38,10 +38,10 @@ test.describe("LMS portals", () => {
 
     await loginAs(request, context, "TUTOR", "tutor-ui@test.local");
 
-    await page.goto("/tutor/index.html", { waitUntil: "domcontentloaded" });
+    await page.goto("/tutor/dashboard", { waitUntil: "domcontentloaded" });
 
-    await expect(page.locator("#tutorName")).toContainText(/Test Tutor/i);
-    await expect(page.locator("#todaySessions")).toBeVisible();
+    await expect(page.getByRole('heading', { name: /tutor operations/i })).toBeVisible();
+    await expect(page.locator('text=Today sessions:')).toBeVisible();
 
     const jsErrors = consoleWatch.errors.filter((err) => !isBenignConsoleError(err.message));
     expect(jsErrors).toEqual([]);
@@ -54,13 +54,26 @@ test.describe("LMS portals", () => {
 
     await loginAs(request, context, "STUDENT", "student-ui@test.local");
 
-    await page.goto("/dashboard/", { waitUntil: "domcontentloaded" });
+    await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
 
-    await expect(page.locator(".page-title")).toContainText(/Welcome back|Smart Dashboard/i);
-    await expect(page.locator("#todayCard")).toBeVisible();
+    await expect(page.getByRole('heading', { name: /recommended next/i })).toBeVisible();
+    await expect(page.locator('text=Minutes:')).toBeVisible();
 
     const jsErrors = consoleWatch.errors.filter((err) => !isBenignConsoleError(err.message));
     expect(jsErrors).toEqual([]);
     expect(guard.blocked.length).toBeGreaterThanOrEqual(0);
+  });
+
+  test('login page + role dashboards smoke', async ({ page, context, request }) => {
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
+
+    await loginAs(request, context, 'STUDENT', `student-ui-smoke-${Date.now()}@test.local`);
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('text=Minutes:')).toBeVisible();
+
+    await loginAs(request, context, 'ADMIN', `admin-ui-smoke-${Date.now()}@test.local`);
+    await page.goto('/tutor/dashboard', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('text=Today sessions:')).toBeVisible();
   });
 });

@@ -13,6 +13,8 @@ export default function HomePage() {
           <Link href="/login" className="ody-btn-primary">Sign in</Link>
           <Link href="/dashboard" className="ody-btn-secondary">Student dashboard</Link>
           <Link href="/tutor/dashboard" className="ody-btn-secondary">Tutor dashboard</Link>
+          <Link href="/guides" className="ody-btn-secondary">Guides</Link>
+          <Link href="/privacy" className="ody-btn-secondary">Privacy</Link>
         </div>
       </div>
     </main>

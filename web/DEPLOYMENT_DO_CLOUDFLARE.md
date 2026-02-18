@@ -59,6 +59,7 @@ Apply two rules:
 
 1. Public pages (`/`, `/pricing`, `/about`) may be cached at edge.
 2. Authenticated surfaces must not be cached:
+  - `/admin*`
    - `/dashboard*`
    - `/reports*`
    - `/assistant*`

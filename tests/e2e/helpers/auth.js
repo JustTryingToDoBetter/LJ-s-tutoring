@@ -1,5 +1,9 @@
 async function loginAs(request, context, role, email) {
+  const state = await request.storageState();
+  const csrfCookie = (state.cookies || []).find((cookie) => cookie.name === 'csrf' && (cookie.domain === 'localhost' || cookie.domain === '.localhost'));
+
   const res = await request.post("http://localhost:3001/test/login-as", {
+    headers: csrfCookie ? { 'x-csrf-token': csrfCookie.value } : undefined,
     data: { role, email }
   });
 

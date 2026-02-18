@@ -38,7 +38,7 @@ export function LoginForm() {
 
       const requestedPath = search.get('next');
       if (requestedPath && requestedPath.startsWith('/')) {
-        router.replace(requestedPath);
+        router.replace(requestedPath as never);
         router.refresh();
         return;
       }
@@ -50,10 +50,12 @@ export function LoginForm() {
 
       if (payload.role === 'STUDENT') {
         router.replace('/dashboard');
-      } else if (payload.role === 'TUTOR' || payload.role === 'ADMIN') {
+      } else if (payload.role === 'TUTOR') {
         router.replace('/tutor/dashboard');
+      } else if (payload.role === 'ADMIN') {
+        router.replace('/admin');
       } else if (payload.redirectTo?.startsWith('/')) {
-        router.replace(payload.redirectTo);
+        router.replace(payload.redirectTo as never);
       } else {
         router.replace('/dashboard');
       }

@@ -15,14 +15,11 @@ npm install
 cp .env.example .env
 # Edit .env with your PUBLIC_* values (safe client config only)
 
-# 4. Build the project (compiles CSS, copies files, injects config)
+# 4. Build the project (Next web + LMS API)
 npm run build
 
-# 5. Serve locally to test
-npm run serve
-# Visit http://localhost:8080
-
-# 6. For production, deploy dist/ folder to static hosting
+# 5. Start production servers locally (web:3000 + api:3001)
+npm run start
 ```
 
 ## 🧪 Codespaces (One Command)
@@ -45,6 +42,8 @@ Legacy static portal + API remains available via:
 ```bash
 npm run dev:legacy
 ```
+
+Migration route checklist: `MIGRATION_CHECKLIST.md`
 
 If you need a fresh DB schema first, run `npm run migrate` before starting dev.
 
@@ -352,7 +351,9 @@ npm run qa
 | `npm run dev` | Start Next web (`web/`) + LMS API |
 | `npm run dev:legacy` | Start legacy static portal + LMS API |
 | `npm run check:web` | Run Next web lint, typecheck, tests |
-| `npm run build` | Full production build (clean, compile, copy, inject) |
+| `npm run build` | Build Next web (`web/`) + LMS API (`lms-api/`) |
+| `npm run build:legacy` | Build legacy static `dist/` bundle (transition mode) |
+| `npm run start` | Start Next web + LMS API in production mode |
 | `npm run serve` | Start local server on http://localhost:8080 |
 | `npm run lint` | Run all linters (JavaScript + HTML) |
 | `npm run lint:js` | Lint JavaScript files only |
@@ -494,12 +495,11 @@ npm run build
 
 ### DigitalOcean App Platform
 
-Deploy as a **Static Site**:
-- Auto-build from repository
-- Build command: `npm run build`
-- Output directory: `dist`
+Deploy as separate services:
+- **Web service (`web/`)**: Build `npm run build --prefix web`, Run `npm run start --prefix web`
+- **API service (`lms-api/`)**: Build `npm run build --prefix lms-api`, Run `npm run start --prefix lms-api`
 
-Set environment variables in app settings.
+If Cloudflare is in front, ensure authenticated routes are not edge-cached (`/admin*`, `/dashboard*`, `/reports*`, `/tutor*`, `/api/auth/*`).
 
 ## 🔒 Security
 

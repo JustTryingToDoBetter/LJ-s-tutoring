@@ -10,7 +10,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "start:test": "NODE_ENV=test tsx src/index.ts",
+    "start:test": "tsx src/index.ts",
     "db:create:local": "tsx scripts/create-local-db.ts",
     "migrate": "tsx src/db/migrate.ts",
     "db:migrate:test": "NODE_ENV=test DATABASE_URL=$DATABASE_URL_TEST tsx src/db/migrate.ts",

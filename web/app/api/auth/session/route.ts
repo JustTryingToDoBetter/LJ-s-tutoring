@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_BASE_URL } from '@/lib/env';
+import { createRequestId } from '@/lib/request-id';
 
 export async function GET(req: NextRequest) {
+  const requestId = createRequestId();
   const cookieHeader = req.headers.get('cookie') || '';
 
   const upstream = await fetch(`${API_BASE_URL}/auth/session`, {
@@ -9,6 +11,7 @@ export async function GET(req: NextRequest) {
     headers: {
       cookie: cookieHeader,
       accept: 'application/json',
+      'x-request-id': requestId,
     },
     cache: 'no-store',
   });

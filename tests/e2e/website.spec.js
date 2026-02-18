@@ -18,7 +18,7 @@ test.describe("Website", () => {
     const guard = await installNetworkGuard(page);
     const consoleWatch = watchConsole(page);
 
-    const pages = ["/", "/privacy.html", "/terms.html", "/404.html", "/guides/matric-maths-mistakes-guide.html"];
+    const pages = ["/", "/privacy", "/terms", "/guides", "/guides/matric-maths-mistakes-guide"];
 
     for (const path of pages) {
       const response = await page.goto(path, { waitUntil: "domcontentloaded" });
@@ -36,21 +36,13 @@ test.describe("Website", () => {
 
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
-    const mobileMenuButton = page.locator("#mobile-menu-btn");
-    if (await mobileMenuButton.isVisible()) {
-      await mobileMenuButton.click();
-    }
+    await expect(page).toHaveTitle(/Project Odysseus/i);
+    await expect(page.getByRole('link', { name: /sign in/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /student dashboard/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /tutor dashboard/i })).toBeVisible();
 
-    await expect(page).toHaveTitle(/Maths Tutoring/i);
-    const aboutLink = page.locator("a[href='#about']:visible").first();
-    const contactLink = page.locator("a[href='#contact']:visible").first();
-    await expect(aboutLink).toBeVisible();
-    await expect(contactLink).toBeVisible();
-    await expect(page.locator("a[href='/privacy.html']").first()).toBeVisible();
-    await expect(page.locator("a[href*='wa.me']").first()).toBeVisible();
-
-    await aboutLink.click();
-    await expect(page).toHaveURL(/#about/);
+    await page.getByRole('link', { name: /sign in/i }).click();
+    await expect(page).toHaveURL(/\/login/);
 
     const jsErrors = consoleWatch.errors.filter((err) => !isBenignConsoleError(err.message));
     expect(jsErrors).toEqual([]);
@@ -63,12 +55,13 @@ test.describe("Website", () => {
 
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
-    await page.fill("#name", "Test Student");
-    await page.fill("#email", "not-an-email");
-    await page.selectOption("#grade", { label: "Grade 10" });
-    await page.click("#contact-form button[type='submit']");
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
 
-    const isValid = await page.locator("#email").evaluate((el) => el.checkValidity());
+    await page.fill('input[name="email"]', 'not-an-email');
+    await page.fill('input[name="password"]', 'invalid');
+    await page.click('button[type="submit"]');
+
+    const isValid = await page.locator('input[name="email"]').evaluate((el) => el.checkValidity());
     expect(isValid).toBe(false);
 
     const jsErrors = consoleWatch.errors.filter((err) => !isBenignConsoleError(err.message));

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_BASE_URL } from '@/lib/env';
+import { createRequestId } from '@/lib/request-id';
 
 export async function POST(req: NextRequest) {
+  const requestId = createRequestId();
   const cookieHeader = req.headers.get('cookie') || '';
   const csrfToken = req.headers.get('x-csrf-token') || '';
 
@@ -9,6 +11,7 @@ export async function POST(req: NextRequest) {
     method: 'POST',
     headers: {
       cookie: cookieHeader,
+      'x-request-id': requestId,
       ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
     },
     cache: 'no-store',

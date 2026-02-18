@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_BASE_URL } from '@/lib/env';
+import { createRequestId } from '@/lib/request-id';
 
 export async function POST(req: NextRequest) {
+  const requestId = createRequestId();
   const contentType = req.headers.get('content-type') || '';
   let payload: Record<string, unknown> = {};
   if (contentType.includes('application/json')) {
@@ -18,6 +20,7 @@ export async function POST(req: NextRequest) {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
+      'x-request-id': requestId,
     },
     body: JSON.stringify(payload),
     cache: 'no-store',

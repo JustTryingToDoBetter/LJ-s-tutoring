@@ -1,7 +1,9 @@
 import { cookies } from 'next/headers';
 import { API_BASE_URL } from '@/lib/env';
+import { createRequestId } from '@/lib/request-id';
 
 export async function apiGet<T>(path: string): Promise<T> {
+  const requestId = createRequestId();
   const cookieHeader = cookies()
     .getAll()
     .map((entry) => `${entry.name}=${entry.value}`)
@@ -12,6 +14,7 @@ export async function apiGet<T>(path: string): Promise<T> {
     headers: {
       cookie: cookieHeader,
       accept: 'application/json',
+      'x-request-id': requestId,
     },
     cache: 'no-store',
   });
@@ -24,6 +27,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 }
 
 export async function apiPost<T>(path: string, body: Record<string, unknown>) {
+  const requestId = createRequestId();
   const cookieStore = cookies();
   const cookieHeader = cookieStore
     .getAll()
@@ -36,6 +40,7 @@ export async function apiPost<T>(path: string, body: Record<string, unknown>) {
     headers: {
       cookie: cookieHeader,
       'content-type': 'application/json',
+      'x-request-id': requestId,
       ...(csrf ? { 'x-csrf-token': csrf } : {}),
     },
     body: JSON.stringify(body),
