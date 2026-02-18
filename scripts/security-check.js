@@ -16,6 +16,8 @@ function isIgnoredDir(dirPath) {
   const parts = dirPath.split(path.sep);
   if (parts.includes('node_modules')) {return true;}
   if (dirPath === lmsApiDir || dirPath.startsWith(lmsApiDir + path.sep)) {return true;}
+  const playwrightReportDir = path.join(root, 'playwright-report');
+  if (dirPath === playwrightReportDir || dirPath.startsWith(playwrightReportDir + path.sep)) {return true;}
   return false;
 }
 
