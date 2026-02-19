@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tutor Risk Monitor | Project Odysseus</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body data-page="risk">
+  <div class="portal-shell">
+    <nav class="portal-nav">
+      <div class="portal-nav-inner">
+        <div class="brand"><span class="brand-badge">PO</span>Tutor Portal</div>
+        <div class="nav-links">
+          <a class="nav-link" data-nav="dashboard" href="/tutor/dashboard/">Dashboard</a>
+          <a class="nav-link" data-nav="home" href="/tutor/index.html">Home</a>
+          <a class="nav-link" data-nav="reports" href="/tutor/reports/">Reports</a>
+          <a class="nav-link" data-nav="risk" href="/tutor/risk/">Risk</a>
+          <a class="nav-link" data-nav="community" href="/tutor/community/">Community</a>
+          <a class="nav-link" data-nav="career" href="/tutor/career/">Career</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="portal-main">
+      <section class="page-header">
+        <h1 class="page-title">Risk + Momentum Monitor</h1>
+        <p class="page-subtitle">Assigned students sorted by risk score with explainable reasons.</p>
+      </section>
+
+      <section class="grid">
+        <article class="panel dashboard-card">
+          <div id="tutorRiskList" class="list-compact"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="/assets/portal-config.js"></script>
+  <script src="/assets/analytics.js"></script>
+  <script type="module" src="/assets/tutor/risk.js"></script>
+</body>
+</html>
