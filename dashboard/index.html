@@ -1963,9 +1963,9 @@
       return typing;
     }
 
-    const odieSystemPrompt = "You are Odie, a warm encouraging AI study companion for Project Odysseus. Student name is Jaydin. Keep replies 2-4 sentences, use 1-2 emojis, be concise and helpful. Help with study tips, subject questions, motivation, and explain dashboard features when asked.";
+    const ODIE_SYSTEM_PROMPT = "You are Odie, the AI study companion for Project Odysseus. Student name is Jaydin. Personality: warm, upbeat, and encouraging, like a smart tutor friend. Tone: concise, practical, and positive. Keep replies to 2-4 sentences, use 1-2 emojis, and always give clear next steps. You can help with study tips, subject questions, motivation, and how this dashboard works (Focus Mode timer, streak, tasks, notes, schedule, and career guide). If the student feels stuck, break work into one small action they can do right now.";
 
-    const careerSystemPrompt = "You are a warm career guidance counsellor for a South African tutoring platform. Student is Jaydin (high school age). Help discover careers that suit interests and strengths. Ask follow-up questions. Suggest specific careers and what subjects help. Reference South African context (Wits, UCT, UKZN, bursaries, local industries). Connect careers to subjects: Maths, Biology, History, Physics. Keep responses 3-5 sentences with 1-2 emojis. Never dismiss any career idea. If unsure, ask what activities make them lose track of time.";
+    const CAREER_SYSTEM_PROMPT = "You are a warm career guidance counsellor for a South African tutoring platform. Student is Jaydin (high school age). Help discover careers that suit interests and strengths. Ask follow-up questions. Suggest specific careers and what subjects help. Reference South African context (Wits, UCT, UKZN, bursaries, local industries). Connect careers to subjects: Maths, Biology, History, Physics. Keep responses 3-5 sentences with 1-2 emojis. Never dismiss any career idea. If unsure, ask what activities make them lose track of time.";
 
     const odieHistory = [
       {
@@ -1984,7 +1984,7 @@
     appendMessage(odieMessages, 'bot', odieHistory[0].content);
     appendMessage(careerMessages, 'bot', careerHistory[0].content);
 
-    async function groqChat({ system, history, userText }) {
+    async function groqChat({ system, history, userText, maxTokens = 1024 }) {
       const keyFromEnv = window.GROQ_API_KEY || localStorage.getItem('GROQ_API_KEY') || '';
       if (!keyFromEnv) {
         throw new Error('Missing GROQ_API_KEY. Set window.GROQ_API_KEY or localStorage.GROQ_API_KEY.');
@@ -1998,7 +1998,7 @@
         },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
-          max_tokens: 350,
+          max_tokens: maxTokens,
           temperature: 0.5,
           messages: [{ role: 'system', content: system }]
             .concat(history
@@ -2022,19 +2022,38 @@
       return text || 'I had trouble forming a response. Please try again.';
     }
 
-    async function sendChat({ input, container, history, system, onFirstSend }) {
+    async function chatWithOdie(userMessage, conversationHistory = []) {
+      return groqChat({
+        system: ODIE_SYSTEM_PROMPT,
+        history: conversationHistory,
+        userText: userMessage,
+        maxTokens: 1024
+      });
+    }
+
+    async function analyzeDocument(documentText, question, conversationHistory = []) {
+      const trimmedDoc = String(documentText || '').slice(0, 30000);
+      const userMessage = 'Here is a document:\n\n' + trimmedDoc + '\n\nQuestion: ' + String(question || '').trim();
+      return chatWithOdie(userMessage, conversationHistory);
+    }
+
+    // Expose helpers for external usage from the browser console or future integrations.
+    window.chatWithOdie = chatWithOdie;
+    window.analyzeDocument = analyzeDocument;
+
+    async function sendChat({ input, container, history, getReply, onFirstSend }) {
       const text = input.value.trim();
       if (!text) return;
       input.value = '';
       appendMessage(container, 'user', text);
-      history.push({ role: 'user', content: text });
       if (onFirstSend) onFirstSend();
 
       const typing = showTyping(container);
       try {
-        const answer = await groqChat({ system, history, userText: text });
+        const answer = await getReply(text, history);
         typing.remove();
         appendMessage(container, 'bot', answer);
+        history.push({ role: 'user', content: text });
         history.push({ role: 'assistant', content: answer });
       } catch (err) {
         typing.remove();
@@ -2048,7 +2067,7 @@
         input: odieInput,
         container: odieMessages,
         history: odieHistory,
-        system: odieSystemPrompt
+        getReply: (text, history) => chatWithOdie(text, history)
       });
     });
 
@@ -2066,7 +2085,12 @@
         input: careerInput,
         container: careerMessages,
         history: careerHistory,
-        system: careerSystemPrompt,
+        getReply: (text, history) => groqChat({
+          system: CAREER_SYSTEM_PROMPT,
+          history,
+          userText: text,
+          maxTokens: 1024
+        }),
         onFirstSend: () => {
           if (!careerStarted) {
             careerStarted = true;
