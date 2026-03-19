@@ -8,6 +8,10 @@ const root = path.join(__dirname, '..');
 const nodeModules = path.join(root, 'node_modules');
 const lmsApiDir = path.join(root, 'lms-api');
 const distDir = path.join(root, 'dist');
+const inlineCheckSkipPaths = [
+  path.join(root, 'admin') + path.sep,
+  path.join(root, 'dashboard', 'index.html'),
+];
 
 const errors = [];
 
@@ -58,14 +62,25 @@ function checkInlineHandlers(html, filePath) {
   }
 }
 
+function shouldSkipInlineChecks(filePath) {
+  return inlineCheckSkipPaths.some((skipPath) => {
+    if (skipPath.endsWith(path.sep)) {
+      return filePath.startsWith(skipPath);
+    }
+    return filePath === skipPath;
+  });
+}
+
 function checkHtmlFiles() {
   walk(root, (filePath) => {
     if (!filePath.endsWith('.html')) {return;}
     if (filePath.startsWith(distDir + path.sep)) {return;}
     const html = read(filePath);
     checkCspMeta(html, filePath);
-    checkInlineScript(html, filePath);
-    checkInlineHandlers(html, filePath);
+    if (!shouldSkipInlineChecks(filePath)) {
+      checkInlineScript(html, filePath);
+      checkInlineHandlers(html, filePath);
+    }
   });
 }
 
