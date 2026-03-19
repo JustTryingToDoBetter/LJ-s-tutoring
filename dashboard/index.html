@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Dashboard | Project Odysseus</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body data-page="dashboard">
+  <div class="portal-shell">
+    <nav class="portal-nav">
+      <div class="portal-nav-inner">
+        <div class="brand"><span class="brand-badge">PO</span>Student Portal</div>
+        <div class="nav-links">
+          <a class="nav-link" data-nav="dashboard" href="/dashboard/">Dashboard</a>
+          <a class="nav-link" data-nav="reports" href="/reports/">Reports</a>
+          <a class="nav-link" data-nav="community" href="/dashboard/community/">Community</a>
+          <a class="nav-link" data-nav="career" href="/dashboard/career/">Career</a>
+        </div>
+      </div>
+    </nav>
+    <main class="portal-main">
+      <section class="page-header">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Your weekly progress, upcoming sessions, and next recommended action.</p>
+      </section>
+      <section class="metric-grid">
+        <article class="panel metric-card"><span class="metric-label">XP</span><strong id="metricXp" class="metric-value">—</strong></article>
+        <article class="panel metric-card"><span class="metric-label">Current streak</span><strong id="metricStreak" class="metric-value">—</strong></article>
+        <article class="panel metric-card"><span class="metric-label">Minutes this week</span><strong id="metricMinutes" class="metric-value">—</strong></article>
+        <article class="panel metric-card"><span class="metric-label">Sessions this week</span><strong id="metricSessions" class="metric-value">—</strong></article>
+      </section>
+      <section class="grid two">
+        <article class="panel dashboard-card">
+          <h2 class="panel-title">Recommended next</h2>
+          <p id="recommendedTitle" class="note">Loading recommendation…</p>
+          <p id="recommendedDescription"></p>
+        </article>
+        <article class="panel dashboard-card">
+          <h2 class="panel-title">Upcoming session</h2>
+          <div id="upcomingSession" class="list-compact"></div>
+        </article>
+      </section>
+      <section class="panel dashboard-card">
+        <h2 class="panel-title">Topic progress</h2>
+        <div id="progressSnapshot" class="list-compact"></div>
+      </section>
+    </main>
+  </div>
+  <script src="/assets/portal-config.js"></script>
+  <script src="/assets/analytics.js"></script>
+  <script type="module" src="/assets/student/dashboard.js"></script>
+</body>
+</html>

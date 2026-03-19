@@ -42,14 +42,14 @@ function setAuthCookies(reply: any, jwt: string) {
 function portalRedirectTarget(role: 'ADMIN' | 'TUTOR' | 'STUDENT') {
   if (role === 'ADMIN') {
     const base = process.env.ADMIN_PORTAL_URL?.replace(/\/$/, '');
-    return base ? `${base}/` : '/admin';
+    return base ? `${base}/` : '/admin/';
   }
   if (role === 'TUTOR') {
     const base = process.env.TUTOR_PORTAL_URL?.replace(/\/$/, '');
-    return base ? `${base}/dashboard/` : '/tutor';
+    return base ? `${base}/dashboard/` : '/tutor/dashboard/';
   }
   const base = process.env.STUDENT_PORTAL_URL?.replace(/\/$/, '');
-  return base ? `${base}/dashboard/` : '/dashboard';
+  return base ? `${base}/dashboard/` : '/dashboard/';
 }
 
 export async function authRoutes(app: FastifyInstance) {
