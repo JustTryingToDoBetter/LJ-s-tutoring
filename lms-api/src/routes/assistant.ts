@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { pool } from '../db/pool.js';
 import { requireAuth, requireRole, requireTutor } from '../lib/rbac.js';
-import { AssistantMessageCreateSchema, AssistantThreadCreateSchema, IdParamSchema } from '../lib/schemas.js';
+import { AssistantMessageCreateSchema, AssistantThreadCreateSchema, IdParamSchema, OdieProxyChatSchema } from '../lib/schemas.js';
 
 type AllowedOwnerRole = 'STUDENT' | 'TUTOR';
 
@@ -384,6 +384,62 @@ function registerAssistantEndpoints(
 }
 
 export async function assistantRoutes(app: FastifyInstance) {
+  app.post('/assistant/odie-proxy', {
+    config: {
+      rateLimit: {
+        max: Number(process.env.ODIE_PROXY_RATE_LIMIT_MAX ?? 30),
+        timeWindow: process.env.ODIE_PROXY_RATE_LIMIT_WINDOW ?? '1 minute'
+      }
+    }
+  }, async (req, reply) => {
+    setPrivateNoStore(reply);
+
+    const parsed = OdieProxyChatSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const groqKey = process.env.GROQ_API_KEY;
+    if (!groqKey) {
+      return reply.code(503).send({ error: 'groq_not_configured' });
+    }
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${groqKey}`,
+        },
+        body: JSON.stringify({
+          model: process.env.ODIE_GROQ_MODEL || 'llama-3.3-70b-versatile',
+          temperature: 0.5,
+          max_tokens: parsed.data.maxTokens,
+          messages: [{ role: 'system', content: parsed.data.system }]
+            .concat(parsed.data.history)
+            .concat([{ role: 'user', content: parsed.data.userText }]),
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        req.log.error({ status: response.status, errText }, 'Groq proxy request failed');
+        return reply.code(502).send({ error: 'upstream_error' });
+      }
+
+      const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+      const text = payload?.choices?.[0]?.message?.content?.trim?.() || '';
+      if (!text) {
+        return reply.code(502).send({ error: 'empty_response' });
+      }
+
+      return reply.send({ text });
+    } catch (err) {
+      req.log.error({ err }, 'Groq proxy request exception');
+      return reply.code(502).send({ error: 'upstream_unreachable' });
+    }
+  });
+
   registerAssistantEndpoints(app, 'STUDENT', '/assistant', [app.authenticate, requireAuth, requireRole('STUDENT')]);
   registerAssistantEndpoints(app, 'TUTOR', '/tutor/assistant', [app.authenticate, requireAuth, requireTutor]);
 }

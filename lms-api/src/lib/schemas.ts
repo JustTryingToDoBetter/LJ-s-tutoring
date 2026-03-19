@@ -67,6 +67,18 @@ export const AssistantMessageCreateSchema = z.object({
   dedupeKey: z.string().trim().min(8).max(120).optional()
 });
 
+export const OdieProxyChatSchema = z.object({
+  system: z.string().trim().min(1).max(4000),
+  history: z.array(
+    z.object({
+      role: z.enum(['user', 'assistant']),
+      content: z.string().trim().min(1).max(8000)
+    })
+  ).max(40).optional().default([]),
+  userText: z.string().trim().min(1).max(8000),
+  maxTokens: z.coerce.number().int().min(64).max(2048).optional().default(1024)
+});
+
 export const ParentInviteCreateSchema = z.object({
   studentId: z.string().uuid(),
   email: EmailSchema,

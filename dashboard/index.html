@@ -1496,6 +1496,7 @@
 
   <div class="toasts" id="toasts"></div>
 
+  <script src="/assets/portal-config.js"></script>
   <script>
     const data = {
       student: 'Jaydin',
@@ -1984,59 +1985,37 @@
     appendMessage(odieMessages, 'bot', odieHistory[0].content);
     appendMessage(careerMessages, 'bot', careerHistory[0].content);
 
-    function getStoredGroqKey() {
-      return window.GROQ_API_KEY || localStorage.getItem('GROQ_API_KEY') || '';
-    }
+    const runtimeApiBase = window.__PO_API_BASE__ && window.__PO_API_BASE__ !== '__PO_API_BASE__'
+      ? String(window.__PO_API_BASE__).replace(/\/$/, '')
+      : '';
 
-    async function ensureGroqKey() {
-      const existing = getStoredGroqKey();
-      if (existing) return existing;
-
-      const typed = window.prompt('Enter your Groq API key (starts with gsk_) to enable Odie chat:');
-      if (!typed) {
-        throw new Error('Missing GROQ_API_KEY.');
-      }
-
-      const trimmed = typed.trim();
-      if (!trimmed.startsWith('gsk_')) {
-        throw new Error('Invalid GROQ_API_KEY format. Expected key starting with gsk_.');
-      }
-
-      localStorage.setItem('GROQ_API_KEY', trimmed);
-      return trimmed;
+    function apiUrl(path) {
+      return runtimeApiBase ? runtimeApiBase + path : path;
     }
 
     async function groqChat({ system, history, userText, maxTokens = 1024 }) {
-      const keyFromEnv = await ensureGroqKey();
-
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const response = await fetch(apiUrl('/assistant/odie-proxy'), {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + keyFromEnv
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          max_tokens: maxTokens,
-          temperature: 0.5,
-          messages: [{ role: 'system', content: system }]
-            .concat(history
+          system,
+          history: history
             .filter((m) => m.role === 'user' || m.role === 'assistant')
-            .map((m) => ({
-              role: m.role,
-              content: m.content
-            })))
-            .concat([{ role: 'user', content: userText }])
+            .map((m) => ({ role: m.role, content: m.content })),
+          userText,
+          maxTokens
         })
       });
 
       if (!response.ok) {
-        const errText = await response.text();
-        throw new Error('API error: ' + errText);
+        const errPayload = await response.json().catch(() => ({}));
+        throw new Error('API error: ' + (errPayload.error || response.status));
       }
 
       const payload = await response.json();
-      const text = payload?.choices?.[0]?.message?.content?.trim?.() || '';
+      const text = payload?.text?.trim?.() || '';
 
       return text || 'I had trouble forming a response. Please try again.';
     }
@@ -2076,12 +2055,7 @@
         history.push({ role: 'assistant', content: answer });
       } catch (err) {
         typing.remove();
-        const msg = String(err && err.message ? err.message : '');
-        if (msg.includes('GROQ_API_KEY')) {
-          appendMessage(container, 'bot', 'I need your Groq API key first. Please send again and enter it when prompted.');
-        } else {
-          appendMessage(container, 'bot', 'I could not reach the AI service right now. Please try again in a moment.');
-        }
+        appendMessage(container, 'bot', 'I could not reach the AI service right now. Please try again in a moment.');
         console.error(err);
       }
     }
