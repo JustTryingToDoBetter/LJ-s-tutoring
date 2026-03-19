@@ -1,5 +1,4 @@
 
-version: "3.9"
 services:
   db:
     image: postgres:16
@@ -7,10 +6,10 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: lms
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - lms_db_data:/var/lib/postgresql/data
 
@@ -24,8 +23,8 @@ services:
       PORT: 3001
       NODE_ENV: development
       TRUST_PROXY: 1
-      CORS_ORIGIN: http://localhost:8080
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/lms
+      CORS_ORIGIN: http://localhost:8080,http://127.0.0.1:8080
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/lms
       JWT_SECRET: change_me_to_a_long_random_string
       JWT_EXPIRES_IN: 15m
       ADMIN_BOOTSTRAP_TOKEN: change_me
@@ -35,7 +34,7 @@ services:
       EMAIL_FROM: projectodysseus10@gmail.com
     depends_on:
       - db
-    command: sh -c "npm ci && npm run migrate && npm run dev"
+    command: sh -c "npm install && npm run migrate && npm run dev"
     ports:
       - "3001:3001"
 
