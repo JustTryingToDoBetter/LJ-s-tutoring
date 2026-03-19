@@ -13,7 +13,6 @@ const distDir = path.join(__dirname, '..', 'dist');
 const targets = [
   path.join(distDir, 'admin'),
   path.join(distDir, 'tutor'),
-  path.join(distDir, 'tutor-dashboard.html'),
   path.join(distDir, 'assets', 'admin'),
   path.join(distDir, 'assets', 'tutor')
 ];

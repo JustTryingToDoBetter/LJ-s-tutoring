@@ -4,62 +4,419 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Data Retention | Admin Console</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="/assets/portal.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:       #0e1621;
+      --navy-mid:   #131f2e;
+      --gold:       #c9951c;
+      --text:       #e8edf5;
+      --text-muted: #8899aa;
+      --card-bg:    #ffffff;
+      --input-bg:   #f7f8fa;
+      --input-border: #e2e6ea;
+      --label:      #1a2332;
+      --label-opt:  #8899aa;
+      --divider:    #e8ecf0;
+      --row-hover:  #f9fafb;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--navy);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    .portal-nav {
+      position: sticky;
+      top: 16px;
+      z-index: 100;
+      padding: 0 20px;
+      pointer-events: none; /* let clicks pass through the outer gap */
+    }
+
+    .portal-nav-inner {
+      pointer-events: all;
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 0 20px;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: rgba(16, 24, 40, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    }
+
+    /* offset main so content starts below the floating nav */
+    body { padding-top: 16px; }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .brand-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      letter-spacing: 0.03em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav-links::-webkit-scrollbar { display: none; }
+
+    .nav-link {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: 1.5px solid transparent;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .nav-link:hover {
+      border-color: rgba(255,255,255,0.18);
+    }
+    .nav-link.active {
+      background: var(--gold);
+      color: #fff;
+      border-color: var(--gold);
+    }
+
+    /* ── MAIN ── */
+    .portal-main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 52px 24px 80px;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    /* ── WHITE CARD ── */
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 36px 40px 40px;
+      color: var(--label);
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--label);
+      padding-bottom: 10px;
+      border-bottom: 2.5px solid var(--gold);
+      display: inline-block;
+      margin-bottom: 28px;
+    }
+
+    /* ── FIELD GROUPS ── */
+    .field-group {
+      margin-bottom: 22px;
+    }
+    .field-group:last-child { margin-bottom: 0; }
+
+    .field-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 8px;
+    }
+
+    .field-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--label);
+      background: var(--input-bg);
+      border: 1.5px solid var(--input-border);
+      border-radius: 8px;
+      padding: 11px 14px;
+      width: 100%;
+    }
+
+    /* ── TWO-COL INSIDE CARD ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px 28px;
+    }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* ── VALUE VARIANTS ── */
+    .val-highlight { color: var(--gold); font-weight: 700; }
+    .val-normal    { color: var(--label); }
+    .val-zero      { color: #aab4bf; font-weight: 400; }
+
+    /* ── TABLE ── */
+    .evidence-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      color: var(--label);
+    }
+    .evidence-table thead th {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: #6b7f96;
+      text-align: left;
+      padding: 0 16px 12px 0;
+      border-bottom: 1.5px solid var(--divider);
+    }
+    .evidence-table thead th:last-child { padding-right: 0; }
+    .evidence-table tbody td {
+      padding: 13px 16px 13px 0;
+      border-bottom: 1px solid var(--divider);
+      color: var(--label);
+      vertical-align: middle;
+    }
+    .evidence-table tbody td:last-child { padding-right: 0; }
+    .evidence-table tbody tr:last-child td { border-bottom: none; }
+    .evidence-table tbody tr:hover td { background: var(--row-hover); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+    .badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .badge-success { background: #edfaf1; color: #1a9e47; }
+    .badge-success::before { background: #1a9e47; }
+    .badge-warn    { background: #fff8e6; color: #b07800; }
+    .badge-warn::before { background: #c9951c; }
+    .badge-info    { background: #eef4ff; color: #3b6fe8; }
+    .badge-info::before { background: #3b6fe8; }
+
+    /* ── NOTE ── */
+    .note {
+      font-size: 12px;
+      color: #8899aa;
+      margin-top: 18px;
+      font-style: italic;
+    }
+  </style>
 </head>
 <body data-page="retention">
-  <div class="portal-shell">
-    <nav class="portal-nav">
-      <div class="portal-nav-inner">
-        <div class="brand">
-          <span class="brand-badge">PO</span>
-          Admin Console
+
+  <!-- NAV -->
+  <nav class="portal-nav">
+    <div class="portal-nav-inner">
+      <div class="brand">
+        <span class="brand-badge">PO</span>
+        Admin Console
+      </div>
+      <div class="nav-links">
+        <a class="nav-link"        href="/admin/index.html">Dashboard</a>
+        <a class="nav-link"        href="/admin/tutors.html">Tutors</a>
+        <a class="nav-link"        href="/admin/students.html">Students</a>
+        <a class="nav-link"        href="/admin/assignments.html">Assignments</a>
+        <a class="nav-link"        href="/admin/approvals.html">Approvals</a>
+        <a class="nav-link"        href="/admin/payroll.html">Payroll</a>
+        <a class="nav-link"        href="/admin/reconciliation.html">Reconciliation</a>
+        <a class="nav-link"        href="/admin/audit.html">Audit</a>
+        <a class="nav-link"        href="/admin/privacy-requests.html">Privacy Requests</a>
+        <a class="nav-link active" href="/admin/retention.html">Retention</a>
+        <a class="nav-link"        href="/admin/ops-runbook.html">Ops Runbook</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="portal-main">
+
+    <div class="page-header">
+      <h1 class="page-title">Data Retention</h1>
+      <p class="page-subtitle">Current settings and eligible records</p>
+    </div>
+
+    <!-- Retention Settings -->
+    <div class="card">
+      <span class="card-title">Retention settings</span>
+      <div class="two-col" id="retentionConfig">
+        <div class="field-group">
+          <div class="field-label">Session logs</div>
+          <div class="field-value val-highlight">90 days</div>
         </div>
-        <div class="nav-links">
-          <a class="nav-link" data-nav="dashboard" href="/admin/index.html">Dashboard</a>
-          <a class="nav-link" data-nav="tutors" href="/admin/tutors.html">Tutors</a>
-          <a class="nav-link" data-nav="students" href="/admin/students.html">Students</a>
-          <a class="nav-link" data-nav="assignments" href="/admin/assignments.html">Assignments</a>
-          <a class="nav-link" data-nav="approvals" href="/admin/approvals.html">Approvals</a>
-          <a class="nav-link" data-nav="payroll" href="/admin/payroll.html">Payroll</a>
-          <a class="nav-link" data-nav="reconciliation" href="/admin/reconciliation.html">Reconciliation</a>
-          <a class="nav-link" data-nav="audit" href="/admin/audit.html">Audit</a>
-          <a class="nav-link" data-nav="privacy-requests" href="/admin/privacy-requests.html">Privacy Requests</a>
-          <a class="nav-link" data-nav="retention" href="/admin/retention.html">Retention</a>
-          <a class="nav-link" data-nav="ops-runbook" href="/admin/ops-runbook.html">Ops Runbook</a>
+        <div class="field-group">
+          <div class="field-label">Audit records</div>
+          <div class="field-value val-normal">365 days</div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Payroll snapshots</div>
+          <div class="field-value val-normal">7 years</div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Deleted user data</div>
+          <div class="field-value val-highlight">30 days</div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Assignment history</div>
+          <div class="field-value val-normal">180 days</div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Privacy request logs</div>
+          <div class="field-value val-normal">2 years</div>
         </div>
       </div>
-    </nav>
+      <p class="note">Configured via environment variables. Contact ops to amend.</p>
+    </div>
 
-    <main class="portal-main">
-      <section class="page-header">
-        <h1 class="page-title">Data retention</h1>
-        <p class="page-subtitle">Current retention settings and what will be purged.</p>
-      </section>
-
-      <section class="grid two">
-        <div class="panel">
-          <h2 class="panel-title">Retention settings</h2>
-          <div id="retentionConfig" class="grid"></div>
-          <p class="note" style="margin-top:10px;">These settings are configured via environment variables.</p>
+    <!-- Eligible for Cleanup -->
+    <div class="card">
+      <span class="card-title">Eligible for cleanup</span>
+      <div class="two-col" id="retentionEligible">
+        <div class="field-group">
+          <div class="field-label">Expired session logs</div>
+          <div class="field-value val-highlight">1,284 rows</div>
         </div>
-        <div class="panel">
-          <h2 class="panel-title">Eligible for cleanup</h2>
-          <div id="retentionEligible" class="grid"></div>
-          <p class="note" style="margin-top:10px;">Cleanup runs on a schedule. This page is read-only.</p>
+        <div class="field-group">
+          <div class="field-label">Orphaned user records</div>
+          <div class="field-value val-highlight">37 rows</div>
         </div>
-      </section>
+        <div class="field-group">
+          <div class="field-label">Stale assignment data</div>
+          <div class="field-value val-zero">0 rows</div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Soft-deleted payroll</div>
+          <div class="field-value val-normal">12 rows</div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Expired privacy requests</div>
+          <div class="field-value val-normal">5 rows</div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Stale audit records</div>
+          <div class="field-value val-zero">0 rows</div>
+        </div>
+      </div>
+      <p class="note">Cleanup runs on a schedule. This page is read-only.</p>
+    </div>
 
-      <section class="panel" style="margin-top:24px;">
-        <h2 class="panel-title">Latest cleanup evidence</h2>
-        <div id="retentionLatest" class="grid"></div>
-        <p class="note" id="retentionLatestMeta" style="margin-top:10px;"></p>
-      </section>
-    </main>
-  </div>
+    <!-- Latest Cleanup Evidence -->
+    <div class="card">
+      <span class="card-title">Latest cleanup evidence</span>
+      <div id="retentionLatest">
+        <table class="evidence-table">
+          <thead>
+            <tr>
+              <th>Run timestamp</th>
+              <th>Table</th>
+              <th>Rows purged</th>
+              <th>Status</th>
+              <th>Triggered by</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2026-03-04 02:00 UTC</td>
+              <td>session_logs</td>
+              <td>342</td>
+              <td><span class="badge badge-success">Success</span></td>
+              <td>cron</td>
+            </tr>
+            <tr>
+              <td>2026-03-04 02:01 UTC</td>
+              <td>user_records</td>
+              <td>8</td>
+              <td><span class="badge badge-success">Success</span></td>
+              <td>cron</td>
+            </tr>
+            <tr>
+              <td>2026-03-03 02:00 UTC</td>
+              <td>payroll_snapshots</td>
+              <td>0</td>
+              <td><span class="badge badge-info">Skipped</span></td>
+              <td>cron</td>
+            </tr>
+            <tr>
+              <td>2026-03-02 02:00 UTC</td>
+              <td>session_logs</td>
+              <td>417</td>
+              <td><span class="badge badge-success">Success</span></td>
+              <td>cron</td>
+            </tr>
+            <tr>
+              <td>2026-03-01 02:03 UTC</td>
+              <td>privacy_requests</td>
+              <td>2</td>
+              <td><span class="badge badge-warn">Review</span></td>
+              <td>manual</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note" id="retentionLatestMeta">Last run: 2026-03-04 02:01 UTC — Next scheduled: 2026-03-05 02:00 UTC</p>
+    </div>
 
-  <script src="/assets/portal-config.js"></script>
-  <script type="module" src="/assets/admin/portal.js"></script>
+  </main>
+
+  <script src="/assets/portal-config.js" onerror="void 0"></script>
+  <script type="module" src="/assets/admin/portal.js" onerror="void 0"></script>
 </body>
 </html>

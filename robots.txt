@@ -19,7 +19,6 @@ Disallow: /admin/*
 Disallow: /tutor
 Disallow: /tutor/
 Disallow: /tutor/*
-Disallow: /tutor-dashboard.html
 Disallow: /internal
 Disallow: /internal/
 Disallow: /api

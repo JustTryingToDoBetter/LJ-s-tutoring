@@ -19,7 +19,6 @@ const PRECACHE_URLS = [
   `/index.html?v=${VERSION}`,
 
   `/assets/site.css?v=${VERSION}`,
-  `/assets/po-game-ui.css?v=${VERSION}`,
 
   `/assets/app-critical.js?v=${VERSION}`,
 
@@ -42,7 +41,7 @@ function isMediaRequest(url) {
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
-    // Precache core shell + known game assets
+    // Precache the core shell and primary assets
     const appCache = await caches.open(CACHE_APP);
     const docsCache = await caches.open(CACHE_DOCS);
 

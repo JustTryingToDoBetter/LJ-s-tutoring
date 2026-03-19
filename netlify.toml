@@ -28,12 +28,6 @@
   force = true
 
 [[redirects]]
-  from = "/tutor-dashboard.html"
-  to = "/404.html"
-  status = 404
-  force = true
-
-[[redirects]]
   from = "/api"
   to = "/404.html"
   status = 404
@@ -99,12 +93,6 @@
 
 [[headers]]
   for = "/tutor"
-  [headers.values]
-    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
-    Cache-Control = "no-store"
-
-[[headers]]
-  for = "/tutor-dashboard.html"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
     Cache-Control = "no-store"

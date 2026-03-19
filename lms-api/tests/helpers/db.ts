@@ -16,6 +16,15 @@ export async function resetDb() {
         if to_regclass('public.weekly_reports') is not null then execute 'delete from weekly_reports'; end if;
         if to_regclass('public.study_activity_events') is not null then execute 'delete from study_activity_events'; end if;
         if to_regclass('public.study_streaks') is not null then execute 'delete from study_streaks'; end if;
+        if to_regclass('public.assistant_citations') is not null then execute 'delete from assistant_citations'; end if;
+        if to_regclass('public.assistant_messages') is not null then execute 'delete from assistant_messages'; end if;
+        if to_regclass('public.assistant_threads') is not null then execute 'delete from assistant_threads'; end if;
+        if to_regclass('public.vault_access_rules') is not null then execute 'delete from vault_access_rules'; end if;
+        if to_regclass('public.vault_assets') is not null then execute 'delete from vault_assets'; end if;
+        if to_regclass('public.vault_resources') is not null then execute 'delete from vault_resources'; end if;
+        if to_regclass('public.parent_invites') is not null then execute 'delete from parent_invites'; end if;
+        if to_regclass('public.parent_student_links') is not null then execute 'delete from parent_student_links'; end if;
+        if to_regclass('public.parent_profiles') is not null then execute 'delete from parent_profiles'; end if;
         if to_regclass('public.tutor_student_map') is not null then execute 'delete from tutor_student_map'; end if;
         if to_regclass('public.sessions') is not null then execute 'delete from sessions'; end if;
         if to_regclass('public.assignments') is not null then execute 'delete from assignments'; end if;

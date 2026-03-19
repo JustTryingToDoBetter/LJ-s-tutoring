@@ -7,9 +7,10 @@ import { hashToken } from '../lib/security.js';
 
 type JwtPayload = {
   userId: string;
-  role: 'ADMIN' | 'TUTOR' | 'STUDENT';
+  role: 'ADMIN' | 'TUTOR' | 'STUDENT' | 'PARENT';
   tutorId?: string;
   studentId?: string;
+  parentId?: string;
 };
 
 type ImpersonationPayload = {
@@ -116,6 +117,7 @@ export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
         role: decoded.role,
         tutorId: decoded.tutorId,
         studentId: decoded.studentId,
+        parentId: decoded.parentId,
       };
       req.user = user;
     } catch {

@@ -338,16 +338,76 @@ export async function adminRoutes(app: FastifyInstance) {
 
 
   app.get('/admin/dashboard', async (_req, reply) => {
-    const [tutors, students, sessions] = await Promise.all([
+    const weekStart = getPayPeriodStart(new Date());
+
+    const [
+      tutors, students, sessions,
+      pendingList, pendingCount,
+      privacyCount, recentAudit, weekPayroll
+    ] = await Promise.all([
       pool.query(`select count(*) from tutor_profiles where active = true`),
       pool.query(`select count(*) from students where is_active = true`),
-      pool.query(`select status, count(*) from sessions group by status`)
+      pool.query(`select status, count(*) from sessions group by status`),
+      pool.query(
+        `select s.id, s.date, s.start_time, s.duration_minutes,
+                t.full_name as tutor_name, st.full_name as student_name, a.subject
+         from sessions s
+         join tutor_profiles t on t.id = s.tutor_id
+         join students st on st.id = s.student_id
+         join assignments a on a.id = s.assignment_id
+         where s.status = 'SUBMITTED'
+         order by s.date asc, s.start_time asc
+         limit 5`
+      ),
+      pool.query(`select count(*) from sessions where status = 'SUBMITTED'`),
+      pool.query(`select count(*) from privacy_requests where status = 'OPEN'`),
+      pool.query(
+        `select a.action, a.entity_type, a.created_at,
+                u.email as actor_email, a.actor_role
+         from audit_log a
+         left join users u on u.id = a.actor_user_id
+         order by a.created_at desc
+         limit 6`
+      ),
+      pool.query(
+        `select
+           count(*) filter (where status = 'APPROVED')::int   as approved_count,
+           coalesce(sum(duration_minutes) filter (where status = 'APPROVED'), 0)::int as approved_minutes,
+           count(*) filter (where status = 'SUBMITTED')::int  as pending_count
+         from sessions
+         where date >= $1::date`,
+        [weekStart]
+      ),
     ]);
 
     return reply.send({
       tutors: Number(tutors.rows[0].count),
       students: Number(students.rows[0].count),
-      sessions: sessions.rows
+      sessions: sessions.rows,
+      pendingApprovals: pendingList.rows.map(row => ({
+        id: row.id,
+        tutorName: row.tutor_name,
+        studentName: row.student_name,
+        subject: row.subject,
+        date: row.date ? new Date(row.date).toISOString().slice(0, 10) : null,
+        startTime: String(row.start_time || '').slice(0, 5),
+        durationMinutes: Number(row.duration_minutes || 0),
+      })),
+      pendingApprovalsCount: Number(pendingCount.rows[0].count),
+      openPrivacyRequestsCount: Number(privacyCount.rows[0].count),
+      recentAudit: recentAudit.rows.map(row => ({
+        action: row.action,
+        entityType: row.entity_type,
+        actorEmail: row.actor_email || null,
+        actorRole: row.actor_role,
+        createdAt: row.created_at,
+      })),
+      payrollWeek: {
+        weekStart,
+        approvedCount:   Number(weekPayroll.rows[0].approved_count   || 0),
+        approvedMinutes: Number(weekPayroll.rows[0].approved_minutes || 0),
+        pendingCount:    Number(weekPayroll.rows[0].pending_count    || 0),
+      },
     });
   });
 

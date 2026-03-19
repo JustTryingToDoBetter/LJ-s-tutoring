@@ -37,8 +37,12 @@ npm run dev
 - API: `http://localhost:3001`
 - Student dashboard: `http://localhost:8080/dashboard/`
 - Student reports: `http://localhost:8080/reports/`
+- Ask Odysseus (student): `http://localhost:8080/assistant.html`
+- Premium vault: `http://localhost:8080/vault.html`
+- Parent portal: `http://localhost:8080/parent/`
 - Tutor dashboard: `http://localhost:8080/tutor/dashboard/`
 - Tutor reports: `http://localhost:8080/tutor/reports/`
+- Ask Odysseus (tutor): `http://localhost:8080/tutor/assistant.html`
 
 If you need a fresh DB schema first, run `npm run migrate` before `npm run dev`.
 
@@ -182,6 +186,13 @@ npm run test      # Runs API tests (lms-api)
 **Corrections after lock**:
 - Do not edit sessions or approvals.
 - Add a new adjustment with a clear reason.
+
+## Phase 2 Features
+
+- **Ask Odysseus (RAG):** Student route family under `/assistant/*` and tutor route family under `/tutor/assistant/*`.
+- **Parent Portal:** Invite creation/acceptance plus linked-student views under `/parent/*`.
+- **Premium Vault:** Tier-gated content and secure asset delivery under `/vault/*` and tutor authoring under `/tutor/vault*`.
+- **Tiering:** User tier stored server-side (`BASIC`/`PREMIUM`) and enforced by API checks (no client-side bypass).
 
 ## ☁️ DigitalOcean Deployment Notes
 

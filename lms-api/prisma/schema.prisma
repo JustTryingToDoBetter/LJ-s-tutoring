@@ -11,6 +11,12 @@ enum Role {
   ADMIN
   TUTOR
   STUDENT
+  PARENT
+}
+
+enum UserTier {
+  BASIC
+  PREMIUM
 }
 
 enum SessionStatus {
@@ -75,12 +81,15 @@ model User {
   id             String        @id @default(uuid()) @db.Uuid
   email          String        @unique
   role           Role
+  tier           UserTier      @default(BASIC)
   tutorProfileId String?       @map("tutor_profile_id") @db.Uuid
   studentId      String?       @unique @map("student_id") @db.Uuid
+  parentProfileId String?      @unique @map("parent_profile_id") @db.Uuid
   passwordHash   String?       @map("password_hash")
   isActive       Boolean       @default(true) @map("is_active")
   tutorProfile   TutorProfile? @relation(fields: [tutorProfileId], references: [id])
   student        Student?      @relation(fields: [studentId], references: [id])
+  parentProfile  ParentProfile? @relation(fields: [parentProfileId], references: [id])
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @default(now()) @map("updated_at")
 
@@ -94,6 +103,9 @@ model User {
   studyStreak         StudyStreak?
   weeklyReports       WeeklyReport[] @relation("weekly_report_owner")
   generatedReports    WeeklyReport[] @relation("weekly_report_creator")
+  createdParentInvites ParentInvite[] @relation("parent_invite_creator")
+  vaultResources      VaultResource[] @relation("vault_resource_creator")
+  assistantThreads    AssistantThread[] @relation("assistant_thread_owner")
 
   @@map("users")
 }
@@ -265,6 +277,7 @@ model TutorProfile {
   sessions    Session[]
   invoices    Invoice[]
   tutorMap    TutorStudentMap[]
+  assistantThreads AssistantThread[]
 
   @@map("tutor_profiles")
 }
@@ -284,6 +297,9 @@ model Student {
   sessions    Session[]
   user        User?
   tutorMap    TutorStudentMap[]
+  parentLinks ParentStudentLink[]
+  parentInvites ParentInvite[]
+  assistantThreads AssistantThread[]
 
   @@map("students")
 }
@@ -333,6 +349,159 @@ model WeeklyReport {
   @@map("weekly_reports")
   @@index([userId, createdAt(sort: Desc)])
   @@unique([userId, weekStart, weekEnd])
+}
+
+model ParentProfile {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  fullName  String   @map("full_name")
+  phone     String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  user         User               @relation(fields: [userId], references: [id])
+  studentLinks ParentStudentLink[]
+  invitesAccepted ParentInvite[]  @relation("parent_invite_acceptor")
+
+  @@map("parent_profiles")
+}
+
+model ParentStudentLink {
+  id              String   @id @default(uuid()) @db.Uuid
+  parentProfileId String   @map("parent_profile_id") @db.Uuid
+  studentId       String   @map("student_id") @db.Uuid
+  relationship    String?
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  parentProfile ParentProfile @relation(fields: [parentProfileId], references: [id])
+  student       Student       @relation(fields: [studentId], references: [id])
+
+  @@map("parent_student_links")
+  @@unique([parentProfileId, studentId])
+  @@index([parentProfileId, createdAt(sort: Desc)])
+  @@index([studentId, createdAt(sort: Desc)])
+}
+
+model ParentInvite {
+  id                        String   @id @default(uuid()) @db.Uuid
+  studentId                 String   @map("student_id") @db.Uuid
+  email                     String
+  relationship              String?
+  tokenHash                 String   @unique @map("token_hash")
+  expiresAt                 DateTime @map("expires_at") @db.Timestamptz
+  acceptedAt                DateTime? @map("accepted_at") @db.Timestamptz
+  acceptedByParentProfileId String?  @map("accepted_by_parent_profile_id") @db.Uuid
+  createdByUserId           String?  @map("created_by_user_id") @db.Uuid
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  student          Student        @relation(fields: [studentId], references: [id])
+  acceptedByParent ParentProfile? @relation("parent_invite_acceptor", fields: [acceptedByParentProfileId], references: [id])
+  createdBy        User?          @relation("parent_invite_creator", fields: [createdByUserId], references: [id])
+
+  @@map("parent_invites")
+  @@index([studentId, createdAt(sort: Desc)])
+  @@index([email, createdAt(sort: Desc)])
+}
+
+model VaultResource {
+  id              String   @id @default(uuid()) @db.Uuid
+  title           String
+  description     String?
+  category        String?
+  bodyMarkdown    String   @map("body_markdown")
+  minimumTier     UserTier @default(BASIC) @map("minimum_tier")
+  isPublished     Boolean  @default(true) @map("is_published")
+  isPublicPreview Boolean  @default(false) @map("is_public_preview")
+  createdByUserId String?  @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  createdBy User? @relation("vault_resource_creator", fields: [createdByUserId], references: [id])
+  assets    VaultAsset[]
+  accessRules VaultAccessRule[]
+  citations AssistantCitation[]
+
+  @@map("vault_resources")
+  @@index([category, createdAt(sort: Desc)])
+  @@index([isPublished, minimumTier, createdAt(sort: Desc)])
+}
+
+model VaultAsset {
+  id         String   @id @default(uuid()) @db.Uuid
+  resourceId String   @map("resource_id") @db.Uuid
+  fileName   String   @map("file_name")
+  mimeType   String   @map("mime_type")
+  contentText String  @map("content_text")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  resource VaultResource @relation(fields: [resourceId], references: [id])
+
+  @@map("vault_assets")
+  @@index([resourceId, createdAt(sort: Desc)])
+}
+
+model VaultAccessRule {
+  id         String @id @default(uuid()) @db.Uuid
+  resourceId String @map("resource_id") @db.Uuid
+  role       Role
+  isAllowed  Boolean @default(true) @map("is_allowed")
+
+  resource VaultResource @relation(fields: [resourceId], references: [id])
+
+  @@map("vault_access_rules")
+  @@unique([resourceId, role])
+  @@index([role, resourceId])
+}
+
+model AssistantThread {
+  id          String   @id @default(uuid()) @db.Uuid
+  ownerUserId String   @map("owner_user_id") @db.Uuid
+  ownerRole   Role     @map("owner_role")
+  studentId   String?  @map("student_id") @db.Uuid
+  tutorId     String?  @map("tutor_id") @db.Uuid
+  title       String   @default("New chat")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  owner    User        @relation("assistant_thread_owner", fields: [ownerUserId], references: [id])
+  student  Student?    @relation(fields: [studentId], references: [id])
+  tutor    TutorProfile? @relation(fields: [tutorId], references: [id])
+  messages AssistantMessage[]
+
+  @@map("assistant_threads")
+  @@index([ownerUserId, createdAt(sort: Desc)])
+}
+
+model AssistantMessage {
+  id          String   @id @default(uuid()) @db.Uuid
+  threadId    String   @map("thread_id") @db.Uuid
+  author      String
+  content     String
+  model       String?
+  metadataJson Json    @default("{}") @map("metadata_json")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  thread    AssistantThread    @relation(fields: [threadId], references: [id])
+  citations AssistantCitation[]
+
+  @@map("assistant_messages")
+  @@index([threadId, createdAt(sort: Asc)])
+}
+
+model AssistantCitation {
+  id         String   @id @default(uuid()) @db.Uuid
+  messageId  String   @map("message_id") @db.Uuid
+  resourceId String   @map("resource_id") @db.Uuid
+  snippet    String?
+  confidence Decimal? @db.Numeric(5, 4)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  message  AssistantMessage @relation(fields: [messageId], references: [id])
+  resource VaultResource    @relation(fields: [resourceId], references: [id])
+
+  @@map("assistant_citations")
+  @@index([messageId])
+  @@index([resourceId])
 }
 
 model TutorStudentMap {

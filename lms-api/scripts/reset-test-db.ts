@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Pool } from 'pg';
 
 const databaseUrl = process.env.DATABASE_URL_TEST;
@@ -13,7 +14,10 @@ if (process.env.NODE_ENV !== 'test') {
 
 const pool = new Pool({ connectionString: databaseUrl });
 
-const getMigrationsDir = () => path.resolve(process.cwd(), 'prisma/migrations');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const getMigrationsDir = () => path.resolve(__dirname, '../prisma/migrations');
 
 async function ensureMigrationsTable(client: any) {
   await client.query(`

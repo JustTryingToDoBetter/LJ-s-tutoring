@@ -202,12 +202,16 @@ export async function authRoutes(app: FastifyInstance) {
     if (user.role === 'STUDENT' && !user.student_id) {
       return reply.code(500).send({ error: 'student_profile_missing' });
     }
+    if (user.role === 'PARENT' && !user.parent_profile_id) {
+      return reply.code(500).send({ error: 'parent_profile_missing' });
+    }
 
     const jwt = await app.jwt.sign({
       userId: user.id,
       role: user.role,
       tutorId: user.tutor_profile_id ?? undefined,
-      studentId: user.student_id ?? undefined
+      studentId: user.student_id ?? undefined,
+      parentId: user.parent_profile_id ?? undefined
     });
 
     const csrfToken = setAuthCookies(reply, jwt);
@@ -216,7 +220,13 @@ export async function authRoutes(app: FastifyInstance) {
       token: jwt,
       csrfToken,
       role: user.role,
-      redirectTo: user.role === 'ADMIN' ? '/admin' : user.role === 'STUDENT' ? '/dashboard' : '/tutor'
+      redirectTo: user.role === 'ADMIN'
+        ? '/admin'
+        : user.role === 'STUDENT'
+          ? '/dashboard'
+          : user.role === 'PARENT'
+            ? '/parent'
+            : '/tutor'
     });
   });
 
@@ -240,17 +250,24 @@ export async function authRoutes(app: FastifyInstance) {
       let userId: string | undefined;
       let tutorId: string | null = null;
       let studentId: string | null = null;
+      let parentId: string | null = null;
 
       try {
         await client.query('BEGIN');
 
         const existing = await client.query(
-          `select id, role, tutor_profile_id, student_id from users where email = $1`,
+          `select id, role, tutor_profile_id, student_id, parent_profile_id from users where email = $1`,
           [email]
         );
 
         if (Number(existing.rowCount || 0) > 0) {
-          const row = existing.rows[0] as { id: string; role: 'ADMIN' | 'TUTOR' | 'STUDENT'; tutor_profile_id: string | null; student_id: string | null };
+          const row = existing.rows[0] as {
+            id: string;
+            role: 'ADMIN' | 'TUTOR' | 'STUDENT' | 'PARENT';
+            tutor_profile_id: string | null;
+            student_id: string | null;
+            parent_profile_id: string | null;
+          };
           if (row.role !== role) {
             await client.query('ROLLBACK');
             return reply.code(409).send({ error: 'role_mismatch' });
@@ -258,6 +275,7 @@ export async function authRoutes(app: FastifyInstance) {
           userId = row.id;
           tutorId = row.tutor_profile_id;
           studentId = row.student_id;
+          parentId = row.parent_profile_id;
 
           if (role === 'TUTOR' && !tutorId) {
             const tutorRes = await client.query(
@@ -285,6 +303,19 @@ export async function authRoutes(app: FastifyInstance) {
               [studentId, userId]
             );
           }
+          if (role === 'PARENT' && !parentId) {
+            const parentRes = await client.query(
+              `insert into parent_profiles (full_name, phone, user_id)
+               values ($1, null, $2)
+               returning id`,
+              ['Test Parent', userId]
+            );
+            parentId = parentRes.rows[0].id as string;
+            await client.query(
+              `update users set parent_profile_id = $1 where id = $2`,
+              [parentId, userId]
+            );
+          }
         } else if (role === 'ADMIN') {
           const res = await client.query(
             `insert into users (email, role)
@@ -308,7 +339,7 @@ export async function authRoutes(app: FastifyInstance) {
             [email, tutorId]
           );
           userId = userRes.rows[0].id as string;
-        } else {
+        } else if (role === 'STUDENT') {
           const studentRes = await client.query(
             `insert into students (full_name, grade, is_active)
              values ($1, $2, true)
@@ -323,6 +354,25 @@ export async function authRoutes(app: FastifyInstance) {
             [email, studentId]
           );
           userId = userRes.rows[0].id as string;
+        } else {
+          const userRes = await client.query(
+            `insert into users (email, role)
+             values ($1, 'PARENT')
+             returning id`,
+            [email]
+          );
+          userId = userRes.rows[0].id as string;
+          const parentRes = await client.query(
+            `insert into parent_profiles (full_name, phone, user_id)
+             values ($1, null, $2)
+             returning id`,
+            ['Test Parent', userId]
+          );
+          parentId = parentRes.rows[0].id as string;
+          await client.query(
+            `update users set parent_profile_id = $1 where id = $2`,
+            [parentId, userId]
+          );
         }
 
         await client.query('COMMIT');
@@ -338,7 +388,8 @@ export async function authRoutes(app: FastifyInstance) {
         userId,
         role,
         tutorId: tutorId ?? undefined,
-        studentId: studentId ?? undefined
+        studentId: studentId ?? undefined,
+        parentId: parentId ?? undefined
       });
       const csrfToken = setAuthCookies(reply, jwt);
       return reply.send({ ok: true, csrfToken });

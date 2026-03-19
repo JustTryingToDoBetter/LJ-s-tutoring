@@ -64,7 +64,7 @@ async function getStudentIdForUser(userId: string) {
   return (res.rows[0]?.student_id as string | null) ?? null;
 }
 
-async function userCanAccessStudent(userId: string, role: 'ADMIN' | 'TUTOR' | 'STUDENT', studentId: string, tutorId?: string) {
+async function userCanAccessStudent(userId: string, role: 'ADMIN' | 'TUTOR' | 'STUDENT' | 'PARENT', studentId: string, tutorId?: string) {
   if (role === 'ADMIN') return true;
   if (role === 'STUDENT') {
     const own = await getStudentIdForUser(userId);
@@ -221,6 +221,12 @@ export async function academicRoutes(app: FastifyInstance) {
     const studentId = req.user?.studentId ?? await getStudentIdForUser(userId);
     if (!studentId) return reply.code(404).send({ error: 'student_not_found' });
 
+    const studentNameRes = await pool.query(
+      `select full_name from students where id = $1`,
+      [studentId]
+    );
+    const studentFirstName = (studentNameRes.rows[0]?.full_name as string | undefined || 'there').split(' ')[0];
+
     const now = new Date();
     const today = toDateOnly(now);
     const { weekStart, weekEnd } = getWeekRange(now);
@@ -294,7 +300,11 @@ export async function academicRoutes(app: FastifyInstance) {
             startTime: String(upcomingRes.rows[0].start_time).slice(0, 5),
             mode: upcomingRes.rows[0].mode,
             subject: upcomingRes.rows[0].subject,
-            joinLink: upcomingRes.rows[0].mode === 'online' ? '/tutor/sessions.html' : null,
+            joinLink: (() => {
+              if (upcomingRes.rows[0].mode !== 'online') return null;
+              const loc = String(upcomingRes.rows[0].location || '');
+              return loc.startsWith('http') ? loc : '/dashboard/';
+            })(),
           }
         }
       : {
@@ -302,7 +312,7 @@ export async function academicRoutes(app: FastifyInstance) {
           emptyState: {
             title: 'No upcoming session',
             ctaLabel: 'Book a session',
-            ctaHref: '/contact'
+            ctaHref: '/index.html#contact'
           }
         };
 
@@ -319,7 +329,7 @@ export async function academicRoutes(app: FastifyInstance) {
         };
 
     return reply.send({
-      greeting: 'Welcome back, Jaydin — let’s keep the streak alive.',
+      greeting: `Welcome back, ${studentFirstName} — let's keep the streak alive.`,
       today: upcoming,
       thisWeek: {
         minutesStudied: Number(weekStats.minutes_studied || 0),
@@ -346,31 +356,45 @@ export async function academicRoutes(app: FastifyInstance) {
     const tutorId = req.user!.tutorId!;
     const today = toDateOnly(new Date());
 
-    const todaySessionsRes = await pool.query(
-      `select s.id, s.date, s.start_time, s.status, s.mode, st.full_name as student_name
-       from sessions s
-       join students st on st.id = s.student_id
-       where s.tutor_id = $1 and s.date = $2::date
-       order by s.start_time asc`,
-      [tutorId, today]
-    );
-
-    const attentionRes = await pool.query(
-      `select st.id, st.full_name,
-              max(s.date) as last_session_date,
-              max(case when s.status = 'REJECTED' then 1 else 0 end)::int as has_missed,
-              coalesce(ss.current, 0)::int as current_streak,
-              max(sae.occurred_at) as last_activity
-       from students st
-       join tutor_student_map tsm on tsm.student_id = st.id and tsm.tutor_id = $1
-       left join users u on u.student_id = st.id
-       left join study_streaks ss on ss.user_id = u.id
-       left join study_activity_events sae on sae.user_id = u.id
-       left join sessions s on s.student_id = st.id and s.tutor_id = $1
-       group by st.id, st.full_name, ss.current
-       order by st.full_name asc`,
-      [tutorId]
-    );
+    const [todaySessionsRes, attentionRes, weekStatsRes] = await Promise.all([
+      pool.query(
+        `select s.id, s.date, s.start_time, s.status, s.mode, s.student_id,
+                st.full_name as student_name
+         from sessions s
+         join students st on st.id = s.student_id
+         where s.tutor_id = $1 and s.date = $2::date
+         order by s.start_time asc`,
+        [tutorId, today]
+      ),
+      pool.query(
+        `select st.id, st.full_name, st.grade,
+                max(s.date) as last_session_date,
+                max(case when s.status = 'REJECTED' then 1 else 0 end)::int as has_missed,
+                coalesce(ss.current, 0)::int as current_streak,
+                max(sae.occurred_at) as last_activity,
+                u.email as student_email
+         from students st
+         join tutor_student_map tsm on tsm.student_id = st.id and tsm.tutor_id = $1
+         left join users u on u.student_id = st.id
+         left join study_streaks ss on ss.user_id = u.id
+         left join study_activity_events sae on sae.user_id = u.id
+         left join sessions s on s.student_id = st.id and s.tutor_id = $1
+         group by st.id, st.full_name, st.grade, ss.current, u.email
+         order by st.full_name asc`,
+        [tutorId]
+      ),
+      pool.query(
+        `select
+           count(*) filter (where date = $2::date)::int                                            as today_count,
+           count(*) filter (where date >= date_trunc('week', $2::date)
+                              and date <= date_trunc('week', $2::date) + interval '6 days')::int   as week_count,
+           count(*) filter (where status = 'SUBMITTED')::int                                       as pending_count,
+           count(distinct student_id)::int                                                         as active_students
+         from sessions
+         where tutor_id = $1`,
+        [tutorId, today]
+      ),
+    ]);
 
     const studentsNeedingAttention = attentionRes.rows
       .map((row) => {
@@ -388,6 +412,9 @@ export async function academicRoutes(app: FastifyInstance) {
         return {
           studentId: row.id,
           studentName: row.full_name,
+          studentGrade: row.grade || null,
+          studentEmail: row.student_email || null,
+          lastSessionDate: row.last_session_date ? toDateOnly(new Date(row.last_session_date)) : null,
           currentStreak,
           reasons,
         };
@@ -395,23 +422,32 @@ export async function academicRoutes(app: FastifyInstance) {
       .filter((row) => row.reasons.length > 0)
       .slice(0, 8);
 
+    const ws = weekStatsRes.rows[0];
     return reply.send({
       todaySessions: todaySessionsRes.rows.map((row) => ({
         id: row.id,
         time: String(row.start_time).slice(0, 5),
         studentName: row.student_name,
+        studentId: row.student_id,
         status: row.status,
         quickActions: [
-          { label: 'Add notes', href: '/tutor/sessions.html' },
-          { label: 'Assign practice', href: '/tutor/assignments.html' }
+          { label: 'Log notes', href: '/tutor/sessions.html' },
+          { label: 'View report', href: '/tutor/reports/' },
         ]
       })),
       studentsNeedingAttention,
       quickTools: [
-        { id: 'assign_practice', label: 'Assign practice', href: '/tutor/assignments.html' },
-        { id: 'session_notes', label: 'Add session notes', href: '/tutor/sessions.html' },
-        { id: 'message_student', label: 'Message student', href: '/tutor/index.html' },
-      ]
+        { id: 'assign_practice', label: 'Assign practice',  href: '/tutor/assignments.html' },
+        { id: 'session_notes',   label: 'Log session',      href: '/tutor/sessions.html' },
+        { id: 'view_reports',    label: 'View reports',     href: '/tutor/reports/' },
+        { id: 'ask_odysseus',    label: 'Ask Odysseus',     href: '/tutor/assistant.html' },
+      ],
+      weekStats: {
+        todayCount:     Number(ws?.today_count      || 0),
+        weekCount:      Number(ws?.week_count       || 0),
+        pendingCount:   Number(ws?.pending_count    || 0),
+        activeStudents: Number(ws?.active_students  || 0),
+      },
     });
   });
 

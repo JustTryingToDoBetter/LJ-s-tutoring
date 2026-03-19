@@ -16,6 +16,9 @@ import { authRoutes } from './routes/auth.js';
 import { adminRoutes } from './routes/admin.js';
 import { tutorRoutes } from './routes/tutor.js';
 import { academicRoutes } from './routes/academic.js';
+import { assistantRoutes } from './routes/assistant.js';
+import { parentRoutes } from './routes/parent.js';
+import { vaultRoutes } from './routes/vault.js';
 
 export async function buildApp() {
   const logger = process.env.NODE_ENV === 'test'
@@ -237,6 +240,9 @@ export async function buildApp() {
   await app.register(adminRoutes);
   await app.register(tutorRoutes);
   await app.register(academicRoutes);
+  await app.register(assistantRoutes);
+  await app.register(parentRoutes);
+  await app.register(vaultRoutes);
 
   return app;
 }

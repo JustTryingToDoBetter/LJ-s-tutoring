@@ -14,6 +14,13 @@ This schema defines the revenue-grade analytics events for Project Odysseus Arca
 - report_generated
 - report_viewed
 - streak_credited
+- assistant_thread_created
+- assistant_message_sent
+- assistant_answer_received
+- parent_portal_viewed
+- parent_invite_accepted
+- vault_list_viewed
+- vault_resource_opened
 
 ## Required Fields
 - event_id: UUID

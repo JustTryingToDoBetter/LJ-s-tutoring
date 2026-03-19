@@ -27,7 +27,7 @@ export const LoginSchema = z.object({
 });
 
 export const TestLoginSchema = z.object({
-  role: z.enum(['ADMIN', 'TUTOR', 'STUDENT']),
+  role: z.enum(['ADMIN', 'TUTOR', 'STUDENT', 'PARENT']),
   email: EmailSchema,
 });
 
@@ -55,6 +55,54 @@ export const WeeklyReportsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(500).optional().default(1),
   pageSize: z.coerce.number().int().min(1).max(200).optional().default(20)
 });
+
+export const UserTierSchema = z.enum(['BASIC', 'PREMIUM']);
+
+export const AssistantThreadCreateSchema = z.object({
+  title: z.string().trim().min(1).max(120).optional()
+});
+
+export const AssistantMessageCreateSchema = z.object({
+  message: z.string().trim().min(1).max(4000),
+  dedupeKey: z.string().trim().min(8).max(120).optional()
+});
+
+export const ParentInviteCreateSchema = z.object({
+  studentId: z.string().uuid(),
+  email: EmailSchema,
+  relationship: z.string().trim().max(80).optional()
+});
+
+export const ParentInviteAcceptSchema = z.object({
+  token: z.string().trim().min(16).max(400)
+});
+
+export const VaultListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(500).optional().default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).optional().default(20),
+  q: z.string().trim().max(120).optional(),
+  category: z.string().trim().max(80).optional()
+});
+
+export const VaultResourceCreateSchema = z.object({
+  title: z.string().trim().min(1).max(160),
+  description: z.string().trim().max(800).optional(),
+  category: z.string().trim().max(80).optional(),
+  bodyMarkdown: z.string().trim().min(1).max(50000),
+  minimumTier: UserTierSchema.optional().default('BASIC'),
+  isPublished: z.boolean().optional().default(true),
+  isPublicPreview: z.boolean().optional().default(false),
+  allowedRoles: z.array(z.enum(['STUDENT', 'TUTOR', 'PARENT'])).min(1).max(3).optional().default(['STUDENT', 'PARENT']),
+  assets: z.array(
+    z.object({
+      fileName: z.string().trim().min(1).max(200),
+      mimeType: z.string().trim().min(3).max(120),
+      contentText: z.string().trim().min(1).max(150000)
+    })
+  ).max(8).optional().default([])
+});
+
+export const VaultResourceUpdateSchema = VaultResourceCreateSchema.partial();
 
 export const MagicLinkRequestSchema = z.object({
   email: EmailSchema,

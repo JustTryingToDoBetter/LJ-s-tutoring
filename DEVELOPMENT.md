@@ -231,8 +231,8 @@ Recommended rules:
 - Avoid random values in payloads unless they come from the seeded RNG.
 
 Reference implementation:
-- [assets/games/snake/index.js](assets/games/snake/index.js)
-- [assets/arcade/game-sdk.js](assets/arcade/game-sdk.js)
+- No active arcade game implementation is currently kept in this repository.
+- If arcade work resumes, add a single canonical runtime before documenting per-game hooks.
 
 ### Server Hooks (Not Implemented)
 

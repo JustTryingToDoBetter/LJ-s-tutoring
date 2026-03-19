@@ -241,7 +241,10 @@ export function initPortalUX() {
       login: 'Login',
       dashboard: 'Dashboard',
       reports: 'Reports',
-      report: 'Report'
+      report: 'Report',
+      assistant: 'Ask Odysseus',
+      vault: 'Premium Vault',
+      parent: 'Parent Portal'
     };
     const currentLabel = labels[page] || page;
     const nav = createEl('nav', {

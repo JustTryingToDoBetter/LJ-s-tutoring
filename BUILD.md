@@ -50,10 +50,13 @@ Prepares the build environment.
 1. Runs `clean` (removes old dist/)
 2. Creates directory structure:
    - `dist/assets/` - For JavaScript, CSS
+   - `dist/assets/admin/`, `dist/assets/tutor/`, `dist/assets/student/` - Portal bundles
+   - `dist/assets/lib/`, `dist/assets/data/` - Shared helpers and data packs
    - `dist/guides/` - For blog/guide content
    - `dist/images/` - For image files
+   - `dist/admin/`, `dist/tutor/`, `dist/parent/`, `dist/dashboard/`, `dist/reports/` - Route outputs
 
-**Command:** `npm run clean && mkdirp dist/assets dist/assets/arcade dist/assets/games dist/assets/lib dist/guides dist/images dist/arcade`
+**Command:** `npm run clean && mkdirp dist/assets dist/assets/admin dist/assets/lib dist/assets/data dist/assets/tutor dist/assets/student dist/guides dist/images dist/admin dist/tutor dist/dashboard dist/reports dist/parent && npm run fetch:words`
 
 **Note:** These directories MUST exist before copy/build steps run, otherwise file copies can fail.
 
@@ -93,7 +96,6 @@ Copies HTML files.
 - `privacy.html` → `dist/privacy.html`
 - `terms.html` → `dist/terms.html`
 - `404.html` → `dist/404.html`
-- `og-image-placeholder.html` → `dist/og-image-placeholder.html`
 
 **Config injection:** Run separately via `npm run inject:config`
 
@@ -348,7 +350,7 @@ ls dist/images/  # Should show all images
 
 **Fix:** Ensure `prebuild` creates all necessary directories:
 ```json
-"prebuild": "npm run clean && mkdirp dist/assets dist/assets/arcade dist/assets/games dist/assets/lib dist/guides dist/images dist/arcade"
+"prebuild": "npm run clean && mkdirp dist/assets dist/assets/admin dist/assets/lib dist/assets/data dist/assets/tutor dist/assets/student dist/guides dist/images dist/admin dist/tutor dist/dashboard dist/reports dist/parent && npm run fetch:words"
 ```
 
 **Why this matters:** If directories don't exist when copy/build steps run, file copies can fail.

@@ -5,57 +5,912 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Admin Dashboard | Project Odysseus</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="/assets/portal.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;900&family=DM+Mono:ital,wght@0,400;0,500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & tokens ───────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:   #0d1117;
+      --bg-panel:  #131a24;
+      --bg-panel2: #1a2433;
+      --border:    rgba(255,255,255,0.07);
+      --gold:      #c9952a;
+      --gold-lt:   #e8b84b;
+      --gold-bg:   rgba(201,149,42,0.12);
+      --text:      #e2e8f0;
+      --muted:     #7a8fa6;
+      --dim:       #4a5f75;
+      --red:       #e53e3e;
+      --green:     #38a169;
+      --blue:      #4299e1;
+      --sw: 256px;
+      --sw-c: 64px;
+      --ease: 0.28s cubic-bezier(.4,0,.2,1);
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: 'Figtree', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Gold top line */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent 0%, var(--gold) 30%, var(--gold-lt) 50%, var(--gold) 70%, transparent 100%);
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    /* Dot-grid overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(201,149,42,0.07) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── App shell ────────────────────────────────────────────── */
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       SIDEBAR
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: var(--sw);
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: width var(--ease);
+      z-index: 200;
+      overflow: hidden;
+    }
+    .sidebar.collapsed { width: var(--sw-c); }
+
+    /* Toggle button on edge */
+    .sidebar-toggle {
+      position: absolute;
+      top: 22px; right: -13px;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--bg-panel2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background var(--ease), color var(--ease), transform var(--ease);
+      z-index: 10;
+      flex-shrink: 0;
+    }
+    .sidebar-toggle:hover { background: var(--gold-bg); color: var(--gold-lt); }
+    .sidebar.collapsed .sidebar-toggle { transform: rotate(180deg); }
+
+    /* Brand */
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid var(--border);
+      min-height: 64px;
+      flex-shrink: 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .brand-badge {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-lt));
+      color: #0d1117;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .brand-text {
+      font-size: 15px; font-weight: 700; color: var(--text);
+      white-space: nowrap;
+      transition: opacity var(--ease);
+    }
+    .sidebar.collapsed .brand-text { opacity: 0; }
+
+    /* Nav */
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto; overflow-x: hidden;
+      padding: 12px 8px;
+      scrollbar-width: none;
+    }
+    .sidebar-nav::-webkit-scrollbar { display: none; }
+
+    .nav-section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--dim);
+      padding: 14px 10px 6px;
+      white-space: nowrap;
+      transition: opacity var(--ease);
+    }
+    .sidebar.collapsed .nav-section-label { opacity: 0; }
+
+    .nav-item {
+      position: relative;
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px; font-weight: 500;
+      white-space: nowrap;
+      transition: background var(--ease), color var(--ease);
+      margin-bottom: 2px;
+      overflow: hidden;
+    }
+    .nav-item:hover { background: var(--gold-bg); color: var(--text); }
+    .nav-item.active { background: var(--gold-bg); color: var(--gold-lt); }
+
+    .nav-icon {
+      width: 20px; height: 20px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nav-icon svg {
+      width: 18px; height: 18px;
+      stroke: currentColor; fill: none;
+      stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .nav-label { transition: opacity var(--ease); white-space: nowrap; }
+    .sidebar.collapsed .nav-label { opacity: 0; }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--red); color: #fff;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; font-weight: 500;
+      padding: 1px 6px; border-radius: 999px;
+      flex-shrink: 0;
+      transition: opacity var(--ease);
+    }
+    .sidebar.collapsed .nav-badge { opacity: 0; }
+
+    /* Collapsed tooltip */
+    .nav-tooltip {
+      display: none;
+      position: absolute;
+      left: calc(var(--sw-c) + 8px);
+      top: 50%; transform: translateY(-50%);
+      background: var(--bg-panel2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 12px; padding: 5px 10px; border-radius: 6px;
+      white-space: nowrap; pointer-events: none;
+      z-index: 300;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .sidebar.collapsed .nav-item:hover .nav-tooltip { display: block; }
+
+    /* User chip */
+    .sidebar-user {
+      padding: 12px 10px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .user-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-lt));
+      color: #0d1117;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .user-info { overflow: hidden; transition: opacity var(--ease); white-space: nowrap; }
+    .user-name  { font-size: 13px; font-weight: 600; color: var(--text); }
+    .user-role  { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+    .sidebar.collapsed .user-info { opacity: 0; }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       MAIN CONTENT
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .main-content {
+      margin-left: var(--sw);
+      flex: 1; min-height: 100vh;
+      transition: margin-left var(--ease);
+      padding-bottom: 60px;
+    }
+    .sidebar.collapsed ~ .main-content { margin-left: var(--sw-c); }
+
+    /* ── Page header ─────────────────────────────────────────── */
+    .page-header {
+      padding: 40px 40px 0;
+      animation: fadeUp .5s ease both;
+    }
+    .page-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .page-greeting {
+      font-size: 28px; font-weight: 700;
+      color: var(--text); line-height: 1.2;
+    }
+
+    /* ── Stats section ───────────────────────────────────────── */
+    .stats-section { padding: 28px 40px 0; }
+
+    .stats-wrapper {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 28px;
+      animation: fadeUp .5s ease both;
+    }
+    .stat-card:nth-child(1) { animation-delay: .05s; }
+    .stat-card:nth-child(2) { animation-delay: .12s; }
+    .stat-card:nth-child(3) { animation-delay: .19s; }
+
+    .stat-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px;
+    }
+    .stat-value {
+      font-size: 48px; font-weight: 900;
+      color: var(--gold-lt); line-height: 1;
+      font-variant-numeric: tabular-nums;
+      animation: countReveal .6s ease both;
+    }
+    .stat-card:nth-child(1) .stat-value { animation-delay: .2s; }
+    .stat-card:nth-child(2) .stat-value { animation-delay: .3s; }
+    .stat-card:nth-child(3) .stat-value { animation-delay: .4s; }
+
+    .stat-delta {
+      margin-top: 8px; font-size: 12px; color: var(--muted);
+      display: flex; align-items: center; gap: 5px;
+      transition: opacity var(--ease), max-height var(--ease);
+      overflow: hidden; max-height: 30px;
+    }
+    .stat-delta .emo { font-size: 14px; }
+
+    /* ── Sticky bar (CSS-only collapse) ─────────────────────── */
+    .sticky-bar {
+      position: fixed;
+      top: 2px; left: var(--sw); right: 0;
+      height: 0; overflow: hidden; opacity: 0;
+      pointer-events: none;
+      background: rgba(13,17,23,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+      display: flex; align-items: center; gap: 32px;
+      padding: 0 40px;
+      transition: height var(--ease), opacity var(--ease), left var(--ease);
+    }
+    .sidebar.collapsed ~ .main-content .sticky-bar { left: var(--sw-c); }
+
+    .sticky-stat { display: flex; align-items: baseline; gap: 7px; }
+    .sticky-stat-value {
+      font-size: 20px; font-weight: 900;
+      color: var(--gold-lt); font-variant-numeric: tabular-nums;
+    }
+    .sticky-stat-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+
+    body.is-scrolled .sticky-bar { height: 44px; opacity: 1; pointer-events: auto; }
+
+    /* ── 2-col content grid ──────────────────────────────────── */
+    .content-grid {
+      padding: 28px 40px 0;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 20px;
+      animation: fadeUp .5s .25s ease both;
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+    .panel-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 18px;
+    }
+
+    /* Activity feed */
+    .activity-feed { display: flex; flex-direction: column; }
+    .activity-item {
+      display: flex; align-items: flex-start; gap: 13px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .a-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      margin-top: 5px; flex-shrink: 0;
+    }
+    .d-gold  { background: var(--gold); }
+    .d-green { background: var(--green); }
+    .d-red   { background: var(--red); }
+    .d-blue  { background: var(--blue); }
+    .d-dim   { background: var(--dim); }
+    .a-body  { flex: 1; }
+    .a-text  { font-size: 13.5px; color: var(--text); line-height: 1.4; }
+    .a-text strong { color: var(--gold-lt); }
+    .a-time  { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); margin-top: 3px; }
+
+    /* System snapshot */
+    .snap-list { display: flex; flex-direction: column; gap: 0; }
+    .snap-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .snap-row:last-child { border-bottom: none; }
+    .snap-key { font-size: 13px; color: var(--muted); }
+    .snap-val { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text); }
+    .snap-val.c-gold  { color: var(--gold-lt); }
+    .snap-val.c-green { color: #68d391; }
+    .snap-val.c-red   { color: #fc8181; }
+
+    /* ── Approvals + Payroll row ─────────────────────────────── */
+    .content-grid-2 {
+      padding: 20px 40px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      animation: fadeUp .5s .35s ease both;
+    }
+
+    /* Approvals */
+    .appr-list { display: flex; flex-direction: column; gap: 10px; }
+    .appr-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 13px;
+      background: var(--bg-panel2);
+      border: 1px solid var(--border); border-radius: 10px;
+    }
+    .appr-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, #2d3f5a, #3a5070);
+      border: 1px solid var(--border);
+      color: var(--gold-lt);
+      font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .appr-info { flex: 1; min-width: 0; }
+    .appr-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+    .appr-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); margin-top: 2px; }
+    .appr-actions { display: flex; gap: 7px; flex-shrink: 0; }
+    .appr-btn {
+      width: 30px; height: 30px; border-radius: 8px;
+      border: 1px solid var(--border); background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background var(--ease), border-color var(--ease);
+    }
+    .appr-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .appr-btn.ok  { color: var(--green); }
+    .appr-btn.ok:hover  { background: rgba(56,161,105,.15); border-color: var(--green); }
+    .appr-btn.no  { color: var(--red); }
+    .appr-btn.no:hover  { background: rgba(229,62,62,.15);  border-color: var(--red); }
+
+    /* Payroll */
+    .payroll-budget {
+      font-size: 11px; color: var(--dim);
+      font-family: 'DM Mono', monospace; margin-bottom: 18px;
+    }
+    .payroll-budget span { font-family: 'Figtree', sans-serif; font-size: 22px; font-weight: 900; color: var(--gold-lt); }
+    .payroll-bars { display: flex; flex-direction: column; gap: 14px; }
+    .pr-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .pr-label  { font-size: 13px; color: var(--muted); }
+    .pr-value  { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); }
+    .pr-track  {
+      height: 8px; background: var(--bg-panel2);
+      border-radius: 999px; overflow: hidden; border: 1px solid var(--border);
+    }
+    .pr-fill {
+      height: 100%; border-radius: 999px;
+      animation: barGrow 1s cubic-bezier(.4,0,.2,1) both;
+    }
+    .pr-row:nth-child(1) .pr-fill { animation-delay: .3s; }
+    .pr-row:nth-child(2) .pr-fill { animation-delay: .45s; }
+    .pr-row:nth-child(3) .pr-fill { animation-delay: .6s; }
+    .pr-row:nth-child(4) .pr-fill { animation-delay: .75s; }
+    .f-green { background: linear-gradient(90deg, #38a169, #68d391); }
+    .f-gold  { background: linear-gradient(90deg, var(--gold), var(--gold-lt)); }
+    .f-red   { background: linear-gradient(90deg, #c53030, #fc8181); }
+    .f-dim   { background: linear-gradient(90deg, #2d3f5a, #4a5f75); }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       KEYBOARD SHORTCUT LEGEND
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .sc-trigger {
+      position: fixed; bottom: 24px; right: 24px;
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--bg-panel); border: 1px solid var(--border);
+      color: var(--muted); font-size: 20px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 500;
+      transition: background var(--ease), color var(--ease), border-color var(--ease);
+      box-shadow: 0 4px 20px rgba(0,0,0,.4);
+    }
+    .sc-trigger:hover { background: var(--gold-bg); color: var(--gold-lt); border-color: var(--gold); }
+
+    .sc-panel {
+      position: fixed; bottom: 80px; right: 24px; width: 320px;
+      background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px;
+      z-index: 500;
+      box-shadow: 0 8px 40px rgba(0,0,0,.6);
+      display: none;
+    }
+    .sc-panel.open { display: block; animation: fadeUp .2s ease both; }
+
+    .sc-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px;
+    }
+    .sc-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--gold);
+    }
+    .sc-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 18px; cursor: pointer; line-height: 1;
+      padding: 2px 4px; border-radius: 4px;
+      transition: color var(--ease);
+    }
+    .sc-close:hover { color: var(--text); }
+    .sc-list { display: flex; flex-direction: column; gap: 10px; }
+    .sc-row { display: flex; justify-content: space-between; align-items: center; }
+    .sc-desc { font-size: 13px; color: var(--muted); }
+    .sc-keys { display: flex; gap: 4px; }
+    .kbd {
+      font-family: 'DM Mono', monospace; font-size: 11px;
+      background: var(--bg-panel2); border: 1px solid rgba(255,255,255,.12);
+      border-radius: 5px; padding: 2px 7px; color: var(--text);
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       KEYFRAMES
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+    @keyframes countReveal {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+    @keyframes barGrow {
+      from { width: 0 !important; }
+      to   { /* width set inline */ }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
+  </style>
 </head>
 <body data-page="dashboard">
-  <div class="portal-shell">
-    <nav class="portal-nav">
-      <div class="portal-nav-inner">
-        <div class="brand">
-          <span class="brand-badge">PO</span>
-          Admin Console
-        </div>
-        <div class="nav-links">
-          <a class="nav-link" data-nav="dashboard" href="/admin/index.html">Dashboard</a>
-          <a class="nav-link" data-nav="tutors" href="/admin/tutors.html">Tutors</a>
-          <a class="nav-link" data-nav="students" href="/admin/students.html">Students</a>
-          <a class="nav-link" data-nav="assignments" href="/admin/assignments.html">Assignments</a>
-          <a class="nav-link" data-nav="approvals" href="/admin/approvals.html">Approvals</a>
-          <a class="nav-link" data-nav="payroll" href="/admin/payroll.html">Payroll</a>
-          <a class="nav-link" data-nav="reconciliation" href="/admin/reconciliation.html">Reconciliation</a>
-          <a class="nav-link" data-nav="audit" href="/admin/audit.html">Audit</a>
-          <a class="nav-link" data-nav="privacy-requests" href="/admin/privacy-requests.html">Privacy Requests</a>
-          <a class="nav-link" data-nav="retention" href="/admin/retention.html">Retention</a>
-          <a class="nav-link" data-nav="ops-runbook" href="/admin/ops-runbook.html">Ops Runbook</a>
+
+  <!-- ── Sticky stat bar ────────────────────────────────────── -->
+  <div class="sticky-bar" id="stickyBar" aria-hidden="true">
+    <div class="sticky-stat">
+      <div class="sticky-stat-value" id="stickyTutors">—</div>
+      <div class="sticky-stat-label">Tutors</div>
+    </div>
+    <div class="sticky-stat">
+      <div class="sticky-stat-value" id="stickyStudents">—</div>
+      <div class="sticky-stat-label">Students</div>
+    </div>
+    <div class="sticky-stat">
+      <div class="sticky-stat-value" id="stickySessions">—</div>
+      <div class="sticky-stat-label">Sessions</div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+
+    <!-- ══════════════════════════════════════════════════════
+         SIDEBAR
+    ══════════════════════════════════════════════════════ -->
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+
+      <div class="sidebar-brand">
+        <div class="brand-badge">PO</div>
+        <span class="brand-text">Admin Console</span>
+      </div>
+
+      <nav class="sidebar-nav">
+
+        <!-- Core -->
+        <div class="nav-section-label">Core</div>
+
+        <a class="nav-item active" href="/admin/index.html">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </span>
+          <span class="nav-label">Dashboard</span>
+          <span class="nav-tooltip">Dashboard</span>
+        </a>
+
+        <a class="nav-item" href="/admin/tutors.html">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          <span class="nav-label">Tutors</span>
+          <span class="nav-tooltip">Tutors</span>
+        </a>
+
+        <a class="nav-item" href="/admin/students.html">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+          </span>
+          <span class="nav-label">Students</span>
+          <span class="nav-tooltip">Students</span>
+        </a>
+
+        <a class="nav-item" href="/admin/assignments.html">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </span>
+          <span class="nav-label">Assignments</span>
+          <span class="nav-tooltip">Assignments</span>
+        </a>
+
+        <!-- Finance -->
+        <div class="nav-section-label">Finance</div>
+
+        <a class="nav-item" href="/admin/approvals.html">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span class="nav-label">Approvals</span>
+          <span class="nav-badge" id="approvalsBadge" style="display:none"></span>
+          <span class="nav-tooltip" id="approvalsTooltip">Approvals</span>
+        </a>
+
+        <a class="nav-item" href="/admin/payroll.html">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </span>
+          <span class="nav-label">Payroll</span>
+          <span class="nav-tooltip">Payroll</span>
+        </a>
+
+        <a class="nav-item" href="/admin/reconciliation.html">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </span>
+          <span class="nav-label">Reconciliation</span>
+          <span class="nav-tooltip">Reconciliation</span>
+        </a>
+
+        <!-- Compliance -->
+        <div class="nav-section-label">Compliance</div>
+
+        <a class="nav-item" href="/admin/audit.html">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <span class="nav-label">Audit</span>
+          <span class="nav-tooltip">Audit</span>
+        </a>
+
+        <a class="nav-item" href="/admin/privacy-requests.html">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </span>
+          <span class="nav-label">Privacy Requests</span>
+          <span class="nav-tooltip">Privacy Requests</span>
+        </a>
+
+        <a class="nav-item" href="/admin/retention.html">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+          </span>
+          <span class="nav-label">Retention</span>
+          <span class="nav-tooltip">Retention</span>
+        </a>
+
+        <a class="nav-item" href="/admin/ops-runbook.html">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </span>
+          <span class="nav-label">Ops Runbook</span>
+          <span class="nav-tooltip">Ops Runbook</span>
+        </a>
+
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="user-avatar">AD</div>
+        <div class="user-info">
+          <div class="user-name">Admin</div>
+          <div class="user-role">Super Admin</div>
         </div>
       </div>
-    </nav>
+    </aside>
 
-    <main class="portal-main">
-      <section class="page-header">
-        <h1 class="page-title">Admin dashboard</h1>
-        <p class="page-subtitle">Monitor approvals, tutor activity, and payroll runs.</p>
+    <!-- ══════════════════════════════════════════════════════
+         MAIN
+    ══════════════════════════════════════════════════════ -->
+    <main class="main-content" id="mainContent">
+
+      <!-- Sticky bar lives inside main so its left offset inherits correctly -->
+      <div class="sticky-bar" id="stickyBarInner" aria-hidden="true">
+        <div class="sticky-stat">
+          <div class="sticky-stat-value" id="stickyTutors2">—</div>
+          <div class="sticky-stat-label">Tutors</div>
+        </div>
+        <div class="sticky-stat">
+          <div class="sticky-stat-value" id="stickyStudents2">—</div>
+          <div class="sticky-stat-label">Students</div>
+        </div>
+        <div class="sticky-stat">
+          <div class="sticky-stat-value" id="stickySessions2">—</div>
+          <div class="sticky-stat-label">Sessions</div>
+        </div>
+      </div>
+
+      <!-- Page header -->
+      <header class="page-header">
+        <div class="page-eyebrow">Navigate your journey to success</div>
+        <h1 class="page-greeting" id="greeting">Good morning — let's make it count, Admin ☀️</h1>
+      </header>
+
+      <!-- Stat cards -->
+      <section class="stats-section">
+        <div class="stats-wrapper">
+
+          <div class="stat-card">
+            <div class="stat-label">Active Tutors</div>
+            <div class="stat-value" id="countTutors">0</div>
+            <div class="stat-delta"><span class="emo">📈</span> Live count from system</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">Active Students</div>
+            <div class="stat-value" id="countStudents">0</div>
+            <div class="stat-delta"><span class="emo">🎓</span> Enrolled &amp; active</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">Sessions in System</div>
+            <div class="stat-value" id="countSessions">0</div>
+            <div class="stat-delta"><span class="emo">📅</span> All-time recorded</div>
+          </div>
+
+        </div>
       </section>
 
-      <section class="grid three">
-        <div class="panel hero-card">
-          <h2 class="panel-title">Active tutors</h2>
-          <div id="countTutors" class="page-title">0</div>
+      <!-- Recent Activity + System Snapshot -->
+      <div class="content-grid">
+
+        <div class="panel">
+          <div class="panel-title">Recent Activity</div>
+          <div class="activity-feed" id="activityFeed">
+            <div class="activity-item">
+              <div class="a-dot d-dim"></div>
+              <div class="a-body"><div class="a-text" style="color:var(--muted)">Loading…</div></div>
+            </div>
+          </div>
         </div>
-        <div class="panel hero-card">
-          <h2 class="panel-title">Active students</h2>
-          <div id="countStudents" class="page-title">0</div>
+
+        <div class="panel">
+          <div class="panel-title">System Snapshot</div>
+          <div class="snap-list">
+            <div class="snap-row"><span class="snap-key">Pending approvals</span>    <span class="snap-val" id="snapPendingApprovals">…</span></div>
+            <div class="snap-row"><span class="snap-key">Open privacy requests</span> <span class="snap-val" id="snapPrivacyRequests">…</span></div>
+            <div class="snap-row"><span class="snap-key">Week approved</span>         <span class="snap-val c-green" id="snapWeekApproved">…</span></div>
+            <div class="snap-row"><span class="snap-key">Week hours</span>            <span class="snap-val" id="snapWeekHours">…</span></div>
+            <div class="snap-row"><span class="snap-key">Week start</span>            <span class="snap-val c-gold" id="snapWeekStart">…</span></div>
+            <div class="snap-row"><span class="snap-key">Active tutors</span>         <span class="snap-val" id="snapTutors">…</span></div>
+            <div class="snap-row"><span class="snap-key">Active students</span>       <span class="snap-val" id="snapStudents">…</span></div>
+            <div class="snap-row"><span class="snap-key">Environment</span>           <span class="snap-val c-green">Production</span></div>
+          </div>
         </div>
-        <div class="panel hero-card">
-          <h2 class="panel-title">Sessions in system</h2>
-          <div id="countSessions" class="page-title">0</div>
+
+      </div>
+
+      <!-- Pending Approvals + Payroll Overview -->
+      <div class="content-grid-2">
+
+        <div class="panel">
+          <div class="panel-title">Pending Approvals</div>
+          <div class="appr-list" id="pendingApprovalsList">
+            <div class="appr-item">
+              <div class="appr-info"><div class="appr-name" style="color:var(--muted)">Loading…</div></div>
+            </div>
+          </div>
         </div>
-      </section>
+
+        <div class="panel">
+          <div class="panel-title">Payroll Overview</div>
+          <div class="payroll-budget">Current week: <span id="payrollWeekLabel">…</span></div>
+          <div class="payroll-bars" id="payrollBars">
+            <div class="pr-row"><div class="pr-header"><span class="pr-label" style="color:var(--muted)">Loading…</span></div></div>
+          </div>
+        </div>
+
+      </div>
+
     </main>
+  </div>
+
+  <!-- Keyboard shortcut legend -->
+  <button class="sc-trigger" id="scTrigger" aria-label="Keyboard shortcuts">⌨</button>
+
+  <div class="sc-panel" id="scPanel" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="sc-header">
+      <span class="sc-title">Keyboard Shortcuts</span>
+      <button class="sc-close" id="scClose" aria-label="Close">✕</button>
+    </div>
+    <div class="sc-list">
+      <div class="sc-row">
+        <span class="sc-desc">Toggle sidebar</span>
+        <div class="sc-keys"><span class="kbd">⌘B</span></div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-desc">Go to Dashboard</span>
+        <div class="sc-keys"><span class="kbd">G</span><span class="kbd">D</span></div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-desc">Go to Approvals</span>
+        <div class="sc-keys"><span class="kbd">G</span><span class="kbd">A</span></div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-desc">Go to Payroll</span>
+        <div class="sc-keys"><span class="kbd">G</span><span class="kbd">P</span></div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-desc">Show shortcuts</span>
+        <div class="sc-keys"><span class="kbd">?</span></div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-desc">Dismiss</span>
+        <div class="sc-keys"><span class="kbd">Esc</span></div>
+      </div>
+    </div>
   </div>
 
   <script src="/assets/portal-config.js"></script>
   <script type="module" src="/assets/admin/portal.js"></script>
+  <script>
+    /* ── Greeting ─────────────────────────────────────────────── */
+    (function () {
+      var h = new Date().getHours(), msg;
+      if      (h >= 5  && h < 12) msg = "Good morning \u2014 let\u2019s make it count, Admin \u2600\uFE0F";
+      else if (h >= 12 && h < 17) msg = "Good afternoon \u2014 keep the momentum going, Admin \uD83D\uDCAA";
+      else if (h >= 17 && h < 21) msg = "Good evening \u2014 wrapping things up? Admin \uD83C\uDF05";
+      else                        msg = "Still at it? Respect \uD83E\uDD89";
+      document.getElementById('greeting').textContent = msg;
+    })();
+
+    /* ── Sidebar toggle ───────────────────────────────────────── */
+    var sidebar = document.getElementById('sidebar');
+
+    function toggleSidebar() {
+      sidebar.classList.toggle('collapsed');
+      localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
+    }
+
+    document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+
+    if (localStorage.getItem('sidebarCollapsed') === '1') {
+      sidebar.classList.add('collapsed');
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    });
+
+    /* ── Sticky scroll ────────────────────────────────────────── */
+    function syncSticky() {
+      ['Tutors', 'Students', 'Sessions'].forEach(function (n) {
+        var src = document.getElementById('count' + n);
+        var d1  = document.getElementById('sticky' + n);
+        var d2  = document.getElementById('sticky' + n + '2');
+        if (src) {
+          if (d1) d1.textContent = src.textContent;
+          if (d2) d2.textContent = src.textContent;
+        }
+      });
+    }
+
+    window.addEventListener('scroll', function () {
+      document.body.classList.toggle('is-scrolled', window.scrollY > 60);
+      if (window.scrollY > 60) syncSticky();
+    }, { passive: true });
+
+    // Keep sticky values fresh when portal.js updates count elements
+    ['countTutors', 'countStudents', 'countSessions'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) new MutationObserver(syncSticky).observe(el, { childList: true, characterData: true, subtree: true });
+    });
+
+    /* ── Keyboard shortcut legend ─────────────────────────────── */
+    var scPanel   = document.getElementById('scPanel');
+    var scTrigger = document.getElementById('scTrigger');
+    var scClose   = document.getElementById('scClose');
+
+    function openSc()  { scPanel.classList.add('open'); }
+    function closeSc() { scPanel.classList.remove('open'); }
+
+    scTrigger.addEventListener('click', function () {
+      scPanel.classList.contains('open') ? closeSc() : openSc();
+    });
+    scClose.addEventListener('click', closeSc);
+
+    var gPressed = false, gTimer;
+    document.addEventListener('keydown', function (e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === '?')      { e.preventDefault(); openSc();  return; }
+      if (e.key === 'Escape') { closeSc(); return; }
+      if (e.key === 'g' || e.key === 'G') {
+        gPressed = true;
+        clearTimeout(gTimer);
+        gTimer = setTimeout(function () { gPressed = false; }, 1000);
+        return;
+      }
+      if (gPressed) {
+        gPressed = false; clearTimeout(gTimer);
+        if (e.key === 'd' || e.key === 'D') { e.preventDefault(); location.href = '/admin/index.html'; }
+        if (e.key === 'a' || e.key === 'A') { e.preventDefault(); location.href = '/admin/approvals.html'; }
+        if (e.key === 'p' || e.key === 'P') { e.preventDefault(); location.href = '/admin/payroll.html'; }
+      }
+    });
+  </script>
 </body>
 </html>
