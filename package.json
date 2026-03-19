@@ -12,32 +12,36 @@
     "http-server": "^14.1.1"
   },
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.16",
     "cpy-cli": "^5.0.0",
     "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
     "html-validate": "^9.5.3",
     "npm-run-all": "^4.1.5",
-    "rimraf": "^5.0.5"
+    "rimraf": "^5.0.5",
+    "tailwindcss": "^3.4.17"
   },
   "scripts": {
     "clean": "rimraf dist",
     "build:static": "node scripts/build-static.js",
+    "build:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind-input.css --minify",
     "inject:config": "node scripts/inject-config.js",
     "build:api": "npm run build --prefix lms-api",
-    "build": "npm run build:static && npm run inject:config && npm run build:api",
-    "serve": "http-server dist -p 8080 -c-1",
+    "build": "npm run build:static && npm run build:css && npm run inject:config && npm run build:api",
+    "serve": "http-server dist -p 8081 -c-1",
     "start:static": "npm run serve",
     "start:api": "npm run start --prefix lms-api",
     "start": "npm-run-all --parallel start:static start:api",
-    "dev:static": "npm run build:static && npm run inject:config && npm run serve",
+    "dev:static": "npm run build:static && npm run build:css && npm run inject:config && npm run serve",
     "dev:api": "npm run dev --prefix lms-api",
-    "dev": "npm-run-all --parallel dev:static dev:api",
+    "dev:full": "npm-run-all --parallel dev:static dev:api",
+    "dev": "npm run dev:static",
     "migrate": "npm run migrate --prefix lms-api",
     "db:create:local": "npm run db:create:local --prefix lms-api",
     "test": "npm run test --prefix lms-api",
     "lint:js": "eslint \"assets/**/*.js\" \"scripts/**/*.js\"",
     "lint:html": "html-validate \"*.html\" \"dashboard/**/*.html\" \"reports/**/*.html\" \"tutor/**/*.html\" \"guides/**/*.html\" \"admin/**/*.html\"",
     "lint": "npm-run-all --parallel lint:js lint:html",
-    "prepare": "husky || true"
+    "prepare": "husky || echo husky-not-installed"
   }
 }

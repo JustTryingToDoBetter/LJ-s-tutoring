@@ -74,7 +74,40 @@ module.exports = {
      * TRADE-OFF: Could catch real errors, but also flags valid modern HTML
      * DECISION: Trust developer intent, catch actual issues in browser testing
      */
-    "attribute-allowed-values": "off"
+    "attribute-allowed-values": "off",
+
+    /**
+     * no-inline-style: OFF
+     * REASON: Restored legacy admin/dashboard pages rely on inline style for
+     *         dynamic layout fragments and stateful rendering.
+     */
+    "no-inline-style": "off",
+
+    /**
+     * no-implicit-input-type: OFF
+     * REASON: Legacy forms intentionally rely on browser default input type.
+     */
+    "no-implicit-input-type": "off",
+
+    /**
+     * form-dup-name: OFF
+     * REASON: Some multi-select checkbox groups intentionally share the same
+     *         name so the backend receives arrays.
+     */
+    "form-dup-name": "off",
+
+    /**
+     * prefer-native-element: OFF
+     * REASON: Restored UI includes ARIA-role button patterns used by existing
+     *         interaction handlers.
+     */
+    "prefer-native-element": "off",
+
+    /**
+     * void-style: OFF
+     * REASON: Restored pages mix XHTML-style self-closing void elements.
+     */
+    "void-style": "off"
   },
   
   elements: [
