@@ -5,7 +5,7 @@ setActiveNav('dashboard');
 
 (async () => {
   const data = await loadJson('/dashboard').catch(() => null);
-  if (!data) return;
+  if (!data) {return;}
   setText('#metricXp', String(data.streak?.xp ?? 0));
   setText('#metricStreak', `${data.streak?.current ?? 0} days`);
   setText('#metricMinutes', String(data.thisWeek?.minutesStudied ?? 0));

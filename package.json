@@ -39,7 +39,7 @@
     "migrate": "npm run migrate --prefix lms-api",
     "db:create:local": "npm run db:create:local --prefix lms-api",
     "test": "npm run test --prefix lms-api",
-    "lint:js": "eslint \"assets/**/*.js\" \"scripts/**/*.js\"",
+    "lint:js": "eslint \"assets/**/*.js\" \"scripts/**/*.js\" --max-warnings=0",
     "lint:html": "html-validate \"*.html\" \"dashboard/**/*.html\" \"reports/**/*.html\" \"tutor/**/*.html\" \"guides/**/*.html\" \"admin/**/*.html\"",
     "lint": "npm-run-all --parallel lint:js lint:html",
     "prepare": "husky || echo husky-not-installed"

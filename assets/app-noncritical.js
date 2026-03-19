@@ -335,12 +335,6 @@
     setInterval(update, 30 * 60 * 1000);
   }
 
-  function logGreeting() {
-    console.log('%c🎓 Project Odysseus', 'font-size: 24px; font-weight: bold; color: #fbbf24;');
-    console.log('%cNeed a developer? Check out our code!', 'font-size: 14px; color: #64748b;');
-    console.log('%c💡 Press ? for keyboard shortcuts', 'font-size: 12px; color: #22c55e;');
-  }
-
   function initNonCritical() {
     initScrollAnimations();
     initCounters();
@@ -352,7 +346,6 @@
     initMobileStickyCta();
     initCarousel();
     initSlots();
-    logGreeting();
   }
 
   if (document.readyState === 'loading') {

@@ -26,9 +26,11 @@ fs.mkdirSync(dist, { recursive: true });
 
 for (const target of copyTargets) {
   const source = path.join(root, target);
-  if (!fs.existsSync(source)) continue;
+  if (!fs.existsSync(source)) {
+    continue;
+  }
   const destination = path.join(dist, target);
   fs.cpSync(source, destination, { recursive: true });
 }
 
-console.log('Static site copied to dist/.');
+process.stdout.write('Static site copied to dist/.\n');

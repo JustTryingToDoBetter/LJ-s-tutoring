@@ -32,7 +32,7 @@ export async function initStudents() {
       renderStateCard(list, {
         variant: 'empty',
         title: 'No students found',
-        description: 'Try a broader search or add a new student.'
+        description: 'Try a broader search or add a new student.',
       });
       return;
     }
@@ -67,7 +67,7 @@ export async function initStudents() {
       renderStateCard(list, {
         variant: 'error',
         title: 'Unable to load students',
-        description: 'Refresh and try again. If the issue persists, check API connectivity.'
+        description: 'Refresh and try again. If the issue persists, check API connectivity.',
       });
     }
   };
@@ -106,7 +106,7 @@ export async function initStudents() {
       guardianName: qs('#guardianName').value || undefined,
       guardianPhone: qs('#guardianPhone').value || undefined,
       notes: qs('#studentNotes').value || undefined,
-      active: qs('#studentActive').checked
+      active: qs('#studentActive').checked,
     };
     try {
       await apiPost('/admin/students', payload);

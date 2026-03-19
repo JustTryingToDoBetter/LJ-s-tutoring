@@ -43,7 +43,7 @@ export async function initApprovals() {
     total: 0,
     page: 1,
     pageSize: Number(pageSize?.value || 25),
-    preset: 'this-week'
+    preset: 'this-week',
   };
 
   const toDateString = (value) => value.toISOString().slice(0, 10);
@@ -98,7 +98,7 @@ export async function initApprovals() {
     for (const session of selectedSessions) {
       const duration = Number(session.duration_minutes || 0);
       minutes += duration;
-      if (session.rate == null) {
+      if (session.rate === null || session.rate === undefined) {
         payoutKnown = false;
       } else {
         payout += (duration / 60) * Number(session.rate);
@@ -109,12 +109,12 @@ export async function initApprovals() {
     selectionMeta.textContent = payoutKnown
       ? `${minutes} minutes - ${formatMoney(payout)}`
       : `${minutes} minutes - Rate unavailable`;
-    if (bulkApprove) bulkApprove.disabled = count === 0;
-    if (bulkReject) bulkReject.disabled = count === 0;
+    if (bulkApprove) {bulkApprove.disabled = count === 0;}
+    if (bulkReject) {bulkReject.disabled = count === 0;}
   };
 
   const updateAggregates = () => {
-    if (!state.aggregates) return;
+    if (!state.aggregates) {return;}
     const submitted = state.aggregates.countsByStatus?.SUBMITTED ?? 0;
     const submittedMinutes = state.aggregates.totalMinutesSubmitted ?? 0;
     aggregateSummary.textContent = `${submitted} submitted`;
@@ -129,7 +129,7 @@ export async function initApprovals() {
   };
 
   const renderTable = () => {
-    if (!list) return;
+    if (!list) {return;}
     if (!state.sessions.length) {
       list.innerHTML = '<tr><td colspan="6" class="note">No sessions found for this filter.</td></tr>';
       updateSelectionMeta();
@@ -177,17 +177,17 @@ export async function initApprovals() {
   };
 
   const load = async () => {
-    if (bulkResult) bulkResult.textContent = '';
+    if (bulkResult) {bulkResult.textContent = '';}
     if (list) {
       list.innerHTML = '<tr><td colspan="6" class="note">Loading sessions...</td></tr>';
     }
     const params = new URLSearchParams();
-    if (statusFilter?.value) params.set('status', statusFilter.value);
-    if (fromDate?.value) params.set('from', fromDate.value);
-    if (toDate?.value) params.set('to', toDate.value);
-    if (searchInput?.value?.trim()) params.set('q', searchInput.value.trim());
-    if (sortBy?.value) params.set('sort', sortBy.value);
-    if (sortOrder?.value) params.set('order', sortOrder.value);
+    if (statusFilter?.value) {params.set('status', statusFilter.value);}
+    if (fromDate?.value) {params.set('from', fromDate.value);}
+    if (toDate?.value) {params.set('to', toDate.value);}
+    if (searchInput?.value?.trim()) {params.set('q', searchInput.value.trim());}
+    if (sortBy?.value) {params.set('sort', sortBy.value);}
+    if (sortOrder?.value) {params.set('order', sortOrder.value);}
     params.set('page', String(state.page));
     params.set('pageSize', String(state.pageSize));
 
@@ -214,7 +214,7 @@ export async function initApprovals() {
 
   const openBulkDialog = (action) => {
     const selectedSessions = state.sessions.filter((s) => state.selected.has(s.id));
-    if (!selectedSessions.length) return;
+    if (!selectedSessions.length) {return;}
 
     const count = selectedSessions.length;
     const minutes = selectedSessions.reduce((acc, s) => acc + Number(s.duration_minutes || 0), 0);
@@ -222,15 +222,15 @@ export async function initApprovals() {
     bulkDialogTitle.textContent = action === 'approve' ? 'Confirm bulk approval' : 'Confirm bulk rejection';
     bulkDialogSummary.textContent = `You are about to ${action} ${count} session${count === 1 ? '' : 's'} (${minutes} minutes).`;
     bulkReasonField.style.display = action === 'reject' ? 'grid' : 'none';
-    if (bulkReason) bulkReason.value = '';
+    if (bulkReason) {bulkReason.value = '';}
     bulkDialog.showModal();
   };
 
   const runBulkAction = async () => {
     const action = bulkDialog.dataset.action;
-    if (!action) return;
+    if (!action) {return;}
     const sessionIds = Array.from(state.selected);
-    if (!sessionIds.length) return;
+    if (!sessionIds.length) {return;}
 
     try {
       if (action === 'approve') {
@@ -255,14 +255,14 @@ export async function initApprovals() {
   };
 
   const formatDateTime = (value) => {
-    if (!value) return 'Unknown time';
+    if (!value) {return 'Unknown time';}
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
+    if (Number.isNaN(date.getTime())) {return String(value);}
     return date.toLocaleString();
   };
 
   const renderHistory = (entries) => {
-    if (!historyContent) return;
+    if (!historyContent) {return;}
     if (!entries.length) {
       historyContent.innerHTML = '<div class="note">No history available for this session.</div>';
       return;
@@ -317,7 +317,7 @@ export async function initApprovals() {
       btn.addEventListener('click', async () => {
         const targetId = btn.dataset.copy;
         const target = document.getElementById(targetId);
-        if (!target) return;
+        if (!target) {return;}
         const text = target.textContent || '';
         if (navigator.clipboard?.writeText) {
           await navigator.clipboard.writeText(text);
@@ -327,21 +327,21 @@ export async function initApprovals() {
   };
 
   const openHistory = async (sessionId) => {
-    if (!historyDialog) return;
+    if (!historyDialog) {return;}
     const session = state.sessions.find((item) => item.id === sessionId);
     const subtitle = session
       ? `${session.tutor_name} -> ${session.student_name} - ${session.date} ${session.start_time}-${session.end_time}`
       : 'Session history details.';
-    if (historyTitle) historyTitle.textContent = 'Session history';
-    if (historySubtitle) historySubtitle.textContent = subtitle;
-    if (historyContent) historyContent.innerHTML = '<div class="note">Loading history...</div>';
+    if (historyTitle) {historyTitle.textContent = 'Session history';}
+    if (historySubtitle) {historySubtitle.textContent = subtitle;}
+    if (historyContent) {historyContent.innerHTML = '<div class="note">Loading history...</div>';}
     historyDialog.showModal();
 
     try {
       const data = await apiGet(`/admin/sessions/${sessionId}/history`);
       renderHistory(data.history || []);
     } catch (err) {
-      if (historyContent) historyContent.innerHTML = `<div class="note">Failed to load history: ${err.message}</div>`;
+      if (historyContent) {historyContent.innerHTML = `<div class="note">Failed to load history: ${err.message}</div>`;}
     }
   };
 
@@ -352,7 +352,7 @@ export async function initApprovals() {
     btn.addEventListener('click', () => {
       const preset = btn.dataset.preset;
       setPreset(preset);
-      if (preset !== 'custom') applyPreset(preset);
+      if (preset !== 'custom') {applyPreset(preset);}
       state.page = 1;
       load();
     });
@@ -429,7 +429,7 @@ export async function initApprovals() {
 
   list?.addEventListener('click', async (event) => {
     const target = event.target;
-    if (!target || !target.dataset) return;
+    if (!target || !target.dataset) {return;}
     if (target.dataset.approve) {
       try {
         await apiPost(`/admin/sessions/${target.dataset.approve}/approve`);

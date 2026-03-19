@@ -11,4 +11,4 @@ if (!fs.existsSync(distConfigPath)) {
 const apiBase = (process.env.PUBLIC_PO_API_BASE || process.env.API_BASE_URL || 'http://localhost:3001').replace(/\/$/, '');
 const source = fs.readFileSync(distConfigPath, 'utf8');
 fs.writeFileSync(distConfigPath, source.replace('__PO_API_BASE__', apiBase));
-console.log(`Injected PUBLIC_PO_API_BASE into ${distConfigPath}`);
+process.stdout.write(`Injected PUBLIC_PO_API_BASE into ${distConfigPath}\n`);

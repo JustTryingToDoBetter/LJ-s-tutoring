@@ -18,7 +18,7 @@ export async function apiFetch(path, options = {}) {
   }
   if (['POST', 'PATCH', 'DELETE'].includes(method)) {
     const csrf = getCsrfToken();
-    if (csrf) headers.set('x-csrf-token', csrf);
+    if (csrf) {headers.set('x-csrf-token', csrf);}
   }
   const response = await fetch(apiUrl(path), {
     ...options,
@@ -40,7 +40,9 @@ export function setActiveNav(page) {
 
 export function setText(selector, value) {
   const node = document.querySelector(selector);
-  if (node) node.textContent = value;
+  if (node) {
+    node.textContent = value;
+  }
 }
 
 export function renderEmpty(target, text) {

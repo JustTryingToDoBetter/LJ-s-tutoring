@@ -138,13 +138,13 @@
       const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
       const timer = ctrl
         ? setTimeout(function () {
-            try {
-              ctrl.abort();
-            } catch (_) {
-              // ignore
-              void 0;
-            }
-          }, DEFAULTS.timeoutMs)
+          try {
+            ctrl.abort();
+          } catch (_) {
+            // ignore
+            void 0;
+          }
+        }, DEFAULTS.timeoutMs)
         : null;
 
       fetch(cfg.endpoint, {

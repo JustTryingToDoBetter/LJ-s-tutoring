@@ -19,8 +19,8 @@ export async function initPayroll() {
       const data = await apiGet(`/admin/jobs/${jobId}`);
       const job = data.job;
       if (onUpdate) {onUpdate(job);}
-      if (job.status === 'COMPLETED') return job;
-      if (job.status === 'FAILED') throw new Error(job.error || 'job_failed');
+      if (job.status === 'COMPLETED') {return job;}
+      if (job.status === 'FAILED') {throw new Error(job.error || 'job_failed');}
       await sleep(2000);
     }
     throw new Error('job_timeout');
@@ -34,7 +34,7 @@ export async function initPayroll() {
   }
 
   const loadAdjustments = async (weekStart) => {
-    if (!adjustmentList || !weekStart) return;
+    if (!adjustmentList || !weekStart) {return;}
     renderSkeletonCards(adjustmentList, 2);
     try {
       const data = await apiGet(`/admin/pay-periods/${weekStart}/adjustments`);
@@ -51,7 +51,7 @@ export async function initPayroll() {
       renderStateCard(adjustmentList, {
         variant: 'error',
         title: 'Unable to load adjustments',
-        description: err?.message || 'Try again in a moment.'
+        description: err?.message || 'Try again in a moment.',
       });
     }
   };
@@ -61,12 +61,12 @@ export async function initPayroll() {
     const weekStart = qs('#weekStart').value;
     renderSkeletonCards(list, 3);
     try {
-      if (jobStatus) jobStatus.textContent = 'Queued invoice generation...';
+      if (jobStatus) {jobStatus.textContent = 'Queued invoice generation...';}
       const res = await apiPost('/admin/jobs/payroll-generate', { weekStart });
       const job = await waitForJob(res.jobId, {
         onUpdate: (jobUpdate) => {
-          if (jobStatus) jobStatus.textContent = `Job ${jobUpdate.status.toLowerCase()}...`;
-        }
+          if (jobStatus) {jobStatus.textContent = `Job ${jobUpdate.status.toLowerCase()}...`;}
+        },
       });
       const invoices = job.result?.invoices || [];
       if (invoices.length) {
@@ -78,23 +78,23 @@ export async function initPayroll() {
         renderStateCard(list, {
           variant: 'empty',
           title: 'No invoices generated',
-          description: 'No approved sessions were available for that week.'
+          description: 'No approved sessions were available for that week.',
         });
       }
-      if (jobStatus) jobStatus.textContent = 'Invoice generation complete.';
+      if (jobStatus) {jobStatus.textContent = 'Invoice generation complete.';}
     } catch (err) {
-      if (jobStatus) jobStatus.textContent = `Invoice generation failed: ${err.message}`;
+      if (jobStatus) {jobStatus.textContent = `Invoice generation failed: ${err.message}`;}
       renderStateCard(list, {
         variant: 'error',
         title: 'Invoice generation failed',
-        description: err?.message || 'Try again.'
+        description: err?.message || 'Try again.',
       });
     }
   });
 
   lockBtn?.addEventListener('click', async () => {
     const weekStart = qs('#weekStart').value;
-    if (!weekStart) return;
+    if (!weekStart) {return;}
     if (!window.confirm(`Lock week ${weekStart}? This prevents further edits.`)) {
       return;
     }
@@ -107,21 +107,21 @@ export async function initPayroll() {
   payrollCsv?.addEventListener('click', async (event) => {
     event.preventDefault();
     const weekStart = qs('#weekStart').value;
-    if (!weekStart) return;
-    if (csvStatus) csvStatus.textContent = 'Preparing CSV export...';
+    if (!weekStart) {return;}
+    if (csvStatus) {csvStatus.textContent = 'Preparing CSV export...';}
     payrollCsv.style.pointerEvents = 'none';
     try {
       const jobRes = await apiPost('/admin/jobs/payroll-csv', { weekStart });
       const job = await waitForJob(jobRes.jobId, {
         onUpdate: (jobUpdate) => {
-          if (csvStatus) csvStatus.textContent = `Export ${jobUpdate.status.toLowerCase()}...`;
-        }
+          if (csvStatus) {csvStatus.textContent = `Export ${jobUpdate.status.toLowerCase()}...`;}
+        },
       });
-      if (csvStatus) csvStatus.textContent = 'CSV ready. Downloading...';
+      if (csvStatus) {csvStatus.textContent = 'CSV ready. Downloading...';}
       window.location.href = `/admin/jobs/${job.id}/download`;
-      if (csvStatus) csvStatus.textContent = 'CSV download started.';
+      if (csvStatus) {csvStatus.textContent = 'CSV download started.';}
     } catch (err) {
-      if (csvStatus) csvStatus.textContent = `CSV export failed: ${err.message}`;
+      if (csvStatus) {csvStatus.textContent = `CSV export failed: ${err.message}`;}
     } finally {
       payrollCsv.style.pointerEvents = '';
     }
@@ -136,7 +136,7 @@ export async function initPayroll() {
         type: qs('#adjustType').value,
         amount: Number(qs('#adjustAmount').value),
         reason: qs('#adjustReason').value,
-        relatedSessionId: qs('#adjustSession').value || undefined
+        relatedSessionId: qs('#adjustSession').value || undefined,
       };
       try {
         await apiPost(`/admin/pay-periods/${weekStart}/adjustments`, payload);
@@ -146,7 +146,7 @@ export async function initPayroll() {
         renderStateCard(adjustmentList, {
           variant: 'error',
           title: 'Could not save adjustment',
-          description: err?.message || 'Try again.'
+          description: err?.message || 'Try again.',
         });
       }
     });

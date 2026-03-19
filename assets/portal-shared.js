@@ -205,12 +205,12 @@ export function renderStateCard(container, { variant = 'empty', title = '', desc
     className: `ds-state ds-state-${variant}`,
     attrs: {
       role: variant === 'error' ? 'alert' : 'status',
-      'aria-live': variant === 'error' ? 'assertive' : 'polite'
-    }
+      'aria-live': variant === 'error' ? 'assertive' : 'polite',
+    },
   });
   card.append(
     createEl('h3', { className: 'ds-state-title', text: title || 'No data yet' }),
-    createEl('p', { className: 'ds-state-description', text: description || 'Try again in a moment.' })
+    createEl('p', { className: 'ds-state-description', text: description || 'Try again in a moment.' }),
   );
   container.replaceChildren(card);
 }
@@ -244,12 +244,12 @@ export function initPortalUX() {
       report: 'Report',
       assistant: 'Ask Odysseus',
       vault: 'Premium Vault',
-      parent: 'Parent Portal'
+      parent: 'Parent Portal',
     };
     const currentLabel = labels[page] || page;
     const nav = createEl('nav', {
       className: 'portal-breadcrumbs',
-      attrs: { 'aria-label': 'Breadcrumb' }
+      attrs: { 'aria-label': 'Breadcrumb' },
     });
     nav.append(
       createEl('span', { className: 'portal-breadcrumbs-item', text: area }),
@@ -257,8 +257,8 @@ export function initPortalUX() {
       createEl('span', {
         className: 'portal-breadcrumbs-item current',
         attrs: { 'aria-current': 'page' },
-        text: currentLabel
-      })
+        text: currentLabel,
+      }),
     );
     pageHeader.insertBefore(nav, titleEl);
   }

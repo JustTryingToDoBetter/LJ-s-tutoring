@@ -21,7 +21,7 @@ async function loadRooms() {
 }
 
 async function loadMessages() {
-  if (!activeRoomId) return;
+  if (!activeRoomId) {return;}
   const data = await loadJson(`/community/rooms/${activeRoomId}/messages`).catch(() => ({ items: [] }));
   renderList(document.getElementById('roomMessagesList'), data.items || [], (message) => `
     <strong>${message.nickname || message.authorName || 'Member'}</strong>
@@ -47,16 +47,16 @@ async function loadQuestions() {
 
 document.getElementById('createRoomBtn')?.addEventListener('click', async () => {
   const subject = window.prompt('Study room subject');
-  if (!subject) return;
+  if (!subject) {return;}
   await apiFetch('/community/rooms', { method: 'POST', body: { subject } }).catch(() => null);
   await loadRooms();
 });
 
 document.getElementById('sendRoomMessageBtn')?.addEventListener('click', async () => {
-  if (!activeRoomId) return;
+  if (!activeRoomId) {return;}
   const textarea = document.getElementById('roomMessageInput');
   const content = textarea.value.trim();
-  if (!content) return;
+  if (!content) {return;}
   await apiFetch(`/community/rooms/${activeRoomId}/messages`, { method: 'POST', body: { content } }).catch(() => null);
   textarea.value = '';
   await loadMessages();

@@ -20,16 +20,16 @@ export async function initAudit() {
   const state = {
     page: 1,
     pageSize: Number(pageSizeInput?.value || 25),
-    total: 0
+    total: 0,
   };
 
   const buildParams = () => {
     const params = new URLSearchParams();
-    if (fromInput?.value) params.set('from', fromInput.value);
-    if (toInput?.value) params.set('to', toInput.value);
-    if (actorInput?.value) params.set('actorId', actorInput.value.trim());
-    if (entityTypeInput?.value) params.set('entityType', entityTypeInput.value.trim());
-    if (entityIdInput?.value) params.set('entityId', entityIdInput.value.trim());
+    if (fromInput?.value) {params.set('from', fromInput.value);}
+    if (toInput?.value) {params.set('to', toInput.value);}
+    if (actorInput?.value) {params.set('actorId', actorInput.value.trim());}
+    if (entityTypeInput?.value) {params.set('entityType', entityTypeInput.value.trim());}
+    if (entityIdInput?.value) {params.set('entityId', entityIdInput.value.trim());}
     params.set('page', String(state.page));
     params.set('pageSize', String(state.pageSize));
     return params;
@@ -42,8 +42,8 @@ export async function initAudit() {
       const data = await apiGet(`/admin/jobs/${jobId}`);
       const job = data.job;
       if (onUpdate) {onUpdate(job);}
-      if (job.status === 'COMPLETED') return job;
-      if (job.status === 'FAILED') throw new Error(job.error || 'job_failed');
+      if (job.status === 'COMPLETED') {return job;}
+      if (job.status === 'FAILED') {throw new Error(job.error || 'job_failed');}
       await sleep(2000);
     }
     throw new Error('job_timeout');
@@ -137,21 +137,21 @@ export async function initAudit() {
     params.delete('page');
     params.delete('pageSize');
     const payload = Object.fromEntries(params.entries());
-    if (exportStatus) exportStatus.textContent = 'Queued export...';
+    if (exportStatus) {exportStatus.textContent = 'Queued export...';}
     exportBtn.disabled = true;
     apiPost('/admin/jobs/audit-export', payload)
       .then((res) => waitForJob(res.jobId, {
         onUpdate: (jobUpdate) => {
-          if (exportStatus) exportStatus.textContent = `Export ${jobUpdate.status.toLowerCase()}...`;
-        }
+          if (exportStatus) {exportStatus.textContent = `Export ${jobUpdate.status.toLowerCase()}...`;}
+        },
       }))
       .then((job) => {
-        if (exportStatus) exportStatus.textContent = 'Export ready. Downloading...';
+        if (exportStatus) {exportStatus.textContent = 'Export ready. Downloading...';}
         window.location.href = `/admin/jobs/${job.id}/download`;
-        if (exportStatus) exportStatus.textContent = 'Download started.';
+        if (exportStatus) {exportStatus.textContent = 'Download started.';}
       })
       .catch((err) => {
-        if (exportStatus) exportStatus.textContent = `Export failed: ${err?.message || 'request_failed'}`;
+        if (exportStatus) {exportStatus.textContent = `Export failed: ${err?.message || 'request_failed'}`;}
       })
       .finally(() => {
         exportBtn.disabled = false;

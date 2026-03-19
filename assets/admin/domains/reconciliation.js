@@ -28,30 +28,30 @@ export async function initReconciliation() {
     try {
       const [integrity, adjustments] = await Promise.all([
         apiGet(`/admin/integrity/pay-period/${weekStart}`),
-        apiGet(`/admin/pay-periods/${weekStart}/adjustments`)
+        apiGet(`/admin/pay-periods/${weekStart}/adjustments`),
       ]);
 
       status.textContent = `Week status: ${integrity.payPeriod?.status || 'OPEN'}`;
 
       report.innerHTML = [
         renderList('Overlapping sessions', integrity.overlaps, (row) =>
-          `<div class="note">${escapeHtml(row.session_id)} overlaps ${escapeHtml(row.overlap_id)} (${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)})</div>`
+          `<div class="note">${escapeHtml(row.session_id)} overlaps ${escapeHtml(row.overlap_id)} (${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)})</div>`,
         ),
         renderList('Outside assignment window', integrity.outsideAssignmentWindow, (row) =>
-          `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)}</div>`
+          `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)}</div>`,
         ),
         renderList('Approved sessions missing invoice lines', integrity.missingInvoiceLines, (row) =>
-          `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)}</div>`
+          `<div class="note">${escapeHtml(row.id)} on ${escapeHtml(row.date)}</div>`,
         ),
         renderList('Invoice totals mismatched', integrity.invoiceTotalMismatches, (row) =>
-          `<div class="note">${escapeHtml(row.invoice_number)} total ${formatMoney(row.total_amount)} vs lines ${formatMoney(row.line_total)}</div>`
+          `<div class="note">${escapeHtml(row.invoice_number)} total ${formatMoney(row.total_amount)} vs lines ${formatMoney(row.line_total)}</div>`,
         ),
         renderList('Pending submitted sessions', integrity.pendingSubmissions, (row) =>
-          `<div class="note">${escapeHtml(row.tutor_name)}: ${row.pending}</div>`
+          `<div class="note">${escapeHtml(row.tutor_name)}: ${row.pending}</div>`,
         ),
         renderList('Duplicate sessions', integrity.duplicateSessions, (row) =>
-          `<div class="note">${escapeHtml(row.tutor_id)} / ${escapeHtml(row.student_id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)} (x${row.count})</div>`
-        )
+          `<div class="note">${escapeHtml(row.tutor_id)} / ${escapeHtml(row.student_id)} on ${escapeHtml(row.date)} ${escapeHtml(row.start_time)}-${escapeHtml(row.end_time)} (x${row.count})</div>`,
+        ),
       ].join('');
 
       const adjustmentItems = adjustments.adjustments || [];
@@ -64,12 +64,12 @@ export async function initReconciliation() {
       renderStateCard(report, {
         variant: 'error',
         title: 'Unable to run integrity checks',
-        description: err?.message || 'Try again.'
+        description: err?.message || 'Try again.',
       });
       renderStateCard(adjustmentsEl, {
         variant: 'error',
         title: 'Unable to load adjustments',
-        description: 'Try again.'
+        description: 'Try again.',
       });
     }
   });

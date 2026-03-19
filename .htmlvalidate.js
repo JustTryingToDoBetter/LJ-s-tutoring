@@ -40,15 +40,6 @@ module.exports = {
     "long-title": "off",
     
     /**
-     * no-implicit-button-type: OFF
-     * REASON: Browsers default to type="submit" which is usually correct
-     * CONTEXT: Our forms intentionally use default submit behavior
-     * TRADE-OFF: Explicit is better, but doesn't cause functional issues
-     * DECISION: Accept browser defaults, be explicit only when needed
-     */
-    "no-implicit-button-type": "off",
-    
-    /**
      * no-redundant-role: OFF
      * REASON: Explicit ARIA roles improve compatibility with older assistive tech
      * CONTEXT: role="navigation" on <nav> is redundant in modern browsers
@@ -76,38 +67,12 @@ module.exports = {
      */
     "attribute-allowed-values": "off",
 
-    /**
-     * no-inline-style: OFF
-     * REASON: Restored legacy admin/dashboard pages rely on inline style for
-     *         dynamic layout fragments and stateful rendering.
-     */
-    "no-inline-style": "off",
-
-    /**
-     * no-implicit-input-type: OFF
-     * REASON: Legacy forms intentionally rely on browser default input type.
-     */
-    "no-implicit-input-type": "off",
-
-    /**
-     * form-dup-name: OFF
-     * REASON: Some multi-select checkbox groups intentionally share the same
-     *         name so the backend receives arrays.
-     */
-    "form-dup-name": "off",
-
-    /**
-     * prefer-native-element: OFF
-     * REASON: Restored UI includes ARIA-role button patterns used by existing
-     *         interaction handlers.
-     */
-    "prefer-native-element": "off",
-
-    /**
-     * void-style: OFF
-     * REASON: Restored pages mix XHTML-style self-closing void elements.
-     */
-    "void-style": "off"
+    "no-inline-style": "error",
+    "no-implicit-input-type": "error",
+    "form-dup-name": "error",
+    "prefer-native-element": "error",
+    "void-style": "error",
+    "no-implicit-button-type": "error",
   },
   
   elements: [

@@ -39,7 +39,10 @@ PUBLIC_PO_API_BASE=http://localhost:3001
 
 ### API config
 
-See `lms-api/README` equivalent docs in `lms-api/package.json` scripts and `.env.example` for backend setup.
+The API bootstrap loads environment variables from the repository root `.env` and from `lms-api/.env`.
+For local `npm start`, make sure `DATABASE_URL`, `COOKIE_SECRET`, and `JWT_SECRET` are set before starting the API.
+
+See `.env.example` for the canonical local setup.
 
 ## Scripts
 

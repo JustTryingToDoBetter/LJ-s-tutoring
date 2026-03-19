@@ -16,21 +16,21 @@ async function initDashboard() {
   });
 
   function timeAgo(dateStr) {
-    if (!dateStr) return '';
+    if (!dateStr) {return '';}
     const diff = Date.now() - new Date(dateStr).getTime();
     const m = Math.floor(diff / 60000);
-    if (m < 1)  return 'just now';
-    if (m < 60) return `${m}m ago`;
+    if (m < 1)  {return 'just now';}
+    if (m < 60) {return `${m}m ago`;}
     const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
+    if (h < 24) {return `${h}h ago`;}
     return `${Math.floor(h / 24)}d ago`;
   }
 
   function auditDotClass(action) {
-    if (/approve/i.test(action))            return 'd-green';
-    if (/reject|delete|remove/i.test(action)) return 'd-red';
-    if (/create|add|register/i.test(action)) return 'd-blue';
-    if (/payroll|invoice/i.test(action))    return 'd-gold';
+    if (/approve/i.test(action))            {return 'd-green';}
+    if (/reject|delete|remove/i.test(action)) {return 'd-red';}
+    if (/create|add|register/i.test(action)) {return 'd-blue';}
+    if (/payroll|invoice/i.test(action))    {return 'd-gold';}
     return 'd-dim';
   }
 
@@ -39,7 +39,7 @@ async function initDashboard() {
     const tooltip = qs('#approvalsTooltip');
     const snapPA  = qs('#snapPendingApprovals');
     if (badge)   { badge.textContent = count > 0 ? String(count) : ''; badge.style.display = count > 0 ? '' : 'none'; }
-    if (tooltip) tooltip.textContent = count > 0 ? `Approvals (${count})` : 'Approvals';
+    if (tooltip) {tooltip.textContent = count > 0 ? `Approvals (${count})` : 'Approvals';}
     if (snapPA)  { snapPA.textContent = String(count); snapPA.className = `snap-val ${count > 0 ? 'c-red' : 'c-green'}`; }
   }
 
@@ -56,8 +56,8 @@ async function initDashboard() {
     // ── System snapshot ────────────────────────────────────────
     refreshApprovalUi(liveApprovals);
     const privCount = data.openPrivacyRequestsCount ?? 0;
-    if (qs('#snapPrivacyRequests')) qs('#snapPrivacyRequests').textContent = String(privCount);
-    if (qs('#snapWeekApproved'))    qs('#snapWeekApproved').textContent    = String(data.payrollWeek?.approvedCount ?? '\u2014');
+    if (qs('#snapPrivacyRequests')) {qs('#snapPrivacyRequests').textContent = String(privCount);}
+    if (qs('#snapWeekApproved'))    {qs('#snapWeekApproved').textContent    = String(data.payrollWeek?.approvedCount ?? '\u2014');}
     if (qs('#snapWeekHours')) {
       const mins = data.payrollWeek?.approvedMinutes ?? 0;
       qs('#snapWeekHours').textContent = mins ? `${Math.floor(mins / 60)}h ${mins % 60}m` : '0h';
@@ -65,8 +65,8 @@ async function initDashboard() {
     if (qs('#snapWeekStart') && data.payrollWeek?.weekStart) {
       qs('#snapWeekStart').textContent = new Date(data.payrollWeek.weekStart).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' });
     }
-    if (qs('#snapTutors'))   qs('#snapTutors').textContent   = String(data.tutors   ?? '\u2014');
-    if (qs('#snapStudents')) qs('#snapStudents').textContent = String(data.students ?? '\u2014');
+    if (qs('#snapTutors'))   {qs('#snapTutors').textContent   = String(data.tutors   ?? '\u2014');}
+    if (qs('#snapStudents')) {qs('#snapStudents').textContent = String(data.students ?? '\u2014');}
 
     // ── Activity feed ──────────────────────────────────────────
     const feed = qs('#activityFeed');
@@ -156,9 +156,9 @@ async function initDashboard() {
         // Event delegation — approve / reject
         apprList.addEventListener('click', async (e) => {
           const btn = e.target.closest('[data-action]');
-          if (!btn) return;
+          if (!btn) {return;}
           const row = btn.closest('[data-session-id]');
-          if (!row) return;
+          if (!row) {return;}
           const sessionId = row.dataset.sessionId;
           const action = btn.dataset.action;
           btn.disabled = true;
@@ -233,13 +233,13 @@ async function initDashboard() {
 const page = document.body.dataset.page;
 initPortalUX();
 
-if (page === 'dashboard') initDashboard();
-if (page === 'tutors') initTutors();
-if (page === 'students') initStudents();
-if (page === 'assignments') initAssignments();
-if (page === 'approvals') initApprovals();
-if (page === 'payroll') initPayroll();
-if (page === 'audit') initAudit();
-if (page === 'reconciliation') initReconciliation();
-if (page === 'retention') initRetention();
-if (page === 'privacy-requests') initPrivacyRequests();
+if (page === 'dashboard') {initDashboard();}
+if (page === 'tutors') {initTutors();}
+if (page === 'students') {initStudents();}
+if (page === 'assignments') {initAssignments();}
+if (page === 'approvals') {initApprovals();}
+if (page === 'payroll') {initPayroll();}
+if (page === 'audit') {initAudit();}
+if (page === 'reconciliation') {initReconciliation();}
+if (page === 'retention') {initRetention();}
+if (page === 'privacy-requests') {initPrivacyRequests();}

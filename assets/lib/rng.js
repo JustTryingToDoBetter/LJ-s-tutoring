@@ -17,8 +17,8 @@ export function seededRng(seed) {
 export function dayKey(date = new Date()) {
   // Local midnight-based key: YYYY-MM-DD
   const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
 
@@ -37,7 +37,7 @@ export function hashStringToSeed(str) {
  * - Replaces assets/arcade/rng.js
  * - Adds helpers: int/pick/shuffle
  */
-export function createRNG(seedStr = "po-default") {
+export function createRNG(seedStr = 'po-default') {
   const seed = hashStringToSeed(String(seedStr));
   const next = seededRng(seed);
 
