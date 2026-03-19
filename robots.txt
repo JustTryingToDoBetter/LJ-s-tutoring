@@ -1,4 +1,16 @@
+# Robots.txt for Project Odysseus
+# https://projectodysseus.live
+
 User-agent: *
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
 Allow: /
 
 Disallow: /admin
@@ -7,8 +19,14 @@ Disallow: /admin/*
 Disallow: /tutor
 Disallow: /tutor/
 Disallow: /tutor/*
+Disallow: /internal
+Disallow: /internal/
 Disallow: /api
 Disallow: /api/
 Disallow: /api/*
 
+# Sitemap location
 Sitemap: https://projectodysseus.live/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1

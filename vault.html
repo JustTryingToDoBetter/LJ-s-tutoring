@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Weekly Reports | Project Odysseus</title>
+  <title>Premium Vault | Project Odysseus</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <!-- CSP enforced via response headers -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/assets/portal.css">
 </head>
-<body data-page="reports">
+<body data-page="vault">
   <div class="portal-shell">
     <nav class="portal-nav">
       <div class="portal-nav-inner">
@@ -24,17 +25,19 @@
 
     <main class="portal-main">
       <section class="page-header">
-        <h1 class="page-title">Weekly Performance Reports</h1>
-        <p class="page-subtitle">Generate and review your learning summary.</p>
+        <h1 class="page-title">Premium Vault</h1>
+        <p class="page-subtitle">Study packs, worked examples, and guided resources with secure access control.</p>
       </section>
 
-      <section class="grid">
+      <section class="grid two">
         <article class="panel">
-          <div class="row-head">
-            <h2 class="panel-title">Reports</h2>
-            <button id="generateReportNow" class="button" type="button" aria-label="Generate weekly report now">Generate now</button>
-          </div>
-          <div id="reportsList" class="list-compact"></div>
+          <h2 class="panel-title">Resources</h2>
+          <div id="vaultList" class="list-compact"></div>
+        </article>
+
+        <article class="panel">
+          <h2 id="vaultDetailTitle" class="panel-title">Select a resource</h2>
+          <div id="vaultDetail" class="list-compact"></div>
         </article>
       </section>
     </main>
@@ -42,6 +45,6 @@
 
   <script src="/assets/portal-config.js"></script>
   <script src="/assets/analytics.js"></script>
-  <script type="module" src="/assets/student/portal.js"></script>
+  <script type="module" src="/assets/vault-portal.js"></script>
 </body>
 </html>

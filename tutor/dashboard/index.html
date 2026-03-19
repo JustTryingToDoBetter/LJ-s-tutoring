@@ -7,6 +7,28 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/assets/portal.css">
+  <style>
+    .dash-stats-strip {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      padding: 4px 0 12px;
+    }
+    .ds-stat {
+      flex: 1; min-width: 130px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 14px 16px; border-radius: 12px; gap: 4px;
+      background: rgba(15,23,42,0.72);
+      border: 1px solid rgba(148,163,184,0.18);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .ds-val {
+      font-size: 30px; font-weight: 800; color: #e8b84b;
+      line-height: 1; font-variant-numeric: tabular-nums;
+    }
+    .ds-lbl {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #94a3b8; font-weight: 500;
+    }
+  </style>
 </head>
 <body data-page="dashboard">
   <div class="portal-shell">
@@ -15,34 +37,50 @@
         <div class="brand"><span class="brand-badge">PO</span>Tutor Portal</div>
         <div class="nav-links">
           <a class="nav-link" data-nav="dashboard" href="/tutor/dashboard/">Dashboard</a>
-          <a class="nav-link" href="/tutor/reports/">Reports</a>
-          <a class="nav-link" href="/tutor/risk/">Risk</a>
-          <a class="nav-link" href="/tutor/sessions.html">Sessions</a>
-          <a class="nav-link" href="/tutor/assignments.html">Assignments</a>
+          <a class="nav-link" data-nav="home" href="/tutor/index.html">Home</a>
+          <a class="nav-link" data-nav="sessions" href="/tutor/sessions.html">Sessions</a>
+          <a class="nav-link" data-nav="assignments" href="/tutor/assignments.html">Assignments</a>
+          <a class="nav-link" data-nav="reports" href="/tutor/reports/">Reports</a>
         </div>
       </div>
     </nav>
+
     <main class="portal-main">
       <section class="page-header">
-        <h1 class="page-title">Tutor Operations</h1>
-        <p class="page-subtitle">Today’s sessions, quick tools, and the students who need attention.</p>
+        <h1 class="page-title">Tutor Command Centre</h1>
+        <p class="page-subtitle">Live session queue &middot; student alerts &middot; quick actions</p>
       </section>
+
+      <section class="grid" style="margin-bottom:4px">
+        <div class="dash-stats-strip">
+          <div class="ds-stat"><span class="ds-val" id="dsStat0">&mdash;</span><span class="ds-lbl">Today</span></div>
+          <div class="ds-stat"><span class="ds-val" id="dsStat1">&mdash;</span><span class="ds-lbl">This Week</span></div>
+          <div class="ds-stat" id="dsStatPending"><span class="ds-val" id="dsStat2">&mdash;</span><span class="ds-lbl">Pending</span></div>
+          <div class="ds-stat"><span class="ds-val" id="dsStat3">&mdash;</span><span class="ds-lbl">Active Students</span></div>
+        </div>
+      </section>
+
       <section class="grid two">
         <article class="panel dashboard-card">
-          <h2 class="panel-title">Today sessions</h2>
-          <div id="tutorTodaySessions" class="list-compact"></div>
+          <h2 class="panel-title">Today’s Sessions</h2>
+          <div id="todaySessionsList" class="list-compact"></div>
         </article>
+
         <article class="panel dashboard-card">
-          <h2 class="panel-title">Quick tools</h2>
-          <div id="tutorQuickTools" class="link-stack compact"></div>
+          <h2 class="panel-title">&#9888; Students Needing Attention</h2>
+          <div id="studentsAttentionList" class="list-compact"></div>
         </article>
       </section>
-      <section class="panel dashboard-card">
-        <h2 class="panel-title">Students needing attention</h2>
-        <div id="tutorAttentionList" class="list-compact"></div>
+
+      <section class="grid">
+        <article class="panel dashboard-card">
+          <h2 class="panel-title">Quick Tools</h2>
+          <div id="quickToolsList"></div>
+        </article>
       </section>
     </main>
   </div>
+
   <script src="/assets/portal-config.js"></script>
   <script src="/assets/analytics.js"></script>
   <script type="module" src="/assets/tutor/dashboard.js"></script>

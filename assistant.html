@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Weekly Reports | Project Odysseus</title>
+  <title>Ask Odysseus | Project Odysseus</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <!-- CSP enforced via response headers -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/assets/portal.css">
 </head>
-<body data-page="reports">
+<body data-page="assistant" data-assistant-scope="student">
   <div class="portal-shell">
     <nav class="portal-nav">
       <div class="portal-nav-inner">
@@ -24,17 +25,27 @@
 
     <main class="portal-main">
       <section class="page-header">
-        <h1 class="page-title">Weekly Performance Reports</h1>
-        <p class="page-subtitle">Generate and review your learning summary.</p>
+        <h1 class="page-title">Ask Odysseus</h1>
+        <p class="page-subtitle">RAG tutoring assistant grounded in your approved learning vault.</p>
       </section>
 
-      <section class="grid">
+      <section class="grid two">
         <article class="panel">
           <div class="row-head">
-            <h2 class="panel-title">Reports</h2>
-            <button id="generateReportNow" class="button" type="button" aria-label="Generate weekly report now">Generate now</button>
+            <h2 class="panel-title">Threads</h2>
+            <button id="newThreadBtn" class="button" type="button">New thread</button>
           </div>
-          <div id="reportsList" class="list-compact"></div>
+          <div id="threadList" class="list-compact"></div>
+        </article>
+
+        <article class="panel">
+          <h2 id="chatHeading" class="panel-title">Conversation</h2>
+          <div id="chatMessages" class="list-compact" aria-live="polite"></div>
+          <form id="chatForm" class="field">
+            <label for="chatInput">Question</label>
+            <textarea id="chatInput" rows="4" maxlength="4000" required placeholder="Ask a maths concept or revision question"></textarea>
+            <button class="button" type="submit">Send</button>
+          </form>
         </article>
       </section>
     </main>
@@ -42,6 +53,6 @@
 
   <script src="/assets/portal-config.js"></script>
   <script src="/assets/analytics.js"></script>
-  <script type="module" src="/assets/student/portal.js"></script>
+  <script type="module" src="/assets/assistant-portal.js"></script>
 </body>
 </html>

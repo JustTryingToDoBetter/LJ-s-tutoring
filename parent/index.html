@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parent Portal | Project Odysseus</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body data-page="parent">
+  <div class="portal-shell">
+    <nav class="portal-nav">
+      <div class="portal-nav-inner">
+        <div class="brand"><span class="brand-badge">PO</span>Parent Portal</div>
+        <div class="nav-links">
+          <a class="nav-link" data-nav="parent" href="/parent/">Overview</a>
+          <a class="nav-link" data-nav="vault" href="/vault.html">Premium Vault</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="portal-main">
+      <section class="page-header">
+        <h1 class="page-title">Parent Dashboard</h1>
+        <p class="page-subtitle">Track linked learners, weekly reports, and study momentum.</p>
+      </section>
+
+      <section class="grid two">
+        <article class="panel">
+          <h2 class="panel-title">Overview</h2>
+          <div id="parentOverview" class="list-compact"></div>
+        </article>
+
+        <article class="panel">
+          <h2 class="panel-title">Accept Invite</h2>
+          <form id="acceptInviteForm" class="field">
+            <label for="inviteTokenInput">Invite token</label>
+            <input id="inviteTokenInput" type="text" maxlength="400" required placeholder="Paste your invite token">
+            <button class="button" type="submit">Accept invite</button>
+          </form>
+          <p id="inviteMessage" class="note" aria-live="polite"></p>
+        </article>
+      </section>
+
+      <section class="grid two">
+        <article class="panel">
+          <h2 class="panel-title">Linked students</h2>
+          <div id="parentStudents" class="list-compact"></div>
+        </article>
+
+        <article class="panel">
+          <h2 id="studentDetailTitle" class="panel-title">Student details</h2>
+          <div id="studentDetail" class="list-compact"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="/assets/portal-config.js"></script>
+  <script type="module" src="/assets/parent-portal.js"></script>
+</body>
+</html>
