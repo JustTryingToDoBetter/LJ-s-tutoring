@@ -35,7 +35,7 @@
     "dev:static": "npm run build:static && npm run build:css && npm run inject:config && npm run serve",
     "dev:api": "npm run dev --prefix lms-api",
     "dev:full": "npm-run-all --parallel dev:static dev:api",
-    "dev": "npm run dev:static",
+    "dev": "npm run dev:full",
     "migrate": "npm run migrate --prefix lms-api",
     "db:create:local": "npm run db:create:local --prefix lms-api",
     "test": "npm run test --prefix lms-api",

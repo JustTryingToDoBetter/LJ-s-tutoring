@@ -17,6 +17,7 @@ import { adminRoutes } from './routes/admin.js';
 import { tutorRoutes } from './routes/tutor.js';
 import { academicRoutes } from './routes/academic.js';
 import { phase3Routes } from './routes/phase3.js';
+import { assistantRoutes } from './routes/assistant.js';
 
 export async function buildApp() {
   const logger = process.env.NODE_ENV === 'test'
@@ -248,6 +249,7 @@ export async function buildApp() {
   await app.register(tutorRoutes);
   await app.register(academicRoutes);
   await app.register(phase3Routes);
+  await app.register(assistantRoutes);
 
   return app;
 }

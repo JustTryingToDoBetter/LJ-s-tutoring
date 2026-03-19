@@ -17,6 +17,29 @@ npm run build
 npm run start
 ```
 
+## Docker Postgres
+
+If you do not have Postgres installed locally, use the bundled Docker setup.
+
+```bash
+docker compose up -d db
+```
+
+That starts Postgres 16 on `localhost:5433` with the defaults from `.env.example`:
+
+```env
+POSTGRES_PASSWORD=postgres
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/lms
+```
+
+To run the API and Postgres together in Docker:
+
+```bash
+docker compose up api db
+```
+
+The API container waits for Postgres to become healthy before starting migrations.
+
 ### Local URLs
 
 - Static site: `http://localhost:8080`
@@ -40,9 +63,18 @@ PUBLIC_PO_API_BASE=http://localhost:3001
 ### API config
 
 The API bootstrap loads environment variables from the repository root `.env` and from `lms-api/.env`.
-For local `npm start`, make sure `DATABASE_URL`, `COOKIE_SECRET`, and `JWT_SECRET` are set before starting the API.
+For local `npm start`, make sure `DATABASE_URL`, `COOKIE_SECRET`, `JWT_SECRET`, and `GROQ_API_KEY` are set before starting the API.
 
 See `.env.example` for the canonical local setup.
+
+### Assistant API
+
+The student dashboard now uses the assistant layer at:
+
+- `POST /assistant/chat`
+- `POST /assistant/document`
+
+Both endpoints expect an authenticated session and a CSRF token when called from the browser.
 
 ## Scripts
 
@@ -55,6 +87,8 @@ npm run dev          # Serve static site + run API dev server
 npm run start        # Serve static site + run API prod server
 npm run lint         # Lint JS and validate HTML
 npm run test         # Run API tests
+docker compose up -d db # Start only Postgres in Docker
+docker compose up api db # Run API + Postgres in Docker
 ```
 
 ## Static site structure

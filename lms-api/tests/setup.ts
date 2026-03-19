@@ -10,4 +10,7 @@ process.env.COOKIE_SECRET = process.env.COOKIE_SECRET ?? 'test-cookie-secret';
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-jwt-secret';
 process.env.PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL ?? 'http://localhost:3001';
 process.env.EMAIL_FROM = process.env.EMAIL_FROM ?? 'tests@projectodysseus.local';
+process.env.GROQ_API_KEY = process.env.GROQ_API_KEY ?? 'test-groq-key';
+process.env.OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ?? '';
+process.env.DEFAULT_MODEL = process.env.DEFAULT_MODEL ?? 'llama-3.3-70b-versatile';
 

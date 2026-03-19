@@ -1467,6 +1467,16 @@
           <input id="odieInput" class="chat-input" type="text" placeholder="Ask Odie anything..." />
           <button id="odieSend" class="btn gold">Send</button>
         </div>
+        <hr class="divider" style="margin:18px 0;" />
+        <div style="display:grid; gap:10px;">
+          <div style="font-size:0.92rem; color:#d6e2ff; font-weight:600;">Document Q&amp;A</div>
+          <textarea id="odieDocumentText" class="textarea" style="min-height:130px; resize:vertical;" placeholder="Paste extracted document text here..."></textarea>
+          <div class="chat-row">
+            <input id="odieDocQuestion" class="chat-input" type="text" placeholder="Ask a question about the document..." />
+            <button id="odieDocSend" class="btn gold">Ask</button>
+          </div>
+        </div>
+        <div id="odieDocMessages" class="chat-window" style="margin-top:14px;"></div>
       </div>
     </section>
   </div>
@@ -1570,6 +1580,10 @@
     const odieMessages = document.getElementById('odieMessages');
     const odieInput = document.getElementById('odieInput');
     const odieSend = document.getElementById('odieSend');
+    const odieDocumentText = document.getElementById('odieDocumentText');
+    const odieDocQuestion = document.getElementById('odieDocQuestion');
+    const odieDocSend = document.getElementById('odieDocSend');
+    const odieDocMessages = document.getElementById('odieDocMessages');
 
     const careerMessages = document.getElementById('careerMessages');
     const careerInput = document.getElementById('careerInput');
@@ -1964,8 +1978,6 @@
       return typing;
     }
 
-    const ODIE_SYSTEM_PROMPT = "You are Odie, the AI study companion for Project Odysseus. Student name is Jaydin. Personality: warm, upbeat, and encouraging, like a smart tutor friend. Tone: concise, practical, and positive. Keep replies to 2-4 sentences, use 1-2 emojis, and always give clear next steps. You can help with study tips, subject questions, motivation, and how this dashboard works (Focus Mode timer, streak, tasks, notes, schedule, and career guide). If the student feels stuck, break work into one small action they can do right now.";
-
     const CAREER_SYSTEM_PROMPT = "You are a warm career guidance counsellor for a South African tutoring platform. Student is Jaydin (high school age). Help discover careers that suit interests and strengths. Ask follow-up questions. Suggest specific careers and what subjects help. Reference South African context (Wits, UCT, UKZN, bursaries, local industries). Connect careers to subjects: Maths, Biology, History, Physics. Keep responses 3-5 sentences with 1-2 emojis. Never dismiss any career idea. If unsure, ask what activities make them lose track of time.";
 
     const odieHistory = [
@@ -1982,8 +1994,16 @@
       }
     ];
 
+    const odieDocHistory = [
+      {
+        role: 'assistant',
+        content: 'Paste extracted text above, then ask me a question about the document.'
+      }
+    ];
+
     appendMessage(odieMessages, 'bot', odieHistory[0].content);
     appendMessage(careerMessages, 'bot', careerHistory[0].content);
+    appendMessage(odieDocMessages, 'bot', odieDocHistory[0].content);
 
     const runtimeApiBase = window.__PO_API_BASE__ && window.__PO_API_BASE__ !== '__PO_API_BASE__'
       ? String(window.__PO_API_BASE__).replace(/\/$/, '')
@@ -1993,46 +2013,73 @@
       return runtimeApiBase ? runtimeApiBase + path : path;
     }
 
-    async function groqChat({ system, history, userText, maxTokens = 1024 }) {
-      const response = await fetch(apiUrl('/assistant/odie-proxy'), {
+    function getCsrfToken() {
+      const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('csrf='));
+      return cookie ? decodeURIComponent(cookie.split('=').slice(1).join('=')) : '';
+    }
+
+    async function assistantRequest(path, payload) {
+      const response = await fetch(apiUrl(path), {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(getCsrfToken() ? { 'X-CSRF-Token': getCsrfToken() } : {})
         },
-        body: JSON.stringify({
-          system,
-          history: history
-            .filter((m) => m.role === 'user' || m.role === 'assistant')
-            .map((m) => ({ role: m.role, content: m.content })),
-          userText,
-          maxTokens
-        })
+        body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
-        const errPayload = await response.json().catch(() => ({}));
-        throw new Error('API error: ' + (errPayload.error || response.status));
+      const text = await response.text();
+      let data = null;
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { error: text };
+        }
       }
 
-      const payload = await response.json();
-      const text = payload?.text?.trim?.() || '';
+      if (!response.ok) {
+        throw new Error(data?.error || `request_failed:${response.status}`);
+      }
 
-      return text || 'I had trouble forming a response. Please try again.';
+      return data;
+    }
+
+    async function groqChat({ system, history, userText, maxTokens = 1024 }) {
+      const payload = await assistantRequest('/assistant/chat', {
+        message: userText,
+        history: history
+          .filter((m) => m.role === 'user' || m.role === 'assistant')
+          .map((m) => ({ role: m.role, content: m.content })),
+        systemPrompt: system,
+        personaVariant: 'default'
+      });
+
+      return payload?.text?.trim?.() || 'I had trouble forming a response. Please try again.';
     }
 
     async function chatWithOdie(userMessage, conversationHistory = []) {
-      return groqChat({
-        system: ODIE_SYSTEM_PROMPT,
-        history: conversationHistory,
-        userText: userMessage,
-        maxTokens: 1024
+      const payload = await assistantRequest('/assistant/chat', {
+        message: userMessage,
+        history: conversationHistory
+          .filter((m) => m.role === 'user' || m.role === 'assistant')
+          .map((m) => ({ role: m.role, content: m.content })),
+        personaVariant: 'default'
       });
+      return payload?.text?.trim?.() || 'I had trouble forming a response. Please try again.';
     }
 
     async function analyzeDocument(documentText, question, conversationHistory = []) {
-      const trimmedDoc = String(documentText || '').slice(0, 30000);
-      const userMessage = 'Here is a document:\n\n' + trimmedDoc + '\n\nQuestion: ' + String(question || '').trim();
-      return chatWithOdie(userMessage, conversationHistory);
+      const payload = await assistantRequest('/assistant/document', {
+        documentText: String(documentText || ''),
+        userQuestion: String(question || '').trim(),
+        history: conversationHistory
+          .filter((m) => m.role === 'user' || m.role === 'assistant')
+          .map((m) => ({ role: m.role, content: m.content })),
+        personaVariant: 'default'
+      });
+      return payload?.text?.trim?.() || 'I had trouble analyzing that document. Please try again.';
     }
 
     // Expose helpers for external usage from the browser console or future integrations.
@@ -2069,10 +2116,33 @@
       });
     });
 
+    odieDocSend.addEventListener('click', () => {
+      const documentText = odieDocumentText.value.trim();
+      const question = odieDocQuestion.value.trim();
+      if (!documentText || !question) {
+        appendMessage(odieDocMessages, 'bot', 'Paste document text and ask a question to get started.');
+        return;
+      }
+
+      sendChat({
+        input: odieDocQuestion,
+        container: odieDocMessages,
+        history: odieDocHistory,
+        getReply: (text, history) => analyzeDocument(documentText, text, history)
+      });
+    });
+
     odieInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
         odieSend.click();
+      }
+    });
+
+    odieDocQuestion.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        odieDocSend.click();
       }
     });
 

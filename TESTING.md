@@ -7,13 +7,16 @@ This repo uses a test pyramid:
 
 ## Prerequisites
 - Node.js 20
-- Postgres (local or container)
+- Postgres (local or Docker)
 - `DATABASE_URL_TEST` set for LMS tests and UI E2E
 
-Example local Postgres:
+Example Docker-backed local Postgres:
 ```
-export DATABASE_URL_TEST=postgresql://postgres:postgres@localhost:5432/lms_test
+docker compose up -d db
+export DATABASE_URL_TEST=postgresql://postgres:postgres@localhost:5433/lms_test
 ```
+
+If you use the default compose setup, create the `lms_test` database before running tests.
 
 ## Run all tests
 ```

@@ -23,13 +23,13 @@ services:
       PORT: 3001
       NODE_ENV: development
       TRUST_PROXY: 1
-      CORS_ORIGIN: http://localhost:8080,http://127.0.0.1:8080
+      CORS_ORIGIN: http://localhost:8080,http://127.0.0.1:8080, http://localhost:8081, http://127.0.0.1:8081
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/lms
-      JWT_SECRET: change_me_to_a_long_random_string
+      JWT_SECRET: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30
       JWT_EXPIRES_IN: 15m
       ADMIN_BOOTSTRAP_TOKEN: change_me
       PUBLIC_BASE_URL: http://localhost:3001
-      COOKIE_SECRET: change_me_to_a_long_random_string
+      COOKIE_SECRET: FVgUiipN9DBALinEuUDRbH/sbdulw61Z5TmQGxqn09c=
       EMAIL_PROVIDER_KEY: ""
       EMAIL_FROM: projectodysseus10@gmail.com
     depends_on:

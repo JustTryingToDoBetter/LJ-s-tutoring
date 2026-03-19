@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import fs from 'node:fs';
 import path from 'node:path';
+import { loadAssistantConfig } from '../domains/assistant/config.js';
 
 function loadEnvFile(filePath: string) {
   if (fs.existsSync(filePath)) {
@@ -22,6 +23,7 @@ export function assertRuntimeEnv() {
 
   const missing = required.filter((name) => !process.env[name]?.trim());
   if (missing.length === 0) {
+    loadAssistantConfig(process.env);
     return;
   }
 
