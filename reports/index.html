@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Reports | Project Odysseus</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body data-page="reports">
+  <div class="portal-shell">
+    <nav class="portal-nav">
+      <div class="portal-nav-inner">
+        <div class="brand"><span class="brand-badge">PO</span>Student Portal</div>
+        <div class="nav-links">
+          <a class="nav-link" href="/dashboard/">Dashboard</a>
+          <a class="nav-link" data-nav="reports" href="/reports/">Reports</a>
+          <a class="nav-link" href="/dashboard/community/">Community</a>
+          <a class="nav-link" href="/dashboard/career/">Career</a>
+        </div>
+      </div>
+    </nav>
+    <main class="portal-main">
+      <section class="page-header">
+        <h1 class="page-title">Weekly Reports</h1>
+        <p class="page-subtitle">Recently generated learning reports linked to your learner profile.</p>
+      </section>
+      <section class="panel dashboard-card">
+        <div id="studentReportsList" class="list-compact"></div>
+      </section>
+    </main>
+  </div>
+  <script src="/assets/portal-config.js"></script>
+  <script src="/assets/analytics.js"></script>
+  <script type="module" src="/assets/student/reports.js"></script>
+</body>
+</html>

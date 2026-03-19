@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Overview | Project Odysseus</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body>
+  <div class="portal-shell">
+    <nav class="portal-nav"><div class="portal-nav-inner"><div class="brand"><span class="brand-badge">PO</span>Admin</div></div></nav>
+    <main class="portal-main">
+      <section class="page-header">
+        <h1 class="page-title">Admin overview</h1>
+        <p class="page-subtitle">Simple operational counts pulled from the LMS API.</p>
+      </section>
+      <section class="metric-grid">
+        <article class="panel metric-card"><span class="metric-label">Tutors</span><strong id="adminTutors" class="metric-value">—</strong></article>
+        <article class="panel metric-card"><span class="metric-label">Students</span><strong id="adminStudents" class="metric-value">—</strong></article>
+      </section>
+      <section class="panel dashboard-card">
+        <h2 class="panel-title">Sessions by status</h2>
+        <div id="adminSessions" class="list-compact"></div>
+      </section>
+    </main>
+  </div>
+  <script src="/assets/portal-config.js"></script>
+  <script src="/assets/analytics.js"></script>
+  <script type="module" src="/assets/admin/dashboard.js"></script>
+</body>
+</html>

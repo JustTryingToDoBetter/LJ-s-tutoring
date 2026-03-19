@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Odysseus | Academic OS</title>
+  <meta name="description" content="Project Odysseus blends focused maths tutoring, learner accountability, and simple portal workflows.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body>
+  <main class="marketing-shell">
+    <section class="hero-card">
+      <span class="badge">Project Odysseus • Static portal</span>
+      <h1>Focused student growth without framework overhead.</h1>
+      <p class="lead">A simple static site backed by the LMS API for tutor workflows, reports, streaks, community, and career mapping.</p>
+      <div class="action-row">
+        <a class="button" href="/login.html">Sign in</a>
+        <a class="button secondary" href="/dashboard/">Student dashboard</a>
+        <a class="button secondary" href="/tutor/dashboard/">Tutor dashboard</a>
+        <a class="button secondary" href="/guides/">Guides</a>
+      </div>
+    </section>
+
+    <section class="marketing-grid two">
+      <article class="panel dashboard-card">
+        <h2 class="panel-title">What stays simple</h2>
+        <ul class="bullet-list">
+          <li>Static marketing and portal pages served directly from the domain.</li>
+          <li>Fastify API remains responsible for auth, sessions, reports, payroll, and scoring.</li>
+          <li>No Next.js runtime, no app-router migration baggage.</li>
+        </ul>
+      </article>
+      <article class="panel dashboard-card">
+        <h2 class="panel-title">Portal shortcuts</h2>
+        <div class="link-stack">
+          <a href="/dashboard/">Student dashboard</a>
+          <a href="/reports/">Student reports</a>
+          <a href="/dashboard/community/">Community</a>
+          <a href="/dashboard/career/">Career roadmap</a>
+          <a href="/tutor/dashboard/">Tutor dashboard</a>
+          <a href="/tutor/reports/">Tutor reports</a>
+          <a href="/tutor/risk/">Tutor risk monitor</a>
+          <a href="/admin/">Admin overview</a>
+        </div>
+      </article>
+    </section>
+
+    <section class="marketing-grid two">
+      <article class="panel dashboard-card">
+        <h2 class="panel-title">Privacy</h2>
+        <p class="note">Telemetry and analytics should remain consent-aware and operationally minimal.</p>
+        <a class="button secondary" href="/privacy.html">Read privacy policy</a>
+      </article>
+      <article class="panel dashboard-card">
+        <h2 class="panel-title">Terms</h2>
+        <p class="note">Portal access remains role-based and tied to the LMS API session cookies.</p>
+        <a class="button secondary" href="/terms.html">Read terms</a>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

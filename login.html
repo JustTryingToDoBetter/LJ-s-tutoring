@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in | Project Odysseus</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body>
+  <main class="center-shell">
+    <section class="panel auth-card">
+      <h1 class="page-title">Sign in</h1>
+      <p class="page-subtitle">Use your LMS email and password. The API will set the session and redirect you to the correct portal.</p>
+      <form id="loginForm" class="stack-form">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="button" type="submit">Sign in</button>
+        <p id="loginFeedback" class="note" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+  <script src="/assets/portal-config.js"></script>
+  <script src="/assets/analytics.js"></script>
+  <script type="module" src="/assets/login.js"></script>
+</body>
+</html>
