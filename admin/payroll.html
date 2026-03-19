@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payroll | Project Odysseus Admin Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1a1612;
+      --paper: #f2ead8;
+      --paper-warm: #ede3cc;
+      --paper-deep: #e4d8bf;
+      --paper-ruled: #ddd1b8;
+      --manila: #c8a85a;
+      --manila-dark: #9e7e38;
+      --manila-glow: rgba(200, 168, 90, 0.15);
+      --stamp-red: #c0392b;
+      --stamp-green: #1a7a4a;
+      --stamp-blue: #1a4a8a;
+      --tray-bg: #16120d;
+      --tray-wall: #1f1a12;
+      --navy: #0e1219;
+      --pending-amber: #b78225;
+      --locked-grey: #6f6a60;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    *::selection {
+      background: var(--manila);
+      color: var(--ink);
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      height: 100vh;
+      overflow: hidden;
+      color: var(--paper);
+      background-color: var(--tray-bg);
+      background-image:
+        radial-gradient(circle at 8% 20%, rgba(200, 168, 90, 0.09), transparent 30%),
+        radial-gradient(circle at 92% 86%, rgba(158, 126, 56, 0.07), transparent 28%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%2316120d'/%3E%3Cg opacity='0.14' stroke='%23231d16' stroke-width='1'%3E%3Cpath d='M0 14h180M0 44h180M0 74h180M0 104h180M0 134h180M0 164h180'/%3E%3Cpath d='M12 0v180M48 0v180M84 0v180M120 0v180M156 0v180'/%3E%3C/g%3E%3C/svg%3E");
+      font-family: "DM Sans", "Avenir Next", "Segoe UI", "Trebuchet MS", Tahoma;
+      letter-spacing: 0.01em;
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(242, 234, 216, 0.06);
+      border-radius: 999px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(200, 168, 90, 0.6);
+      border-radius: 999px;
+    }
+
+    .top-nav {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 40px);
+      max-width: 1360px;
+      height: 52px;
+      border-radius: 999px;
+      border: 1px solid rgba(200, 168, 90, 0.24);
+      background: rgba(14, 18, 25, 0.8);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 14px 26px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 245, 222, 0.06);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 18px;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: fit-content;
+      font-family: "Syne", "Avenir Next", "Segoe UI", "Trebuchet MS";
+      font-weight: 700;
+      color: rgba(242, 234, 216, 0.95);
+      letter-spacing: 0.015em;
+    }
+
+    .brand-pill {
+      border-radius: 999px;
+      background: linear-gradient(160deg, #d4b871, #ab8841);
+      color: #16120d;
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex: 1;
+    }
+
+    .nav-links::-webkit-scrollbar {
+      display: none;
+    }
+
+    .nav-link {
+      color: rgba(242, 234, 216, 0.62);
+      text-decoration: none;
+      font-family: "DM Sans", "Avenir Next", "Segoe UI", "Trebuchet MS", Tahoma;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+      transition: all 160ms ease;
+    }
+
+    .nav-link:hover {
+      color: var(--paper);
+      border-color: rgba(200, 168, 90, 0.35);
+      background: rgba(200, 168, 90, 0.1);
+    }
+
+    .nav-link.active {
+      color: var(--manila);
+      border-color: rgba(200, 168, 90, 0.5);
+      background: var(--manila-glow);
+      box-shadow: inset 0 0 0 1px rgba(200, 168, 90, 0.2), 0 0 0 1px rgba(200, 168, 90, 0.14);
+    }
+
+    .main-shell {
+      max-width: 1360px;
+      margin: 0 auto;
+      height: 100%;
+      padding: 78px 20px 14px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      background: linear-gradient(180deg, rgba(31, 26, 18, 0.88), rgba(22, 18, 13, 0.8));
+      border: 1px solid rgba(200, 168, 90, 0.14);
+      border-radius: 10px;
+      padding: 12px 16px;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .page-title {
+      margin: 0;
+      font-family: "Syne", "Avenir Next", "Segoe UI", "Trebuchet MS";
+      font-size: clamp(28px, 3vw, 38px);
+      line-height: 1;
+      font-weight: 800;
+      color: var(--paper);
+      letter-spacing: 0.02em;
+    }
+
+    .week-badge {
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-weight: 500;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--manila);
+      border: 1px dashed rgba(200, 168, 90, 0.7);
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: rgba(200, 168, 90, 0.08);
+    }
+
+    .page-subtitle {
+      margin: 0;
+      text-align: right;
+      font-size: 14px;
+      color: rgba(242, 234, 216, 0.76);
+      max-width: 420px;
+      line-height: 1.35;
+    }
+
+    .tray-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 230px 1fr 250px 1fr;
+      gap: 10px;
+    }
+
+    .tray {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      border-radius: 10px;
+      border: 1px solid rgba(200, 168, 90, 0.1);
+      background: var(--tray-wall);
+      box-shadow: inset 0 0 0 1px rgba(255, 238, 206, 0.03), inset 0 12px 18px rgba(0, 0, 0, 0.25), 0 12px 24px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .tray-tab {
+      min-height: 48px;
+      padding: 12px 12px 10px;
+      border-bottom: 1px solid rgba(200, 168, 90, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tray-label {
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(242, 234, 216, 0.9);
+    }
+
+    .tray-stamp {
+      margin-left: auto;
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 2px solid currentColor;
+      padding: 3px 8px;
+      border-radius: 4px;
+      transform: rotate(-8deg);
+      opacity: 0.95;
+    }
+
+    .tray-stamp.in {
+      color: var(--stamp-green);
+      background: rgba(26, 122, 74, 0.12);
+    }
+
+    .tray-stamp.out {
+      color: var(--stamp-red);
+      background: rgba(192, 57, 43, 0.12);
+    }
+
+    .tray-badge {
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--manila);
+      border: 1px solid rgba(200, 168, 90, 0.45);
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(200, 168, 90, 0.08);
+    }
+
+    .tray-label + .tray-badge {
+      margin-left: auto;
+    }
+
+    .tray-stamp + .tray-badge {
+      margin-left: 0;
+    }
+
+    .tray-summary {
+      min-height: 48px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(200, 168, 90, 0.08);
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(200, 168, 90, 0.08), rgba(200, 168, 90, 0.03));
+    }
+
+    .summary-item {
+      border-right: 1px dashed rgba(200, 168, 90, 0.2);
+      padding-right: 6px;
+    }
+
+    .summary-item:last-child {
+      border-right: none;
+      padding-right: 0;
+    }
+
+    .summary-label {
+      display: block;
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(242, 234, 216, 0.62);
+      margin-bottom: 2px;
+    }
+
+    .summary-value {
+      font-family: "Syne", "Avenir Next", "Segoe UI", "Trebuchet MS";
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 700;
+      color: var(--paper);
+      white-space: nowrap;
+    }
+
+    .summary-value.gold {
+      color: var(--manila);
+    }
+
+    .summary-value.green {
+      color: var(--stamp-green);
+    }
+
+    .tray-body {
+      min-height: 0;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .tray-body.form {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(242, 234, 216, 0.76);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid rgba(200, 168, 90, 0.2);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--paper);
+      padding: 10px;
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 140ms ease, box-shadow 140ms ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--manila);
+      box-shadow: 0 0 0 3px rgba(200, 168, 90, 0.15);
+    }
+
+    textarea {
+      min-height: 76px;
+      resize: vertical;
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath d='M3 5l4 4 4-4' fill='none' stroke='%23c8a85a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-family: "Syne", "Avenir Next", "Segoe UI", "Trebuchet MS";
+      font-size: 14px;
+      font-weight: 700;
+      transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease, color 140ms ease, border-color 140ms ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn.primary {
+      background: var(--manila);
+      color: var(--ink);
+      border-color: rgba(200, 168, 90, 0.95);
+    }
+
+    .btn.primary:hover {
+      box-shadow: 0 0 0 1px rgba(200, 168, 90, 0.4), 0 8px 18px rgba(200, 168, 90, 0.25);
+    }
+
+    .btn.secondary {
+      background: transparent;
+      color: rgba(242, 234, 216, 0.88);
+      border-color: rgba(200, 168, 90, 0.5);
+    }
+
+    .btn.secondary:hover {
+      background: rgba(200, 168, 90, 0.1);
+      color: var(--manila);
+      border-color: var(--manila);
+    }
+
+    .csv-row {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(221, 209, 184, 0.38);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .csv-note {
+      margin: 0;
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(242, 234, 216, 0.7);
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .doc-card,
+    .adj-slip {
+      position: relative;
+      opacity: 0;
+      animation: slideIn 320ms ease forwards;
+      animation-delay: calc(var(--i, 0) * 40ms);
+    }
+
+    .doc-card {
+      background: linear-gradient(180deg, #f7efdd, var(--paper));
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow:
+        0 1px 0 var(--paper-deep),
+        0 3px 0 rgba(228, 216, 191, 0.8),
+        0 6px 14px rgba(0, 0, 0, 0.24);
+      transition: transform 170ms ease;
+    }
+
+    .doc-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      border-radius: 8px 8px 0 0;
+      background: var(--manila);
+    }
+
+    .doc-card:hover {
+      transform: translateY(-2px) rotate(0.3deg);
+    }
+
+    .doc-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .doc-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      background: #191611;
+      color: var(--manila);
+      display: grid;
+      place-items: center;
+      font-family: "Syne", "Avenir Next", "Segoe UI", "Trebuchet MS";
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+
+    .doc-name {
+      margin: 0;
+      font-family: "Syne", "Avenir Next", "Segoe UI", "Trebuchet MS";
+      font-size: 17px;
+      line-height: 1.05;
+      font-weight: 700;
+    }
+
+    .doc-id {
+      margin-top: 3px;
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 10px;
+      color: rgba(26, 22, 18, 0.65);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .doc-stamp {
+      margin-left: auto;
+      margin-top: 2px;
+      transform: rotate(3deg);
+      border: 2px solid currentColor;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .doc-stamp.paid {
+      color: var(--stamp-green);
+    }
+
+    .doc-stamp.pending {
+      color: var(--pending-amber);
+    }
+
+    .doc-stamp.locked {
+      color: var(--locked-grey);
+    }
+
+    .doc-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 11px;
+      padding-top: 9px;
+      border-top: 1px dashed var(--paper-ruled);
+    }
+
+    .hours-rate {
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 11px;
+      color: rgba(26, 22, 18, 0.82);
+      text-transform: uppercase;
+    }
+
+    .doc-amount {
+      margin: 0;
+      font-family: "Syne", "Avenir Next", "Segoe UI", "Trebuchet MS";
+      font-size: 24px;
+      line-height: 0.95;
+      font-weight: 800;
+      color: #201a11;
+    }
+
+    .adj-slip {
+      background: var(--paper-warm);
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 11px 12px 10px;
+      box-shadow: 0 5px 12px rgba(0, 0, 0, 0.19);
+      overflow: hidden;
+    }
+
+    .adj-slip::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--stamp-green);
+    }
+
+    .adj-slip.correction::before {
+      background: var(--stamp-blue);
+    }
+
+    .adj-slip.penalty::before {
+      background: var(--stamp-red);
+    }
+
+    .adj-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .adj-name,
+    .adj-amount {
+      margin: 0;
+      font-family: "Syne", "Avenir Next", "Segoe UI", "Trebuchet MS";
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    .adj-slip.bonus .adj-amount {
+      color: var(--stamp-green);
+    }
+
+    .adj-slip.correction .adj-amount {
+      color: var(--stamp-blue);
+    }
+
+    .adj-slip.penalty .adj-amount {
+      color: var(--stamp-red);
+    }
+
+    .adj-reason {
+      margin: 8px 0 10px;
+      color: rgba(26, 22, 18, 0.7);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .adj-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-family: "IBM Plex Mono", "Courier New", "Lucida Console", Monaco;
+      font-size: 10px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .type-tag {
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      padding: 3px 7px;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .bonus .type-tag {
+      color: var(--stamp-green);
+    }
+
+    .correction .type-tag {
+      color: var(--stamp-blue);
+    }
+
+    .penalty .type-tag {
+      color: var(--stamp-red);
+    }
+
+    .session {
+      color: rgba(26, 22, 18, 0.63);
+      font-weight: 500;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .tray-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .tray {
+        min-height: 320px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .top-nav {
+        justify-content: space-between;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .page-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .page-subtitle {
+        text-align: left;
+      }
+
+      .tray-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="top-nav" aria-label="Admin Console Navigation">
+    <div class="brand">
+      <span class="brand-pill">PO</span>
+      <span>Admin Console</span>
+    </div>
+    <div class="nav-links">
+      <a class="nav-link" href="/admin/index.html">Dashboard</a>
+      <a class="nav-link" href="/admin/tutors.html">Tutors</a>
+      <a class="nav-link" href="/admin/students.html">Students</a>
+      <a class="nav-link" href="/admin/assignments.html">Assignments</a>
+      <a class="nav-link" href="/admin/approvals.html">Approvals</a>
+      <a class="nav-link active" href="/admin/payroll.html" aria-current="page">Payroll</a>
+      <a class="nav-link" href="/admin/reconciliation.html">Reconciliation</a>
+      <a class="nav-link" href="/admin/audit.html">Audit</a>
+      <a class="nav-link" href="/admin/privacy-requests.html">Privacy Requests</a>
+      <a class="nav-link" href="/admin/retention.html">Retention</a>
+      <a class="nav-link" href="/admin/ops-runbook.html">Ops Runbook</a>
+    </div>
+  </nav>
+
+  <main class="main-shell">
+    <header class="page-header">
+      <div class="header-left">
+        <h1 class="page-title">Payroll Run</h1>
+        <span class="week-badge">Week: 10 Mar 2026</span>
+      </div>
+      <p class="page-subtitle">Project Odysseus weekly tutor compensation desk. Incoming invoices are filed and adjustment slips are routed through the out tray before payout.</p>
+    </header>
+
+    <section class="tray-grid" aria-label="Payroll Trays">
+      <article class="tray">
+        <div class="tray-tab">
+          <span class="tray-label">Generate Week</span>
+        </div>
+        <form class="tray-body form" action="#" method="post">
+          <div class="field">
+            <label for="week-start">Week Start</label>
+            <input id="week-start" type="date" value="2026-03-10">
+          </div>
+          <div class="row">
+            <button class="btn primary" type="submit">Generate</button>
+            <button class="btn secondary" type="button">Lock week</button>
+          </div>
+          <div class="csv-row">
+            <p class="csv-note">Export ledger package</p>
+            <button class="btn secondary" type="button">Download CSV</button>
+          </div>
+        </form>
+      </article>
+
+      <article class="tray">
+        <div class="tray-tab">
+          <span class="tray-label">Generated invoices</span>
+          <span class="tray-stamp in">IN</span>
+          <span class="tray-badge">8 docs</span>
+        </div>
+        <div class="tray-summary">
+          <div class="summary-item">
+            <span class="summary-label">Total</span>
+            <span class="summary-value gold">R 14 820</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Paid</span>
+            <span class="summary-value green">5</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Pending</span>
+            <span class="summary-value">2</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Locked</span>
+            <span class="summary-value">1</span>
+          </div>
+        </div>
+        <div class="tray-body stack">
+          <article class="doc-card" style="--i:0;">
+            <div class="doc-top">
+              <div class="doc-avatar">SN</div>
+              <div>
+                <h3 class="doc-name">Sarah Nkosi</h3>
+                <div class="doc-id">inv_sn_0310</div>
+              </div>
+              <span class="doc-stamp paid">PAID</span>
+            </div>
+            <div class="doc-foot">
+              <span class="hours-rate">12 hrs &times; R 200/hr</span>
+              <p class="doc-amount">R 2 400</p>
+            </div>
+          </article>
+
+          <article class="doc-card" style="--i:1;">
+            <div class="doc-top">
+              <div class="doc-avatar">TM</div>
+              <div>
+                <h3 class="doc-name">Thabo Molefe</h3>
+                <div class="doc-id">inv_tm_0310</div>
+              </div>
+              <span class="doc-stamp paid">PAID</span>
+            </div>
+            <div class="doc-foot">
+              <span class="hours-rate">13 hrs &times; R 150/hr</span>
+              <p class="doc-amount">R 1 950</p>
+            </div>
+          </article>
+
+          <article class="doc-card" style="--i:2;">
+            <div class="doc-top">
+              <div class="doc-avatar">LP</div>
+              <div>
+                <h3 class="doc-name">Lerato Phiri</h3>
+                <div class="doc-id">inv_lp_0310</div>
+              </div>
+              <span class="doc-stamp pending">PENDING</span>
+            </div>
+            <div class="doc-foot">
+              <span class="hours-rate">14 hrs &times; R 150/hr</span>
+              <p class="doc-amount">R 2 100</p>
+            </div>
+          </article>
+
+          <article class="doc-card" style="--i:3;">
+            <div class="doc-top">
+              <div class="doc-avatar">JD</div>
+              <div>
+                <h3 class="doc-name">James de Wet</h3>
+                <div class="doc-id">inv_jd_0310</div>
+              </div>
+              <span class="doc-stamp paid">PAID</span>
+            </div>
+            <div class="doc-foot">
+              <span class="hours-rate">9 hrs &times; R 200/hr</span>
+              <p class="doc-amount">R 1 800</p>
+            </div>
+          </article>
+
+          <article class="doc-card" style="--i:4;">
+            <div class="doc-top">
+              <div class="doc-avatar">AM</div>
+              <div>
+                <h3 class="doc-name">Ayasha Maharaj</h3>
+                <div class="doc-id">inv_am_0310</div>
+              </div>
+              <span class="doc-stamp pending">PENDING</span>
+            </div>
+            <div class="doc-foot">
+              <span class="hours-rate">15 hrs &times; R 150/hr</span>
+              <p class="doc-amount">R 2 250</p>
+            </div>
+          </article>
+
+          <article class="doc-card" style="--i:5;">
+            <div class="doc-top">
+              <div class="doc-avatar">KR</div>
+              <div>
+                <h3 class="doc-name">Kyle van Rooyen</h3>
+                <div class="doc-id">inv_kr_0310</div>
+              </div>
+              <span class="doc-stamp paid">PAID</span>
+            </div>
+            <div class="doc-foot">
+              <span class="hours-rate">8 hrs &times; R 200/hr</span>
+              <p class="doc-amount">R 1 600</p>
+            </div>
+          </article>
+
+          <article class="doc-card" style="--i:6;">
+            <div class="doc-top">
+              <div class="doc-avatar">NZ</div>
+              <div>
+                <h3 class="doc-name">Nomsa Zulu</h3>
+                <div class="doc-id">inv_nz_0310</div>
+              </div>
+              <span class="doc-stamp locked">LOCKED</span>
+            </div>
+            <div class="doc-foot">
+              <span class="hours-rate">11 hrs &times; R 120/hr</span>
+              <p class="doc-amount">R 1 320</p>
+            </div>
+          </article>
+
+          <article class="doc-card" style="--i:7;">
+            <div class="doc-top">
+              <div class="doc-avatar">RC</div>
+              <div>
+                <h3 class="doc-name">Ruan Carstens</h3>
+                <div class="doc-id">inv_rc_0310</div>
+              </div>
+              <span class="doc-stamp paid">PAID</span>
+            </div>
+            <div class="doc-foot">
+              <span class="hours-rate">7 hrs &times; R 200/hr</span>
+              <p class="doc-amount">R 1 400</p>
+            </div>
+          </article>
+        </div>
+      </article>
+
+      <article class="tray">
+        <div class="tray-tab">
+          <span class="tray-label">New adjustment</span>
+        </div>
+        <form class="tray-body form" action="#" method="post">
+          <div class="field">
+            <label for="adj-week">Week Start</label>
+            <input id="adj-week" type="date" value="2026-03-10">
+          </div>
+          <div class="field">
+            <label for="adj-tutor">Tutor</label>
+            <select id="adj-tutor">
+              <option>Sarah Nkosi</option>
+              <option>Thabo Molefe</option>
+              <option>Lerato Phiri</option>
+              <option>James de Wet</option>
+              <option>Ayasha Maharaj</option>
+              <option>Kyle van Rooyen</option>
+              <option>Nomsa Zulu</option>
+              <option>Ruan Carstens</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="adj-type">Type</label>
+            <select id="adj-type">
+              <option>Bonus</option>
+              <option>Correction</option>
+              <option>Penalty</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="adj-amount">Amount</label>
+            <input id="adj-amount" type="number" placeholder="0.00">
+          </div>
+          <div class="field">
+            <label for="adj-reason">Reason</label>
+            <textarea id="adj-reason" placeholder="Describe the adjustment"></textarea>
+          </div>
+          <div class="field">
+            <label for="adj-session">Session ID (optional)</label>
+            <input id="adj-session" type="text" placeholder="sess_xxxxxx">
+          </div>
+          <button class="btn primary" type="submit">File adjustment</button>
+        </form>
+      </article>
+
+      <article class="tray">
+        <div class="tray-tab">
+          <span class="tray-label">Week adjustments</span>
+          <span class="tray-stamp out">OUT</span>
+          <span class="tray-badge">4 slips</span>
+        </div>
+        <div class="tray-summary">
+          <div class="summary-item">
+            <span class="summary-label">Net</span>
+            <span class="summary-value gold">+R 650</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Bonuses</span>
+            <span class="summary-value green">2</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Corrections</span>
+            <span class="summary-value">1</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Penalties</span>
+            <span class="summary-value">1</span>
+          </div>
+        </div>
+        <div class="tray-body stack">
+          <article class="adj-slip bonus" style="--i:0;">
+            <div class="adj-head">
+              <h3 class="adj-name">Sarah Nkosi</h3>
+              <p class="adj-amount">+R 500</p>
+            </div>
+            <p class="adj-reason">Retention bonus - 6-month milestone achieved</p>
+            <div class="adj-foot">
+              <span class="type-tag">BONUS</span>
+              <span class="session">NO SESSION</span>
+            </div>
+          </article>
+
+          <article class="adj-slip correction" style="--i:1;">
+            <div class="adj-head">
+              <h3 class="adj-name">Thabo Molefe</h3>
+              <p class="adj-amount">+R 300</p>
+            </div>
+            <p class="adj-reason">Session logged at wrong rate, corrected to R 150/hr</p>
+            <div class="adj-foot">
+              <span class="type-tag">CORRECTION</span>
+              <span class="session">sess_8a2f1c</span>
+            </div>
+          </article>
+
+          <article class="adj-slip penalty" style="--i:2;">
+            <div class="adj-head">
+              <h3 class="adj-name">Kyle van Rooyen</h3>
+              <p class="adj-amount">-R 200</p>
+            </div>
+            <p class="adj-reason">Late cancellation - student not notified in time</p>
+            <div class="adj-foot">
+              <span class="type-tag">PENALTY</span>
+              <span class="session">sess_3d9e7b</span>
+            </div>
+          </article>
+
+          <article class="adj-slip bonus" style="--i:3;">
+            <div class="adj-head">
+              <h3 class="adj-name">Nomsa Zulu</h3>
+              <p class="adj-amount">+R 50</p>
+            </div>
+            <p class="adj-reason">Exceptional student feedback - 5-star week</p>
+            <div class="adj-foot">
+              <span class="type-tag">BONUS</span>
+              <span class="session">NO SESSION</span>
+            </div>
+          </article>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

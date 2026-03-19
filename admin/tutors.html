@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tutors | Admin Console</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+  <style>
+    /* ── Reset / base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      font-size: 15px;
+      background-color: #0d1b2a;
+      background-image: radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px);
+      background-size: 28px 28px;
+      color: #e8eaf0;
+      min-height: 100vh;
+      padding-top: 5.5rem;
+    }
+
+    /* ── Floating pill nav ────────────────────────────────────── */
+    .nav-wrap {
+      position: fixed;
+      top: 14px;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      padding: 0 12px;
+      pointer-events: none;
+    }
+
+    .nav-pill {
+      pointer-events: auto;
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: rgba(10, 20, 34, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(201, 144, 12, 0.2);
+      border-radius: 999px;
+      padding: 5px 6px;
+      max-width: calc(100vw - 24px);
+      overflow: hidden;
+    }
+
+    /* scroll fade hints */
+    .nav-pill::before,
+    .nav-pill::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 52px;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .nav-pill::before {
+      left: 0;
+      background: linear-gradient(to right, rgba(10,20,34,0.96) 30%, transparent);
+      border-radius: 999px 0 0 999px;
+    }
+    .nav-pill::after {
+      right: 0;
+      background: linear-gradient(to left, rgba(10,20,34,0.96) 30%, transparent);
+      border-radius: 0 999px 999px 0;
+    }
+    .nav-pill.fade-left::before  { opacity: 1; }
+    .nav-pill.fade-right::after  { opacity: 1; }
+
+    .nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 3;
+      background: none;
+      border: none;
+      color: #c9900c;
+      font-size: 18px;
+      line-height: 1;
+      padding: 2px 8px;
+      cursor: pointer;
+      pointer-events: auto;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .nav-arrow.left  { left: 4px; }
+    .nav-arrow.right { right: 4px; }
+    .nav-pill.fade-left  .nav-arrow.left  { opacity: 1; }
+    .nav-pill.fade-right .nav-arrow.right { opacity: 1; }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px 0 4px;
+      border-right: 1px solid rgba(201,144,12,0.22);
+      margin-right: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+      color: #e8eaf0;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .brand-badge {
+      background: #c9900c;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      padding: 3px 7px;
+      border-radius: 999px;
+    }
+
+    .nav-scroller {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      scroll-behavior: smooth;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .nav-scroller::-webkit-scrollbar { display: none; }
+
+    .nav-scroller li { display: contents; }
+
+    .nav-link {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(232, 234, 240, 0.72);
+      text-decoration: none;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-link:hover { color: #ffffff; background: rgba(255,255,255,0.06); }
+    .nav-link.is-active {
+      background: #c9900c;
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .nav-link:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(201,144,12,0.6);
+    }
+
+    /* ── Page shell ──────────────────────────────────────────── */
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 16px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .page-header { padding-top: 4px; }
+    .page-title {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+    .page-subtitle {
+      margin-top: 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #c9900c;
+    }
+
+    /* ── White panels ────────────────────────────────────────── */
+    .panel {
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.08), 0 14px 44px rgba(0,0,0,0.2);
+    }
+
+    .panel-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid #f0f1f3;
+    }
+    .panel-title {
+      display: inline-block;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0d1b2a;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #c9900c;
+    }
+
+    .panel-body { padding: 22px; }
+
+    /* ── Form fields ─────────────────────────────────────────── */
+    .form-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 5px; }
+
+    .field > label,
+    .field-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #0d1b2a;
+    }
+
+    .field input[type="text"],
+    .field input[type="email"],
+    .field input[type="tel"],
+    .field input[type="number"],
+    .field select {
+      height: 40px;
+      padding: 0 12px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fafafa;
+      color: #0d1b2a;
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      width: 100%;
+    }
+    .field input:focus,
+    .field select:focus {
+      border-color: #c9900c;
+      box-shadow: 0 0 0 3px rgba(201,144,12,0.15);
+    }
+    .field input::placeholder { color: #9ca3af; }
+
+    .opt-note {
+      font-weight: 400;
+      text-transform: none;
+      font-size: 0.78rem;
+      margin-left: 2px;
+    }
+
+    /* Subject checkboxes */
+    .subject-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+      padding: 10px 12px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    .subject-grid label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.875rem;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: #1a2b3c;
+      cursor: pointer;
+    }
+    .subject-grid input[type="checkbox"] {
+      accent-color: #c9900c;
+      width: 15px;
+      height: 15px;
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    /* Active toggle row */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    .toggle-row span {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #0d1b2a;
+    }
+    .toggle-row input[type="checkbox"] {
+      accent-color: #c9900c;
+      width: 17px;
+      height: 17px;
+      cursor: pointer;
+    }
+
+    /* Error note */
+    .form-error {
+      font-size: 0.82rem;
+      color: #b91c1c;
+      min-height: 1.2em;
+    }
+
+    /* Submit button */
+    .btn-submit {
+      width: 100%;
+      padding: 11px 14px;
+      background: #c9900c;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    }
+    .btn-submit:hover {
+      background: #b07f0a;
+      box-shadow: 0 4px 18px rgba(201,144,12,0.38);
+    }
+    .btn-submit:active { transform: translateY(1px); }
+    .btn-submit:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(201,144,12,0.4);
+    }
+
+    /* ── Tutor list ──────────────────────────────────────────── */
+    #tutorList {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 48px;
+    }
+
+    .empty-state {
+      font-size: 0.875rem;
+      color: #6b7280;
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    /* ── Tutor cards ─────────────────────────────────────────── */
+    .tutor-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px 16px;
+      border: 1.5px solid #f0f0f0;
+      border-radius: 10px;
+      background: #fafafa;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .tutor-card:hover {
+      border-color: #c9900c;
+      box-shadow: 0 2px 12px rgba(201,144,12,0.13);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #0d1b2a;
+      color: #c9900c;
+      font-weight: 700;
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .card-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .card-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #0d1b2a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-phone {
+      font-size: 0.78rem;
+      color: #6b7280;
+      margin-top: 1px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .status-active   { background: #dcfce7; color: #15803d; }
+    .status-verified { background: #dbeafe; color: #1d4ed8; }
+    .status-invited  { background: #fef9c3; color: #a16207; }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 600;
+    }
+    .tag-grade   { background: #0d1b2a; color: #c9900c; }
+    .tag-subject { background: #f3f4f6; color: #374151; }
+  </style>
+</head>
+<body data-page="tutors">
+
+  <!-- Floating pill nav -->
+  <nav class="nav-wrap" aria-label="Admin console navigation">
+    <div class="nav-pill" id="navPill">
+      <button class="nav-arrow left" id="navLeft" aria-label="Scroll navigation left">&#8249;</button>
+      <button class="nav-arrow right" id="navRight" aria-label="Scroll navigation right">&#8250;</button>
+
+      <div class="nav-brand">
+        <span class="brand-badge">PO</span>
+        Admin Console
+      </div>
+
+      <ul class="nav-scroller" id="navScroller">
+        <li><a class="nav-link" href="/admin/index.html">Dashboard</a></li>
+        <li><a class="nav-link is-active" href="/admin/tutors.html" aria-current="page">Tutors</a></li>
+        <li><a class="nav-link" href="/admin/students.html">Students</a></li>
+        <li><a class="nav-link" href="/admin/assignments.html">Assignments</a></li>
+        <li><a class="nav-link" href="/admin/approvals.html">Approvals</a></li>
+        <li><a class="nav-link" href="/admin/payroll.html">Payroll</a></li>
+        <li><a class="nav-link" href="/admin/reconciliation.html">Reconciliation</a></li>
+        <li><a class="nav-link" href="/admin/audit.html">Audit</a></li>
+        <li><a class="nav-link" href="/admin/privacy-requests.html">Privacy Requests</a></li>
+        <li><a class="nav-link" href="/admin/retention.html">Retention</a></li>
+        <li><a class="nav-link" href="/admin/ops-runbook.html">Ops Runbook</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Page content -->
+  <div class="page">
+    <header class="page-header">
+      <h1 class="page-title">Tutors</h1>
+      <p class="page-subtitle">Create and manage tutor profiles</p>
+    </header>
+
+    <!-- Add tutor panel -->
+    <section class="panel" aria-labelledby="addTutorTitle">
+      <div class="panel-header">
+        <h2 class="panel-title" id="addTutorTitle">Add tutor</h2>
+      </div>
+      <div class="panel-body">
+        <form id="tutorForm" class="form-fields" novalidate>
+
+          <div class="field">
+            <label for="tutorName">Full name</label>
+            <input id="tutorName" type="text" name="name" autocomplete="name" required placeholder="e.g. Amara Dlamini">
+          </div>
+
+          <div class="field">
+            <label for="tutorEmail">Email</label>
+            <input id="tutorEmail" type="email" name="email" autocomplete="email" required placeholder="tutor@example.com">
+          </div>
+
+          <div class="field">
+            <label for="tutorPhone">Phone <span class="opt-note">(optional)</span></label>
+            <input id="tutorPhone" type="tel" name="phone" autocomplete="tel" placeholder="+27 xx xxx xxxx">
+          </div>
+
+          <div class="field">
+            <label for="tutorRate">Default hourly rate (ZAR)</label>
+            <input id="tutorRate" type="number" name="hourlyRate" min="0" step="0.01" required placeholder="200.00">
+          </div>
+
+          <div class="field">
+            <label for="tutorStatus">Status</label>
+            <select id="tutorStatus" name="status" required>
+              <option value="INVITED" selected>Invited</option>
+              <option value="VERIFIED">Verified</option>
+              <option value="ACTIVE">Active</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="tutorBand">Qualification band</label>
+            <select id="tutorBand" name="qualificationBand" required>
+              <option value="GRADES_6_9" selected>Grades 6–9</option>
+              <option value="GRADES_10_12">Grades 10–12</option>
+              <option value="BOTH">Both</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Qualified subjects</span>
+            <!-- html-validate-disable form-dup-name -->
+            <div class="subject-grid" role="group" aria-label="Qualified subjects">
+              <label><input type="checkbox" name="qualifiedSubject" value="Mathematics"> Mathematics</label>
+              <label><input type="checkbox" name="qualifiedSubject" value="Mathematical Literacy"> Mathematical Literacy</label>
+              <label><input type="checkbox" name="qualifiedSubject" value="Physical Sciences"> Physical Sciences</label>
+              <label><input type="checkbox" name="qualifiedSubject" value="Life Sciences"> Life Sciences</label>
+              <label><input type="checkbox" name="qualifiedSubject" value="Accounting"> Accounting</label>
+              <label><input type="checkbox" name="qualifiedSubject" value="English Home Language"> English Home Language</label>
+              <label><input type="checkbox" name="qualifiedSubject" value="Afrikaans Home Language"> Afrikaans Home Language</label>
+            </div>
+            <!-- html-validate-enable form-dup-name -->
+          </div>
+
+          <div class="field">
+            <span class="field-label">Availability</span>
+            <div class="toggle-row">
+              <span>Mark as active</span>
+              <input id="tutorActive" type="checkbox" name="active">
+            </div>
+          </div>
+
+          <p id="tutorFormError" class="form-error" role="alert" aria-live="polite"></p>
+
+          <button class="btn-submit" type="submit">Create tutor</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Tutor list panel -->
+    <section class="panel" aria-labelledby="tutorListTitle">
+      <div class="panel-header">
+        <h2 class="panel-title" id="tutorListTitle">Tutor list</h2>
+      </div>
+      <div class="panel-body">
+        <div id="tutorList">
+
+          <!-- 1. Sarah Mokoena -->
+          <div class="tutor-card">
+            <div class="card-top">
+              <div class="avatar">SM</div>
+              <div class="card-info">
+                <div class="card-name">Sarah Mokoena</div>
+                <div class="card-phone">071 234 5678</div>
+              </div>
+              <span class="status-badge status-active">Active</span>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-grade">Grades 10–12</span>
+              <span class="tag tag-subject">Mathematics</span>
+              <span class="tag tag-subject">Physical Sciences</span>
+            </div>
+          </div>
+
+          <!-- 2. Jacques van der Berg -->
+          <div class="tutor-card">
+            <div class="card-top">
+              <div class="avatar">JV</div>
+              <div class="card-info">
+                <div class="card-name">Jacques van der Berg</div>
+                <div class="card-phone">082 567 8901</div>
+              </div>
+              <span class="status-badge status-active">Active</span>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-grade">Both</span>
+              <span class="tag tag-subject">Mathematics</span>
+              <span class="tag tag-subject">Mathematical Literacy</span>
+              <span class="tag tag-subject">Accounting</span>
+            </div>
+          </div>
+
+          <!-- 3. Thandi Nkosi -->
+          <div class="tutor-card">
+            <div class="card-top">
+              <div class="avatar">TN</div>
+              <div class="card-info">
+                <div class="card-name">Thandi Nkosi</div>
+                <div class="card-phone">064 890 1234</div>
+              </div>
+              <span class="status-badge status-active">Active</span>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-grade">Grades 6–9</span>
+              <span class="tag tag-subject">Life Sciences</span>
+              <span class="tag tag-subject">English Home Language</span>
+            </div>
+          </div>
+
+          <!-- 4. Ruan Pietersen -->
+          <div class="tutor-card">
+            <div class="card-top">
+              <div class="avatar">RP</div>
+              <div class="card-info">
+                <div class="card-name">Ruan Pietersen</div>
+                <div class="card-phone">079 345 6789</div>
+              </div>
+              <span class="status-badge status-verified">Verified</span>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-grade">Grades 10–12</span>
+              <span class="tag tag-subject">Physical Sciences</span>
+              <span class="tag tag-subject">Mathematics</span>
+            </div>
+          </div>
+
+          <!-- 5. Lerato Bhengu -->
+          <div class="tutor-card">
+            <div class="card-top">
+              <div class="avatar">LB</div>
+              <div class="card-info">
+                <div class="card-name">Lerato Bhengu</div>
+                <div class="card-phone">083 456 7890</div>
+              </div>
+              <span class="status-badge status-active">Active</span>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-grade">Both</span>
+              <span class="tag tag-subject">Accounting</span>
+              <span class="tag tag-subject">Mathematical Literacy</span>
+              <span class="tag tag-subject">Afrikaans Home Language</span>
+            </div>
+          </div>
+
+          <!-- 6. Aisha Khan -->
+          <div class="tutor-card">
+            <div class="card-top">
+              <div class="avatar">AK</div>
+              <div class="card-info">
+                <div class="card-name">Aisha Khan</div>
+                <div class="card-phone">060 123 4567</div>
+              </div>
+              <span class="status-badge status-invited">Invited</span>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-grade">Grades 6–9</span>
+              <span class="tag tag-subject">English Home Language</span>
+              <span class="tag tag-subject">Life Sciences</span>
+            </div>
+          </div>
+
+          <!-- 7. Danie Steyn -->
+          <div class="tutor-card">
+            <div class="card-top">
+              <div class="avatar">DS</div>
+              <div class="card-info">
+                <div class="card-name">Danie Steyn</div>
+                <div class="card-phone">072 678 9012</div>
+              </div>
+              <span class="status-badge status-active">Active</span>
+            </div>
+            <div class="card-tags">
+              <span class="tag tag-grade">Grades 10–12</span>
+              <span class="tag tag-subject">Afrikaans Home Language</span>
+              <span class="tag tag-subject">Mathematics</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ── Scroll-hint arrows for the nav pill ──────────────────────────────────
+    (function () {
+      const pill     = document.getElementById("navPill");
+      const scroller = document.getElementById("navScroller");
+      const btnLeft  = document.getElementById("navLeft");
+      const btnRight = document.getElementById("navRight");
+
+      function updateFades() {
+        const sl  = scroller.scrollLeft;
+        const max = scroller.scrollWidth - scroller.clientWidth;
+        pill.classList.toggle("fade-left",  sl > 4);
+        pill.classList.toggle("fade-right", sl < max - 4);
+      }
+
+      scroller.addEventListener("scroll", updateFades, { passive: true });
+      window.addEventListener("resize",  updateFades, { passive: true });
+
+      btnLeft.addEventListener("click",  () => scroller.scrollBy({ left: -140, behavior: "smooth" }));
+      btnRight.addEventListener("click", () => scroller.scrollBy({ left:  140, behavior: "smooth" }));
+
+      // Bring the active link into view on load
+      const active = scroller.querySelector(".is-active");
+      if (active) active.scrollIntoView({ inline: "center", block: "nearest" });
+
+      updateFades();
+    })();
+  </script>
+
+  <script src="/assets/portal-config.js"></script>
+  <script type="module" src="/assets/admin/portal.js"></script>
+</body>
+</html>
