@@ -616,6 +616,252 @@
           "growthSignal": 84
         }
       ]
+    },
+    {
+      "id": "financial-planner",
+      "title": "Financial Planner",
+      "description": "Helps individuals and families make decisions about savings, investments, risk cover, and long-term financial goals.",
+      "category": "Commerce",
+      "relatedCareerIds": [
+        "accountant",
+        "data-analyst",
+        "human-resources-administrator"
+      ],
+      "educationRoutes": [
+        "BCom Finance",
+        "Financial planning higher certificate",
+        "Commerce diploma plus regulatory certification"
+      ],
+      "institutionPathCategories": [
+        "university",
+        "private_institution"
+      ],
+      "timeToEnterMonths": {
+        "min": 12,
+        "max": 48
+      },
+      "futureSignals": [
+        "Retail investing, retirement planning, and risk advice keep demand steady.",
+        "Trust, compliance awareness, and strong client communication improve long-term resilience."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Financial_Planner/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 255000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 60,
+          "growthSignal": 58
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 268000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 62,
+          "growthSignal": 60
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 282000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 65,
+          "growthSignal": 63
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 298000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 68,
+          "growthSignal": 66
+        }
+      ]
+    },
+    {
+      "id": "biomedical-technologist",
+      "title": "Biomedical Technologist",
+      "description": "Supports laboratories and health systems by analysing biological samples and maintaining accurate diagnostic processes.",
+      "category": "Health Sciences",
+      "relatedCareerIds": [
+        "registered-nurse",
+        "data-analyst",
+        "social-worker"
+      ],
+      "educationRoutes": [
+        "BSc Biological Sciences",
+        "Health science laboratory route",
+        "Clinical technology support pathway"
+      ],
+      "institutionPathCategories": [
+        "university",
+        "public_institution"
+      ],
+      "timeToEnterMonths": {
+        "min": 36,
+        "max": 48
+      },
+      "futureSignals": [
+        "Diagnostic services and public health labs keep health-science technical roles relevant.",
+        "Accuracy, lab readiness, and regulated practice shape entry competitiveness."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Biomedical_Technologist/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 228000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 63,
+          "growthSignal": 61
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 238000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 65,
+          "growthSignal": 63
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 250000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 67,
+          "growthSignal": 66
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 264000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 70,
+          "growthSignal": 68
+        }
+      ]
+    },
+    {
+      "id": "quantity-surveyor",
+      "title": "Quantity Surveyor",
+      "description": "Estimates project costs, controls budgets, and supports procurement across construction and infrastructure work.",
+      "category": "Built Environment",
+      "relatedCareerIds": [
+        "civil-engineering-technician",
+        "accountant",
+        "data-analyst"
+      ],
+      "educationRoutes": [
+        "Built environment diploma",
+        "Construction management route",
+        "Quantity surveying degree pathway"
+      ],
+      "institutionPathCategories": [
+        "university",
+        "public_institution",
+        "college_tvet"
+      ],
+      "timeToEnterMonths": {
+        "min": 24,
+        "max": 48
+      },
+      "futureSignals": [
+        "Infrastructure and housing projects keep cost-control skills relevant.",
+        "Spreadsheet fluency, measurement accuracy, and site exposure improve employability."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Quantity_Surveyor/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 245000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 61,
+          "growthSignal": 59
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 255000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 63,
+          "growthSignal": 61
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 268000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 66,
+          "growthSignal": 64
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 282000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 68,
+          "growthSignal": 66
+        }
+      ]
+    },
+    {
+      "id": "human-resources-administrator",
+      "title": "Human Resources Administrator",
+      "description": "Coordinates people operations, hiring support, records, and compliance processes inside organizations.",
+      "category": "Business Operations",
+      "relatedCareerIds": [
+        "social-worker",
+        "financial-planner",
+        "digital-marketer"
+      ],
+      "educationRoutes": [
+        "Human resource management certificate",
+        "Higher certificate in office or HR administration",
+        "Business diploma route"
+      ],
+      "institutionPathCategories": [
+        "private_institution",
+        "college_tvet",
+        "university"
+      ],
+      "timeToEnterMonths": {
+        "min": 12,
+        "max": 36
+      },
+      "futureSignals": [
+        "Growing compliance, payroll, and employee support work keeps people-operations roles active.",
+        "Strong writing, systems discipline, and communication help entry-level candidates stand out."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Human_Resources_(HR)_Administrator/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 185000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 57,
+          "growthSignal": 56
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 194000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 59,
+          "growthSignal": 58
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 205000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 62,
+          "growthSignal": 60
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 216000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 64,
+          "growthSignal": 62
+        }
+      ]
     }
   ]
 }

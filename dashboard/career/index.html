@@ -31,16 +31,22 @@
         </div>
         <div class="odie-hero-meta">
           <div class="metric-card">
-            <span class="metric-label">Core offerings</span>
-            <strong class="metric-value">2</strong>
-            <span class="note">Career Paths + Eligibility Matcher</span>
+            <span class="metric-label">Careers</span>
+            <strong class="metric-value" id="careerCount">0</strong>
+            <span class="note">South Africa-aware role forecasts</span>
           </div>
           <div class="metric-card">
             <span class="metric-label">Institutions covered</span>
             <strong class="metric-value" id="institutionCount">8</strong>
             <span class="note">Cape Town first-entry options</span>
           </div>
+          <div class="metric-card">
+            <span class="metric-label">First-year courses</span>
+            <strong class="metric-value" id="courseCount">0</strong>
+            <span class="note">Normalized cached entry routes</span>
+          </div>
         </div>
+        <p class="note" id="sourceGeneratedAt">Loading cached source freshness...</p>
       </section>
 
       <section class="grid two odie-sections">
@@ -58,6 +64,7 @@
           </label>
           <p id="careerSearchHint" class="note">Browse South Africa-aware career cards, then open one to see salary, demand, pathways, and related roles.</p>
           <div id="careerQuickFilters" class="tag-row"></div>
+          <div id="careerResultsSummary" class="note"></div>
           <div id="careerResults" class="list-compact odie-scroll-region" aria-live="polite"></div>
         </article>
 
@@ -89,6 +96,8 @@
             <div class="action-row">
               <button class="button" type="submit">Check eligibility</button>
               <button class="button secondary" type="button" id="fillSampleResultsBtn">Load sample STEM marks</button>
+              <button class="button secondary" type="button" id="fillBusinessResultsBtn">Load sample business marks</button>
+              <button class="button secondary" type="button" id="fillHumanitiesResultsBtn">Load sample humanities marks</button>
               <button class="button secondary" type="button" id="clearResultsBtn">Clear</button>
             </div>
             <p class="note">Use percentages from your latest school report. Leave subjects blank if you do not take them.</p>
@@ -101,6 +110,10 @@
                 <strong class="metric-value" id="apsValue">0</strong>
               </div>
               <div class="metric-card">
+                <span class="metric-label">Average</span>
+                <strong class="metric-value" id="averageValue">0%</strong>
+              </div>
+              <div class="metric-card">
                 <span class="metric-label">Eligible matches</span>
                 <strong class="metric-value" id="eligibleCount">0</strong>
               </div>
@@ -109,10 +122,12 @@
                 <strong class="metric-value" id="closeCount">0</strong>
               </div>
             </div>
+            <div id="profileSignals" class="guide-section compact"></div>
             <div id="eligibilityHighlights" class="list-compact"></div>
           </div>
         </div>
 
+        <div id="eligibilityResultFilters" class="tag-row"></div>
         <div id="eligibilityResults" class="list-compact" aria-live="polite"></div>
       </section>
     </main>

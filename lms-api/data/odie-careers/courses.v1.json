@@ -12,7 +12,7 @@
     },
     {
       "id": "boston",
-      "name": "Boston City Campus",
+      "name": "Boston City Campus / Boston College",
       "city": "Cape Town",
       "institutionTypes": [
         "private_institution"
@@ -155,7 +155,7 @@
     {
       "id": "boston-accounting",
       "institutionId": "boston",
-      "institutionName": "Boston City Campus",
+      "institutionName": "Boston City Campus / Boston College",
       "qualificationType": "Higher Certificate",
       "programmeName": "Higher Certificate in Accounting",
       "faculty": "Commerce",
@@ -183,27 +183,28 @@
     {
       "id": "boston-it",
       "institutionId": "boston",
-      "institutionName": "Boston City Campus",
-      "qualificationType": "Diploma",
-      "programmeName": "Diploma in Systems Development",
+      "institutionName": "Boston City Campus / Boston College",
+      "qualificationType": "Higher Certificate",
+      "programmeName": "Higher Certificate in Software Development Practice",
       "faculty": "Technology",
       "institutionTypes": [
         "private_institution"
       ],
       "alignedCareerIds": [
         "software-developer",
-        "data-analyst"
+        "data-analyst",
+        "cybersecurity-analyst"
       ],
       "alignmentTags": [
         "stem"
       ],
       "requirementConfidence": "medium",
       "applicationNotes": [
-        "Build a simple coding portfolio while improving Maths."
+        "Build a simple coding portfolio while improving Mathematics and English."
       ],
       "sourceUrl": "https://www.boston.co.za/",
       "requirements": {
-        "minimumAps": 24,
+        "minimumAps": 20,
         "minimumEnglishPercentage": 50,
         "subjectRequirements": [
           {
@@ -212,11 +213,43 @@
               "Mathematics",
               "Mathematical Literacy"
             ],
-            "minimumPercentage": 50
+            "minimumPercentage": 40
           }
         ],
         "notes": [
-          "Suitable for students targeting application support and development roles."
+          "Based on Boston's public higher certificate entry route with English pass requirements and progression into further ICT study."
+        ]
+      }
+    },
+    {
+      "id": "eduvos-hr",
+      "institutionId": "eduvos",
+      "institutionName": "Eduvos",
+      "qualificationType": "Higher Certificate",
+      "programmeName": "Higher Certificate in Human Resource Management",
+      "faculty": "Commerce",
+      "institutionTypes": [
+        "private_institution"
+      ],
+      "alignedCareerIds": [
+        "human-resources-administrator",
+        "social-worker"
+      ],
+      "alignmentTags": [
+        "business",
+        "humanities"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Strong English and Business Studies will help you move beyond the minimum."
+      ],
+      "sourceUrl": "https://www.eduvos.com/programmes/",
+      "requirements": {
+        "minimumAps": 22,
+        "minimumEnglishPercentage": 50,
+        "subjectRequirements": [],
+        "notes": [
+          "Useful first-entry private pathway for students targeting people, operations, and office support work."
         ]
       }
     },
@@ -310,6 +343,96 @@
       }
     },
     {
+      "id": "uwc-social-work",
+      "institutionId": "uwc",
+      "institutionName": "University of the Western Cape (UWC)",
+      "qualificationType": "Bachelor",
+      "programmeName": "Bachelor of Social Work",
+      "faculty": "Community and Health Sciences",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "social-worker",
+        "human-resources-administrator"
+      ],
+      "alignmentTags": [
+        "humanities",
+        "health"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Keep English and Life Sciences strong if you want to stay competitive for community-facing programmes."
+      ],
+      "sourceUrl": "https://www.uwc.ac.za/study/all-areas-of-study",
+      "requirements": {
+        "minimumAps": 30,
+        "minimumEnglishPercentage": 55,
+        "subjectRequirements": [
+          {
+            "label": "English",
+            "acceptedSubjects": [
+              "English"
+            ],
+            "minimumPercentage": 55
+          }
+        ],
+        "notes": [
+          "History, Geography, and Life Sciences strengthen fit even when not explicitly compulsory."
+        ]
+      }
+    },
+    {
+      "id": "uwc-biological-sciences",
+      "institutionId": "uwc",
+      "institutionName": "University of the Western Cape (UWC)",
+      "qualificationType": "BSc",
+      "programmeName": "BSc Biological Sciences",
+      "faculty": "Natural Sciences",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "biomedical-technologist",
+        "registered-nurse"
+      ],
+      "alignmentTags": [
+        "health",
+        "stem"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Improve Mathematics and Life Sciences together to unlock more health-science options."
+      ],
+      "sourceUrl": "https://www.uwc.ac.za/study/all-areas-of-study",
+      "requirements": {
+        "minimumAps": 30,
+        "minimumEnglishPercentage": 55,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics",
+            "acceptedSubjects": [
+              "Mathematics"
+            ],
+            "minimumPercentage": 50
+          },
+          {
+            "label": "Life Sciences or Physical Sciences",
+            "acceptedSubjects": [
+              "Life Sciences",
+              "Physical Sciences"
+            ],
+            "minimumPercentage": 50
+          }
+        ],
+        "notes": [
+          "Useful first-year science route for students who want health-adjacent laboratory and clinical support pathways."
+        ]
+      }
+    },
+    {
       "id": "uct-compsci",
       "institutionId": "uct",
       "institutionName": "University of Cape Town (UCT)",
@@ -394,6 +517,47 @@
         ],
         "notes": [
           "History, Geography, and Life Sciences strengthen fit."
+        ]
+      }
+    },
+    {
+      "id": "uct-commerce",
+      "institutionId": "uct",
+      "institutionName": "University of Cape Town (UCT)",
+      "qualificationType": "BCom",
+      "programmeName": "Bachelor of Commerce",
+      "faculty": "Commerce",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "accountant",
+        "financial-planner",
+        "data-analyst"
+      ],
+      "alignmentTags": [
+        "business"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Try to keep Mathematics above 65% if you want more room across commerce majors."
+      ],
+      "sourceUrl": "https://www.uct.ac.za/students/undergraduate",
+      "requirements": {
+        "minimumAps": 36,
+        "minimumEnglishPercentage": 60,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics",
+            "acceptedSubjects": [
+              "Mathematics"
+            ],
+            "minimumPercentage": 60
+          }
+        ],
+        "notes": [
+          "Commerce routes remain competitive, so practical competitiveness can sit above the published minimums."
         ]
       }
     },
@@ -485,6 +649,38 @@
       }
     },
     {
+      "id": "stellenbosch-social-dynamics",
+      "institutionId": "stellenbosch",
+      "institutionName": "Stellenbosch University",
+      "qualificationType": "BA",
+      "programmeName": "BA Social Dynamics",
+      "faculty": "Arts and Social Sciences",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "social-worker",
+        "human-resources-administrator"
+      ],
+      "alignmentTags": [
+        "humanities"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Lift English and History to stay above the minimum and prepare for writing-heavy first year work."
+      ],
+      "sourceUrl": "https://www.sun.ac.za/english/study-at-sun/undergraduate",
+      "requirements": {
+        "minimumAps": 30,
+        "minimumEnglishPercentage": 60,
+        "subjectRequirements": [],
+        "notes": [
+          "A broad social science route for students interested in people, community, and organizational work."
+        ]
+      }
+    },
+    {
       "id": "false-bay-business",
       "institutionId": "false-bay",
       "institutionName": "False Bay College",
@@ -551,6 +747,38 @@
         ],
         "notes": [
           "TVET option for students building technical readiness before diploma study."
+        ]
+      }
+    },
+    {
+      "id": "false-bay-office-admin",
+      "institutionId": "false-bay",
+      "institutionName": "False Bay College",
+      "qualificationType": "NC(V) Level 2",
+      "programmeName": "NC(V) Office Administration",
+      "faculty": "Business",
+      "institutionTypes": [
+        "college_tvet",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "human-resources-administrator",
+        "financial-planner"
+      ],
+      "alignmentTags": [
+        "business",
+        "humanities"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Use this route if you need a lower-threshold pathway into admin, HR support, and operations work."
+      ],
+      "sourceUrl": "https://www.falsebaycollege.co.za/courses/",
+      "requirements": {
+        "minimumEnglishPercentage": 40,
+        "subjectRequirements": [],
+        "notes": [
+          "Good adjacent pathway when direct-entry university commerce routes are still out of reach."
         ]
       }
     },
@@ -631,6 +859,46 @@
       }
     },
     {
+      "id": "northlink-it-support",
+      "institutionId": "northlink",
+      "institutionName": "Northlink College",
+      "qualificationType": "National Certificate",
+      "programmeName": "National Certificate: Information Technology",
+      "faculty": "Information Technology",
+      "institutionTypes": [
+        "college_tvet",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "software-developer",
+        "cybersecurity-analyst"
+      ],
+      "alignmentTags": [
+        "stem"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Keep Mathematics, CAT, and English moving upward to make later diploma progression easier."
+      ],
+      "sourceUrl": "https://www.northlink.co.za/course-information/",
+      "requirements": {
+        "minimumEnglishPercentage": 40,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics or Mathematical Literacy",
+            "acceptedSubjects": [
+              "Mathematics",
+              "Mathematical Literacy"
+            ],
+            "minimumPercentage": 40
+          }
+        ],
+        "notes": [
+          "A practical entry route for students targeting technical support, networking, and software-adjacent paths."
+        ]
+      }
+    },
+    {
       "id": "rosebank-it",
       "institutionId": "rosebank",
       "institutionName": "Rosebank College",
@@ -699,6 +967,38 @@
         "subjectRequirements": [],
         "notes": [
           "Adjacent route for business, operations, and admin pathways."
+        ]
+      }
+    },
+    {
+      "id": "rosebank-hr",
+      "institutionId": "rosebank",
+      "institutionName": "Rosebank College",
+      "qualificationType": "Higher Certificate",
+      "programmeName": "Higher Certificate in Human Resource Management",
+      "faculty": "Commerce",
+      "institutionTypes": [
+        "private_institution"
+      ],
+      "alignedCareerIds": [
+        "human-resources-administrator",
+        "social-worker"
+      ],
+      "alignmentTags": [
+        "business",
+        "humanities"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Improve English and Business Studies to stay above minimum and strengthen later progression options."
+      ],
+      "sourceUrl": "https://www.rosebankcollege.co.za/qualifications/",
+      "requirements": {
+        "minimumAps": 20,
+        "minimumEnglishPercentage": 50,
+        "subjectRequirements": [],
+        "notes": [
+          "A practical people-and-operations route for students not yet ready for university thresholds."
         ]
       }
     }

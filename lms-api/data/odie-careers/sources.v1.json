@@ -1,20 +1,87 @@
 {
   "version": "1.0.0",
-  "lastRunAt": "2026-03-20T00:00:00.000Z",
+  "lastRunAt": "2026-03-20T08:17:32.612Z",
   "documents": [
     {
       "providerKey": "payscale_za_jobs",
+      "label": "Payscale South Africa job index",
+      "area": "salary",
       "url": "https://www.payscale.com/research/ZA/Job",
-      "fetchedAt": "2026-03-20T00:00:00.000Z",
+      "fetchedAt": "2026-03-20T08:17:32.612Z",
       "status": "fallback",
-      "notes": "Cached salary snapshots are active until a fresh ingestion run succeeds."
+      "notes": "Primary salary landing page used to validate cached South Africa salary snapshots. Cached normalized Odie Careers data remains active until a refresh succeeds."
     },
     {
-      "providerKey": "cape_town_institutions",
-      "url": "https://www.uwc.ac.za/study/all-areas-of-study",
-      "fetchedAt": "2026-03-20T00:00:00.000Z",
+      "providerKey": "eduvos_programmes",
+      "label": "Eduvos programme catalogue",
+      "area": "institution",
+      "url": "https://www.eduvos.com/programmes/",
+      "fetchedAt": "2026-03-20T08:17:32.612Z",
       "status": "fallback",
-      "notes": "Cached normalized first-entry course catalog is active until per-institution refresh completes."
+      "notes": "Programme discovery page used to verify cached first-entry private institution options. Cached normalized Odie Careers data remains active until a refresh succeeds."
+    },
+    {
+      "providerKey": "boston_programmes",
+      "label": "Boston City Campus qualification pages",
+      "area": "institution",
+      "url": "https://www.boston.co.za/",
+      "fetchedAt": "2026-03-20T08:17:32.612Z",
+      "status": "fallback",
+      "notes": "Qualification landing pages used to verify Boston City Campus / Boston College first-entry pathways. Cached normalized Odie Careers data remains active until a refresh succeeds."
+    },
+    {
+      "providerKey": "uwc_undergraduate",
+      "label": "UWC undergraduate study catalogue",
+      "area": "institution",
+      "url": "https://www.uwc.ac.za/study/all-areas-of-study",
+      "fetchedAt": "2026-03-20T08:17:32.612Z",
+      "status": "fallback",
+      "notes": "Public undergraduate catalogue used for UWC first-year programme normalization. Cached normalized Odie Careers data remains active until a refresh succeeds."
+    },
+    {
+      "providerKey": "uct_undergraduate",
+      "label": "UCT undergraduate entry pages",
+      "area": "institution",
+      "url": "https://www.uct.ac.za/students/undergraduate",
+      "fetchedAt": "2026-03-20T08:17:32.612Z",
+      "status": "fallback",
+      "notes": "UCT undergraduate entry pages and faculty references used for first-entry pathway normalization. Cached normalized Odie Careers data remains active until a refresh succeeds."
+    },
+    {
+      "providerKey": "stellenbosch_undergraduate",
+      "label": "Stellenbosch undergraduate pages",
+      "area": "institution",
+      "url": "https://www.sun.ac.za/english/study-at-sun/undergraduate",
+      "fetchedAt": "2026-03-20T08:17:32.612Z",
+      "status": "fallback",
+      "notes": "Undergraduate landing page used to validate Stellenbosch first-entry routes. Cached normalized Odie Careers data remains active until a refresh succeeds."
+    },
+    {
+      "providerKey": "false_bay_courses",
+      "label": "False Bay College course pages",
+      "area": "institution",
+      "url": "https://falsebaycollege.co.za/courses/",
+      "fetchedAt": "2026-03-20T08:17:32.612Z",
+      "status": "fallback",
+      "notes": "Public course pages used to verify first-entry TVET pathways. Cached normalized Odie Careers data remains active until a refresh succeeds."
+    },
+    {
+      "providerKey": "northlink_courses",
+      "label": "Northlink College course information",
+      "area": "institution",
+      "url": "https://www.northlink.co.za/course-information/",
+      "fetchedAt": "2026-03-20T08:17:32.612Z",
+      "status": "fallback",
+      "notes": "Northlink course information used to verify first-entry college pathways. Cached normalized Odie Careers data remains active until a refresh succeeds."
+    },
+    {
+      "providerKey": "rosebank_programmes",
+      "label": "Rosebank College qualification pages",
+      "area": "institution",
+      "url": "https://www.rosebankcollege.co.za/qualifications/",
+      "fetchedAt": "2026-03-20T08:17:32.612Z",
+      "status": "fallback",
+      "notes": "Qualification landing pages used for Rosebank College first-entry normalization. Cached normalized Odie Careers data remains active until a refresh succeeds."
     }
   ]
 }

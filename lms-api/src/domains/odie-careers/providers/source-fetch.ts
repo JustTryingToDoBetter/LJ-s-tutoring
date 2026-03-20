@@ -2,6 +2,8 @@ import type { CachedSourceDocument } from '../types.js';
 
 export interface SourceDescriptor {
   providerKey: string;
+  label: string;
+  area: 'salary' | 'institution';
   url: string;
   notes: string;
 }
@@ -30,6 +32,8 @@ export async function fetchSourceDocuments(descriptors: SourceDescriptor[]): Pro
 
       output.push({
         providerKey: descriptor.providerKey,
+        label: descriptor.label,
+        area: descriptor.area,
         url: descriptor.url,
         fetchedAt: new Date().toISOString(),
         status: response.ok ? 'ok' : 'fallback',
@@ -39,6 +43,8 @@ export async function fetchSourceDocuments(descriptors: SourceDescriptor[]): Pro
     } catch (error) {
       output.push({
         providerKey: descriptor.providerKey,
+        label: descriptor.label,
+        area: descriptor.area,
         url: descriptor.url,
         fetchedAt: new Date().toISOString(),
         status: 'fallback',

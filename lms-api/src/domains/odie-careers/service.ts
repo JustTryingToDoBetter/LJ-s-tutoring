@@ -4,6 +4,7 @@ import { evaluateEligibility } from './eligibility.js';
 import type {
   CareerDetail,
   CareerSummary,
+  EligibilityEvaluation,
   OdieCareersOverview,
   StudentProfile,
 } from './types.js';
@@ -27,7 +28,7 @@ function growthLabel(score: number) {
   return 'Mixed';
 }
 
-function buildCareerSummary(record: ReturnType<typeof loadCareerDataset>['careers'][number], allCareers: ReturnType<typeof loadCareerDataset>['careers']): CareerSummary {
+function buildCareerSummary(record: ReturnType<typeof loadCareerDataset>['careers'][number]): CareerSummary {
   const salaries = record.metricSnapshots.map((snapshot) => snapshot.medianSalaryZar);
   const forecast = buildCareerForecast(record.metricSnapshots);
 
@@ -55,13 +56,19 @@ export function getOdieCareersOverview(): OdieCareersOverview {
 
   return {
     generatedAt: sources.lastRunAt,
-    careers: careers.map((career) => buildCareerSummary(career, careers)),
+    careers: careers.map((career) => buildCareerSummary(career)),
     institutions: courses.institutions,
     supportedSubjects: courses.supportedSubjects,
+    stats: {
+      careerCount: careers.length,
+      courseCount: courses.courses.length,
+      institutionCount: courses.institutions.length,
+    },
     sourceSummary: {
       salary: 'Payscale South Africa job pages are the primary salary reference with cached normalization fallback.',
       courses: 'Institution programme pages are normalized into a cached first-entry course catalog for Cape Town options.',
     },
+    sourceHealth: sources.documents,
   };
 }
 
@@ -70,7 +77,7 @@ export function getCareerDetail(careerId: string): CareerDetail | null {
   const record = dataset.careers.find((item) => item.id === careerId);
   if (!record) return null;
 
-  const summary = buildCareerSummary(record, dataset.careers);
+  const summary = buildCareerSummary(record);
   return {
     ...summary,
     educationRoutes: record.educationRoutes,
@@ -95,15 +102,12 @@ export function searchCareerSummaries(query?: string) {
   const dataset = loadCareerDataset();
   const careers = dataset.careers
     .filter((career) => !normalizedQuery || career.title.toLowerCase().includes(normalizedQuery) || career.category.toLowerCase().includes(normalizedQuery))
-    .map((career) => buildCareerSummary(career, dataset.careers));
+    .map((career) => buildCareerSummary(career));
 
   return careers.sort((a, b) => a.title.localeCompare(b.title));
 }
 
-export function evaluateStudentProfile(profile: StudentProfile) {
+export function evaluateStudentProfile(profile: StudentProfile): EligibilityEvaluation {
   const { courses } = loadCourseDataset();
-  return {
-    aps: profile.subjects.length > 0 ? profile.subjects.reduce((sum, subject) => sum + Math.ceil(subject.percentage / 10), 0) : 0,
-    results: evaluateEligibility(profile, courses),
-  };
+  return evaluateEligibility(profile, courses);
 }

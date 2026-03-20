@@ -46,8 +46,9 @@ p { line-height: 1.6; }
 .hero-card h1, .page-title { margin: 0 0 0.75rem; font-size: clamp(2rem, 4vw, 3.5rem); }
 .page-title { font-size: clamp(1.8rem, 3vw, 2.5rem); }
 .lead, .page-subtitle, .note { color: var(--muted); }
-.action-row, .tag-row, .metric-grid, .marketing-grid, .grid { display: grid; gap: 1rem; }
+.metric-grid, .marketing-grid, .grid { display: grid; gap: 1rem; }
 .action-row { display: flex; flex-wrap: wrap; margin-top: 1.25rem; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 .marketing-grid.two, .grid.two { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-top: 1rem; }
 .metric-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 1rem; }
 .metric-card { display: grid; gap: 0.5rem; }
@@ -136,6 +137,11 @@ textarea { resize: vertical; }
   align-items: start;
 }
 
+#sourceGeneratedAt {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
 .odie-hero-meta,
 .odie-match-grid {
   align-items: start;
@@ -178,6 +184,10 @@ textarea { resize: vertical; }
   font-size: 0.92rem;
 }
 
+.tag-row.compact {
+  gap: 0.5rem;
+}
+
 .filter-chip,
 .status-pill {
   display: inline-flex;
@@ -205,6 +215,10 @@ textarea { resize: vertical; }
 .guide-section.compact {
   padding: 0.85rem 1rem;
   margin: 0;
+}
+
+.compact-card strong {
+  margin-bottom: 0;
 }
 
 .subject-grid {

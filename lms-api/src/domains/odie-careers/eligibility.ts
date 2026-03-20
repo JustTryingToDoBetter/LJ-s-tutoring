@@ -1,5 +1,14 @@
+import {
+  averagePercentage,
+  buildStudentProfileSummary,
+  calculateAps,
+  inferStrengthSignals,
+  normalizeStudentSubjects,
+  normalizeSubjectName,
+} from './normalization.js';
 import type {
   CourseRecord,
+  EligibilityEvaluation,
   EligibilityGap,
   EligibilityResult,
   QualificationStatus,
@@ -12,23 +21,14 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-function normalizeSubjectName(subject: string) {
-  return subject.trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-export function calculateAps(subjects: StudentSubjectResult[]) {
-  return subjects.reduce((sum, subject) => sum + Math.ceil(clamp(subject.percentage, 0, 100) / 10), 0);
-}
-
-function averagePercentage(subjects: StudentSubjectResult[]) {
-  if (subjects.length === 0) return 0;
-  return Math.round(subjects.reduce((sum, subject) => sum + subject.percentage, 0) / subjects.length);
-}
-
 function findBestMatch(subjects: StudentSubjectResult[], requirement: SubjectRequirement) {
-  const normalizedAccepted = requirement.acceptedSubjects.map(normalizeSubjectName);
-  const matches = subjects.filter((subject) => normalizedAccepted.includes(normalizeSubjectName(subject.subject)));
-  if (matches.length === 0) return null;
+  const acceptedSubjects = new Set(requirement.acceptedSubjects.map((subject) => normalizeSubjectName(subject)));
+  const matches = subjects.filter((subject) => acceptedSubjects.has(normalizeSubjectName(subject.subject)));
+
+  if (matches.length === 0) {
+    return null;
+  }
+
   return matches.sort((a, b) => b.percentage - a.percentage)[0];
 }
 
@@ -39,52 +39,85 @@ function buildSubjectGap(requirement: SubjectRequirement, currentValue: number |
     currentValue,
     targetValue: requirement.minimumPercentage,
     message: currentValue == null
-      ? `Add ${requirement.label} with at least ${requirement.minimumPercentage}% or choose an aligned pathway that does not require it.`
+      ? `Add ${requirement.label} with at least ${requirement.minimumPercentage}% or choose an aligned route that does not require it.`
       : `Improve ${requirement.label} from ${currentValue}% to ${requirement.minimumPercentage}%.`,
   };
 }
 
-function inferStrengthSignals(subjects: StudentSubjectResult[]) {
-  const signals = new Set<string>();
-  subjects.forEach((subject) => {
-    const name = normalizeSubjectName(subject.subject);
-    const strong = subject.percentage >= 65;
-    if (!strong) return;
-    if (['mathematics', 'physical sciences', 'information technology', 'computer applications technology'].includes(name)) {
-      signals.add('stem');
+function getShortfall(gap: EligibilityGap) {
+  if (gap.currentValue == null) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return Math.max(0, gap.targetValue - gap.currentValue);
+}
+
+function classifyStatus(gaps: EligibilityGap[]) {
+  if (gaps.length === 0) {
+    return 'eligible' satisfies QualificationStatus;
+  }
+
+  const closeEnough = gaps.length <= 3 && gaps.every((gap) => {
+    if (gap.currentValue == null) {
+      return false;
     }
-    if (['accounting', 'business studies', 'economics', 'mathematical literacy'].includes(name)) {
-      signals.add('business');
+
+    if (gap.type === 'aps') {
+      return getShortfall(gap) <= 3;
     }
-    if (['english', 'history', 'geography', 'life sciences'].includes(name)) {
-      signals.add('humanities');
-    }
+
+    return getShortfall(gap) <= 5;
   });
-  return signals;
+
+  return closeEnough ? 'close' : 'not_eligible';
+}
+
+function buildAlternativePool(course: CourseRecord, courses: CourseRecord[]) {
+  return courses.filter((candidate) => (
+    candidate.id !== course.id
+    && candidate.alignmentTags.some((tag) => course.alignmentTags.includes(tag))
+    && (candidate.requirements.minimumAps ?? 0) <= ((course.requirements.minimumAps ?? 0) + 4)
+    && candidate.requirements.subjectRequirements.length <= course.requirements.subjectRequirements.length
+  ));
 }
 
 function buildRecommendedActions(course: CourseRecord, gaps: EligibilityGap[], alternativeCourses: CourseRecord[]) {
   const actions = gaps.map((gap) => gap.message);
+
   if (course.applicationNotes.length > 0) {
     actions.push(course.applicationNotes[0]);
   }
+
   const alternative = alternativeCourses[0];
   if (alternative) {
-    actions.push(`Consider ${alternative.programmeName} at ${alternative.institutionName} as an adjacent first-entry option while you improve requirements.`);
+    actions.push(`Consider ${alternative.programmeName} at ${alternative.institutionName} as an adjacent first-entry option while you improve your marks.`);
   }
-  return [...new Set(actions)].slice(0, 4);
+
+  if (course.institutionTypes.includes('college_tvet')) {
+    actions.push('Use the college route to build marks, practical readiness, and progression options into diploma study.');
+  }
+
+  return [...new Set(actions)].slice(0, 5);
 }
 
-export function evaluateEligibility(profile: StudentProfile, courses: CourseRecord[]): EligibilityResult[] {
-  const subjects = profile.subjects
-    .map((subject) => ({ subject: subject.subject.trim(), percentage: clamp(subject.percentage, 0, 100) }))
-    .filter((subject) => subject.subject.length > 0);
+function buildAlignedSignalLabels(signalKeys: string[]) {
+  return signalKeys.map((signal) => {
+    if (signal === 'stem') return 'STEM';
+    if (signal === 'business') return 'Business';
+    if (signal === 'humanities') return 'Humanities';
+    if (signal === 'health') return 'Health';
+    return signal;
+  });
+}
+
+export function evaluateEligibility(profile: StudentProfile, courses: CourseRecord[]): EligibilityEvaluation {
+  const subjects = normalizeStudentSubjects(profile.subjects);
   const aps = calculateAps(subjects);
   const overall = averagePercentage(subjects);
-  const english = subjects.find((subject) => normalizeSubjectName(subject.subject) === 'english')?.percentage ?? null;
-  const strengths = inferStrengthSignals(subjects);
+  const english = subjects.find((subject) => normalizeSubjectName(subject.subject) === 'English')?.percentage ?? null;
+  const profileSummary = buildStudentProfileSummary(subjects);
+  const strengths = new Set(inferStrengthSignals(subjects).map(String));
 
-  return courses.map((course) => {
+  const results = courses.map((course) => {
     const gaps: EligibilityGap[] = [];
 
     for (const requirement of course.requirements.subjectRequirements) {
@@ -100,7 +133,7 @@ export function evaluateEligibility(profile: StudentProfile, courses: CourseReco
         requirement: 'APS',
         currentValue: aps,
         targetValue: course.requirements.minimumAps,
-        message: `Lift your APS from ${aps} to ${course.requirements.minimumAps} by improving your strongest ladder subjects.`
+        message: `Lift your APS from ${aps} to ${course.requirements.minimumAps} by improving your top six subjects.`,
       });
     }
 
@@ -110,7 +143,7 @@ export function evaluateEligibility(profile: StudentProfile, courses: CourseReco
         requirement: 'Overall average',
         currentValue: overall,
         targetValue: course.requirements.minimumOverallPercentage,
-        message: `Raise your overall average from ${overall}% to ${course.requirements.minimumOverallPercentage}%.`
+        message: `Raise your overall average from ${overall}% to ${course.requirements.minimumOverallPercentage}%.`,
       });
     }
 
@@ -122,22 +155,24 @@ export function evaluateEligibility(profile: StudentProfile, courses: CourseReco
         targetValue: course.requirements.minimumEnglishPercentage,
         message: english == null
           ? `Add English with at least ${course.requirements.minimumEnglishPercentage}% for this route.`
-          : `Improve English from ${english}% to ${course.requirements.minimumEnglishPercentage}%.`
+          : `Improve English from ${english}% to ${course.requirements.minimumEnglishPercentage}%.`,
       });
     }
 
     const alignedSignals = course.alignmentTags.filter((tag) => strengths.has(tag));
-    const alignmentScore = clamp((alignedSignals.length * 24) + (course.alignedCareerIds.length * 4) + (gaps.length === 0 ? 20 : Math.max(0, 14 - gaps.length * 5)), 5, 98);
-
-    let status: QualificationStatus = 'not_eligible';
-    if (gaps.length === 0) status = 'eligible';
-    else if (gaps.every((gap) => (gap.targetValue - (gap.currentValue ?? 0)) <= 6)) status = 'close';
-
-    const alternativeCourses = courses.filter((candidate) => (
-      candidate.id !== course.id
-      && candidate.alignmentTags.some((tag) => course.alignmentTags.includes(tag))
-      && (candidate.requirements.minimumAps ?? 0) <= (course.requirements.minimumAps ?? 99)
-    ));
+    const status = classifyStatus(gaps);
+    const alternativeCourses = buildAlternativePool(course, courses);
+    const alignmentScore = clamp(
+      26
+      + alignedSignals.length * 22
+      + profileSummary.strongestSubjects.filter((subject) => course.requirements.subjectRequirements.some((requirement) => (
+        requirement.acceptedSubjects.map((accepted) => normalizeSubjectName(accepted)).includes(normalizeSubjectName(subject.subject))
+      ))).length * 8
+      + (status === 'eligible' ? 12 : 0)
+      - gaps.length * 6,
+      5,
+      98
+    );
 
     return {
       courseId: course.id,
@@ -145,9 +180,10 @@ export function evaluateEligibility(profile: StudentProfile, courses: CourseReco
       programmeName: course.programmeName,
       qualificationType: course.qualificationType,
       faculty: course.faculty,
+      institutionTypes: course.institutionTypes,
       status,
       alignmentScore,
-      alignedSignals,
+      alignedSignals: buildAlignedSignalLabels(alignedSignals),
       minimumRequirements: course.requirements,
       requirementConfidence: course.requirementConfidence,
       missingRequirements: gaps,
@@ -158,4 +194,11 @@ export function evaluateEligibility(profile: StudentProfile, courses: CourseReco
     const statusRank: Record<QualificationStatus, number> = { eligible: 0, close: 1, not_eligible: 2 };
     return statusRank[a.status] - statusRank[b.status] || b.alignmentScore - a.alignmentScore || a.institutionName.localeCompare(b.institutionName);
   });
+
+  return {
+    aps,
+    averagePercentage: overall,
+    profileSummary,
+    results,
+  };
 }

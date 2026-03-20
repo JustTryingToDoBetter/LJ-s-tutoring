@@ -3,6 +3,7 @@ export type ForecastLabel = 'strong_positive' | 'positive' | 'steady' | 'watchli
 export type ConfidenceLabel = 'high' | 'medium' | 'low';
 export type QualificationStatus = 'eligible' | 'close' | 'not_eligible';
 export type InstitutionType = 'university' | 'college_tvet' | 'public_institution' | 'private_institution';
+export type ProfileSignal = 'stem' | 'business' | 'humanities' | 'health';
 
 export interface CareerMetricSnapshot {
   year: number;
@@ -110,6 +111,14 @@ export interface StudentProfile {
   subjects: StudentSubjectResult[];
 }
 
+export interface StudentProfileSummary {
+  averagePercentage: number;
+  strongestSubjects: StudentSubjectResult[];
+  signals: ProfileSignal[];
+  signalLabels: string[];
+  routeSuggestions: string[];
+}
+
 export interface EligibilityGap {
   type: 'subject' | 'aps' | 'overall' | 'english';
   requirement: string;
@@ -124,6 +133,7 @@ export interface EligibilityResult {
   programmeName: string;
   qualificationType: string;
   faculty?: string;
+  institutionTypes: InstitutionType[];
   status: QualificationStatus;
   alignmentScore: number;
   alignedSignals: string[];
@@ -134,19 +144,34 @@ export interface EligibilityResult {
   sourceUrl: string;
 }
 
+export interface EligibilityEvaluation {
+  aps: number;
+  averagePercentage: number;
+  profileSummary: StudentProfileSummary;
+  results: EligibilityResult[];
+}
+
 export interface OdieCareersOverview {
   generatedAt: string;
   careers: CareerSummary[];
   institutions: InstitutionRecord[];
   supportedSubjects: string[];
+  stats: {
+    careerCount: number;
+    courseCount: number;
+    institutionCount: number;
+  };
   sourceSummary: {
     salary: string;
     courses: string;
   };
+  sourceHealth: CachedSourceDocument[];
 }
 
 export interface CachedSourceDocument {
   providerKey: string;
+  label: string;
+  area: 'salary' | 'institution';
   url: string;
   fetchedAt: string;
   status: 'ok' | 'fallback';

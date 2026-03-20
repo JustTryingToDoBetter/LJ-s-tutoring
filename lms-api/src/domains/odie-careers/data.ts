@@ -51,3 +51,9 @@ export function loadSourceManifest() {
   sourceManifestCache ??= readJsonFile<SourceManifest>('sources.v1.json');
   return sourceManifestCache;
 }
+
+export function clearOdieCareersDataCaches() {
+  careersCache = null;
+  coursesCache = null;
+  sourceManifestCache = null;
+}
