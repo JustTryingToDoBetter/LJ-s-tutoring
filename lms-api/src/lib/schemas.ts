@@ -343,3 +343,20 @@ export const ArcadeValidationSchema = z.object({
   score: z.number().int().min(0).max(100000000),
   events: z.array(ArcadeEventSchema).min(1).max(5000),
 });
+
+export const OdieCareersSearchQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+});
+
+export const OdieCareerIdParamSchema = z.object({
+  careerId: z.string().trim().min(1).max(120),
+});
+
+export const StudentSubjectResultSchema = z.object({
+  subject: z.string().trim().min(1).max(120),
+  percentage: z.coerce.number().min(0).max(100),
+});
+
+export const OdieCareersEligibilityRequestSchema = z.object({
+  subjects: z.array(StudentSubjectResultSchema).min(1).max(20),
+});

@@ -1,0 +1,720 @@
+{
+  "version": "1.0.0",
+  "institutions": [
+    {
+      "id": "eduvos",
+      "name": "Eduvos",
+      "city": "Cape Town",
+      "institutionTypes": [
+        "private_institution"
+      ],
+      "sourceUrl": "https://www.eduvos.com/programmes/"
+    },
+    {
+      "id": "boston",
+      "name": "Boston City Campus",
+      "city": "Cape Town",
+      "institutionTypes": [
+        "private_institution"
+      ],
+      "sourceUrl": "https://www.boston.co.za/"
+    },
+    {
+      "id": "uwc",
+      "name": "University of the Western Cape (UWC)",
+      "city": "Cape Town",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "sourceUrl": "https://www.uwc.ac.za/study/all-areas-of-study"
+    },
+    {
+      "id": "uct",
+      "name": "University of Cape Town (UCT)",
+      "city": "Cape Town",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "sourceUrl": "https://www.uct.ac.za/students/undergraduate"
+    },
+    {
+      "id": "stellenbosch",
+      "name": "Stellenbosch University",
+      "city": "Cape Town",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "sourceUrl": "https://www.sun.ac.za/english/study-at-sun/undergraduate"
+    },
+    {
+      "id": "false-bay",
+      "name": "False Bay College",
+      "city": "Cape Town",
+      "institutionTypes": [
+        "college_tvet",
+        "public_institution"
+      ],
+      "sourceUrl": "https://www.falsebaycollege.co.za/courses/"
+    },
+    {
+      "id": "northlink",
+      "name": "Northlink College",
+      "city": "Cape Town",
+      "institutionTypes": [
+        "college_tvet",
+        "public_institution"
+      ],
+      "sourceUrl": "https://www.northlink.co.za/course-information/"
+    },
+    {
+      "id": "rosebank",
+      "name": "Rosebank College",
+      "city": "Cape Town",
+      "institutionTypes": [
+        "private_institution"
+      ],
+      "sourceUrl": "https://www.rosebankcollege.co.za/qualifications/"
+    }
+  ],
+  "courses": [
+    {
+      "id": "eduvos-it",
+      "institutionId": "eduvos",
+      "institutionName": "Eduvos",
+      "qualificationType": "Higher Certificate",
+      "programmeName": "Higher Certificate in Information Systems (Software Development)",
+      "faculty": "Applied IT",
+      "institutionTypes": [
+        "private_institution"
+      ],
+      "alignedCareerIds": [
+        "software-developer",
+        "cybersecurity-analyst"
+      ],
+      "alignmentTags": [
+        "stem"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Aim for 60%+ in Mathematics if you want easier progression into diploma and degree pathways."
+      ],
+      "sourceUrl": "https://www.eduvos.com/programmes/",
+      "requirements": {
+        "minimumAps": 24,
+        "minimumEnglishPercentage": 50,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics or Mathematical Literacy",
+            "acceptedSubjects": [
+              "Mathematics",
+              "Mathematical Literacy"
+            ],
+            "minimumPercentage": 50,
+            "notes": "Higher scores improve placement into diploma routes."
+          }
+        ],
+        "notes": [
+          "Private institution route with portfolio-friendly progression into diploma studies."
+        ]
+      }
+    },
+    {
+      "id": "eduvos-marketing",
+      "institutionId": "eduvos",
+      "institutionName": "Eduvos",
+      "qualificationType": "Higher Certificate",
+      "programmeName": "Higher Certificate in Marketing",
+      "faculty": "Commerce",
+      "institutionTypes": [
+        "private_institution"
+      ],
+      "alignedCareerIds": [
+        "digital-marketer"
+      ],
+      "alignmentTags": [
+        "business",
+        "humanities"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Strengthen English and Business Studies to go beyond the minimum."
+      ],
+      "sourceUrl": "https://www.eduvos.com/programmes/",
+      "requirements": {
+        "minimumAps": 22,
+        "minimumEnglishPercentage": 50,
+        "subjectRequirements": [],
+        "notes": [
+          "Business and communication strengths improve readiness."
+        ]
+      }
+    },
+    {
+      "id": "boston-accounting",
+      "institutionId": "boston",
+      "institutionName": "Boston City Campus",
+      "qualificationType": "Higher Certificate",
+      "programmeName": "Higher Certificate in Accounting",
+      "faculty": "Commerce",
+      "institutionTypes": [
+        "private_institution"
+      ],
+      "alignedCareerIds": [
+        "accountant"
+      ],
+      "alignmentTags": [
+        "business"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [],
+      "sourceUrl": "https://www.boston.co.za/",
+      "requirements": {
+        "minimumAps": 20,
+        "minimumEnglishPercentage": 50,
+        "subjectRequirements": [],
+        "notes": [
+          "Cached from public prospectus-style guidance; confirm intake-specific details before application."
+        ]
+      }
+    },
+    {
+      "id": "boston-it",
+      "institutionId": "boston",
+      "institutionName": "Boston City Campus",
+      "qualificationType": "Diploma",
+      "programmeName": "Diploma in Systems Development",
+      "faculty": "Technology",
+      "institutionTypes": [
+        "private_institution"
+      ],
+      "alignedCareerIds": [
+        "software-developer",
+        "data-analyst"
+      ],
+      "alignmentTags": [
+        "stem"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Build a simple coding portfolio while improving Maths."
+      ],
+      "sourceUrl": "https://www.boston.co.za/",
+      "requirements": {
+        "minimumAps": 24,
+        "minimumEnglishPercentage": 50,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics or Mathematical Literacy",
+            "acceptedSubjects": [
+              "Mathematics",
+              "Mathematical Literacy"
+            ],
+            "minimumPercentage": 50
+          }
+        ],
+        "notes": [
+          "Suitable for students targeting application support and development roles."
+        ]
+      }
+    },
+    {
+      "id": "uwc-bsc-it",
+      "institutionId": "uwc",
+      "institutionName": "University of the Western Cape (UWC)",
+      "qualificationType": "BSc",
+      "programmeName": "BSc Computer Science",
+      "faculty": "Natural Sciences",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "software-developer",
+        "data-analyst",
+        "cybersecurity-analyst"
+      ],
+      "alignmentTags": [
+        "stem"
+      ],
+      "requirementConfidence": "high",
+      "applicationNotes": [
+        "If you are close, push Mathematics above 65% to improve competitiveness."
+      ],
+      "sourceUrl": "https://www.uwc.ac.za/study/all-areas-of-study",
+      "requirements": {
+        "minimumAps": 34,
+        "minimumEnglishPercentage": 60,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics",
+            "acceptedSubjects": [
+              "Mathematics"
+            ],
+            "minimumPercentage": 60
+          },
+          {
+            "label": "Physical Sciences",
+            "acceptedSubjects": [
+              "Physical Sciences"
+            ],
+            "minimumPercentage": 50,
+            "notes": "Helpful for science readiness."
+          }
+        ],
+        "notes": [
+          "Public prospectus style minimums can change per intake and faculty demand."
+        ]
+      }
+    },
+    {
+      "id": "uwc-bcom",
+      "institutionId": "uwc",
+      "institutionName": "University of the Western Cape (UWC)",
+      "qualificationType": "BCom",
+      "programmeName": "BCom Accounting",
+      "faculty": "Economic and Management Sciences",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "accountant",
+        "data-analyst"
+      ],
+      "alignmentTags": [
+        "business"
+      ],
+      "requirementConfidence": "high",
+      "applicationNotes": [
+        "Improve Mathematics and Accounting together for a stronger first-year transition."
+      ],
+      "sourceUrl": "https://www.uwc.ac.za/study/all-areas-of-study",
+      "requirements": {
+        "minimumAps": 32,
+        "minimumEnglishPercentage": 55,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics",
+            "acceptedSubjects": [
+              "Mathematics"
+            ],
+            "minimumPercentage": 50
+          }
+        ],
+        "notes": [
+          "Accounting and Business Studies support readiness even when not compulsory."
+        ]
+      }
+    },
+    {
+      "id": "uct-compsci",
+      "institutionId": "uct",
+      "institutionName": "University of Cape Town (UCT)",
+      "qualificationType": "BSc",
+      "programmeName": "BSc Computer Science",
+      "faculty": "Science",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "software-developer",
+        "data-analyst",
+        "cybersecurity-analyst"
+      ],
+      "alignmentTags": [
+        "stem"
+      ],
+      "requirementConfidence": "high",
+      "applicationNotes": [
+        "Aim beyond the minimum by keeping Maths and Physical Sciences above 70%."
+      ],
+      "sourceUrl": "https://www.uct.ac.za/students/undergraduate",
+      "requirements": {
+        "minimumAps": 38,
+        "minimumEnglishPercentage": 65,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics",
+            "acceptedSubjects": [
+              "Mathematics"
+            ],
+            "minimumPercentage": 70
+          },
+          {
+            "label": "Physical Sciences",
+            "acceptedSubjects": [
+              "Physical Sciences"
+            ],
+            "minimumPercentage": 60,
+            "notes": "Not always compulsory for every route but strongly aligned."
+          }
+        ],
+        "notes": [
+          "High-demand programme with stronger practical competitiveness than published minimums alone."
+        ]
+      }
+    },
+    {
+      "id": "uct-social-work",
+      "institutionId": "uct",
+      "institutionName": "University of Cape Town (UCT)",
+      "qualificationType": "Bachelor",
+      "programmeName": "Bachelor of Social Work",
+      "faculty": "Humanities",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "social-worker"
+      ],
+      "alignmentTags": [
+        "humanities"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Community service evidence can support your application story, but marks still matter first."
+      ],
+      "sourceUrl": "https://www.uct.ac.za/students/undergraduate",
+      "requirements": {
+        "minimumAps": 34,
+        "minimumEnglishPercentage": 65,
+        "subjectRequirements": [
+          {
+            "label": "English",
+            "acceptedSubjects": [
+              "English"
+            ],
+            "minimumPercentage": 65
+          }
+        ],
+        "notes": [
+          "History, Geography, and Life Sciences strengthen fit."
+        ]
+      }
+    },
+    {
+      "id": "stellenbosch-bengtech",
+      "institutionId": "stellenbosch",
+      "institutionName": "Stellenbosch University",
+      "qualificationType": "Extended Degree",
+      "programmeName": "BEng / BSc pathway (extended access route)",
+      "faculty": "Engineering",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "civil-engineering-technician",
+        "software-developer"
+      ],
+      "alignmentTags": [
+        "stem"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "If you are below direct-entry engineering levels, target the extended/foundation pathway first."
+      ],
+      "sourceUrl": "https://www.sun.ac.za/english/study-at-sun/undergraduate",
+      "requirements": {
+        "minimumAps": 36,
+        "minimumEnglishPercentage": 60,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics",
+            "acceptedSubjects": [
+              "Mathematics"
+            ],
+            "minimumPercentage": 65
+          },
+          {
+            "label": "Physical Sciences",
+            "acceptedSubjects": [
+              "Physical Sciences"
+            ],
+            "minimumPercentage": 60
+          }
+        ],
+        "notes": [
+          "Extended route assumption used where public access pages do not expose every faculty-specific threshold in a machine-readable format."
+        ]
+      }
+    },
+    {
+      "id": "stellenbosch-bcom",
+      "institutionId": "stellenbosch",
+      "institutionName": "Stellenbosch University",
+      "qualificationType": "BCom",
+      "programmeName": "BCom Management Sciences",
+      "faculty": "Economic and Management Sciences",
+      "institutionTypes": [
+        "university",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "accountant",
+        "digital-marketer"
+      ],
+      "alignmentTags": [
+        "business"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Push Maths beyond 60% to widen commerce options."
+      ],
+      "sourceUrl": "https://www.sun.ac.za/english/study-at-sun/undergraduate",
+      "requirements": {
+        "minimumAps": 34,
+        "minimumEnglishPercentage": 60,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics",
+            "acceptedSubjects": [
+              "Mathematics"
+            ],
+            "minimumPercentage": 55
+          }
+        ],
+        "notes": [
+          "Business Studies and Accounting are strong fit indicators."
+        ]
+      }
+    },
+    {
+      "id": "false-bay-business",
+      "institutionId": "false-bay",
+      "institutionName": "False Bay College",
+      "qualificationType": "NC(V) Level 2",
+      "programmeName": "NC(V) Finance, Economics and Accounting",
+      "faculty": "Business",
+      "institutionTypes": [
+        "college_tvet",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "accountant"
+      ],
+      "alignmentTags": [
+        "business"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Use this route if university thresholds are still out of reach and you want to build a business foundation."
+      ],
+      "sourceUrl": "https://www.falsebaycollege.co.za/courses/",
+      "requirements": {
+        "minimumEnglishPercentage": 40,
+        "subjectRequirements": [],
+        "notes": [
+          "TVET route can be used as an adjacent pathway into business studies and bookkeeping roles."
+        ]
+      }
+    },
+    {
+      "id": "false-bay-it",
+      "institutionId": "false-bay",
+      "institutionName": "False Bay College",
+      "qualificationType": "NC(V) Level 2",
+      "programmeName": "NC(V) Information Technology and Computer Science",
+      "faculty": "Engineering / IT",
+      "institutionTypes": [
+        "college_tvet",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "software-developer",
+        "data-analyst"
+      ],
+      "alignmentTags": [
+        "stem"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Improve Maths and CAT/IT together to strengthen progression into higher study."
+      ],
+      "sourceUrl": "https://www.falsebaycollege.co.za/courses/",
+      "requirements": {
+        "minimumEnglishPercentage": 40,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics or Mathematical Literacy",
+            "acceptedSubjects": [
+              "Mathematics",
+              "Mathematical Literacy"
+            ],
+            "minimumPercentage": 40
+          }
+        ],
+        "notes": [
+          "TVET option for students building technical readiness before diploma study."
+        ]
+      }
+    },
+    {
+      "id": "northlink-engineering",
+      "institutionId": "northlink",
+      "institutionName": "Northlink College",
+      "qualificationType": "National Certificate",
+      "programmeName": "National Certificate: Engineering Studies",
+      "faculty": "Engineering",
+      "institutionTypes": [
+        "college_tvet",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "civil-engineering-technician"
+      ],
+      "alignmentTags": [
+        "stem"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Treat this as a practical bridge into technician and diploma routes."
+      ],
+      "sourceUrl": "https://www.northlink.co.za/course-information/",
+      "requirements": {
+        "minimumEnglishPercentage": 40,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics",
+            "acceptedSubjects": [
+              "Mathematics"
+            ],
+            "minimumPercentage": 40
+          },
+          {
+            "label": "Physical Sciences",
+            "acceptedSubjects": [
+              "Physical Sciences"
+            ],
+            "minimumPercentage": 40
+          }
+        ],
+        "notes": [
+          "Good adjacent pathway for engineering-aligned students needing a lower threshold entry."
+        ]
+      }
+    },
+    {
+      "id": "northlink-business",
+      "institutionId": "northlink",
+      "institutionName": "Northlink College",
+      "qualificationType": "National Certificate",
+      "programmeName": "National Certificate: Marketing",
+      "faculty": "Business",
+      "institutionTypes": [
+        "college_tvet",
+        "public_institution"
+      ],
+      "alignedCareerIds": [
+        "digital-marketer"
+      ],
+      "alignmentTags": [
+        "business",
+        "humanities"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Raise English and Business Studies to improve later progression options."
+      ],
+      "sourceUrl": "https://www.northlink.co.za/course-information/",
+      "requirements": {
+        "minimumEnglishPercentage": 40,
+        "subjectRequirements": [],
+        "notes": [
+          "Marketing route that values communication and business readiness."
+        ]
+      }
+    },
+    {
+      "id": "rosebank-it",
+      "institutionId": "rosebank",
+      "institutionName": "Rosebank College",
+      "qualificationType": "Diploma",
+      "programmeName": "Diploma in Information Technology in Software Development",
+      "faculty": "Information and Communications Technology",
+      "institutionTypes": [
+        "private_institution"
+      ],
+      "alignedCareerIds": [
+        "software-developer",
+        "cybersecurity-analyst"
+      ],
+      "alignmentTags": [
+        "stem"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "If you want to outperform the minimum, target 60%+ in Mathematics and English."
+      ],
+      "sourceUrl": "https://www.rosebankcollege.co.za/qualifications/",
+      "requirements": {
+        "minimumAps": 24,
+        "minimumEnglishPercentage": 50,
+        "subjectRequirements": [
+          {
+            "label": "Mathematics or Mathematical Literacy",
+            "acceptedSubjects": [
+              "Mathematics",
+              "Mathematical Literacy"
+            ],
+            "minimumPercentage": 50
+          }
+        ],
+        "notes": [
+          "Private diploma route with strong practical employability focus."
+        ]
+      }
+    },
+    {
+      "id": "rosebank-business",
+      "institutionId": "rosebank",
+      "institutionName": "Rosebank College",
+      "qualificationType": "Higher Certificate",
+      "programmeName": "Higher Certificate in Office Administration",
+      "faculty": "Commerce",
+      "institutionTypes": [
+        "private_institution"
+      ],
+      "alignedCareerIds": [
+        "accountant",
+        "digital-marketer"
+      ],
+      "alignmentTags": [
+        "business",
+        "humanities"
+      ],
+      "requirementConfidence": "medium",
+      "applicationNotes": [
+        "Use this as a stepping-stone if BCom thresholds are still too high."
+      ],
+      "sourceUrl": "https://www.rosebankcollege.co.za/qualifications/",
+      "requirements": {
+        "minimumAps": 20,
+        "minimumEnglishPercentage": 50,
+        "subjectRequirements": [],
+        "notes": [
+          "Adjacent route for business, operations, and admin pathways."
+        ]
+      }
+    }
+  ],
+  "supportedSubjects": [
+    "English",
+    "Mathematics",
+    "Mathematical Literacy",
+    "Physical Sciences",
+    "Life Sciences",
+    "Accounting",
+    "Business Studies",
+    "Geography",
+    "History",
+    "Computer Applications Technology",
+    "Information Technology",
+    "Economics"
+  ]
+}
