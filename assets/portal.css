@@ -88,3 +88,145 @@ textarea { resize: vertical; }
   .portal-nav-inner { align-items: flex-start; }
   .nav-links { width: 100%; }
 }
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  color: var(--gold);
+}
+
+.badge.subtle {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.badge.subtle.up,
+.status-pill.eligible,
+.status-pill.up {
+  background: rgba(52, 211, 153, 0.16);
+  color: #b9ffdf;
+}
+
+.badge.subtle.flat,
+.status-pill.close,
+.status-pill.flat {
+  background: rgba(251, 191, 36, 0.16);
+  color: #ffe6a6;
+}
+
+.badge.subtle.down,
+.status-pill.not_eligible,
+.status-pill.down {
+  background: rgba(248, 113, 113, 0.16);
+  color: #ffc9c9;
+}
+
+.odie-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.odie-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(240px, 0.9fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.odie-hero-meta,
+.odie-match-grid {
+  align-items: start;
+}
+
+.odie-sections,
+.odie-match-grid {
+  margin-top: 0;
+}
+
+.odie-scroll-region {
+  max-height: 36rem;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.odie-career-card {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  background: rgba(5, 9, 17, 0.42);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.odie-career-card[data-active='true'] {
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.25);
+}
+
+.row-head.compact {
+  margin-bottom: 0.5rem;
+}
+
+.career-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.filter-chip,
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.8rem;
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  font: inherit;
+}
+
+.filter-chip {
+  cursor: pointer;
+}
+
+.odie-detail-card,
+.odie-result-card,
+.odie-form-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.guide-section.compact {
+  padding: 0.85rem 1rem;
+  margin: 0;
+}
+
+.subject-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.odie-matcher {
+  display: grid;
+  gap: 1rem;
+}
+
+.odie-form-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 1rem;
+}
+
+@media (max-width: 720px) {
+  .odie-hero {
+    grid-template-columns: 1fr;
+  }
+}

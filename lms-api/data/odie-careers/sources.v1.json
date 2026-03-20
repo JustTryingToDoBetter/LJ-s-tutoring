@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "lastRunAt": "2026-03-20T00:00:00.000Z",
+  "documents": [
+    {
+      "providerKey": "payscale_za_jobs",
+      "url": "https://www.payscale.com/research/ZA/Job",
+      "fetchedAt": "2026-03-20T00:00:00.000Z",
+      "status": "fallback",
+      "notes": "Cached salary snapshots are active until a fresh ingestion run succeeds."
+    },
+    {
+      "providerKey": "cape_town_institutions",
+      "url": "https://www.uwc.ac.za/study/all-areas-of-study",
+      "fetchedAt": "2026-03-20T00:00:00.000Z",
+      "status": "fallback",
+      "notes": "Cached normalized first-entry course catalog is active until per-institution refresh completes."
+    }
+  ]
+}

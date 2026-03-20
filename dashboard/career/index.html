@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Career Roadmap | Project Odysseus</title>
+  <title>Odie Careers | Project Odysseus</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/assets/portal.css">
@@ -17,30 +17,103 @@
           <a class="nav-link" data-nav="dashboard" href="/dashboard/">Dashboard</a>
           <a class="nav-link" data-nav="reports" href="/reports/">Reports</a>
           <a class="nav-link" data-nav="community" href="/dashboard/community/">Community</a>
-          <a class="nav-link" data-nav="career" href="/dashboard/career/">Career</a>
+          <a class="nav-link" data-nav="career" href="/dashboard/career/">Odie Careers</a>
         </div>
       </div>
     </nav>
 
-    <main class="portal-main">
-      <section class="page-header">
-        <h1 class="page-title">Career Mapping</h1>
-        <p class="page-subtitle">Choose your goals and track alignment in your academic roadmap.</p>
+    <main class="portal-main odie-page">
+      <section class="hero-card odie-hero">
+        <div>
+          <p class="eyebrow">Odie Careers</p>
+          <h1>Immediate career guidance for South African students.</h1>
+          <p class="lead">Explore salary and demand forecasts, then match your current marks to first-year courses in Cape Town without a long quiz or ranking funnel.</p>
+        </div>
+        <div class="odie-hero-meta">
+          <div class="metric-card">
+            <span class="metric-label">Core offerings</span>
+            <strong class="metric-value">2</strong>
+            <span class="note">Career Paths + Eligibility Matcher</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Institutions covered</span>
+            <strong class="metric-value" id="institutionCount">8</strong>
+            <span class="note">Cape Town first-entry options</span>
+          </div>
+        </div>
       </section>
 
-      <section class="grid two">
+      <section class="grid two odie-sections">
         <article class="panel dashboard-card">
-          <h2 class="panel-title">Goal Picker</h2>
-          <div id="careerGoalLibrary" class="list-compact"></div>
-          <button id="saveCareerGoalsBtn" class="button" type="button">Save selected goals</button>
+          <div class="row-head">
+            <div>
+              <p class="eyebrow">Offering 1</p>
+              <h2 class="panel-title">Career Paths</h2>
+            </div>
+            <span class="badge subtle">Forecasting-led</span>
+          </div>
+          <label class="field">
+            <span>Search careers</span>
+            <input id="careerSearchInput" type="search" placeholder="Search software, nursing, teaching, marketing..." aria-describedby="careerSearchHint">
+          </label>
+          <p id="careerSearchHint" class="note">Browse South Africa-aware career cards, then open one to see salary, demand, pathways, and related roles.</p>
+          <div id="careerQuickFilters" class="tag-row"></div>
+          <div id="careerResults" class="list-compact odie-scroll-region" aria-live="polite"></div>
         </article>
 
         <article class="panel dashboard-card">
-          <h2 class="panel-title">Your Roadmap</h2>
-          <div id="careerRoadmapList" class="list-compact"></div>
-          <h3 class="panel-title">Recommended tags</h3>
-          <div id="careerVaultTags" class="tag-row"></div>
+          <div class="row-head">
+            <div>
+              <p class="eyebrow">Career detail</p>
+              <h2 class="panel-title" id="careerDetailTitle">Pick a career to inspect the outlook.</h2>
+            </div>
+            <span id="careerForecastBadge" class="badge subtle">Waiting</span>
+          </div>
+          <div id="careerDetail" class="list-compact" aria-live="polite"></div>
         </article>
+      </section>
+
+      <section class="panel dashboard-card odie-matcher">
+        <div class="row-head">
+          <div>
+            <p class="eyebrow">Offering 2</p>
+            <h2 class="panel-title">Course Eligibility Matcher</h2>
+            <p class="note">Enter your current school results once to see where you already qualify, where you are close, and what to improve next.</p>
+          </div>
+          <span class="badge subtle">Cape Town institutions</span>
+        </div>
+
+        <div class="grid two odie-match-grid">
+          <form id="eligibilityForm" class="odie-form-card" novalidate>
+            <div id="subjectInputs" class="subject-grid"></div>
+            <div class="action-row">
+              <button class="button" type="submit">Check eligibility</button>
+              <button class="button secondary" type="button" id="fillSampleResultsBtn">Load sample STEM marks</button>
+              <button class="button secondary" type="button" id="clearResultsBtn">Clear</button>
+            </div>
+            <p class="note">Use percentages from your latest school report. Leave subjects blank if you do not take them.</p>
+          </form>
+
+          <div class="odie-form-card">
+            <div class="metric-grid">
+              <div class="metric-card">
+                <span class="metric-label">Computed APS</span>
+                <strong class="metric-value" id="apsValue">0</strong>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Eligible matches</span>
+                <strong class="metric-value" id="eligibleCount">0</strong>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Close matches</span>
+                <strong class="metric-value" id="closeCount">0</strong>
+              </div>
+            </div>
+            <div id="eligibilityHighlights" class="list-compact"></div>
+          </div>
+        </div>
+
+        <div id="eligibilityResults" class="list-compact" aria-live="polite"></div>
       </section>
     </main>
   </div>

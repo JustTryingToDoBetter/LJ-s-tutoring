@@ -1,0 +1,621 @@
+{
+  "version": "1.0.0",
+  "careers": [
+    {
+      "id": "software-developer",
+      "title": "Software Developer",
+      "description": "Builds and maintains applications, platforms, and internal tools used across South African companies.",
+      "category": "Technology",
+      "relatedCareerIds": [
+        "data-analyst",
+        "cybersecurity-analyst",
+        "civil-engineering-technician"
+      ],
+      "educationRoutes": [
+        "BSc Computer Science",
+        "Diploma in Information Technology",
+        "Higher Certificate in Software Development",
+        "Bootcamp plus portfolio route"
+      ],
+      "institutionPathCategories": [
+        "university",
+        "private_institution",
+        "college_tvet"
+      ],
+      "timeToEnterMonths": {
+        "min": 12,
+        "max": 48
+      },
+      "futureSignals": [
+        "Cloud adoption is lifting demand for application engineering skills.",
+        "AI-enabled tooling is increasing the value of software fundamentals and product thinking."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Software_Developer/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 300000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 72,
+          "growthSignal": 68
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 330000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 75,
+          "growthSignal": 71
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 360000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 79,
+          "growthSignal": 76
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 390000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 82,
+          "growthSignal": 79
+        }
+      ]
+    },
+    {
+      "id": "data-analyst",
+      "title": "Data Analyst",
+      "description": "Turns raw business, finance, and operations data into dashboards, trends, and recommendations.",
+      "category": "Technology",
+      "relatedCareerIds": [
+        "software-developer",
+        "accountant",
+        "digital-marketer"
+      ],
+      "educationRoutes": [
+        "BCom Analytics pathway",
+        "BSc Statistics",
+        "Diploma in ICT",
+        "Private data analytics diploma"
+      ],
+      "institutionPathCategories": [
+        "university",
+        "private_institution"
+      ],
+      "timeToEnterMonths": {
+        "min": 12,
+        "max": 48
+      },
+      "futureSignals": [
+        "Employers are asking for spreadsheet, SQL, and BI skills together.",
+        "Finance, retail, and public sector reporting demand remain healthy."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Data_Analyst/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 260000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 66,
+          "growthSignal": 64
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 285000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 69,
+          "growthSignal": 67
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 310000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 73,
+          "growthSignal": 70
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 335000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 76,
+          "growthSignal": 74
+        }
+      ]
+    },
+    {
+      "id": "registered-nurse",
+      "title": "Registered Nurse",
+      "description": "Provides clinical care, patient support, and health coordination across clinics and hospitals.",
+      "category": "Health Sciences",
+      "relatedCareerIds": [
+        "biomedical-technologist",
+        "social-worker",
+        "teacher"
+      ],
+      "educationRoutes": [
+        "Bachelor of Nursing",
+        "Health sciences foundation route",
+        "Public college health support programmes"
+      ],
+      "institutionPathCategories": [
+        "university",
+        "public_institution",
+        "college_tvet"
+      ],
+      "timeToEnterMonths": {
+        "min": 36,
+        "max": 48
+      },
+      "futureSignals": [
+        "Primary care and community health demand remain structurally strong.",
+        "Clinical placements and registration requirements still shape entry speed."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Registered_Nurse_(RN)/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 230000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 74,
+          "growthSignal": 70
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 242000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 76,
+          "growthSignal": 72
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 255000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 78,
+          "growthSignal": 74
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 270000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 81,
+          "growthSignal": 77
+        }
+      ]
+    },
+    {
+      "id": "teacher",
+      "title": "Teacher",
+      "description": "Designs lessons, teaches content, and supports learner progress in schools and learning programmes.",
+      "category": "Education",
+      "relatedCareerIds": [
+        "social-worker",
+        "registered-nurse",
+        "digital-marketer"
+      ],
+      "educationRoutes": [
+        "BEd",
+        "PGCE after undergraduate degree",
+        "Education support and assistant routes"
+      ],
+      "institutionPathCategories": [
+        "university",
+        "public_institution"
+      ],
+      "timeToEnterMonths": {
+        "min": 36,
+        "max": 48
+      },
+      "futureSignals": [
+        "STEM and foundation phase teaching shortages create targeted demand.",
+        "Curriculum support, edtech, and subject specialisation improve resilience."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=High_School_Teacher/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 220000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 61,
+          "growthSignal": 58
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 228000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 63,
+          "growthSignal": 60
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 238000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 65,
+          "growthSignal": 62
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 248000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 67,
+          "growthSignal": 64
+        }
+      ]
+    },
+    {
+      "id": "accountant",
+      "title": "Accountant",
+      "description": "Handles financial records, compliance, reporting, and business decision support.",
+      "category": "Commerce",
+      "relatedCareerIds": [
+        "data-analyst",
+        "financial-planner",
+        "digital-marketer"
+      ],
+      "educationRoutes": [
+        "BCom Accounting",
+        "Diploma in Accounting",
+        "Higher Certificate in Bookkeeping"
+      ],
+      "institutionPathCategories": [
+        "university",
+        "private_institution",
+        "college_tvet"
+      ],
+      "timeToEnterMonths": {
+        "min": 12,
+        "max": 48
+      },
+      "futureSignals": [
+        "SME reporting, payroll, and tax compliance keep baseline demand steady.",
+        "Automation raises the value of advisory and data fluency."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Accountant/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 250000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 64,
+          "growthSignal": 60
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 262000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 65,
+          "growthSignal": 61
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 276000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 67,
+          "growthSignal": 63
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 292000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 69,
+          "growthSignal": 65
+        }
+      ]
+    },
+    {
+      "id": "digital-marketer",
+      "title": "Digital Marketer",
+      "description": "Plans content, campaigns, and online growth across social, web, and paid channels.",
+      "category": "Marketing",
+      "relatedCareerIds": [
+        "data-analyst",
+        "teacher",
+        "ux-designer"
+      ],
+      "educationRoutes": [
+        "Marketing diploma",
+        "Digital marketing certificate",
+        "BCom Marketing"
+      ],
+      "institutionPathCategories": [
+        "private_institution",
+        "university"
+      ],
+      "timeToEnterMonths": {
+        "min": 9,
+        "max": 36
+      },
+      "futureSignals": [
+        "Content, e-commerce, and performance marketing roles continue to expand.",
+        "Analytics and design crossover skills raise employability."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Digital_Marketing_Specialist/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 210000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 62,
+          "growthSignal": 65
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 228000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 66,
+          "growthSignal": 69
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 246000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 70,
+          "growthSignal": 72
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 265000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 73,
+          "growthSignal": 75
+        }
+      ]
+    },
+    {
+      "id": "civil-engineering-technician",
+      "title": "Civil Engineering Technician",
+      "description": "Supports planning, drafting, surveying, and site execution for infrastructure and construction projects.",
+      "category": "Engineering",
+      "relatedCareerIds": [
+        "software-developer",
+        "quantity-surveyor",
+        "biomedical-technologist"
+      ],
+      "educationRoutes": [
+        "Diploma in Civil Engineering",
+        "National N Diploma",
+        "Engineering foundation route"
+      ],
+      "institutionPathCategories": [
+        "college_tvet",
+        "university",
+        "public_institution"
+      ],
+      "timeToEnterMonths": {
+        "min": 18,
+        "max": 36
+      },
+      "futureSignals": [
+        "Infrastructure maintenance and municipal projects keep technician demand relevant.",
+        "Practical CAD, surveying, and project coordination skills matter most."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Civil_Engineering_Technician/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 215000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 60,
+          "growthSignal": 58
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 224000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 61,
+          "growthSignal": 59
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 236000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 64,
+          "growthSignal": 62
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 248000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 66,
+          "growthSignal": 64
+        }
+      ]
+    },
+    {
+      "id": "social-worker",
+      "title": "Social Worker",
+      "description": "Supports individuals, families, and communities through case work, counselling, and social programmes.",
+      "category": "Social Impact",
+      "relatedCareerIds": [
+        "teacher",
+        "registered-nurse",
+        "human-resources-administrator"
+      ],
+      "educationRoutes": [
+        "Bachelor of Social Work",
+        "Community development routes",
+        "Public service support programmes"
+      ],
+      "institutionPathCategories": [
+        "university",
+        "public_institution"
+      ],
+      "timeToEnterMonths": {
+        "min": 36,
+        "max": 48
+      },
+      "futureSignals": [
+        "Community care, youth support, and public service demand remain structurally relevant.",
+        "Registration and supervised practice shape entry timing."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Social_Worker/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 205000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 58,
+          "growthSignal": 57
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 212000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 59,
+          "growthSignal": 58
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 220000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 61,
+          "growthSignal": 60
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 230000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 63,
+          "growthSignal": 62
+        }
+      ]
+    },
+    {
+      "id": "ux-designer",
+      "title": "UX Designer",
+      "description": "Researches user needs and designs digital journeys, interfaces, and service touchpoints.",
+      "category": "Design",
+      "relatedCareerIds": [
+        "digital-marketer",
+        "software-developer",
+        "data-analyst"
+      ],
+      "educationRoutes": [
+        "Design diploma",
+        "Human-computer interaction route",
+        "Private UX certificate plus portfolio"
+      ],
+      "institutionPathCategories": [
+        "private_institution",
+        "university"
+      ],
+      "timeToEnterMonths": {
+        "min": 12,
+        "max": 36
+      },
+      "futureSignals": [
+        "Product teams increasingly expect designers to work with research and analytics.",
+        "Portfolio quality and hands-on projects influence entry strongly."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=User_Experience_Designer/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 240000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 59,
+          "growthSignal": 61
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 252000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 62,
+          "growthSignal": 64
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 268000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 66,
+          "growthSignal": 68
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 286000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 69,
+          "growthSignal": 71
+        }
+      ]
+    },
+    {
+      "id": "cybersecurity-analyst",
+      "title": "Cybersecurity Analyst",
+      "description": "Protects systems, users, and data by monitoring threats and strengthening security controls.",
+      "category": "Technology",
+      "relatedCareerIds": [
+        "software-developer",
+        "data-analyst",
+        "ux-designer"
+      ],
+      "educationRoutes": [
+        "Information security diploma",
+        "BSc Information Systems",
+        "Cybersecurity certification pathway"
+      ],
+      "institutionPathCategories": [
+        "university",
+        "private_institution"
+      ],
+      "timeToEnterMonths": {
+        "min": 12,
+        "max": 36
+      },
+      "futureSignals": [
+        "Security operations and cloud risk monitoring demand continue to rise.",
+        "Practical labs, scripting, and networking basics are strong entry accelerators."
+      ],
+      "sourceUrls": [
+        "https://www.payscale.com/research/ZA/Job=Cyber_Security_Analyst/Salary"
+      ],
+      "metricSnapshots": [
+        {
+          "year": 2022,
+          "medianSalaryZar": 310000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 70,
+          "growthSignal": 72
+        },
+        {
+          "year": 2023,
+          "medianSalaryZar": 338000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 74,
+          "growthSignal": 76
+        },
+        {
+          "year": 2024,
+          "medianSalaryZar": 365000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 79,
+          "growthSignal": 80
+        },
+        {
+          "year": 2025,
+          "medianSalaryZar": 395000,
+          "salarySource": "Payscale ZA",
+          "demandScore": 84,
+          "growthSignal": 84
+        }
+      ]
+    }
+  ]
+}
