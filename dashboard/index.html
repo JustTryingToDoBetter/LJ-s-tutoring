@@ -1486,7 +1486,8 @@
       </header>
       <div class="modal-body">
         <div class="chat-tools">
-          <button id="odieTestLogin" class="btn" type="button" style="display:none;">Local test login</button>
+          <input id="odieAccessKey" class="chat-input" type="password" placeholder="Enter Odie access key" style="min-width:220px;" />
+          <button id="odieAccessKeySave" class="btn" type="button">Save key</button>
           <div id="odieAuthStatus" class="chat-status" aria-live="polite"></div>
         </div>
         <div id="odieMessages" class="chat-window"></div>
@@ -1607,7 +1608,8 @@
     const odieMessages = document.getElementById('odieMessages');
     const odieInput = document.getElementById('odieInput');
     const odieSend = document.getElementById('odieSend');
-    const odieTestLogin = document.getElementById('odieTestLogin');
+    const odieAccessKey = document.getElementById('odieAccessKey');
+    const odieAccessKeySave = document.getElementById('odieAccessKeySave');
     const odieAuthStatus = document.getElementById('odieAuthStatus');
     const odieDocumentText = document.getElementById('odieDocumentText');
     const odieDocQuestion = document.getElementById('odieDocQuestion');
@@ -2034,26 +2036,16 @@
     appendMessage(careerMessages, 'bot', careerHistory[0].content);
     appendMessage(odieDocMessages, 'bot', odieDocHistory[0].content);
 
-    if (isLocalPreview()) {
-      odieTestLogin.style.display = 'inline-flex';
-      void refreshOdieAuthStatus();
-    }
-
     const runtimeApiBase = window.__PO_API_BASE__ && window.__PO_API_BASE__ !== '__PO_API_BASE__'
       ? String(window.__PO_API_BASE__).replace(/\/$/, '')
       : '';
+    const runtimeOdieAccessKey = window.__ODIE_ACCESS_KEY__ && window.__ODIE_ACCESS_KEY__ !== '__PO_ODIE_ACCESS_KEY__'
+      ? String(window.__ODIE_ACCESS_KEY__).trim()
+      : '';
+    const ODIE_ACCESS_KEY_STORAGE = 'odie-access-key';
 
     function apiUrl(path) {
       return runtimeApiBase ? runtimeApiBase + path : path;
-    }
-
-    function getCsrfToken() {
-      const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('csrf='));
-      return cookie ? decodeURIComponent(cookie.split('=').slice(1).join('=')) : '';
-    }
-
-    function isLocalPreview() {
-      return ['localhost', '127.0.0.1'].includes(window.location.hostname);
     }
 
     function setOdieAuthStatus(text, tone = '') {
@@ -2061,87 +2053,48 @@
       odieAuthStatus.className = 'chat-status' + (tone ? ' ' + tone : '');
     }
 
-    async function fetchAuthSession() {
-      const response = await fetch(apiUrl('/auth/session'), {
-        method: 'GET',
-        credentials: 'include'
-      });
-      if (!response.ok) return null;
-      try {
-        return await response.json();
-      } catch {
-        return null;
+    function loadOdieAccessKey() {
+      const fromStorage = localStorage.getItem(ODIE_ACCESS_KEY_STORAGE) || '';
+      const active = fromStorage || runtimeOdieAccessKey;
+      odieAccessKey.value = active;
+      if (active) {
+        setOdieAuthStatus('Odie access key loaded.', 'ok');
+      } else {
+        setOdieAuthStatus('Enter your rotating Odie access key to start chatting.', 'warn');
       }
+      return active;
     }
 
-    async function refreshOdieAuthStatus() {
-      if (!isLocalPreview()) return;
-      const session = await fetchAuthSession();
-      if (session?.user?.role === 'STUDENT') {
-        setOdieAuthStatus('Signed in for local testing as a student.', 'ok');
-        return;
+    function saveOdieAccessKey() {
+      const value = String(odieAccessKey.value || '').trim();
+      if (!value) {
+        localStorage.removeItem(ODIE_ACCESS_KEY_STORAGE);
+        setOdieAuthStatus('Access key cleared.', 'warn');
+        return '';
       }
-      if (session?.user) {
-        setOdieAuthStatus('Signed in, but not as a student.', 'warn');
-        return;
-      }
-      setOdieAuthStatus('Not signed in locally yet. Use Local test login if the API runs in test mode.', 'warn');
+      localStorage.setItem(ODIE_ACCESS_KEY_STORAGE, value);
+      setOdieAuthStatus('Access key saved.', 'ok');
+      return value;
     }
 
-    async function runLocalTestLogin() {
-      odieTestLogin.disabled = true;
-      setOdieAuthStatus('Creating local student session...', 'warn');
-
-      try {
-        const response = await fetch(apiUrl('/test/login-as'), {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            email: 'student.local@test.projectodysseus',
-            role: 'STUDENT'
-          })
-        });
-
-        const text = await response.text();
-        let data = null;
-        if (text) {
-          try {
-            data = JSON.parse(text);
-          } catch {
-            data = { error: text };
-          }
-        }
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            setOdieAuthStatus('Local test login is only available when the API runs with NODE_ENV=test.', 'warn');
-            appendMessage(odieMessages, 'bot', 'Local test login is not enabled on this API yet. Start the API in test mode, or log in through the normal student auth flow.');
-            return;
-          }
-          throw new Error(data?.error || `request_failed:${response.status}`);
-        }
-
-        setOdieAuthStatus('Signed in for local testing as a student.', 'ok');
-        appendMessage(odieMessages, 'bot', 'Local student test login is active now. You can chat with Odie.');
-      } catch (err) {
-        setOdieAuthStatus('Local test login failed.', 'warn');
-        appendMessage(odieMessages, 'bot', 'I could not create a local test session. Check that the API is running and try again.');
-        console.error(err);
-      } finally {
-        odieTestLogin.disabled = false;
+    function getOdieAccessKey() {
+      const fromInput = String(odieAccessKey.value || '').trim();
+      if (fromInput) return fromInput;
+      const fromStorage = localStorage.getItem(ODIE_ACCESS_KEY_STORAGE) || '';
+      if (fromStorage) {
+        odieAccessKey.value = fromStorage;
+        return fromStorage;
       }
+      return runtimeOdieAccessKey;
     }
 
     async function assistantRequest(path, payload) {
+      const accessKey = getOdieAccessKey();
       const response = await fetch(apiUrl(path), {
         method: 'POST',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(getCsrfToken() ? { 'X-CSRF-Token': getCsrfToken() } : {})
+          ...(accessKey ? { 'X-Odie-Access-Key': accessKey } : {})
         },
         body: JSON.stringify(payload)
       });
@@ -2168,10 +2121,10 @@
 
     function getAssistantErrorMessage(err) {
       if (err && err.status === 401) {
-        return 'Your session has expired or you are not logged in. Please log in again, then try Odie once more.';
+        return 'Odie access key is missing. Enter your rotating key, save it, then try again.';
       }
-      if (err && err.status === 403 && err.code === 'csrf_missing_or_invalid') {
-        return 'Your session security token is out of date. Refresh the page, then try again.';
+      if (err && err.status === 403 && err.code === 'assistant_access_key_invalid') {
+        return 'That Odie access key is invalid. Please check the latest rotated key and try again.';
       }
       if (err && err.status === 503) {
         return 'The AI service is not available right now. Please try again in a moment.';
@@ -2249,8 +2202,15 @@
       });
     });
 
-    odieTestLogin.addEventListener('click', () => {
-      void runLocalTestLogin();
+    odieAccessKeySave.addEventListener('click', () => {
+      saveOdieAccessKey();
+    });
+
+    odieAccessKey.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveOdieAccessKey();
+      }
     });
 
     odieDocSend.addEventListener('click', () => {
@@ -2282,6 +2242,8 @@
         odieDocSend.click();
       }
     });
+
+    loadOdieAccessKey();
 
     let careerStarted = false;
 

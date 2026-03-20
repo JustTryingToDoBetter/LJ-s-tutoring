@@ -26,7 +26,7 @@ services:
       - ./:/app
     environment:
       PORT: 3001
-      NODE_ENV: test
+      NODE_ENV: development
       TRUST_PROXY: 1
       CORS_ORIGIN: http://localhost:8080,http://127.0.0.1:8080, http://localhost:8081, http://127.0.0.1:8081
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/lms
@@ -39,6 +39,7 @@ services:
       EMAIL_FROM: projectodysseus10@gmail.com
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      ODIE_ACCESS_KEYS: ${ODIE_ACCESS_KEYS:-}
       DEFAULT_MODEL: ${DEFAULT_MODEL:-llama-3.3-70b-versatile}
       MAX_TOKENS: ${MAX_TOKENS:-1024}
       TEMPERATURE: ${TEMPERATURE:-0.4}

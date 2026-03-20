@@ -70,8 +70,8 @@ export async function buildApp() {
       return cb(null, allowed);
     },
     credentials: true,
-    allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'X-Request-Id'],
-    methods: ['GET', 'POST', 'PATCH', 'DELETE']
+    allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'X-Request-Id', 'X-Odie-Access-Key', 'Authorization'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS']
   });
   await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
 

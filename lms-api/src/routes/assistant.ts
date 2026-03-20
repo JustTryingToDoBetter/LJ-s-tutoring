@@ -1,6 +1,5 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { requireAuth } from '../lib/rbac.js';
 import { loadAssistantConfig } from '../domains/assistant/config.js';
 import { createAssistantService } from '../domains/assistant/service.js';
 import { createGroqProvider } from '../domains/assistant/providers/groq.js';
@@ -31,16 +30,61 @@ function setPrivateNoStore(reply: any) {
   reply.header('Pragma', 'no-cache');
 }
 
+function parseAccessKeys(env: NodeJS.ProcessEnv) {
+  const csvKeys = String(env.ODIE_ACCESS_KEYS || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const single = String(env.ODIE_ACCESS_KEY || '').trim();
+  const all = single ? [...csvKeys, single] : csvKeys;
+  return new Set(all);
+}
+
+function getAccessKeyFromRequest(req: any) {
+  const header = req.headers?.['x-odie-access-key'];
+  const keyHeader = Array.isArray(header) ? header[0] : header;
+  if (keyHeader && String(keyHeader).trim()) {
+    return String(keyHeader).trim();
+  }
+
+  const authHeader = req.headers?.authorization;
+  const authValue = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+  if (authValue && /^Bearer\s+/i.test(authValue)) {
+    return authValue.replace(/^Bearer\s+/i, '').trim();
+  }
+
+  return '';
+}
+
 export async function assistantRoutes(app: FastifyInstance) {
   const config = loadAssistantConfig();
+  const accessKeys = parseAccessKeys(process.env);
+  const requireAccessKey = process.env.NODE_ENV === 'production' || process.env.ODIE_DEV_NO_AUTH === 'false';
   const service = createAssistantService(
     config,
     [createGroqProvider(config.groqApiKey), createOpenRouterProvider(config.openRouterApiKey)],
     app.log.child({ module: 'assistant' }),
   );
 
-  app.addHook('preHandler', app.authenticate);
-  app.addHook('preHandler', requireAuth);
+  app.addHook('preHandler', async (req, reply) => {
+    if (!requireAccessKey) {
+      return;
+    }
+
+    if (accessKeys.size === 0) {
+      req.log.error({ event: 'assistant.access_key.not_configured' }, 'assistant.access_key.not_configured');
+      return reply.code(503).send({ error: 'assistant_access_keys_not_configured' });
+    }
+
+    const provided = getAccessKeyFromRequest(req);
+    if (!provided) {
+      return reply.code(401).send({ error: 'assistant_access_key_required' });
+    }
+
+    if (!accessKeys.has(provided)) {
+      return reply.code(403).send({ error: 'assistant_access_key_invalid' });
+    }
+  });
 
   app.post('/assistant/chat', async (req, reply) => {
     setPrivateNoStore(reply);
