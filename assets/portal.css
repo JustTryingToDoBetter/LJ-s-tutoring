@@ -190,6 +190,54 @@ textarea { resize: vertical; }
   margin-bottom: 0.5rem;
 }
 
+.section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.section-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.section-tab:hover,
+.section-tab.active {
+  color: var(--gold-2);
+  border-color: rgba(224, 170, 42, 0.4);
+  background: rgba(224, 170, 42, 0.08);
+}
+
+.feature-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.feature-link-card,
+.feature-link-inline {
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.feature-link-card:hover,
+.feature-link-inline:hover {
+  transform: translateY(-2px);
+  border-color: rgba(224, 170, 42, 0.4);
+  box-shadow: var(--shadow-gold);
+}
+
+.feature-link-card .panel-title,
+.feature-link-inline strong {
+  color: var(--text);
+}
+
 .career-card-meta {
   display: flex;
   flex-wrap: wrap;

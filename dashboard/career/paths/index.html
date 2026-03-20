@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Odie Careers | Project Odysseus</title>
+  <title>Career Paths | Odie Careers</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,78 +27,64 @@
     <main class="portal-main odie-page">
       <section class="hero-card odie-hero">
         <div>
-          <p class="eyebrow">Odie Careers</p>
-          <h1>Career guidance that is ready to use right now.</h1>
-          <p class="lead">Move straight into South Africa-aware career exploration or check which Cape Town first-year routes you already qualify for.</p>
+          <p class="eyebrow">Career Paths</p>
+          <h1>Explore careers without a quiz or ranking funnel.</h1>
+          <p class="lead">Search careers, inspect salary and demand signals, review likely routes, and open related roles.</p>
         </div>
         <div class="odie-hero-meta">
           <div class="metric-card">
             <span class="metric-label">Careers</span>
             <strong class="metric-value" id="careerCount">0</strong>
-            <span class="note">Forecast-backed paths</span>
+            <span class="note">Available to browse</span>
           </div>
           <div class="metric-card">
             <span class="metric-label">Institutions</span>
             <strong class="metric-value" id="institutionCount">0</strong>
-            <span class="note">Cape Town providers covered</span>
+            <span class="note">Route categories represented</span>
           </div>
           <div class="metric-card">
             <span class="metric-label">First-year courses</span>
             <strong class="metric-value" id="courseCount">0</strong>
-            <span class="note">Normalized entry routes</span>
+            <span class="note">Supports later eligibility checks</span>
           </div>
         </div>
         <p class="note" id="sourceGeneratedAt">Loading Odie Careers data...</p>
       </section>
 
       <nav class="section-tabs" aria-label="Odie Careers sections">
-        <a class="section-tab active" href="/dashboard/career/">Overview</a>
-        <a class="section-tab" href="/dashboard/career/paths/">Career Paths</a>
+        <a class="section-tab" href="/dashboard/career/">Overview</a>
+        <a class="section-tab active" href="/dashboard/career/paths/">Career Paths</a>
         <a class="section-tab" href="/dashboard/career/eligibility/">Course Eligibility</a>
       </nav>
 
-      <section class="feature-card-grid">
-        <a class="panel feature-link-card" href="/dashboard/career/paths/">
-          <p class="eyebrow">Live now</p>
-          <h2 class="panel-title">Career Paths</h2>
-          <p class="note">Search careers, inspect salary and demand trends, open detail views, and move across related roles.</p>
-          <div class="career-card-meta">
-            <span>Search</span>
-            <span>Forecasts</span>
-            <span>Related careers</span>
-          </div>
-        </a>
-
-        <a class="panel feature-link-card" href="/dashboard/career/eligibility/">
-          <p class="eyebrow">Live now</p>
-          <h2 class="panel-title">Course Eligibility</h2>
-          <p class="note">Enter your marks once and see where you qualify, where you are close, and what to improve next.</p>
-          <div class="career-card-meta">
-            <span>APS</span>
-            <span>Requirements</span>
-            <span>Next actions</span>
-          </div>
-        </a>
-      </section>
-
-      <section class="grid two">
+      <section class="grid two odie-sections">
         <article class="panel dashboard-card">
-          <h2 class="panel-title">What is inside</h2>
-          <div id="odieOverviewHighlights" class="list-compact"></div>
+          <div class="row-head">
+            <div>
+              <h2 class="panel-title">Browse careers</h2>
+              <p class="note">Search first, then open a card to inspect detail.</p>
+            </div>
+            <span class="badge subtle">Forecasting-led</span>
+          </div>
+          <label class="field">
+            <span>Search careers</span>
+            <input id="careerSearchInput" type="search" placeholder="Search software, nursing, teaching, marketing..." aria-describedby="careerSearchHint">
+          </label>
+          <p id="careerSearchHint" class="note">Browse South Africa-aware career cards, then open one to see salary, demand, pathways, and related roles.</p>
+          <div id="careerQuickFilters" class="tag-row"></div>
+          <div id="careerResultsSummary" class="note"></div>
+          <div id="careerResults" class="list-compact odie-scroll-region" aria-live="polite"></div>
         </article>
 
         <article class="panel dashboard-card">
-          <h2 class="panel-title">Jump in</h2>
-          <div class="list-compact">
-            <a class="list-item feature-link-inline" href="/dashboard/career/paths/">
-              <strong>Open Career Paths</strong>
-              <p>Browse roles, inspect demand, and compare adjacent paths.</p>
-            </a>
-            <a class="list-item feature-link-inline" href="/dashboard/career/eligibility/">
-              <strong>Open Course Eligibility</strong>
-              <p>Check your current results against first-year course requirements.</p>
-            </a>
+          <div class="row-head">
+            <div>
+              <h2 class="panel-title" id="careerDetailTitle">Pick a career to inspect the outlook.</h2>
+              <p class="note">Salary, demand, route categories, and related roles appear here.</p>
+            </div>
+            <span id="careerForecastBadge" class="badge subtle">Waiting</span>
           </div>
+          <div id="careerDetail" class="list-compact" aria-live="polite"></div>
         </article>
       </section>
     </main>
@@ -106,6 +92,6 @@
 
   <script src="/assets/portal-config.js"></script>
   <script src="/assets/analytics.js"></script>
-  <script type="module" src="/assets/student/career.js"></script>
+  <script type="module" src="/assets/student/career-paths.js"></script>
 </body>
 </html>

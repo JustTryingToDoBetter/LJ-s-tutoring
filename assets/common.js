@@ -67,7 +67,19 @@ export async function loadJson(path, options) {
   const res = await apiFetch(path, options);
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || `request_failed:${res.status}`);
+    let payload = null;
+    if (text) {
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        payload = null;
+      }
+    }
+    const error = new Error(payload?.error || text || `request_failed:${res.status}`);
+    error.status = res.status;
+    error.code = payload?.error || '';
+    error.body = payload;
+    throw error;
   }
   return res.json();
 }
