@@ -17,16 +17,24 @@ function setPrivateNoStore(reply: any) {
   reply.header('Pragma', 'no-cache');
 }
 
+function odieCareersPreHandler(app: FastifyInstance) {
+  const devBypassEnabled = process.env.ODIE_CAREERS_DEV_BYPASS === 'true' && process.env.NODE_ENV !== 'production';
+  if (devBypassEnabled) {
+    return [];
+  }
+  return [app.authenticate, requireAuth, requireRole('STUDENT')];
+}
+
 export async function odieCareersRoutes(app: FastifyInstance) {
   app.get('/odie-careers/overview', {
-    preHandler: [app.authenticate, requireAuth, requireRole('STUDENT')],
+    preHandler: odieCareersPreHandler(app),
   }, async (_req, reply) => {
     setPrivateNoStore(reply);
     return reply.send(getOdieCareersOverview());
   });
 
   app.get('/odie-careers/careers', {
-    preHandler: [app.authenticate, requireAuth, requireRole('STUDENT')],
+    preHandler: odieCareersPreHandler(app),
   }, async (req, reply) => {
     setPrivateNoStore(reply);
     const parsed = OdieCareersSearchQuerySchema.safeParse(req.query ?? {});
@@ -37,7 +45,7 @@ export async function odieCareersRoutes(app: FastifyInstance) {
   });
 
   app.get('/odie-careers/careers/:careerId', {
-    preHandler: [app.authenticate, requireAuth, requireRole('STUDENT')],
+    preHandler: odieCareersPreHandler(app),
   }, async (req, reply) => {
     setPrivateNoStore(reply);
     const parsed = OdieCareerIdParamSchema.safeParse(req.params ?? {});
@@ -53,7 +61,7 @@ export async function odieCareersRoutes(app: FastifyInstance) {
   });
 
   app.post('/odie-careers/eligibility/evaluate', {
-    preHandler: [app.authenticate, requireAuth, requireRole('STUDENT')],
+    preHandler: odieCareersPreHandler(app),
   }, async (req, reply) => {
     setPrivateNoStore(reply);
     const parsed = OdieCareersEligibilityRequestSchema.safeParse(req.body ?? {});
