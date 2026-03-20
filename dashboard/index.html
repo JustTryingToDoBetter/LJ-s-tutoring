@@ -789,8 +789,39 @@
 
     .odie-wrap {
       width: 230px;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
       position: relative;
-      animation: robotBob 4s ease-in-out infinite;
+      animation: robotBob 3s ease-in-out infinite;
+    }
+
+    .odie-wrap svg,
+    .odie-player {
+      width: 100%;
+      height: 100%;
+    }
+
+    .odie-wrap svg {
+      display: block;
+      transition: opacity 220ms ease, visibility 220ms ease;
+    }
+
+    .odie-player {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+
+    .odie-wrap.is-lottie-ready .odie-player {
+      opacity: 1;
+    }
+
+    .odie-wrap.is-lottie-ready svg {
+      opacity: 0;
+      visibility: hidden;
     }
 
     @keyframes robotBob {
@@ -798,23 +829,57 @@
       50% { transform: translateY(-7px); }
     }
 
-    .arm-wave {
-      transform-origin: 88px 137px;
-      animation: armWave 2.2s ease-in-out infinite;
+    .odie-sway {
+      transform-origin: 126px 138px;
+      animation: odieSway 3s ease-in-out infinite;
     }
 
-    @keyframes armWave {
-      0%, 100% { transform: rotate(0deg); }
-      50% { transform: rotate(13deg); }
+    @keyframes odieSway {
+      0%, 100% { transform: rotate(-1.1deg); }
+      50% { transform: rotate(1.1deg); }
     }
 
-    .antenna-ball {
-      animation: pulseGold 1.8s ease-in-out infinite;
+    .odie-arm-left {
+      transform-origin: 78px 145px;
+      animation: odieArmLeft 3s ease-in-out infinite;
+    }
+
+    .odie-arm-right {
+      transform-origin: 174px 145px;
+      animation: odieArmRight 3s ease-in-out infinite;
+    }
+
+    @keyframes odieArmLeft {
+      0%, 100% { transform: rotate(6deg); }
+      50% { transform: rotate(11deg); }
+    }
+
+    @keyframes odieArmRight {
+      0%, 100% { transform: rotate(-6deg); }
+      50% { transform: rotate(-11deg); }
+    }
+
+    .odie-glow-orb {
+      animation: pulseGold 3s ease-in-out infinite;
+    }
+
+    .odie-crown {
+      animation: pulseGold 3s ease-in-out infinite;
     }
 
     @keyframes pulseGold {
-      0%, 100% { r: 8; opacity: 0.9; }
-      50% { r: 9.8; opacity: 1; }
+      0%, 100% { opacity: 0.68; transform: scale(0.98); }
+      50% { opacity: 1; transform: scale(1.03); }
+    }
+
+    .odie-eyes {
+      transform-origin: 126px 92px;
+      animation: odieBlink 4.4s ease-in-out infinite;
+    }
+
+    @keyframes odieBlink {
+      0%, 44%, 48%, 100% { transform: scaleY(1); }
+      46% { transform: scaleY(0.14); }
     }
 
     .odie-label {
@@ -827,9 +892,9 @@
 
     .odie-glow {
       position: absolute;
-      width: 180px;
-      height: 34px;
-      background: radial-gradient(circle, rgba(224, 170, 42, 0.34), rgba(224, 170, 42, 0));
+      width: 196px;
+      height: 42px;
+      background: radial-gradient(circle, rgba(224, 170, 42, 0.32), rgba(224, 170, 42, 0));
       filter: blur(8px);
       left: 50%;
       transform: translateX(-50%);
@@ -1397,40 +1462,62 @@
 
       <article class="panel odie-panel" id="odieLaunch" role="button" tabindex="0" aria-label="Open Odie chat">
         <div class="speech">Hi, I'm Odie! 👋 I'm here to help you navigate your odyssey.</div>
-        <div class="odie-wrap">
+        <div class="odie-wrap" data-lottie-src="/assets/animations/odie-mascot-idle.lottie.json">
+          <div class="odie-player" aria-hidden="true"></div>
           <svg viewBox="0 0 250 250" aria-label="Odie robot mascot">
             <defs>
-              <linearGradient id="robotBody" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#12223f"></stop>
+              <linearGradient id="robotBodyV2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#142541"></stop>
                 <stop offset="100%" stop-color="#0a1428"></stop>
               </linearGradient>
-              <linearGradient id="eyeGlow" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#f2c758"></stop>
+              <linearGradient id="eyeGlowV2" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#ffe6a8"></stop>
                 <stop offset="100%" stop-color="#e0aa2a"></stop>
               </linearGradient>
+              <linearGradient id="togaGlow" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#f3f0ea"></stop>
+                <stop offset="100%" stop-color="#ddd6c6"></stop>
+              </linearGradient>
             </defs>
-            <g>
-              <line x1="124" y1="26" x2="124" y2="52" stroke="#d9a62a" stroke-width="3"></line>
-              <circle class="antenna-ball" cx="124" cy="20" r="8" fill="#e0aa2a"></circle>
-              <rect x="70" y="52" width="108" height="88" rx="16" fill="url(#robotBody)" stroke="#d9a62a" stroke-width="2"></rect>
-              <rect x="85" y="74" width="28" height="16" rx="8" fill="url(#eyeGlow)"></rect>
-              <rect x="134" y="74" width="28" height="16" rx="8" fill="url(#eyeGlow)"></rect>
-              <rect x="94" y="103" width="60" height="10" rx="5" fill="#243a68"></rect>
-              <rect x="84" y="142" width="82" height="66" rx="14" fill="url(#robotBody)" stroke="#d9a62a" stroke-width="2"></rect>
-              <rect x="99" y="160" width="52" height="34" rx="8" fill="#0d1a31" stroke="#d9a62a" stroke-width="1.4"></rect>
-              <line x1="104" y1="169" x2="146" y2="169" stroke="#d9a62a" stroke-width="1.4"></line>
-              <line x1="104" y1="177" x2="139" y2="177" stroke="#d9a62a" stroke-width="1.4"></line>
-              <line x1="104" y1="185" x2="146" y2="185" stroke="#d9a62a" stroke-width="1.4"></line>
-              <g class="arm-wave">
-                <rect x="55" y="132" width="26" height="12" rx="6" fill="#1a2e55" stroke="#d9a62a" stroke-width="1.6"></rect>
-                <rect x="38" y="126" width="20" height="24" rx="8" fill="#0e1c36" stroke="#d9a62a" stroke-width="1.6"></rect>
+            <g class="odie-sway">
+              <ellipse class="odie-glow-orb" cx="126" cy="165" rx="74" ry="64" fill="rgba(224,170,42,0.16)"></ellipse>
+              <g data-part="body">
+                <rect x="74" y="118" width="104" height="86" rx="26" fill="url(#robotBodyV2)" stroke="#d9a62a" stroke-width="2.2"></rect>
+                <rect x="104" y="147" width="44" height="10" rx="5" fill="#233b66"></rect>
+                <rect x="99" y="164" width="54" height="8" rx="4" fill="#1d3158"></rect>
+                <rect x="108" y="178" width="36" height="7" rx="3.5" fill="#18284a"></rect>
               </g>
-              <rect x="170" y="132" width="26" height="12" rx="6" fill="#1a2e55" stroke="#d9a62a" stroke-width="1.6"></rect>
-              <rect x="194" y="126" width="20" height="24" rx="8" fill="#0e1c36" stroke="#d9a62a" stroke-width="1.6"></rect>
-              <rect x="101" y="209" width="18" height="28" rx="7" fill="#112345" stroke="#d9a62a" stroke-width="1.6"></rect>
-              <rect x="131" y="209" width="18" height="28" rx="7" fill="#112345" stroke="#d9a62a" stroke-width="1.6"></rect>
-              <rect x="93" y="235" width="31" height="9" rx="4.5" fill="#0e1a31"></rect>
-              <rect x="128" y="235" width="31" height="9" rx="4.5" fill="#0e1a31"></rect>
+              <g data-part="toga">
+                <path d="M98 115 C122 108 149 111 165 128 C160 148 155 167 151 200 C130 209 108 208 88 198 C92 171 92 146 98 115 Z" fill="url(#togaGlow)" stroke="#d9a62a" stroke-width="1.8"></path>
+                <path d="M118 112 C127 128 128 145 126 198" fill="none" stroke="#c9ad78" stroke-width="2" stroke-linecap="round"></path>
+                <path d="M138 118 C144 132 145 154 142 191" fill="none" stroke="#c9ad78" stroke-width="1.8" stroke-linecap="round"></path>
+              </g>
+              <g data-part="arms">
+                <g class="odie-arm-left">
+                  <rect x="50" y="139" width="38" height="14" rx="7" fill="#15294a" stroke="#d9a62a" stroke-width="1.8"></rect>
+                  <circle cx="46" cy="146" r="9" fill="#10203b" stroke="#d9a62a" stroke-width="1.5"></circle>
+                </g>
+                <g class="odie-arm-right">
+                  <rect x="164" y="139" width="38" height="14" rx="7" fill="#15294a" stroke="#d9a62a" stroke-width="1.8"></rect>
+                  <circle cx="206" cy="146" r="9" fill="#10203b" stroke="#d9a62a" stroke-width="1.5"></circle>
+                </g>
+              </g>
+              <g data-part="head">
+                <rect x="76" y="54" width="100" height="70" rx="24" fill="url(#robotBodyV2)" stroke="#f0cf74" stroke-width="2.4"></rect>
+                <path class="odie-crown" d="M95 60 C104 48 115 42 126 40 C137 42 148 48 157 60" fill="none" stroke="#f0cf74" stroke-width="3" stroke-linecap="round"></path>
+                <path d="M103 58 L99 51" fill="none" stroke="#f0cf74" stroke-width="2.2" stroke-linecap="round"></path>
+                <path d="M118 49 L115 42" fill="none" stroke="#f0cf74" stroke-width="2.2" stroke-linecap="round"></path>
+                <path d="M149 58 L153 51" fill="none" stroke="#f0cf74" stroke-width="2.2" stroke-linecap="round"></path>
+                <path d="M134 49 L137 42" fill="none" stroke="#f0cf74" stroke-width="2.2" stroke-linecap="round"></path>
+              </g>
+              <g class="odie-eyes" data-part="eyes">
+                <rect x="98" y="84" width="22" height="10" rx="5" fill="url(#eyeGlowV2)"></rect>
+                <rect x="132" y="84" width="22" height="10" rx="5" fill="url(#eyeGlowV2)"></rect>
+              </g>
+              <rect x="104" y="205" width="16" height="26" rx="7" fill="#112345" stroke="#d9a62a" stroke-width="1.5"></rect>
+              <rect x="132" y="205" width="16" height="26" rx="7" fill="#112345" stroke="#d9a62a" stroke-width="1.5"></rect>
+              <rect x="95" y="230" width="28" height="9" rx="4.5" fill="#0e1a31"></rect>
+              <rect x="129" y="230" width="28" height="9" rx="4.5" fill="#0e1a31"></rect>
             </g>
           </svg>
           <div class="odie-glow"></div>
@@ -1533,6 +1620,7 @@
   <div class="toasts" id="toasts"></div>
 
   <script src="/assets/portal-config.js"></script>
+  <script src="/assets/student/odie-mascot-player.js"></script>
   <script>
     const data = {
       student: 'Jaydin',
