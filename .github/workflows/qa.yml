@@ -59,7 +59,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium
-          echo "CHROME_PATH=$(which chromium-browser || which chromium)" >> $GITHUB_ENV
+          CHROME_PATH=$(which chromium-browser || which chromium || true)
+          if [ -z "$CHROME_PATH" ]; then
+            echo "Chromium executable not found after installation"
+            exit 1
+          fi
+          echo "CHROME_PATH=$CHROME_PATH" >> $GITHUB_ENV
 
       # ========================================================================
       # SECURITY AUDIT
@@ -104,8 +109,9 @@ jobs:
       # ========================================================================
       - name: Start static server
         run: |
-          npx http-server dist -p 8080 -c-1 --silent &
-          npx wait-on http://localhost:8080/ --timeout 30000
+          npx http-server dist -p 8080 -c-1 --silent > /tmp/qa-static-server.log 2>&1 &
+          npx wait-on http://localhost:8080/ --timeout 30000 || { cat /tmp/qa-static-server.log; exit 1; }
+          curl -fsS http://localhost:8080/ > /dev/null || { cat /tmp/qa-static-server.log; exit 1; }
 
       # ========================================================================
       # HTML VALIDATION

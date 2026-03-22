@@ -45,12 +45,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium
-          echo "CHROME_PATH=$(which chromium-browser || which chromium)" >> $GITHUB_ENV
+          CHROME_PATH=$(which chromium-browser || which chromium || true)
+          if [ -z "$CHROME_PATH" ]; then
+            echo "Chromium executable not found after installation"
+            exit 1
+          fi
+          echo "CHROME_PATH=$CHROME_PATH" >> $GITHUB_ENV
 
       - name: Performance budgets
         env:
           LHCI_CHROME_PATH: ${{ env.CHROME_PATH }}
         run: |
-          npx http-server dist -p 8080 -c-1 --silent &
-          npx wait-on --timeout 60000 http://localhost:8080/
+          npx http-server dist -p 8080 -c-1 --silent > /tmp/release-static-server.log 2>&1 &
+          npx wait-on --timeout 60000 http://localhost:8080/ || { cat /tmp/release-static-server.log; exit 1; }
+          curl -fsS http://localhost:8080/ > /dev/null || { cat /tmp/release-static-server.log; exit 1; }
           npx lhci autorun --config=./lighthouserc.js
