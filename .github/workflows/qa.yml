@@ -64,7 +64,7 @@ jobs:
       # ========================================================================
       # SECURITY AUDIT
       # ========================================================================
-      - name: Security audit (prod dependencies)
+      - name: Security audit (prod dependencies, advisory)
         id: security
         continue-on-error: true
         run: |
@@ -218,8 +218,8 @@ jobs:
             | Link Check | ${statusIcon(linksStatus)} ${linksStatus} |
             | Accessibility | ${statusIcon(a11yStatus)} ${a11yStatus} |
             
-            ${securityStatus === 'failed' || htmlStatus === 'failed' || linksStatus === 'failed' || a11yStatus === 'failed' 
-              ? '⚠️ **Some checks failed.** Download detailed reports from the [Actions artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).'
+            ${htmlStatus === 'failed' || linksStatus === 'failed' || a11yStatus === 'failed' 
+              ? '⚠️ **Blocking checks failed.** Download detailed reports from the [Actions artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}). Security audit remains advisory in PR workflows.'
               : '🎉 **All QA checks passed!**'}
             `;
             
@@ -258,8 +258,7 @@ jobs:
       - name: Check all results
         if: always()
         run: |
-          if [[ "${{ steps.security.outputs.status }}" == "failed" ]] || \
-             [[ "${{ steps.html.outputs.status }}" == "failed" ]] || \
+          if [[ "${{ steps.html.outputs.status }}" == "failed" ]] || \
              [[ "${{ steps.links.outputs.status }}" == "failed" ]] || \
              [[ "${{ steps.a11y.outputs.status }}" == "failed" ]]; then
             echo "❌ One or more QA checks failed"
@@ -275,7 +274,7 @@ jobs:
 # ERROR: "Security audit failed"
 # - Click "Security audit" step to see vulnerable packages
 # - Run `npm audit fix` locally and commit
-# - If unfixable, document in README and use `npm audit --audit-level=critical`
+# - This is advisory in PR workflows; release gating remains strict in release-gates.yml
 # 
 # ERROR: "HTML validation failed"
 # - Download html-validation-report artifact

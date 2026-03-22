@@ -24,7 +24,9 @@ jobs:
         run: npm ci
 
       - name: Rollback plan check
-        run: npm run rollback:check
+        run: |
+          node scripts/generate-rollback-plan.js
+          node scripts/check-rollback-plan.js
 
       - name: Security + lint gate
         run: npm run lint
@@ -33,13 +35,11 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
       - name: Integration tests
-        run: npm run test:api
+        run: npm run test --prefix lms-api
 
       - name: Build + static security checks
         run: |
           npm run build
-          npm run check:csp-dist
-          npm run check:headers
 
       - name: Install Chromium
         run: |

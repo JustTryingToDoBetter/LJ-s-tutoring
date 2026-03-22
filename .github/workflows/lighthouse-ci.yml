@@ -269,12 +269,12 @@ jobs:
 # 
 # QA Workflow:
 # - Validates correctness (HTML, links, a11y compliance)
-# - Removed Pa11y (now here in Lighthouse - includes a11y scoring)
+# - Uses Pa11y as the blocking accessibility gate
 # - Runs on every push + PR
 # 
 # Lighthouse Workflow:
 # - Validates performance (speed, optimization, UX)
-# - Includes accessibility scoring as part of Lighthouse
+# - Includes accessibility scoring for trend visibility (informational)
 # - Runs only on PRs (not every push)
 # 
 # Both must pass for PR merge.
