@@ -78,18 +78,28 @@ model User {
   tutorProfileId String?       @map("tutor_profile_id") @db.Uuid
   studentId      String?       @unique @map("student_id") @db.Uuid
   passwordHash   String?       @map("password_hash")
+  googleId       String?       @unique @map("google_id")
+  firstName      String?       @map("first_name")
+  lastName       String?       @map("last_name")
   isActive       Boolean       @default(true) @map("is_active")
   tutorProfile   TutorProfile? @relation(fields: [tutorProfileId], references: [id])
   student        Student?      @relation(fields: [studentId], references: [id])
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @default(now()) @map("updated_at")
 
-  magicLinkTokens MagicLinkToken[]
+  magicLinkTokens  MagicLinkToken[]
+  emailOtpTokens   EmailOtpToken[]
   approvedSessions Session[]       @relation("approved_by")
   sessionHistoryChanges SessionHistory[] @relation("changed_by")
   invoices        Invoice[]
-  adjustmentsCreated Adjustment[] @relation("adjustment_created_by")
+  adjustmentsCreated  Adjustment[] @relation("adjustment_created_by")
   adjustmentsApproved Adjustment[] @relation("adjustment_approved_by")
+  adjustmentsVoided   Adjustment[] @relation("adjustment_voided_by")
+  impersonationSessionsAsAdmin ImpersonationSession[] @relation("impersonation_admin")
+  impersonationSessionsAsTutor ImpersonationSession[] @relation("impersonation_tutor_user")
+  impersonationSessionsRevoked ImpersonationSession[] @relation("impersonation_revoked_by")
+  auditLogs           AuditLog[]
+  authEventLogs       AuthEventLog[]
   studyActivityEvents StudyActivityEvent[]
   studyStreak         StudyStreak?
   weeklyReports       WeeklyReport[] @relation("weekly_report_owner")
@@ -108,6 +118,7 @@ model User {
   blockedByUsers      CommunityBlock[] @relation("community_blocked")
   careerGoalSelections CareerGoalSelection[]
   careerProgressSnapshots CareerProgressSnapshot[]
+  lockedPayPeriods    PayPeriod[]
 
   @@map("users")
 }
@@ -133,7 +144,7 @@ model Adjustment {
   tutorId          String           @map("tutor_id") @db.Uuid
   payPeriodId      String           @map("pay_period_id") @db.Uuid
   type             AdjustmentType
-  amount           Decimal          @db.Numeric(10, 2)
+  amount           Decimal          @db.Decimal(10, 2)
   reason           String
   status           AdjustmentStatus @default(APPROVED)
   createdByUserId  String           @map("created_by_user_id") @db.Uuid
@@ -149,7 +160,7 @@ model Adjustment {
   payPeriod PayPeriod @relation(fields: [payPeriodId], references: [id])
   createdBy User @relation("adjustment_created_by", fields: [createdByUserId], references: [id])
   approvedBy User? @relation("adjustment_approved_by", fields: [approvedByUserId], references: [id])
-  voidedBy User? @relation(fields: [voidedByUserId], references: [id])
+  voidedBy User? @relation("adjustment_voided_by", fields: [voidedByUserId], references: [id])
   relatedSession Session? @relation(fields: [relatedSessionId], references: [id])
   invoiceLines InvoiceLine[]
 
@@ -168,6 +179,20 @@ model MagicLinkToken {
   user User @relation(fields: [userId], references: [id])
 
   @@map("magic_link_tokens")
+  @@index([tokenHash])
+}
+
+model EmailOtpToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  usedAt    DateTime? @map("used_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("email_otp_tokens")
   @@index([tokenHash])
 }
 
@@ -204,10 +229,10 @@ model ImpersonationSession {
   revokedByUserId String?  @map("revoked_by_user_id") @db.Uuid
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  adminUser User @relation(fields: [adminUserId], references: [id])
+  adminUser User  @relation("impersonation_admin",      fields: [adminUserId],     references: [id])
   tutor     TutorProfile @relation(fields: [tutorId], references: [id])
-  tutorUser User @relation(fields: [tutorUserId], references: [id])
-  revokedBy User? @relation(fields: [revokedByUserId], references: [id])
+  tutorUser User  @relation("impersonation_tutor_user", fields: [tutorUserId],     references: [id])
+  revokedBy User? @relation("impersonation_revoked_by", fields: [revokedByUserId], references: [id])
 
   @@map("impersonation_sessions")
   @@index([adminUserId, createdAt(sort: Desc)])
@@ -268,7 +293,7 @@ model TutorProfile {
   id                String  @id @default(uuid()) @db.Uuid
   fullName          String  @map("full_name")
   phone             String?
-  defaultHourlyRate Decimal @map("default_hourly_rate") @db.Numeric(10, 2)
+  defaultHourlyRate Decimal @map("default_hourly_rate") @db.Decimal(10, 2)
   active            Boolean @default(true)
   status            String  @default("ACTIVE")
   qualificationBand String? @map("qualification_band")
@@ -369,7 +394,7 @@ model Assignment {
   subject              String
   startDate            DateTime @map("start_date") @db.Date
   endDate              DateTime? @map("end_date") @db.Date
-  rateOverride         Decimal? @map("rate_override") @db.Numeric(10, 2)
+  rateOverride         Decimal? @map("rate_override") @db.Decimal(10, 2)
   allowedDaysJson      Json     @map("allowed_days_json")
   allowedTimeRangesJson Json    @map("allowed_time_ranges_json")
   active               Boolean  @default(true)
@@ -434,7 +459,7 @@ model Invoice {
   periodStart  DateTime      @map("period_start") @db.Date
   periodEnd    DateTime      @map("period_end") @db.Date
   invoiceNumber String       @map("invoice_number")
-  totalAmount  Decimal       @map("total_amount") @db.Numeric(12, 2)
+  totalAmount  Decimal       @map("total_amount") @db.Decimal(12, 2)
   status       InvoiceStatus @default(DRAFT)
   createdAt    DateTime      @default(now()) @map("created_at")
 
@@ -454,8 +479,8 @@ model InvoiceLine {
   lineType    InvoiceLineType @default(SESSION) @map("line_type")
   description String
   minutes     Int
-  rate        Decimal  @db.Numeric(10, 2)
-  amount      Decimal  @db.Numeric(12, 2)
+  rate        Decimal  @db.Decimal(10, 2)
+  amount      Decimal  @db.Decimal(12, 2)
 
   invoice Invoice @relation(fields: [invoiceId], references: [id])
   session Session? @relation(fields: [sessionId], references: [id])
