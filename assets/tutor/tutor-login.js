@@ -1,4 +1,4 @@
-import { apiFetch, apiUrl } from '../common.js';
+import { apiFetch } from '../common.js';
 
 const form     = document.getElementById('loginForm');
 const feedback = document.getElementById('loginFeedback');
@@ -14,7 +14,7 @@ if (googleBtn) {
   if (params.get('error') === 'account_not_found') {
     googleBtn.closest('div').insertAdjacentHTML(
       'afterend',
-      '<p class="note" style="color:var(--red,#e53e3e)">No account found for that Google address. Contact your administrator.</p>'
+      '<p class="note" style="color:var(--red,#e53e3e)">No account found for that Google address. Contact your administrator.</p>',
     );
   }
 }
@@ -38,9 +38,11 @@ form?.addEventListener('submit', async (e) => {
   }
 
   const body = await res.json().catch(() => ({}));
-  feedback.textContent = body.error === 'invalid_credentials'
-    ? 'Incorrect email or password.'
-    : body.error === 'rate_limited'
-    ? 'Too many attempts. Please wait and try again.'
-    : 'Sign-in failed. Please try again.';
+  if (body.error === 'invalid_credentials') {
+    feedback.textContent = 'Incorrect email or password.';
+  } else if (body.error === 'rate_limited') {
+    feedback.textContent = 'Too many attempts. Please wait and try again.';
+  } else {
+    feedback.textContent = 'Sign-in failed. Please try again.';
+  }
 });

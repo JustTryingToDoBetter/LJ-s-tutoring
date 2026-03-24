@@ -17,11 +17,13 @@ passwordForm?.addEventListener('submit', async (e) => {
   const body = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    passwordFeedback.textContent = body.error === 'invalid_credentials'
-      ? 'Incorrect email or password.'
-      : body.error === 'rate_limited'
-      ? 'Too many attempts. Please wait and try again.'
-      : 'Sign-in failed. Please try again.';
+    if (body.error === 'invalid_credentials') {
+      passwordFeedback.textContent = 'Incorrect email or password.';
+    } else if (body.error === 'rate_limited') {
+      passwordFeedback.textContent = 'Too many attempts. Please wait and try again.';
+    } else {
+      passwordFeedback.textContent = 'Sign-in failed. Please try again.';
+    }
     return;
   }
 
@@ -42,13 +44,15 @@ otpForm?.addEventListener('submit', async (e) => {
   const body = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    otpFeedback.textContent = body.error === 'invalid_or_expired_code'
-      ? 'Incorrect or expired code. Check your email and try again.'
-      : body.error === 'rate_limited'
-      ? 'Too many attempts. Please wait.'
-      : body.error === 'mfa_session_missing' || body.error === 'mfa_session_invalid'
-      ? 'Session expired. Please start again.'
-      : 'Verification failed. Please try again.';
+    if (body.error === 'invalid_or_expired_code') {
+      otpFeedback.textContent = 'Incorrect or expired code. Check your email and try again.';
+    } else if (body.error === 'rate_limited') {
+      otpFeedback.textContent = 'Too many attempts. Please wait.';
+    } else if (body.error === 'mfa_session_missing' || body.error === 'mfa_session_invalid') {
+      otpFeedback.textContent = 'Session expired. Please start again.';
+    } else {
+      otpFeedback.textContent = 'Verification failed. Please try again.';
+    }
 
     if (body.error === 'mfa_session_missing' || body.error === 'mfa_session_invalid') {
       setTimeout(() => {

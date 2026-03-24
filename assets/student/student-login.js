@@ -13,7 +13,7 @@ let lastEmail = '';
 async function requestLink(email, feedbackEl) {
   const res = await apiFetch('/auth/request-link', {
     method: 'POST',
-    body: { email }
+    body: { email },
   });
   // API always returns ok:true to prevent email enumeration
   if (!res.ok) {
@@ -29,7 +29,9 @@ magicForm?.addEventListener('submit', async (e) => {
   lastEmail = magicForm.querySelector('#email').value.trim();
 
   const ok = await requestLink(lastEmail, magicFeedback);
-  if (!ok) return;
+  if (!ok) {
+    return;
+  }
 
   magicFeedback.textContent = '';
   sentMessage.textContent = `We sent a sign-in link to ${lastEmail}. Click the link to sign in.`;
@@ -42,5 +44,7 @@ resendBtn?.addEventListener('click', async () => {
   resendBtn.disabled = true;
   const ok = await requestLink(lastEmail, resendFeedback);
   resendBtn.disabled = false;
-  if (ok) resendFeedback.textContent = 'Sent! Check your inbox.';
+  if (ok) {
+    resendFeedback.textContent = 'Sent! Check your inbox.';
+  }
 });
