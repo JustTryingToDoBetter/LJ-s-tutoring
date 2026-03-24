@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in | Project Odysseus</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body>
+  <main class="center-shell">
+    <section class="panel auth-card">
+
+      <!-- Step 1: email input -->
+      <div id="stepEmail">
+        <h1 class="page-title">Sign in</h1>
+        <p class="page-subtitle">Enter your email and we'll send you a sign-in link — no password needed.</p>
+        <form id="magicForm" class="stack-form">
+          <div class="field">
+            <label for="email">Your email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required
+                   placeholder="student@example.com">
+          </div>
+          <button class="button" type="submit">Send me a link</button>
+          <p id="magicFeedback" class="note" aria-live="polite"></p>
+        </form>
+      </div>
+
+      <!-- Step 2: confirmation (hidden until email sent) -->
+      <div id="stepSent" hidden>
+        <h1 class="page-title">Check your email</h1>
+        <p class="page-subtitle" id="sentMessage">We sent a sign-in link to your email address. Click the link to sign in.</p>
+        <p class="note">Didn't receive it? Check your spam folder, or
+          <button id="resendBtn" class="button button--text" type="button">send again</button>.
+        </p>
+        <p id="resendFeedback" class="note" aria-live="polite"></p>
+      </div>
+
+    </section>
+  </main>
+  <script src="/assets/portal-config.js"></script>
+  <script type="module" src="/assets/student/student-login.js"></script>
+</body>
+</html>

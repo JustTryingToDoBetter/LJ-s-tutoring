@@ -3,6 +3,7 @@ import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import cookie from '@fastify/cookie';
+import oauth2, { type OAuth2Namespace } from '@fastify/oauth2';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -112,6 +113,23 @@ export async function buildApp() {
   });
 
   await app.register(authPlugin);
+
+  // Google OAuth — only active when credentials are configured
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    await app.register(oauth2, {
+      name: 'googleOAuth2',
+      scope: ['profile', 'email'],
+      credentials: {
+        client: {
+          id: process.env.GOOGLE_CLIENT_ID,
+          secret: process.env.GOOGLE_CLIENT_SECRET
+        },
+        auth: oauth2.GOOGLE_CONFIGURATION
+      },
+      startRedirectPath: '/auth/google/start',
+      callbackUri: process.env.GOOGLE_CALLBACK_URL ?? 'http://localhost:3001/auth/google/callback'
+    });
+  }
 
   app.addHook('onResponse', async (req, reply) => {
     const durationMs = req.requestStart ? Date.now() - req.requestStart : undefined;

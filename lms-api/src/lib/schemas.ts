@@ -60,6 +60,15 @@ export const MagicLinkRequestSchema = z.object({
   email: EmailSchema,
 });
 
+export const AdminLoginSchema = z.object({
+  email: EmailSchema,
+  password: z.string().min(1).max(200),
+});
+
+export const AdminOtpSchema = z.object({
+  code: z.string().length(6).regex(/^\d{6}$/, 'otp_must_be_6_digits'),
+});
+
 export const CreateTutorSchema = z.object({
   email: EmailSchema,
   fullName: z.string().trim().min(1).max(120),

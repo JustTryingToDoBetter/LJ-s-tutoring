@@ -1,13 +1,27 @@
 import type { FastifyInstance } from 'fastify';
+import type { OAuth2Namespace } from '@fastify/oauth2';
+import crypto from 'node:crypto';
+
+// Augment FastifyInstance so TypeScript knows about googleOAuth2 when the plugin is registered
+declare module 'fastify' {
+  interface FastifyInstance {
+    googleOAuth2?: OAuth2Namespace;
+  }
+}
 import { pool } from '../db/pool.js';
-import { normalizeEmail, generateCsrfToken, verifyPassword } from '../lib/security.js';
-import { LoginSchema, MagicLinkRequestSchema, RegisterAdminSchema, TestLoginSchema } from '../lib/schemas.js';
+import { normalizeEmail, generateCsrfToken, verifyPassword, hashPassword, hashToken } from '../lib/security.js';
+import { LoginSchema, MagicLinkRequestSchema, RegisterAdminSchema, AdminLoginSchema, AdminOtpSchema, TestLoginSchema } from '../lib/schemas.js';
+import { sendOtpEmail } from '../lib/email.js';
 import { safeAuditMeta, writeAuditLog } from '../lib/audit.js';
 import { findUserByEmail, requestMagicLink, verifyMagicLink } from '../domains/auth/service.js';
 
 function setPrivateNoStore(reply: any) {
   reply.header('Cache-Control', 'private, no-store, max-age=0');
   reply.header('Pragma', 'no-cache');
+}
+
+function cookieDomain() {
+  return process.env.COOKIE_DOMAIN || undefined;
 }
 
 function sessionCookieOptions() {
@@ -17,7 +31,8 @@ function sessionCookieOptions() {
     sameSite: 'lax' as const,
     secure: isProd,
     path: '/',
-    maxAge: 60 * 60 * 24 * 7
+    maxAge: 60 * 60 * 24 * 7,
+    ...(cookieDomain() ? { domain: cookieDomain() } : {})
   };
 }
 
@@ -28,7 +43,8 @@ function csrfCookieOptions() {
     sameSite: 'lax' as const,
     secure: isProd,
     path: '/',
-    maxAge: 60 * 60 * 24 * 7
+    maxAge: 60 * 60 * 24 * 7,
+    ...(cookieDomain() ? { domain: cookieDomain() } : {})
   };
 }
 
@@ -245,6 +261,219 @@ export async function authRoutes(app: FastifyInstance) {
     return reply.send({ ok: true });
   });
 
+  // ── Admin 2-step login ────────────────────────────────────────────────────
+
+  const checkAdminLoginLimit = createWindowLimiter(15 * 60 * 1000, 10);
+  const checkAdminOtpLimit   = createWindowLimiter(5  * 60 * 1000, 5);
+
+  app.post('/auth/admin/login', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } }
+  }, async (req, reply) => {
+    const parsed = AdminLoginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const ip    = req.ip ?? 'unknown';
+    const email = normalizeEmail(parsed.data.email);
+
+    if (checkAdminLoginLimit(`ip:${ip}`) || checkAdminLoginLimit(`email:${email}`)) {
+      return reply.code(429).send({ error: 'rate_limited' });
+    }
+
+    const user = await findUserByEmail(pool, email);
+    // Constant-time response regardless of whether user exists
+    if (!user || user.role !== 'ADMIN' || !user.is_active || !user.password_hash) {
+      return reply.code(401).send({ error: 'invalid_credentials' });
+    }
+
+    const passwordOk = await verifyPassword(user.password_hash, parsed.data.password);
+    if (!passwordOk) {
+      return reply.code(401).send({ error: 'invalid_credentials' });
+    }
+
+    // Generate a 6-digit OTP
+    const otp       = String(crypto.randomInt(100000, 1000000));
+    const tokenHash = hashToken(otp);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    await pool.query(
+      `insert into email_otp_tokens (user_id, token_hash, expires_at)
+       values ($1, $2, $3::timestamptz)`,
+      [user.id, tokenHash, expiresAt.toISOString()]
+    );
+
+    await sendOtpEmail({ to: email, code: otp });
+
+    // Issue a short-lived interim JWT — only valid for OTP verification
+    const interimJwt = await app.jwt.sign(
+      { userId: user.id, role: 'ADMIN', awaitingMfa: true },
+      { expiresIn: '5m' }
+    );
+
+    const isProd = process.env.NODE_ENV === 'production';
+    reply.setCookie('mfa_pending', interimJwt, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: 5 * 60,
+      ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {})
+    });
+
+    return reply.send({ ok: true, step: 'otp' });
+  });
+
+  app.post('/auth/admin/verify-otp', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } }
+  }, async (req, reply) => {
+    const parsed = AdminOtpSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+    }
+
+    const ip = req.ip ?? 'unknown';
+    if (checkAdminOtpLimit(`ip:${ip}`)) {
+      return reply.code(429).send({ error: 'rate_limited' });
+    }
+
+    // Validate the interim JWT from the mfa_pending cookie
+    const pendingToken = req.cookies?.mfa_pending;
+    if (!pendingToken) {
+      return reply.code(401).send({ error: 'mfa_session_missing' });
+    }
+
+    let pendingPayload: { userId: string; role: string; awaitingMfa?: boolean };
+    try {
+      pendingPayload = await app.jwt.verify<{ userId: string; role: string; awaitingMfa?: boolean }>(pendingToken);
+    } catch {
+      return reply.code(401).send({ error: 'mfa_session_invalid' });
+    }
+
+    if (!pendingPayload.awaitingMfa || pendingPayload.role !== 'ADMIN') {
+      return reply.code(401).send({ error: 'mfa_session_invalid' });
+    }
+
+    // Verify the OTP
+    const tokenHash = hashToken(parsed.data.code);
+    const result = await pool.query(
+      `update email_otp_tokens
+       set used_at = now()
+       where token_hash = $1
+         and user_id    = $2
+         and used_at    is null
+         and expires_at >= now()
+       returning id`,
+      [tokenHash, pendingPayload.userId]
+    );
+
+    if (Number(result.rowCount ?? 0) === 0) {
+      return reply.code(401).send({ error: 'invalid_or_expired_code' });
+    }
+
+    // Issue the full session JWT
+    const jwt = await app.jwt.sign({
+      userId: pendingPayload.userId,
+      role:   'ADMIN',
+    });
+    const csrfToken = setAuthCookies(reply, jwt);
+
+    // Clear the interim cookie
+    reply.clearCookie('mfa_pending', { path: '/' });
+
+    const adminBase = process.env.ADMIN_PORTAL_URL?.replace(/\/$/, '') ?? '';
+    return reply.send({
+      ok: true,
+      csrfToken,
+      redirectTo: adminBase ? `${adminBase}/` : '/admin/'
+    });
+  });
+
+  // ── Google OAuth callback (tutor sign-in) ────────────────────────────────
+
+  app.get('/auth/google/callback', async (req, reply) => {
+    if (!app.googleOAuth2) {
+      return reply.code(501).send({ error: 'google_oauth_not_configured' });
+    }
+
+    let token: { access_token: string };
+    try {
+      const result = await app.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+      token = result.token as { access_token: string };
+    } catch {
+      return reply.code(400).send({ error: 'oauth_callback_failed' });
+    }
+
+    // Fetch the Google user profile
+    const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${token.access_token}` }
+    });
+    if (!profileRes.ok) {
+      return reply.code(502).send({ error: 'google_profile_fetch_failed' });
+    }
+    const profile = await profileRes.json() as { id: string; email: string };
+
+    if (!profile.id || !profile.email) {
+      return reply.code(400).send({ error: 'google_profile_incomplete' });
+    }
+
+    // Find user by google_id first, then fall back to email
+    const googleEmail = normalizeEmail(profile.email);
+    const userRes = await pool.query(
+      `select id, email, role, tutor_profile_id, student_id, is_active, google_id
+       from users
+       where google_id = $1 or email = $2
+       order by (google_id = $1) desc
+       limit 1`,
+      [profile.id, googleEmail]
+    );
+
+    if (Number(userRes.rowCount ?? 0) === 0) {
+      // Tutor must be pre-registered — Google OAuth is sign-in only, not sign-up
+      const tutorBase = process.env.TUTOR_PORTAL_URL?.replace(/\/$/, '') ?? '';
+      const loginUrl = tutorBase ? `${tutorBase}/login.html` : '/tutor/login.html';
+      return reply.redirect(`${loginUrl}?error=account_not_found`);
+    }
+
+    const user = userRes.rows[0] as {
+      id: string;
+      email: string;
+      role: 'ADMIN' | 'TUTOR' | 'STUDENT';
+      tutor_profile_id: string | null;
+      student_id: string | null;
+      is_active: boolean;
+      google_id: string | null;
+    };
+
+    if (!user.is_active) {
+      return reply.code(403).send({ error: 'account_disabled' });
+    }
+    if (user.role !== 'TUTOR') {
+      return reply.code(403).send({ error: 'wrong_role' });
+    }
+    if (!user.tutor_profile_id) {
+      return reply.code(500).send({ error: 'tutor_profile_missing' });
+    }
+
+    // Link google_id on first Google sign-in via email match
+    if (!user.google_id) {
+      await pool.query(
+        `update users set google_id = $1 where id = $2`,
+        [profile.id, user.id]
+      );
+    }
+
+    const jwt = await app.jwt.sign({
+      userId: user.id,
+      role: 'TUTOR',
+      tutorId: user.tutor_profile_id
+    });
+    setAuthCookies(reply, jwt);
+
+    const tutorBase = process.env.TUTOR_PORTAL_URL?.replace(/\/$/, '') ?? '';
+    return reply.redirect(tutorBase ? `${tutorBase}/dashboard/` : '/tutor/dashboard/');
+  });
+
   app.get('/auth/session', {
     preHandler: [app.authenticate],
   }, async (req, reply) => {
@@ -398,12 +627,13 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const email = normalizeEmail(parsed.data.email);
+    const passwordHash = await hashPassword(parsed.data.password);
 
     const res = await pool.query(
-      `insert into users (email, role)
-       values ($1, 'ADMIN')
+      `insert into users (email, role, password_hash, first_name, last_name)
+       values ($1, 'ADMIN', $2, $3, $4)
        returning id, email, role`,
-      [email]
+      [email, passwordHash, parsed.data.firstName, parsed.data.lastName]
     );
 
     return reply.code(201).send({ user: res.rows[0] });
