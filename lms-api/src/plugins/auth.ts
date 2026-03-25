@@ -34,6 +34,39 @@ export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
 
   app.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) => {
     try {
+      const ensureSessionIsActive = async (token: string, userId: string) => {
+        const sessionHash = hashToken(token);
+        const res = await pool.query(
+          `select revoked_at
+           from auth_sessions
+           where session_hash = $1 and user_id = $2
+           limit 1`,
+          [sessionHash, userId]
+        );
+
+        if ((res.rowCount ?? 0) === 0) {
+          await pool.query(
+            `insert into auth_sessions (user_id, session_hash, issued_at, last_seen_at)
+             values ($1, $2, now(), now())
+             on conflict (session_hash) do update set
+               user_id = excluded.user_id,
+               last_seen_at = now()`,
+            [userId, sessionHash]
+          );
+          return;
+        }
+
+        const revokedAt = res.rows[0]?.revoked_at as Date | null;
+        if (revokedAt) {
+          throw new Error('revoked_session');
+        }
+
+        await pool.query(
+          `update auth_sessions set last_seen_at = now() where session_hash = $1`,
+          [sessionHash]
+        );
+      };
+
       const path = req.routeOptions?.url ?? req.url ?? '';
       const isTutorRoute = path.startsWith('/tutor');
       const impersonationToken = req.cookies?.impersonation;
@@ -46,6 +79,7 @@ export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
         if (sessionDecoded.role !== 'ADMIN') {
           return reply.code(401).send({ error: 'unauthorized' });
         }
+        await ensureSessionIsActive(sessionToken, sessionDecoded.userId);
 
         const decoded = await app.jwt.verify<ImpersonationPayload>(impersonationToken);
         if (decoded.mode !== 'READ_ONLY') {
@@ -111,6 +145,7 @@ export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
       if (!token) return reply.code(401).send({ error: 'unauthorized' });
 
       const decoded = await app.jwt.verify<JwtPayload>(token);
+      await ensureSessionIsActive(token, decoded.userId);
       const user: AuthUser = {
         userId: decoded.userId,
         role: decoded.role,

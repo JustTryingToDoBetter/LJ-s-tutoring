@@ -1,0 +1,22 @@
+name: Formspree healthcheck
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Formspree endpoint responds
+        env:
+          FORMSPREE_ENDPOINT: ${{ secrets.FORMSPREE_ENDPOINT }}
+        run: |
+          url="${FORMSPREE_ENDPOINT:-https://formspree.io/f/xreebzqa}"
+          status=$(curl -sS -o /dev/null -w "%{http_code}" "$url")
+          echo "Status: $status"
+          if [ "$status" != "405" ]; then
+            echo "Unexpected status from Formspree endpoint (expected 405): $url"
+            exit 1
+          fi

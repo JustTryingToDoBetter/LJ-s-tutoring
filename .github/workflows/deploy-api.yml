@@ -1,0 +1,71 @@
+name: Deploy API
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: production
+      rollback:
+        description: Run rollback command instead of deploy
+        required: false
+        default: 'false'
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Release gates
+        run: |
+          npm run lint
+          npm run build
+          npm run test:api
+          npm run test:e2e:api
+
+  deploy:
+    needs: preflight
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy or rollback
+        env:
+          DEPLOY_COMMAND: ${{ secrets.API_DEPLOY_COMMAND }}
+          ROLLBACK_COMMAND: ${{ secrets.API_ROLLBACK_COMMAND }}
+        run: |
+          if [ "${{ github.event.inputs.rollback }}" = "true" ]; then
+            if [ -z "$ROLLBACK_COMMAND" ]; then
+              echo "Missing API_ROLLBACK_COMMAND"
+              exit 1
+            fi
+            eval "$ROLLBACK_COMMAND"
+          else
+            if [ -z "$DEPLOY_COMMAND" ]; then
+              echo "Missing API_DEPLOY_COMMAND"
+              exit 1
+            fi
+            eval "$DEPLOY_COMMAND"
+          fi
+
+      - name: Post-deploy health check
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          if [ -z "$HEALTHCHECK_URL" ]; then
+            echo "HEALTHCHECK_URL not set"
+            exit 1
+          fi
+          curl -fsS "${HEALTHCHECK_URL%/}/ready"

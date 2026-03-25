@@ -45,6 +45,46 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Schema governance check
+        run: npm run schema:check --prefix lms-api
+
+      - name: Monitoring assets validation
+        run: npm run validate:monitoring
+
+  contracts:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lms_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/lms_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run API contract tests
+        run: npm run test:contracts --prefix lms-api
+
   unit-web:
     runs-on: ubuntu-latest
     steps:
@@ -131,8 +171,9 @@ jobs:
     env:
       NODE_ENV: test
       DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/lms_test
-      API_BASE_URL: http://localhost:3001
-      PORT: 3001
+      API_BASE_URL: http://localhost:3101
+      PUBLIC_PO_API_BASE: http://localhost:3101
+      PORT: 3101
       COOKIE_SECRET: test_cookie_secret_value_for_ci
       JWT_SECRET: test_jwt_secret_value_for_ci
     steps:
@@ -195,6 +236,7 @@ jobs:
 
   playwright-e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16
@@ -228,8 +270,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run API E2E tests
-        run: npm run test:e2e --prefix lms-api
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser E2E tests
+        run: npm run test:e2e:web
 
       - name: Upload Playwright reports
         if: always()
@@ -239,5 +284,4 @@ jobs:
           path: |
             playwright-report/
             test-results/
-            lms-api/test-results/api.log
           retention-days: 14

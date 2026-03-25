@@ -59,8 +59,18 @@ async function run() {
     });
 
   const client = await pool.connect();
+  let lockAcquired = false;
   try {
     await client.query('BEGIN');
+    const lockRes = await client.query(
+      `select pg_try_advisory_lock($1::int, $2::int) as ok`,
+      [1701, 2603]
+    );
+    lockAcquired = Boolean(lockRes.rows[0]?.ok);
+    if (!lockAcquired) {
+      throw new Error('Another migration process holds the advisory lock');
+    }
+
     await ensureMigrationsTable(client);
 
     for (const folder of files) {
@@ -76,9 +86,17 @@ async function run() {
     }
 
     await client.query('COMMIT');
+    if (lockAcquired) {
+      await client.query(`select pg_advisory_unlock($1::int, $2::int)`, [1701, 2603]);
+      lockAcquired = false;
+    }
     console.log('Migrations complete.');
   } catch (err) {
     await client.query('ROLLBACK');
+    if (lockAcquired) {
+      await client.query(`select pg_advisory_unlock($1::int, $2::int)`, [1701, 2603]);
+      lockAcquired = false;
+    }
     console.error('Migration failed:', err);
     process.exitCode = 1;
   } finally {

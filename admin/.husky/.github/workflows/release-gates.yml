@@ -1,0 +1,62 @@
+name: Release Gates
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release-gates-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rollback plan check
+        run: |
+          node scripts/generate-rollback-plan.js
+          node scripts/check-rollback-plan.js
+
+      - name: Security + lint gate
+        run: npm run lint
+
+      - name: Dependency audit gate (prod)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Integration tests
+        run: npm run test --prefix lms-api
+
+      - name: Build + static security checks
+        run: |
+          npm run build
+
+      - name: Install Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium
+          CHROME_PATH=$(which chromium-browser || which chromium || true)
+          if [ -z "$CHROME_PATH" ]; then
+            echo "Chromium executable not found after installation"
+            exit 1
+          fi
+          echo "CHROME_PATH=$CHROME_PATH" >> $GITHUB_ENV
+
+      - name: Performance budgets
+        env:
+          LHCI_CHROME_PATH: ${{ env.CHROME_PATH }}
+        run: |
+          npx http-server dist -p 8080 -c-1 --silent > /tmp/release-static-server.log 2>&1 &
+          npx wait-on --timeout 60000 http://localhost:8080/ || { cat /tmp/release-static-server.log; exit 1; }
+          curl -fsS http://localhost:8080/ > /dev/null || { cat /tmp/release-static-server.log; exit 1; }
+          npx lhci autorun --config=./lighthouserc.js

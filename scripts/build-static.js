@@ -9,6 +9,7 @@ const copyTargets = [
   'login.html',
   'privacy.html',
   'terms.html',
+  'sw.js',
   'favicon.svg',
   'robots.txt',
   'sitemap.xml',

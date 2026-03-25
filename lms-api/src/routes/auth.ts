@@ -55,6 +55,49 @@ function setAuthCookies(reply: any, jwt: string) {
   return csrfToken;
 }
 
+function sessionExpiryFromJwt(app: FastifyInstance, jwtToken: string): string | null {
+  const decoded = app.jwt.decode(jwtToken) as { exp?: number } | null;
+  if (!decoded || typeof decoded.exp !== 'number') return null;
+  return new Date(decoded.exp * 1000).toISOString();
+}
+
+async function trackSession(
+  app: FastifyInstance,
+  jwtToken: string,
+  userId: string,
+  req?: { ip?: string; headers?: Record<string, unknown> }
+) {
+  const sessionHash = hashToken(jwtToken);
+  const expiresAt = sessionExpiryFromJwt(app, jwtToken);
+  const userAgent = typeof req?.headers?.['user-agent'] === 'string'
+    ? req.headers['user-agent']
+    : null;
+
+  await pool.query(
+    `insert into auth_sessions (user_id, session_hash, issued_at, expires_at, last_seen_at, ip, user_agent)
+     values ($1, $2, now(), $3::timestamptz, now(), $4, $5)
+     on conflict (session_hash) do update set
+       user_id = excluded.user_id,
+       expires_at = coalesce(excluded.expires_at, auth_sessions.expires_at),
+       revoked_at = null,
+       revoked_reason = null,
+       last_seen_at = now(),
+       ip = coalesce(excluded.ip, auth_sessions.ip),
+       user_agent = coalesce(excluded.user_agent, auth_sessions.user_agent)`,
+    [userId, sessionHash, expiresAt, req?.ip ?? null, userAgent]
+  );
+}
+
+async function issueTrackedSessionJwt(
+  app: FastifyInstance,
+  payload: { userId: string; role: 'ADMIN' | 'TUTOR' | 'STUDENT'; tutorId?: string; studentId?: string },
+  req?: { ip?: string; headers?: Record<string, unknown> }
+) {
+  const jwtToken = await app.jwt.sign(payload);
+  await trackSession(app, jwtToken, payload.userId, req);
+  return jwtToken;
+}
+
 function portalRedirectTarget(role: 'ADMIN' | 'TUTOR' | 'STUDENT') {
   if (role === 'ADMIN') {
     const base = process.env.ADMIN_PORTAL_URL?.replace(/\/$/, '');
@@ -166,6 +209,9 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(result.status).send({ error: result.error });
     }
 
+    const verified = await app.jwt.verify<{ userId: string }>(result.jwt);
+    await trackSession(app, result.jwt, verified.userId, req);
+
     setAuthCookies(reply, result.jwt);
     return reply.redirect(result.redirectTo);
   };
@@ -237,12 +283,12 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(500).send({ error: 'student_profile_missing' });
     }
 
-    const jwt = await app.jwt.sign({
+    const jwt = await issueTrackedSessionJwt(app, {
       userId: user.id,
       role: user.role,
       tutorId: user.tutor_profile_id ?? undefined,
       studentId: user.student_id ?? undefined
-    });
+    }, req);
 
     const csrfToken = setAuthCookies(reply, jwt);
     return reply.send({
@@ -254,7 +300,48 @@ export async function authRoutes(app: FastifyInstance) {
     });
   });
 
-  app.post('/auth/logout', async (_req, reply) => {
+  app.post('/auth/logout', async (req, reply) => {
+    const token = req.cookies?.session;
+    if (token) {
+      try {
+        const decoded = await app.jwt.verify<{ userId: string }>(token);
+        const sessionHash = hashToken(token);
+        const res = await pool.query(
+          `update auth_sessions
+           set revoked_at = now(), revoked_reason = 'logout', last_seen_at = now()
+           where session_hash = $1 and user_id = $2 and revoked_at is null`,
+          [sessionHash, decoded.userId]
+        );
+
+        if ((res.rowCount ?? 0) === 0) {
+          await pool.query(
+            `insert into auth_sessions (user_id, session_hash, issued_at, expires_at, revoked_at, revoked_reason, last_seen_at)
+             values ($1, $2, now(), $3::timestamptz, now(), 'logout', now())
+             on conflict (session_hash) do update set revoked_at = now(), revoked_reason = 'logout', last_seen_at = now()`,
+            [decoded.userId, sessionHash, sessionExpiryFromJwt(app, token)]
+          );
+        }
+      } catch {
+        // Best effort revocation; cookie clearing still proceeds.
+      }
+    }
+
+    reply.clearCookie('session', { path: '/' });
+    reply.clearCookie('csrf', { path: '/' });
+    reply.clearCookie('impersonation', { path: '/' });
+    return reply.send({ ok: true });
+  });
+
+  app.post('/auth/logout-all', {
+    preHandler: [app.authenticate],
+  }, async (req, reply) => {
+    await pool.query(
+      `update auth_sessions
+       set revoked_at = now(), revoked_reason = 'global_sign_out', last_seen_at = now()
+       where user_id = $1 and revoked_at is null`,
+      [req.user.userId]
+    );
+
     reply.clearCookie('session', { path: '/' });
     reply.clearCookie('csrf', { path: '/' });
     reply.clearCookie('impersonation', { path: '/' });
@@ -372,10 +459,10 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     // Issue the full session JWT
-    const jwt = await app.jwt.sign({
+    const jwt = await issueTrackedSessionJwt(app, {
       userId: pendingPayload.userId,
       role:   'ADMIN',
-    });
+    }, req);
     const csrfToken = setAuthCookies(reply, jwt);
 
     // Clear the interim cookie
@@ -463,11 +550,11 @@ export async function authRoutes(app: FastifyInstance) {
       );
     }
 
-    const jwt = await app.jwt.sign({
+    const jwt = await issueTrackedSessionJwt(app, {
       userId: user.id,
       role: 'TUTOR',
       tutorId: user.tutor_profile_id
-    });
+    }, req);
     setAuthCookies(reply, jwt);
 
     const tutorBase = process.env.TUTOR_PORTAL_URL?.replace(/\/$/, '') ?? '';
@@ -604,12 +691,12 @@ export async function authRoutes(app: FastifyInstance) {
         client.release();
       }
 
-      const jwt = await app.jwt.sign({
+      const jwt = await issueTrackedSessionJwt(app, {
         userId,
         role,
         tutorId: tutorId ?? undefined,
         studentId: studentId ?? undefined
-      });
+      }, req);
       const csrfToken = setAuthCookies(reply, jwt);
       return reply.send({ ok: true, csrfToken });
     });

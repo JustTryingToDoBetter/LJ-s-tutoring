@@ -7,6 +7,8 @@ Frequency: Monthly
 2) Restore the latest production backup.
 3) Run migrations: npm run migrate --prefix lms-api
 4) Verify /ready returns ok.
+5) Run restore verification script: npm run restore:verify --prefix lms-api
+6) Attach output as drill evidence.
 
 ## 2) Session Integrity Verification
 1) Run a sample arcade session (start, score, end).
@@ -20,6 +22,7 @@ Frequency: Monthly
 ## 4) Evidence Logging
 - Record timestamps, operator, and outcome.
 - Attach logs/screenshots to the DR logbook.
+- Attach latest `DR Restore Verify` workflow run reference.
 
 ## Rollback Procedure
 1) Activate read-only mode for API.

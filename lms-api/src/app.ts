@@ -34,6 +34,11 @@ export async function buildApp() {
 
   const errorMonitor = await initErrorMonitor();
   const slowRequestMs = Number(process.env.SLOW_REQUEST_MS ?? 500);
+  const metrics = {
+    requestsTotal: 0,
+    requestsSlowTotal: 0,
+    requestsErrorTotal: 0,
+  };
 
   const csrfCookieOptions = () => {
     const isProd = process.env.NODE_ENV === 'production';
@@ -64,6 +69,36 @@ export async function buildApp() {
   const allowedOrigins = configuredOrigins.length > 0
     ? configuredOrigins
     : (process.env.NODE_ENV === 'production' ? [] : defaultDevOrigins);
+  const enforceSameOrigin = process.env.ENFORCE_SAME_ORIGIN !== 'false';
+
+  function headerValue(value: string | string[] | undefined) {
+    if (Array.isArray(value)) return value[0] ?? '';
+    return value ?? '';
+  }
+
+  function safeOrigin(input: string) {
+    try {
+      return new URL(input).origin;
+    } catch {
+      return null;
+    }
+  }
+
+  function requestOrigin(req: any) {
+    const originHeader = headerValue(req.headers?.origin).trim();
+    if (originHeader) return safeOrigin(originHeader);
+
+    const refererHeader = headerValue(req.headers?.referer).trim();
+    if (!refererHeader) return null;
+    return safeOrigin(refererHeader);
+  }
+
+  function ownOrigin(req: any) {
+    const host = headerValue(req.headers?.['x-forwarded-host']) || headerValue(req.headers?.host);
+    if (!host) return null;
+    const proto = headerValue(req.headers?.['x-forwarded-proto']) || 'http';
+    return safeOrigin(`${proto}://${host}`);
+  }
 
   await app.register(cors, {
     origin: (origin, cb) => {
@@ -96,6 +131,23 @@ export async function buildApp() {
   app.addHook('preHandler', async (req, reply) => {
     const sessionToken = req.cookies?.session;
     if (!sessionToken) return;
+
+    if (enforceSameOrigin && ['POST', 'PATCH', 'DELETE'].includes(req.method)) {
+      const sourceOrigin = requestOrigin(req);
+      const localOrigin = ownOrigin(req);
+      const allowed = new Set(allowedOrigins);
+      if (localOrigin) {
+        allowed.add(localOrigin);
+      }
+
+      if (sourceOrigin && !allowed.has(sourceOrigin)) {
+        return reply.code(403).send({ error: 'origin_not_allowed' });
+      }
+
+      if (!sourceOrigin && process.env.NODE_ENV === 'production') {
+        return reply.code(403).send({ error: 'origin_missing' });
+      }
+    }
 
     const existingCsrf = req.cookies?.csrf;
     const csrfToken = existingCsrf ?? generateCsrfToken();
@@ -132,6 +184,7 @@ export async function buildApp() {
   }
 
   app.addHook('onResponse', async (req, reply) => {
+    metrics.requestsTotal += 1;
     const durationMs = req.requestStart ? Date.now() - req.requestStart : undefined;
     const logPayload = {
       method: req.method,
@@ -145,9 +198,14 @@ export async function buildApp() {
     };
 
     if (durationMs != null && durationMs >= slowRequestMs) {
+      metrics.requestsSlowTotal += 1;
       req.log?.warn?.(logPayload, 'request.slow');
     } else {
       req.log?.info?.(logPayload, 'request.complete');
+    }
+
+    if (reply.statusCode >= 500) {
+      metrics.requestsErrorTotal += 1;
     }
   });
 
@@ -214,6 +272,22 @@ export async function buildApp() {
     } catch {
       return reply.code(503).send({ ok: false, db: { ok: false, latencyMs: Date.now() - start } });
     }
+  });
+
+  app.get('/metrics', async (_req, reply) => {
+    reply.type('text/plain; version=0.0.4');
+    const body = [
+      '# HELP po_requests_total Total HTTP requests',
+      '# TYPE po_requests_total counter',
+      `po_requests_total ${metrics.requestsTotal}`,
+      '# HELP po_requests_slow_total Slow HTTP requests',
+      '# TYPE po_requests_slow_total counter',
+      `po_requests_slow_total ${metrics.requestsSlowTotal}`,
+      '# HELP po_requests_error_total HTTP 5xx responses',
+      '# TYPE po_requests_error_total counter',
+      `po_requests_error_total ${metrics.requestsErrorTotal}`,
+    ].join('\n');
+    return reply.send(`${body}\n`);
   });
 
   app.get('/ready', async (_req, reply) => {

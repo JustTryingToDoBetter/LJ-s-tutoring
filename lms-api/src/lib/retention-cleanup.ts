@@ -25,6 +25,8 @@ export type RetentionEvent = {
 };
 
 export async function runRetentionCleanup(client: Queryable, now = new Date()) {
+  await client.query(`set local app.retention_cleanup = 'on'`);
+
   const config = getRetentionConfig();
   const cutoffs = getRetentionCutoffs(now);
 
