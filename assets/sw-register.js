@@ -5,6 +5,7 @@
   'use strict';
 
   if (!('serviceWorker' in navigator)) {return;}
+  if (!location.hostname.endsWith('projectodysseus.live')) {return;}
 
   const SW_URL = '/sw.js';
   let didPrompt = false;
