@@ -13,6 +13,7 @@
     "start:test": "tsx src/index.ts",
     "db:create:local": "tsx scripts/create-local-db.ts",
     "migrate": "tsx src/db/migrate.ts",
+    "seed:dev": "tsx scripts/seed-dev.ts",
     "db:migrate:test": "node scripts/run-with-test-env.js tsx src/db/migrate.ts",
     "db:reset:test": "node scripts/run-with-test-env.js tsx scripts/reset-test-db.ts",
     "seed:test": "node scripts/run-with-test-env.js tsx scripts/seed-test.ts",
