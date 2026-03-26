@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-03-25T09:36:33.898Z",
+  "releaseId": "release-2026-03-25",
+  "ci": {
+    "runId": "local",
+    "ref": "local",
+    "sha": "local",
+    "workflow": "release-gates"
+  },
+  "gates": [
+    {
+      "name": "rollback_plan",
+      "status": "passed"
+    },
+    {
+      "name": "security_lint",
+      "status": "passed"
+    },
+    {
+      "name": "dependency_audit_prod",
+      "status": "passed"
+    },
+    {
+      "name": "integration_tests",
+      "status": "passed"
+    },
+    {
+      "name": "build",
+      "status": "passed"
+    },
+    {
+      "name": "performance_budgets",
+      "status": "passed"
+    }
+  ],
+  "artifacts": {
+    "rollbackPlan": "releases/rollback/latest.md",
+    "lighthouseConfig": "lighthouserc.js"
+  }
+}

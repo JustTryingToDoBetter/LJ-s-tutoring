@@ -10,6 +10,7 @@ Copied paths:
 - `login.html`
 - `privacy.html`
 - `terms.html`
+- `sw.js`
 - `assets/`
 - `dashboard/`
 - `reports/`

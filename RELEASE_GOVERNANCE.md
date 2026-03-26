@@ -9,6 +9,7 @@
 ## How to Run Gates
 - Security and lint: npm run lint
 - Integration tests: npm run test:api
+- API E2E tests: npm run test:e2e:api
 - Lighthouse budgets: GitHub Actions -> Lighthouse CI
 - Rollback plan: node scripts/generate-rollback-plan.js
 - Validate rollback plan: node scripts/check-rollback-plan.js
@@ -23,3 +24,12 @@ Attach the following to the release record:
 - QA report artifact link
 - Integration test summary
 - Rollback plan file path
+- Release gates evidence JSON artifact (`releases/evidence/latest-release-gates.json`)
+
+## CI/CD Enforcement Map
+- App CI: `.github/workflows/app-ci.yml`
+- Security stack (SAST, secrets, dependency policy): `.github/workflows/security-stack.yml`
+- Release gates: `.github/workflows/release-gates.yml`
+- Deploy orchestration: `.github/workflows/deploy-api.yml`
+- DR restore verification: `.github/workflows/dr-restore-verify.yml`
+- DB maintenance checks: `.github/workflows/db-maintenance.yml`

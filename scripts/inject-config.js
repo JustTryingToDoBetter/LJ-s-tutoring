@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-require('dotenv').config({ path: path.resolve(__dirname, '..', '.env'), override: true });
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 const distConfigPath = path.resolve(__dirname, '..', 'dist', 'assets', 'portal-config.js');
 if (!fs.existsSync(distConfigPath)) {

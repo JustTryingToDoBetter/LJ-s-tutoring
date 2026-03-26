@@ -23,10 +23,15 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:validate": "prisma validate",
     "test": "node scripts/run-with-test-env.js npm run db:migrate:test && node scripts/run-with-test-env.js vitest run --exclude tests/e2e/**",
+    "test:contracts": "node scripts/run-with-test-env.js vitest run tests/contracts",
     "test:e2e": "cross-env NODE_ENV=test vitest run tests/e2e",
     "test:ci": "node scripts/run-with-test-env.js npm run db:migrate:test && node scripts/run-with-test-env.js vitest run --exclude tests/e2e/** --reporter=default --reporter=junit --outputFile=test-results/unit-junit.xml",
     "test:e2e:ci": "cross-env NODE_ENV=test vitest run tests/e2e --reporter=default --reporter=junit --outputFile=test-results/e2e-junit.xml",
-    "odie:refresh-cache": "tsx scripts/refresh-odie-careers-cache.ts"
+    "odie:refresh-cache": "tsx scripts/refresh-odie-careers-cache.ts",
+    "schema:check": "tsx scripts/check-schema-governance.ts",
+    "restore:verify": "tsx scripts/restore-verify.ts",
+    "db:maintenance:check": "tsx scripts/check-db-maintenance.ts",
+    "db:maintenance:check:strict": "cross-env DB_MAINTENANCE_STRICT=true tsx scripts/check-db-maintenance.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^10.0.1",

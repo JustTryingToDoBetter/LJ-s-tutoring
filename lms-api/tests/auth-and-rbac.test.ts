@@ -183,6 +183,68 @@ describe('Auth + RBAC', () => {
     await app.close();
   });
 
+  it('blocks cross-origin state-changing requests even with CSRF', async () => {
+    const app = await buildApp();
+    const admin = await createAdmin('admin@example.com');
+    const token = await issueMagicToken(admin.id);
+    const auth = await loginWithMagicToken(app, token);
+
+    const blocked = await app.inject({
+      method: 'POST',
+      url: '/admin/students',
+      headers: {
+        ...auth.headers,
+        origin: 'https://evil.example.com'
+      },
+      payload: { fullName: 'Origin Attack' }
+    });
+
+    expect(blocked.statusCode).toBe(403);
+    expect(blocked.json().error).toBe('origin_not_allowed');
+    await app.close();
+  });
+
+  it('revokes current session on logout and blocks logout-all sessions', async () => {
+    const app = await buildApp();
+    const admin = await createAdmin('admin@example.com');
+
+    const tokenA = await issueMagicToken(admin.id);
+    const authA = await loginWithMagicToken(app, tokenA);
+
+    const logoutRes = await app.inject({
+      method: 'POST',
+      url: '/auth/logout',
+      headers: authA.headers
+    });
+    expect(logoutRes.statusCode).toBe(200);
+
+    const postLogoutAccess = await app.inject({
+      method: 'GET',
+      url: '/admin/sessions',
+      headers: authA.headers
+    });
+    expect(postLogoutAccess.statusCode).toBe(401);
+
+    const tokenB = await issueMagicToken(admin.id);
+    const authB = await loginWithMagicToken(app, tokenB);
+
+    const globalLogout = await app.inject({
+      method: 'POST',
+      url: '/auth/logout-all',
+      headers: authB.headers
+    });
+    expect(globalLogout.statusCode).toBe(200);
+
+    const afterGlobalLogout = await app.inject({
+      method: 'GET',
+      url: '/admin/sessions',
+      headers: authB.headers
+    });
+    expect(afterGlobalLogout.statusCode).toBe(401);
+
+    await app.close();
+  });
+
   it('rate limits magic link requests', async () => {
     const app = await buildApp();
     const admin = await createAdmin('admin@example.com');

@@ -1,0 +1,47 @@
+groups:
+  - name: project_odysseus_api
+    interval: 30s
+    rules:
+      - alert: ProjectOdysseusHighErrorRate
+        expr: |
+          (sum(rate(po_requests_error_total[5m])) / clamp_min(sum(rate(po_requests_total[5m])), 1)) > 0.02
+        for: 5m
+        labels:
+          severity: P1
+          service: project-odysseus-api
+        annotations:
+          summary: "High API error rate"
+          description: "5xx ratio exceeded 2% over the last 5 minutes."
+
+      - alert: ProjectOdysseusSlowRequestRate
+        expr: |
+          (sum(rate(po_requests_slow_total[5m])) / clamp_min(sum(rate(po_requests_total[5m])), 1)) > 0.10
+        for: 5m
+        labels:
+          severity: P2
+          service: project-odysseus-api
+        annotations:
+          summary: "Slow request ratio elevated"
+          description: "Slow request ratio exceeded 10% over the last 5 minutes."
+
+      - alert: ProjectOdysseusRequestVolumeDrop
+        expr: |
+          sum(rate(po_requests_total[10m])) < 0.01
+        for: 15m
+        labels:
+          severity: P3
+          service: project-odysseus-api
+        annotations:
+          summary: "Request volume unexpectedly low"
+          description: "Traffic volume dropped below expected baseline for 15 minutes."
+
+      - alert: ProjectOdysseusReadyProbeFailing
+        expr: |
+          max_over_time(probe_success{job="project-odysseus-ready"}[5m]) < 1
+        for: 3m
+        labels:
+          severity: P1
+          service: project-odysseus-api
+        annotations:
+          summary: "Readiness probe failing"
+          description: "External readiness checks have failed for at least 3 minutes."

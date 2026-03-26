@@ -86,7 +86,11 @@ npm run serve        # Serve dist/ on port 8080
 npm run dev          # Serve static site + run API dev server
 npm run start        # Serve static site + run API prod server
 npm run lint         # Lint JS and validate HTML
-npm run test         # Run API tests
+npm run test:unit    # Run frontend helper unit tests
+npm run test:api     # Run LMS API integration tests
+npm run test:e2e:api # Run LMS API E2E tests
+npm run test:all     # Run frontend unit + API integration + API E2E
+npm run test         # Alias of test:all
 docker compose up -d db # Start only Postgres in Docker
 docker compose up api db # Run API + Postgres in Docker
 ```
@@ -112,3 +116,10 @@ tutor/
 admin/
 lms-api/
 ```
+
+## Operations Docs
+
+- Observability and SLO baseline: `docs/ops/OBSERVABILITY_AND_SLO_BASELINE.md`
+- PITR and restore verification: `docs/db/PITR_STRATEGY_AND_RESTORE_VERIFICATION.md`
+- RLS feasibility analysis: `docs/db/RLS_DEFENSE_IN_DEPTH_FEASIBILITY.md`
+- UX strategy and governance: `docs/ux/UX_STRATEGY_AND_GOVERNANCE.md`
