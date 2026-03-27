@@ -1,13 +1,27 @@
 function resolveApiBase() {
   const raw = window.__PO_API_BASE__;
+  const pageHost = window.location.hostname;
+  const isLocalHost = (value) => value === 'localhost' || value === '127.0.0.1';
+
   if (!raw || raw === '__PO_API_BASE__') {
-    const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1') {
-      return 'http://localhost:3001';
+    if (isLocalHost(pageHost)) {
+      return `${window.location.protocol}//${pageHost}:3001`;
     }
     throw new Error('api_base_missing');
   }
-  return String(raw).replace(/\/$/, '');
+
+  const normalized = String(raw).replace(/\/$/, '');
+  try {
+    const parsed = new URL(normalized);
+    if (isLocalHost(pageHost) && isLocalHost(parsed.hostname) && parsed.hostname !== pageHost) {
+      parsed.hostname = pageHost;
+      return parsed.toString().replace(/\/$/, '');
+    }
+  } catch {
+    // Keep original value if config is not an absolute URL.
+  }
+
+  return normalized;
 }
 
 const API_BASE = resolveApiBase();

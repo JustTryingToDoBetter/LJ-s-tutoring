@@ -1,5 +1,32 @@
 
-const API_BASE = (window.__PO_API_BASE__ || '').replace(/\/$/, '');
+function resolveApiBase() {
+  const raw = String(window.__PO_API_BASE__ || '').replace(/\/$/, '');
+  const host = window.location.hostname;
+  const isLocalHost = (value) => value === 'localhost' || value === '127.0.0.1';
+
+  // Sensible local fallback when config injection has not happened.
+  if (!raw || raw === '__PO_API_BASE__') {
+    if (isLocalHost(host)) {
+      return `${window.location.protocol}//${host}:3001`;
+    }
+    return '';
+  }
+
+  // Keep API host aligned with the page host in local dev to avoid cross-site cookie drops.
+  try {
+    const parsed = new URL(raw);
+    if (isLocalHost(host) && isLocalHost(parsed.hostname) && parsed.hostname !== host) {
+      parsed.hostname = host;
+      return parsed.toString().replace(/\/$/, '');
+    }
+  } catch {
+    // Fall through and return raw config if not a valid absolute URL.
+  }
+
+  return raw;
+}
+
+const API_BASE = resolveApiBase();
 
 export function apiUrl(path) {
   return `${API_BASE}${path}`;
