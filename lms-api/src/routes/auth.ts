@@ -408,7 +408,11 @@ export async function authRoutes(app: FastifyInstance) {
       ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {})
     });
 
-    return reply.send({ ok: true, step: 'otp' });
+    const payload: Record<string, unknown> = { ok: true, step: 'otp' };
+    if (process.env.NODE_ENV !== 'production') {
+      payload.debugMfaToken = interimJwt;
+    }
+    return reply.send(payload);
   });
 
   app.post('/auth/admin/verify-otp', {
@@ -424,8 +428,14 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(429).send({ error: 'rate_limited' });
     }
 
-    // Validate the interim JWT from the mfa_pending cookie
-    const pendingToken = req.cookies?.mfa_pending;
+    // Validate the interim JWT from the mfa_pending cookie.
+    // In non-production environments, allow a temporary header fallback
+    // to reduce local browser cookie policy friction during OTP testing.
+    const headerValue = req.headers['x-mfa-pending'];
+    const debugHeaderToken = process.env.NODE_ENV === 'production'
+      ? ''
+      : (Array.isArray(headerValue) ? String(headerValue[0] || '') : String(headerValue || ''));
+    const pendingToken = req.cookies?.mfa_pending || debugHeaderToken;
     if (!pendingToken) {
       return reply.code(401).send({ error: 'mfa_session_missing' });
     }

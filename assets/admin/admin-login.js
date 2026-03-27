@@ -6,6 +6,7 @@ const passwordForm    = document.getElementById('passwordForm');
 const otpForm         = document.getElementById('otpForm');
 const passwordFeedback = document.getElementById('passwordFeedback');
 const otpFeedback     = document.getElementById('otpFeedback');
+const MFA_TOKEN_STORAGE_KEY = 'adminMfaPendingToken';
 
 // Step 1 — email + password
 passwordForm?.addEventListener('submit', async (e) => {
@@ -28,6 +29,9 @@ passwordForm?.addEventListener('submit', async (e) => {
   }
 
   // Advance to OTP step
+  if (typeof body.debugMfaToken === 'string' && body.debugMfaToken) {
+    sessionStorage.setItem(MFA_TOKEN_STORAGE_KEY, body.debugMfaToken);
+  }
   passwordFeedback.textContent = '';
   stepPassword.hidden = true;
   stepOtp.hidden = false;
@@ -40,7 +44,12 @@ otpForm?.addEventListener('submit', async (e) => {
   otpFeedback.textContent = 'Verifying code…';
   const data = Object.fromEntries(new FormData(otpForm).entries());
 
-  const res = await apiFetch('/auth/admin/verify-otp', { method: 'POST', body: data });
+  const mfaToken = sessionStorage.getItem(MFA_TOKEN_STORAGE_KEY) || '';
+  const res = await apiFetch('/auth/admin/verify-otp', {
+    method: 'POST',
+    body: data,
+    headers: mfaToken ? { 'x-mfa-pending': mfaToken } : undefined,
+  });
   const body = await res.json().catch(() => ({}));
 
   if (!res.ok) {
@@ -55,6 +64,7 @@ otpForm?.addEventListener('submit', async (e) => {
     }
 
     if (body.error === 'mfa_session_missing' || body.error === 'mfa_session_invalid') {
+      sessionStorage.removeItem(MFA_TOKEN_STORAGE_KEY);
       setTimeout(() => {
         stepOtp.hidden = true;
         stepPassword.hidden = false;
@@ -64,5 +74,6 @@ otpForm?.addEventListener('submit', async (e) => {
     return;
   }
 
+  sessionStorage.removeItem(MFA_TOKEN_STORAGE_KEY);
   window.location.href = body.redirectTo || '/admin/';
 });
