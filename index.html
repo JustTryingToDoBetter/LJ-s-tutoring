@@ -55,7 +55,7 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&amp;display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
 
     <link rel="stylesheet" href="/assets/tailwind-input.css">
     <link rel="stylesheet" href="/assets/site.css">
@@ -65,11 +65,6 @@
 
 </head>
 <body class="font-sans text-slate-800 antialiased bg-slate-50">
-    <!-- Page Loader -->
-    <div id="page-loader" class="page-loader">
-        <div class="loader-spinner"></div>
-    </div>
-    
     <!-- Scroll Progress Bar -->
     <div id="scroll-progress" class="scroll-progress"></div>
     
@@ -84,18 +79,18 @@
                         <i class="fas fa-compass text-brand-gold mr-2" aria-hidden="true"></i>Project Odysseus
                     </a>
                 </div>
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="#about" class="site-nav-link text-gray-600 hover:text-brand-dark font-medium transition">Who We Are</a>
-                    <a href="#subjects" class="site-nav-link text-gray-600 hover:text-brand-dark font-medium transition">Subjects</a>
+                <div class="hidden md:flex items-center gap-3">
+                    <a href="#about" class="site-nav-link text-gray-600 hover:text-brand-dark font-medium transition">Our Tutors</a>
                     <a href="#faq" class="site-nav-link text-gray-600 hover:text-brand-dark font-medium transition">FAQ</a>
-                    <button type="button" id="dark-mode-toggle" class="text-gray-600 hover:text-brand-dark p-2 rounded-full hover:bg-gray-100 transition" aria-label="Toggle dark mode">
+                    <button type="button" id="dark-mode-toggle" class="w-9 h-9 flex items-center justify-center text-gray-600 hover:text-brand-dark rounded-full border border-gray-200 hover:bg-gray-100 transition" aria-label="Toggle dark mode">
                         <i class="fas fa-moon" id="dark-mode-icon" aria-hidden="true"></i>
                     </button>
                     <a href="#contact" class="site-nav-cta bg-brand-dark text-white px-5 py-2 rounded-full font-medium hover:bg-slate-800 transition shadow-lg">
                         Book a Slot
                     </a>
-
-
+                    <a href="#become-a-tutor" class="site-nav-cta bg-brand-gold text-brand-dark px-5 py-2 rounded-full font-bold hover:bg-amber-300 transition shadow-lg">
+                        Become a Tutor
+                    </a>
                 </div>
 
 
@@ -108,151 +103,114 @@
             <!-- Mobile Menu -->
             <div id="mobile-menu" class="mobile-menu md:hidden">
                 <div class="py-4 space-y-3 border-t border-gray-100">
-                    <a href="#about" class="site-nav-link block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-brand-dark font-medium rounded transition">Who We Are</a>
-                    <a href="#subjects" class="site-nav-link block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-brand-dark font-medium rounded transition">Subjects</a>
+                    <a href="#about" class="site-nav-link block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-brand-dark font-medium rounded transition">Our Tutors</a>
                     <a href="#faq" class="site-nav-link block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-brand-dark font-medium rounded transition">FAQ</a>
 
                     <a href="#contact" class="block mx-4 py-3 bg-brand-dark text-white font-medium text-center rounded-full hover:bg-slate-800 transition shadow-lg">Book a Slot</a>
+                    <a href="#become-a-tutor" class="block mx-4 py-3 bg-brand-gold text-brand-dark font-bold text-center rounded-full hover:bg-amber-300 transition shadow-lg">Become a Tutor</a>
                 </div>
             </div>
         </div>
     </nav>
 
     <header class="hero-pattern pt-32 pb-20 lg:pt-48 lg:pb-32 text-white relative overflow-hidden" id="main-content">
+
+        <!-- Floating math symbols (decorative) -->
+        <span class="hero-symbol" style="left:4%;font-size:2rem;animation-duration:20s;animation-delay:0s;" aria-hidden="true">π</span>
+        <span class="hero-symbol" style="left:11%;font-size:1.5rem;animation-duration:24s;animation-delay:-6s;" aria-hidden="true">∑</span>
+        <span class="hero-symbol" style="left:20%;font-size:2.4rem;animation-duration:17s;animation-delay:-11s;" aria-hidden="true">∫</span>
+        <span class="hero-symbol" style="left:30%;font-size:1.7rem;animation-duration:22s;animation-delay:-3s;" aria-hidden="true">√</span>
+        <span class="hero-symbol" style="left:42%;font-size:2.8rem;animation-duration:26s;animation-delay:-14s;" aria-hidden="true">∞</span>
+        <span class="hero-symbol" style="left:53%;font-size:1.6rem;animation-duration:19s;animation-delay:-8s;" aria-hidden="true">Δ</span>
+        <span class="hero-symbol" style="left:63%;font-size:2.1rem;animation-duration:23s;animation-delay:-16s;" aria-hidden="true">θ</span>
+        <span class="hero-symbol" style="left:72%;font-size:1.4rem;animation-duration:18s;animation-delay:-2s;" aria-hidden="true">≈</span>
+        <span class="hero-symbol" style="left:81%;font-size:2rem;animation-duration:21s;animation-delay:-10s;" aria-hidden="true">±</span>
+        <span class="hero-symbol" style="left:89%;font-size:1.6rem;animation-duration:25s;animation-delay:-5s;" aria-hidden="true">x²</span>
+        <span class="hero-symbol" style="left:95%;font-size:1.8rem;animation-duration:16s;animation-delay:-13s;" aria-hidden="true">÷</span>
+
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-        
-            
-            
-            <p class="text-brand-gold/80 text-sm uppercase tracking-widest mb-2">Navigate Your Journey to Success</p>
-            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+
+            <!-- Availability badge -->
+            <div class="hero-animate hero-delay-1 inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/15 rounded-full px-4 py-2 mb-5">
+                <span class="availability-pulse w-2 h-2 bg-green-400 rounded-full flex-shrink-0"></span>
+                <span class="text-green-300 text-sm font-medium">Now accepting new students</span>
+            </div>
+
+            <p class="hero-animate hero-delay-2 text-brand-gold/80 text-sm uppercase tracking-widest mb-2">Navigate Your Journey to Success</p>
+            <h1 class="hero-animate hero-delay-3 text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
                 Your Mathematical <br>
-                <span class="text-brand-gold">Odyssey Begins Here.</span>
+                <span class="text-brand-gold hero-gold-glow">Odyssey Begins Here.</span>
             </h1>
-            <p class="text-lg md:text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
+            <p class="hero-animate hero-delay-4 text-lg md:text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
                 Like Odysseus navigating the seas, we'll guide you through every mathematical challenge. Expert tutoring that turns struggles into triumphs.
             </p>
-            <div class="flex flex-col sm:flex-row justify-center gap-4">
-            <a href="#about" class="border border-slate-500 text-slate-300 px-8 py-4 rounded-lg font-semibold hover:bg-white/10 transition">
-                Meet The Tutors
-            </a>
+            <div class="hero-animate hero-delay-5 flex flex-col sm:flex-row justify-center gap-4 mb-10">
+                <a href="#about" class="border border-slate-500 text-slate-300 px-8 py-4 rounded-lg font-semibold hover:bg-white/10 transition">
+                    Meet The Tutors
+                </a>
+            </div>
+
+            <!-- Social proof pills -->
+            <div class="hero-animate hero-delay-6 flex flex-wrap justify-center gap-3">
+                <span class="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full text-sm text-slate-300 border border-white/10">
+                    <i class="fas fa-star text-brand-gold text-xs" aria-hidden="true"></i>
+                    95% grade improvement
+                </span>
+                <span class="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full text-sm text-slate-300 border border-white/10">
+                    <i class="fas fa-user-graduate text-brand-gold text-xs" aria-hidden="true"></i>
+                    150+ students helped
+                </span>
+                <span class="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full text-sm text-slate-300 border border-white/10">
+                    <i class="fas fa-shield-alt text-brand-gold text-xs" aria-hidden="true"></i>
+                    Money-back guarantee
+                </span>
             </div>
 
         </div>
+
+        <!-- Scroll indicator -->
+        <div class="hero-scroll-indicator" aria-hidden="true">
+            <span>scroll</span>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+
     </header>
-
-    <section id="about" class="py-20 bg-white">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold text-brand-dark">Who We Are</h2>
-                <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                <div class="relative">
-                    <div class="absolute -inset-4 bg-brand-gold/20 rounded-xl transform -rotate-2"></div>
-                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Project Odysseus team helping a student with mathematics" loading="lazy" decoding="async" width="800" height="533" class="relative rounded-xl shadow-2xl w-full object-cover h-80">
-                </div>
-                
-                <div>
-                    <h3 class="text-2xl font-bold text-brand-dark mb-4">Mathematics Specialists</h3>
-                    <p class="text-gray-600 mb-6 leading-relaxed">
-                        We are a team of two dedicated professionals specializing exclusively in Mathematics tutoring for Grades 8-12. Unlike large agencies where you are just a number, we personally invest in every student's success.
-                    </p>
-                    <ul class="space-y-4">
-                        <li class="flex items-start">
-                            <i class="fas fa-check-circle text-brand-gold mt-1 mr-3"></i>
-                            <span class="text-gray-700"><strong>Proven Results:</strong> 2+ years of helping students improve their Maths grades significantly.</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check-circle text-brand-gold mt-1 mr-3"></i>
-                            <span class="text-gray-700"><strong>Personalized:</strong> We tailor every session to your specific exam board and learning style.</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check-circle text-brand-gold mt-1 mr-3"></i>
-                            <span class="text-gray-700"><strong>Pure Maths Only:</strong> We focus on Mathematics, not Maths Literacy — deep expertise in one subject.</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Meet The Tutors -->
-    <section id="tutors" class="py-20 bg-slate-50">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16 fade-up">
-                <h2 class="text-3xl font-bold text-brand-dark">Meet Your Tutors</h2>
-                <p class="text-gray-600 mt-4">The faces behind your success</p>
-                <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto fade-up">
-                <!-- Tutor 1: Liam Newton -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition">
-                    <div class="flex flex-col sm:flex-row items-center gap-6">
-                        <img src="images/liam-newton.jpg" alt="Liam Newton - Mathematics Tutor" loading="lazy" decoding="async" width="96" height="96" class="w-24 h-24 rounded-full object-cover flex-shrink-0 shadow-md">
-                        <div class="text-center sm:text-left">
-                            <h3 class="text-xl font-bold text-brand-dark">Liam Newton</h3>
-                            <p class="text-brand-gold font-medium dark:text-brand-gold">Co-Founder</p>
-                            <p class="text-gray-400 text-sm mt-1">BSc Investment Banking • Stellenbosch University</p>
-                        </div>
-                    </div>
-                    <div class="mt-6">
-                        <p class="text-gray-600 text-sm leading-relaxed">Maths doesn't have to be boring — and it definitely shouldn't be scary. Liam believes the best learning happens when you're actually enjoying it. His sessions are relaxed, full of real-world examples, and always leave you feeling like you've genuinely levelled up.</p>
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Financial Maths</span>
-                            <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">Algebra</span>
-                            <span class="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full">Exam Prep</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Tutor 2: Jaydin Morrison -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition">
-                    <div class="flex flex-col sm:flex-row items-center gap-6">
-                        <img src="images/jaydin-morrison.jpg" alt="Jaydin Morrison - Mathematics Tutor" loading="lazy" decoding="async" width="96" height="96" class="w-24 h-24 rounded-full object-cover flex-shrink-0 shadow-md">
-                        <div class="text-center sm:text-left">
-                            <h3 class="text-xl font-bold text-brand-dark">Jaydin Morrison</h3>
-                            <p class="text-brand-gold font-medium">Co-Founder</p>
-                            <p class="text-gray-400 text-sm mt-1">BSc Honours Computer Science • UWC</p>
-                        </div>
-                    </div>
-                    <div class="mt-6">
-                        <p class="text-gray-600 text-sm leading-relaxed">Jaydin's superpower? Making the "aha!" moment happen. With a coder's logic and a genuine love for problem-solving, he turns confusing concepts into satisfying puzzles. No judgment, no stress — just good vibes and steady progress.</p>
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            <span class="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-full">Trigonometry</span>
-                            <span class="text-xs bg-pink-100 text-pink-700 px-3 py-1 rounded-full">Functions</span>
-                            <span class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">Problem Solving</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- Stats and Trust Section -->
     <section class="py-16 bg-brand-dark text-white">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center fade-up">
                 <div>
+                    <div class="w-10 h-10 bg-brand-gold/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-graduation-cap text-brand-gold" aria-hidden="true"></i>
+                    </div>
                     <div class="text-4xl md:text-5xl font-bold text-brand-gold mb-2">
                         <span class="counter" data-target="150">0</span>+
                     </div>
                     <p class="text-slate-400">Students Helped</p>
                 </div>
                 <div>
+                    <div class="w-10 h-10 bg-brand-gold/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-arrow-trend-up text-brand-gold" aria-hidden="true"></i>
+                    </div>
                     <div class="text-4xl md:text-5xl font-bold text-brand-gold mb-2">
                         <span class="counter" data-target="95">0</span>%
                     </div>
                     <p class="text-slate-400">Grade Improvement</p>
                 </div>
                 <div>
-                    <div class="text-4xl md:text-5xl font-bold text-brand-gold mb-2">
-                        <span class="counter" data-target="2">0</span>+
+                    <div class="w-10 h-10 bg-brand-gold/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-calendar-check text-brand-gold" aria-hidden="true"></i>
                     </div>
-                    <p class="text-slate-400">Years Experience</p>
+                    <div class="text-4xl md:text-5xl font-bold text-brand-gold mb-2">
+                        <span class="counter" data-target="500">0</span>+
+                    </div>
+                    <p class="text-slate-400">Sessions Delivered</p>
                 </div>
                 <div>
+                    <div class="w-10 h-10 bg-brand-gold/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-star text-brand-gold" aria-hidden="true"></i>
+                    </div>
                     <div class="text-4xl md:text-5xl font-bold text-brand-gold mb-2">
                         <span class="counter" data-target="100">0</span>%
                     </div>
@@ -276,46 +234,127 @@
         </div>
     </section>
 
-    <!-- Subjects Section -->
-    <section id="subjects" class="py-20 bg-white">
+    <!-- Meet the Team -->
+    <section id="about" class="py-20 bg-white">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16 fade-up">
-                <h2 class="text-3xl font-bold text-brand-dark">What We Teach</h2>
-                <p class="text-gray-600 mt-4">Specialized Mathematics tutoring for Grades 8-12</p>
+            <div class="text-center mb-6 fade-up">
+                <div class="inline-flex w-12 h-12 items-center justify-center bg-brand-gold/10 rounded-xl mb-4">
+                    <i class="fas fa-users text-brand-gold text-xl" aria-hidden="true"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-brand-dark">Meet Your Tutors</h2>
+                <p class="text-gray-600 mt-4 max-w-2xl mx-auto">Two dedicated founders who personally run every session — you'll never be handed off to a random hire.</p>
                 <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
             </div>
-            
-            <div class="max-w-2xl mx-auto fade-up">
-                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-xl text-center hover:shadow-lg transition group dark:from-slate-800 dark:to-slate-700">
-                    <div class="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition">
-                        <i class="fas fa-calculator text-3xl text-white" aria-hidden="true"></i>
+
+            <div class="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-12 fade-up">
+                <span class="flex items-center gap-2 text-sm text-gray-500">
+                    <i class="fas fa-check-circle text-brand-gold" aria-hidden="true"></i> Pure Mathematics Only
+                </span>
+                <span class="flex items-center gap-2 text-sm text-gray-500">
+                    <i class="fas fa-check-circle text-brand-gold" aria-hidden="true"></i> Same Tutor Every Week
+                </span>
+                <span class="flex items-center gap-2 text-sm text-gray-500">
+                    <i class="fas fa-check-circle text-brand-gold" aria-hidden="true"></i> CAPS Curriculum Specialists
+                </span>
+                <span class="flex items-center gap-2 text-sm text-gray-500">
+                    <i class="fas fa-check-circle text-brand-gold" aria-hidden="true"></i> Personalised Study Plans
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto fade-up">
+                <!-- Tutor 1: Liam Newton -->
+                <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-lg transition">
+                    <div class="flex flex-col sm:flex-row items-center gap-6">
+                        <img src="images/liam-newton.jpg" alt="Liam Newton - Mathematics Tutor" loading="lazy" decoding="async" width="96" height="96" class="w-24 h-24 rounded-full object-cover flex-shrink-0 shadow-md">
+                        <div class="text-center sm:text-left">
+                            <h3 class="text-xl font-bold text-brand-dark">Liam Newton</h3>
+                            <p class="text-brand-gold font-medium">Co-Founder</p>
+                            <p class="text-gray-400 text-sm mt-1">BSc Investment Banking • Stellenbosch University</p>
+                        </div>
                     </div>
-                    <h3 class="font-bold text-2xl text-gray-900 dark:text-white mb-2">Mathematics</h3>
-                    <p class="text-sm text-blue-600 dark:text-blue-400 font-medium mb-4">Grades 8–12 • CAPS Curriculum</p>
-                    <p class="text-gray-600 dark:text-slate-300 mb-6">Algebra, Functions, Calculus, Geometry, Trigonometry, Statistics &amp; Probability</p>
-                    
-                    <div class="grid grid-cols-5 gap-2 mb-6">
-                        <div class="bg-white dark:bg-slate-600 rounded-lg p-3 shadow-sm">
-                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">Gr 8</span>
+                    <div class="mt-6">
+                        <p class="text-gray-600 text-sm leading-relaxed">Maths doesn't have to be boring — and it definitely shouldn't be scary. Liam believes the best learning happens when you're actually enjoying it. His sessions are relaxed, full of real-world examples, and always leave you feeling like you've genuinely levelled up.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Financial Maths</span>
+                            <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">Algebra</span>
+                            <span class="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full">Exam Prep</span>
                         </div>
-                        <div class="bg-white dark:bg-slate-600 rounded-lg p-3 shadow-sm">
-                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">Gr 9</span>
-                        </div>
-                        <div class="bg-white dark:bg-slate-600 rounded-lg p-3 shadow-sm">
-                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">Gr 10</span>
-                        </div>
-                        <div class="bg-white dark:bg-slate-600 rounded-lg p-3 shadow-sm">
-                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">Gr 11</span>
-                        </div>
-                        <div class="bg-white dark:bg-slate-600 rounded-lg p-3 shadow-sm">
-                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">Gr 12</span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-wrap gap-2 justify-center">
-                        <span class="text-sm bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full">CAPS</span>
                     </div>
                 </div>
+
+                <!-- Tutor 2: Jaydin Morrison -->
+                <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-lg transition">
+                    <div class="flex flex-col sm:flex-row items-center gap-6">
+                        <img src="images/jaydin-morrison.jpg" alt="Jaydin Morrison - Mathematics Tutor" loading="lazy" decoding="async" width="96" height="96" class="w-24 h-24 rounded-full object-cover flex-shrink-0 shadow-md">
+                        <div class="text-center sm:text-left">
+                            <h3 class="text-xl font-bold text-brand-dark">Jaydin Morrison</h3>
+                            <p class="text-brand-gold font-medium">Co-Founder</p>
+                            <p class="text-gray-400 text-sm mt-1">BSc Honours Computer Science • UWC</p>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <p class="text-gray-600 text-sm leading-relaxed">Jaydin's superpower? Making the "aha!" moment happen. With a coder's logic and a genuine love for problem-solving, he turns confusing concepts into satisfying puzzles. No judgment, no stress — just good vibes and steady progress.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-full">Trigonometry</span>
+                            <span class="text-xs bg-pink-100 text-pink-700 px-3 py-1 rounded-full">Functions</span>
+                            <span class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">Problem Solving</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-20 bg-slate-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-14 fade-up">
+                <div class="inline-flex w-12 h-12 items-center justify-center bg-brand-gold/10 rounded-xl mb-4">
+                    <i class="fas fa-route text-brand-gold text-xl" aria-hidden="true"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-brand-dark">How It Works</h2>
+                <p class="text-gray-600 mt-4">Getting started takes less than 5 minutes</p>
+                <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10 fade-up">
+
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-brand-dark rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg">
+                        <i class="fas fa-calendar-plus text-brand-gold text-2xl" aria-hidden="true"></i>
+                    </div>
+                    <span class="inline-block bg-brand-gold/20 text-amber-700 text-xs font-bold px-3 py-1 rounded-full mb-3">STEP 1</span>
+                    <h3 class="text-lg font-bold text-brand-dark mb-2">Book Your Slot</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">WhatsApp us or fill in the contact form. We'll lock in a time that works for you — no paperwork, no hassle.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-brand-dark rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg">
+                        <i class="fas fa-chalkboard-user text-brand-gold text-2xl" aria-hidden="true"></i>
+                    </div>
+                    <span class="inline-block bg-brand-gold/20 text-amber-700 text-xs font-bold px-3 py-1 rounded-full mb-3">STEP 2</span>
+                    <h3 class="text-lg font-bold text-brand-dark mb-2">First Session</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">We assess where you're at, identify the gaps, and build a personalised plan. Risk-free — full money-back guarantee.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-brand-dark rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg">
+                        <i class="fas fa-chart-line text-brand-gold text-2xl" aria-hidden="true"></i>
+                    </div>
+                    <span class="inline-block bg-brand-gold/20 text-amber-700 text-xs font-bold px-3 py-1 rounded-full mb-3">STEP 3</span>
+                    <h3 class="text-lg font-bold text-brand-dark mb-2">Watch the Grades Climb</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Weekly sessions, structured progress tracking, and targeted exam prep that turns confusion into real, lasting results.</p>
+                </div>
+
+            </div>
+
+            <div class="text-center mt-12 fade-up">
+                <a href="#contact" class="inline-block bg-brand-dark text-white px-8 py-4 rounded-lg font-semibold hover:bg-slate-800 transition shadow-lg">
+                    Book Your First Session
+                </a>
             </div>
         </div>
     </section>
@@ -326,6 +365,9 @@
     <section class="py-20 bg-white">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12 fade-up">
+                <div class="inline-flex w-12 h-12 items-center justify-center bg-brand-gold/10 rounded-xl mb-4">
+                    <i class="fas fa-trophy text-brand-gold text-xl" aria-hidden="true"></i>
+                </div>
                 <h2 class="text-3xl font-bold text-brand-dark">Why Project Odysseus?</h2>
                 <p class="text-gray-600 mt-4">See how we compare to other options</p>
                 <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
@@ -390,6 +432,9 @@
     <section id="testimonials" class="py-20 bg-white">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16 fade-up">
+                <div class="inline-flex w-12 h-12 items-center justify-center bg-brand-gold/10 rounded-xl mb-4">
+                    <i class="fas fa-quote-left text-brand-gold text-xl" aria-hidden="true"></i>
+                </div>
                 <h2 class="text-3xl font-bold text-brand-dark">What Parents &amp; Students Say</h2>
                 <p class="text-gray-600 mt-4">Real results from real families</p>
                 <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
@@ -463,33 +508,11 @@
                         </div>
                     </div>
 
-                    <div class="testimonial-slide">
-                        <div class="testimonial-card bg-slate-50 p-6 rounded-xl border border-slate-100 h-full">
-                            <div class="flex items-center gap-1 mb-4 text-brand-gold" aria-label="4 out of 5 stars">
-                                <i class="fas fa-star" aria-hidden="true"></i>
-                                <i class="fas fa-star" aria-hidden="true"></i>
-                                <i class="fas fa-star" aria-hidden="true"></i>
-                                <i class="fas fa-star" aria-hidden="true"></i>
-                                <i class="far fa-star" aria-hidden="true"></i>
-                            </div>
-                            <p class="text-gray-600 italic mb-6">"Very good."</p>
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 bg-brand-gold/20 rounded-full flex items-center justify-center">
-                                    <span class="text-brand-dark font-bold">PF</span>
-                                </div>
-                                <div>
-                                    <p class="font-semibold text-gray-900">Feedback</p>
-                                    <p class="text-sm text-gray-400">Verified response</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 <div class="carousel-dots">
                     <button type="button" class="carousel-dot active" data-slide="0" aria-label="Go to slide 1"></button>
                     <button type="button" class="carousel-dot" data-slide="1" aria-label="Go to slide 2"></button>
                     <button type="button" class="carousel-dot" data-slide="2" aria-label="Go to slide 3"></button>
-                    <button type="button" class="carousel-dot" data-slide="3" aria-label="Go to slide 4"></button>
                 </div>
             </div>
             
@@ -584,7 +607,7 @@
                 <p class="po-result-sub">Stabilised marks through consistent weekly support</p>
                 <div class="po-result-meta">
                 <span class="po-chip"><i class="fas fa-calendar-check" aria-hidden="true"></i> Weekly</span>
-                <span class="po-chip"><i class="fas fa-hands-helping" aria-hidden="true"></i> Support</span>
+                <span class="po-chip"><i class="fas fa-handshake-angle" aria-hidden="true"></i> Support</span>
                 </div>
             </article>
             </div>
@@ -619,8 +642,8 @@
                         <h2 class="text-2xl md:text-3xl font-bold mb-4">10 Common Matric Maths Mistakes (And How to Avoid Them)</h2>
                         <p class="text-slate-300 mb-6">Get our free PDF guide that reveals the most common errors students make in their final exams — and simple strategies to avoid them.</p>
                         <ul class="space-y-2 text-sm text-slate-300 mb-6">
-                            <li><i class="fas fa-check text-brand-gold mr-2" aria-hidden="true"></i>Mistake patterns from 500+ papers reviewed</li>
-                            <li><i class="fas fa-check text-brand-gold mr-2" aria-hidden="true"></i>Quick fixes you can apply immediately</li>
+                            <li><i class="fas fa-check text-brand-gold mr-2" aria-hidden="true"></i>The most common mistakes we see across every grade</li>
+                            <li><i class="fas fa-check text-brand-gold mr-2" aria-hidden="true"></i>Quick fixes you can apply before your next test</li>
                             <li><i class="fas fa-check text-brand-gold mr-2" aria-hidden="true"></i>Bonus: Exam day checklist</li>
                         </ul>
                     </div>
@@ -654,6 +677,9 @@
     <section id="faq" class="py-20 bg-slate-50">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16 fade-up">
+                <div class="inline-flex w-12 h-12 items-center justify-center bg-brand-gold/10 rounded-xl mb-4">
+                    <i class="fas fa-circle-question text-brand-gold text-xl" aria-hidden="true"></i>
+                </div>
                 <h2 class="text-3xl font-bold text-brand-dark">Frequently Asked Questions</h2>
                 <p class="text-gray-600 mt-4">Everything you need to know</p>
                 <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
@@ -709,6 +735,101 @@
                         <p class="pb-4">Yes! If you're not satisfied after your first session, we'll refund that session in full. For packages, if you're unhappy with the quality of tutoring, we'll work with you to make it right or provide a prorated refund for unused hours.</p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Become a Tutor Section -->
+    <section id="become-a-tutor" class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 fade-up">
+                <div class="inline-flex w-12 h-12 items-center justify-center bg-brand-gold/10 rounded-xl mb-4">
+                    <i class="fas fa-chalkboard-user text-brand-gold text-xl" aria-hidden="true"></i>
+                </div>
+                <span class="text-brand-gold text-sm uppercase tracking-widest font-semibold">Join Our Team</span>
+                <h2 class="text-3xl md:text-4xl font-bold text-brand-dark mt-2">Passionate About Maths?<br>Teach With Us.</h2>
+                <div class="w-16 h-1 bg-brand-gold mx-auto mt-4 rounded"></div>
+                <p class="text-gray-600 mt-4 max-w-2xl mx-auto">We're always on the lookout for talented, enthusiastic mathematics tutors who love helping students unlock their potential.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-start fade-up">
+
+                <!-- Perks -->
+                <div class="tutor-perks-card bg-slate-50 rounded-2xl p-8 border border-slate-100">
+                    <h3 class="text-xl font-bold text-brand-dark mb-6">Why Tutor With Us</h3>
+                    <ul class="space-y-5">
+                        <li class="flex items-start gap-4">
+                            <div class="w-9 h-9 bg-brand-gold/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i class="fas fa-clock text-brand-gold text-sm" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <strong class="text-brand-dark block">Flexible Hours</strong>
+                                <span class="text-gray-600 text-sm">Set your own schedule around your studies or other commitments.</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <div class="w-9 h-9 bg-brand-gold/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i class="fas fa-coins text-brand-gold text-sm" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <strong class="text-brand-dark block">Competitive Pay</strong>
+                                <span class="text-gray-600 text-sm">Earn great rates for your expertise while making a real impact.</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <div class="w-9 h-9 bg-brand-gold/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i class="fas fa-chart-line text-brand-gold text-sm" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <strong class="text-brand-dark block">Grow With Us</strong>
+                                <span class="text-gray-600 text-sm">Join a growing team and build real, meaningful teaching experience.</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <div class="w-9 h-9 bg-brand-gold/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i class="fas fa-users text-brand-gold text-sm" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <strong class="text-brand-dark block">Supportive Team</strong>
+                                <span class="text-gray-600 text-sm">A tight-knit community that genuinely cares about every student's success.</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Requirements + CTA -->
+                <div>
+                    <div class="bg-brand-dark rounded-2xl p-8 text-white mb-6">
+                        <h3 class="text-xl font-bold mb-6">What We're Looking For</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start gap-3">
+                                <i class="fas fa-graduation-cap text-brand-gold mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-slate-300 text-sm">A relevant degree or qualification in Mathematics or a related field</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fas fa-book-open text-brand-gold mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-slate-300 text-sm">Strong command of the CAPS Mathematics curriculum (Grades 8–12)</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fas fa-comments text-brand-gold mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-slate-300 text-sm">Excellent communication and a patient, encouraging teaching style</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fas fa-heart text-brand-gold mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-slate-300 text-sm">Genuine passion for helping students build confidence and achieve results</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fas fa-map-marker-alt text-brand-gold mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-slate-300 text-sm">Based in or near Cape Town, South Africa</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <a href="mailto:projectodysseus10@gmail.com?subject=Tutor%20Application%20%E2%80%94%20Project%20Odysseus" class="block w-full text-center bg-brand-gold text-brand-dark px-8 py-4 rounded-xl font-bold text-lg hover:bg-amber-300 transition shadow-lg">
+                        Apply Now <i class="fas fa-arrow-right ml-2" aria-hidden="true"></i>
+                    </a>
+                    <p class="text-gray-500 text-sm text-center mt-3">Send us a brief intro and your CV — we'll be in touch within 48 hours.</p>
+                </div>
+
             </div>
         </div>
     </section>
@@ -784,15 +905,29 @@
         </div>
     </footer>
 
-    <!-- Floating WhatsApp Button -->
-    <a href="https://wa.me/27679327754?text=Hi!%20I'm%20interested%20in%20Maths%20tutoring." 
-       id="whatsapp-float"
-       class="whatsapp-float fixed bottom-6 right-6 z-40 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-green-600 transition-all hover:scale-110" 
-       aria-label="Chat on WhatsApp"
-       target="_blank"
-       rel="noopener noreferrer">
-        <i class="fab fa-whatsapp text-3xl" aria-hidden="true"></i>
-    </a>
+    <!-- Odie AI Chat Widget -->
+    <button type="button" id="odie-btn" aria-expanded="false" aria-controls="odie-panel" aria-label="Chat with Odie, our AI assistant">
+        <div class="odie-btn-icon" aria-hidden="true">O</div>
+        <span class="odie-btn-label">Odie</span>
+    </button>
+
+    <div id="odie-panel" role="dialog" aria-modal="true" aria-label="Odie AI Chat">
+        <div class="odie-header">
+            <div class="odie-avatar" aria-hidden="true">O</div>
+            <div class="odie-header-info">
+                <div class="odie-header-name">Odie</div>
+                <div class="odie-header-sub">Online — ask me anything</div>
+            </div>
+            <button type="button" id="odie-close" aria-label="Close chat">&times;</button>
+        </div>
+        <div id="odie-messages" role="log" aria-live="polite" aria-label="Chat messages"></div>
+        <div class="odie-input-area">
+            <input type="text" id="odie-input" placeholder="Ask about pricing, subjects, booking…" autocomplete="off" maxlength="500" aria-label="Your message">
+            <button type="button" id="odie-send" aria-label="Send message">
+                <i class="fas fa-paper-plane" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
 
     
 
@@ -849,8 +984,10 @@
     </div>
 
     <!-- JavaScript for interactions -->
+    <script src="/assets/portal-config.js"></script>
     <script defer src="/assets/lib/sanitize.js"></script>
     <script defer src="/assets/app-critical.js"></script>
+    <script defer src="/assets/odie-widget.js"></script>
 
 </body>
 </html>
