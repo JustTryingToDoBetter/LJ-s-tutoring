@@ -13,6 +13,7 @@ web/.next/
 # Environment variables
 .env
 .env.local
+.env.example
 
 # Husky
 .husky/_
