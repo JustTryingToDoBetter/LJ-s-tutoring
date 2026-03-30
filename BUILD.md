@@ -30,4 +30,4 @@ Supported env vars, in priority order:
 
 1. `PUBLIC_PO_API_BASE`
 2. `API_BASE_URL`
-3. fallback `http://localhost:3001`
+3. fallback empty string (`""`) to allow same-origin calls in production; local host fallback is handled by runtime client logic.

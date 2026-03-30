@@ -844,6 +844,8 @@
     const dotsWrap = root.querySelector('[data-po-dots]');
     const prevBtns = Array.from(root.querySelectorAll('[data-po-prev]'));
     const nextBtns = Array.from(root.querySelectorAll('[data-po-next]'));
+    const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let autoplayTimer = 0;
 
     if (!track || slides.length === 0 || !dotsWrap) {return;}
 
@@ -879,15 +881,34 @@
       dots.forEach((d, idx) => d.setAttribute('aria-current', idx === i ? 'true' : 'false'));
     }
 
-    function scrollToIndex(i) {
+    function scrollToIndex(i, behaviorOverride) {
       i = clamp(i, 0, slides.length - 1);
-      slides[i].scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+      const behavior = behaviorOverride || (prefersReducedMotion ? 'auto' : 'smooth');
+      slides[i].scrollIntoView({ behavior: behavior, inline: 'start', block: 'nearest' });
       setActive(i);
     }
 
     function step(dir) {
       const i = nearestIndex();
-      scrollToIndex(i + dir);
+      let next = i + dir;
+      if (next < 0) { next = slides.length - 1; }
+      if (next >= slides.length) { next = 0; }
+      scrollToIndex(next);
+    }
+
+    function stopAutoplay() {
+      if (autoplayTimer) {
+        window.clearInterval(autoplayTimer);
+        autoplayTimer = 0;
+      }
+    }
+
+    function startAutoplay() {
+      if (prefersReducedMotion || slides.length < 2) {return;}
+      stopAutoplay();
+      autoplayTimer = window.setInterval(function () {
+        step(1);
+      }, 5500);
     }
 
     prevBtns.forEach((b) => b.addEventListener('click', () => step(-1)));
@@ -906,8 +927,31 @@
       raf = requestAnimationFrame(() => setActive(nearestIndex()));
     });
 
+    root.addEventListener('mouseenter', stopAutoplay);
+    root.addEventListener('mouseleave', startAutoplay);
+    root.addEventListener('focusin', stopAutoplay);
+    root.addEventListener('focusout', function (e) {
+      if (!root.contains(e.relatedTarget)) {
+        startAutoplay();
+      }
+    });
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        stopAutoplay();
+      } else {
+        startAutoplay();
+      }
+    });
+
+    window.addEventListener('resize', function () {
+      setActive(nearestIndex());
+    }, { passive: true });
+
     // Initialize
     setActive(0);
+    scrollToIndex(0, 'auto');
+    startAutoplay();
   })();
 
 

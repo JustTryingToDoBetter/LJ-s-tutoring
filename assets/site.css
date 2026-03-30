@@ -500,6 +500,7 @@ main {
   gap: 16px;
   overflow-x: auto;
   padding: 6px 4px 10px;
+  scroll-padding-inline: 4px;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
@@ -620,6 +621,33 @@ main {
 }
 .po-carousel-btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.12); }
 .po-carousel-btn:active{ transform: translateY(0); }
+
+@media (max-width: 767px){
+  .po-results-track{
+    grid-auto-columns: minmax(84%, 1fr);
+    gap: 12px;
+    padding: 4px 2px 10px;
+    scroll-padding-inline: 2px;
+  }
+
+  .po-result-card{
+    padding: 16px;
+    min-height: 192px;
+  }
+
+  .po-result-title{
+    font-size: 15px;
+  }
+
+  .po-result-sub{
+    font-size: 12.5px;
+  }
+
+  .po-chip{
+    font-size: 11px;
+    padding: 6px 9px;
+  }
+}
 
 @media (min-width: 768px){
   .po-results-track{ grid-auto-columns: minmax(320px, 420px); }
@@ -746,8 +774,8 @@ main {
 
 #odie-btn {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px));
+  right: max(24px, calc(env(safe-area-inset-right) + 12px));
   z-index: 40;
   display: flex;
   flex-direction: column;
@@ -789,10 +817,11 @@ main {
 /* Panel */
 #odie-panel {
   position: fixed;
-  bottom: 110px;
-  right: 24px;
+  bottom: calc(110px + env(safe-area-inset-bottom));
+  right: max(24px, calc(env(safe-area-inset-right) + 12px));
   z-index: 50;
-  width: 340px;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(72vh, 560px);
   background: #fff;
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
@@ -857,6 +886,8 @@ main {
   border-radius: 50%;
   flex-shrink: 0;
 }
+#odie-panel[data-odie-status='checking'] .odie-header-sub::before { background: #f59e0b; }
+#odie-panel[data-odie-status='offline'] .odie-header-sub::before { background: #ef4444; }
 #odie-close {
   background: none;
   border: none;
@@ -879,7 +910,7 @@ main {
   gap: 10px;
   background: #f8fafc;
   min-height: 220px;
-  max-height: 300px;
+  max-height: none;
 }
 .odie-msg {
   display: flex;
@@ -993,7 +1024,50 @@ main {
 .dark #odie-input:focus { border-color: #fbbf24; background: #0f172a; }
 .dark #odie-send { background: #334155; }
 
+@media (max-width: 640px) {
+  #odie-panel {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 108px - env(safe-area-inset-bottom));
+    transform-origin: bottom center;
+  }
+
+  #odie-btn {
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    padding: 9px 12px;
+    border-radius: 18px;
+  }
+
+  .odie-btn-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  #odie-messages {
+    min-height: 200px;
+  }
+
+  .odie-msg-bubble {
+    max-width: 88%;
+  }
+}
+
 @media (max-width: 400px) {
-  #odie-panel { width: calc(100vw - 16px); right: 8px; bottom: 96px; }
-  #odie-btn   { right: 8px; bottom: 8px; }
+  #odie-panel {
+    left: 8px;
+    right: 8px;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    border-radius: 16px;
+  }
+
+  #odie-btn {
+    right: 8px;
+  }
+
+  .odie-btn-label {
+    font-size: 10px;
+  }
 }

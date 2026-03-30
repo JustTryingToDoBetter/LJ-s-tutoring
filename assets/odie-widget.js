@@ -22,6 +22,11 @@
   var conversationHistory = [];
   var isOpen = false;
   var isLoading = false;
+  var assistantLiveStatus = 'checking';
+
+  function isLoopbackBase(url) {
+    return /^https?:\/\/(localhost|127(?:\.\d{1,3}){3})(?::\d+)?$/i.test(url);
+  }
 
   function resolveApiBase() {
     var raw = String(window.__PO_API_BASE__ || '').replace(/\/$/, '');
@@ -30,12 +35,58 @@
     if (!raw || raw === '__PO_API_BASE__') {
       return isLocal ? window.location.protocol + '//' + host + ':3001' : '';
     }
+    if (!isLocal && isLoopbackBase(raw)) {
+      return '';
+    }
     return raw;
   }
 
   function resolveAccessKey() {
-    var key = String(window.__ODIE_ACCESS_KEY__ || '');
-    return key && key !== '__PO_ODIE_ACCESS_KEY__' ? key : '';
+    var key = String(window.__ODIE_ACCESS_KEY__ || '').trim();
+    if (!key || key === '__PO_ODIE_ACCESS_KEY__' || /^replace_with_/i.test(key)) {
+      return '';
+    }
+    return key;
+  }
+
+  function apiUrl(path) {
+    var base = resolveApiBase();
+    return base ? base + path : path;
+  }
+
+  function setPresence(state) {
+    assistantLiveStatus = state;
+    var panel = document.getElementById('odie-panel');
+    var sub = panel ? panel.querySelector('.odie-header-sub') : null;
+
+    if (panel) {
+      panel.setAttribute('data-odie-status', state);
+    }
+    if (!sub) return;
+
+    if (state === 'live') {
+      sub.textContent = 'Online - ask me anything';
+      return;
+    }
+    if (state === 'checking') {
+      sub.textContent = 'Connecting...';
+      return;
+    }
+    sub.textContent = 'Limited - WhatsApp backup available';
+  }
+
+  async function refreshPresence() {
+    setPresence('checking');
+    try {
+      var res = await fetch(apiUrl('/health'), {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      });
+      setPresence(res.ok ? 'live' : 'offline');
+    } catch (_err) {
+      setPresence('offline');
+    }
   }
 
   function togglePanel() {
@@ -45,6 +96,9 @@
     panel.classList.toggle('odie-open', isOpen);
     btn.setAttribute('aria-expanded', String(isOpen));
     if (isOpen) {
+      if (assistantLiveStatus !== 'live') {
+        refreshPresence();
+      }
       setTimeout(function () {
         var input = document.getElementById('odie-input');
         if (input) input.focus();
@@ -129,12 +183,11 @@
     showTyping();
 
     try {
-      var apiBase = resolveApiBase();
       var accessKey = resolveAccessKey();
       var headers = { 'Content-Type': 'application/json' };
       if (accessKey) headers['x-odie-access-key'] = accessKey;
 
-      var res = await fetch(apiBase + '/assistant/chat', {
+      var res = await fetch(apiUrl('/assistant/chat'), {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
@@ -156,9 +209,11 @@
 
       conversationHistory.push({ role: 'user', content: message });
       conversationHistory.push({ role: 'assistant', content: reply });
+      setPresence('live');
       appendMessage('assistant', reply);
     } catch (_err) {
       hideTyping();
+      setPresence('offline');
       appendMessage('assistant', "Hmm, I can't connect right now. Feel free to reach us on WhatsApp (+27 67 932 7754) or email projectodysseus10@gmail.com!");
     } finally {
       setLoading(false);
@@ -184,6 +239,9 @@
         sendMessage();
       }
     });
+
+    setPresence('checking');
+    refreshPresence();
 
     // Seed the welcome message
     appendMessage('assistant', WELCOME_MSG);

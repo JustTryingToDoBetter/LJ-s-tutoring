@@ -8,10 +8,10 @@ if (!fs.existsSync(distConfigPath)) {
   process.exit(0);
 }
 
-const apiBase = (process.env.PUBLIC_PO_API_BASE || process.env.API_BASE_URL || 'http://localhost:3001').replace(/\/$/, '');
+const apiBase = (process.env.PUBLIC_PO_API_BASE || process.env.API_BASE_URL || '').replace(/\/$/, '');
 const odieAccessKey = (process.env.PUBLIC_ODIE_ACCESS_KEY || '').trim();
 const source = fs.readFileSync(distConfigPath, 'utf8');
 const withApiBase = source.replace(/window\.__PO_API_BASE__\s*=\s*.*?;\s*$/m, `window.__PO_API_BASE__ = ${JSON.stringify(apiBase)};`);
 const withOdieKey = withApiBase.replace(/window\.__ODIE_ACCESS_KEY__\s*=\s*.*?;\s*$/m, `window.__ODIE_ACCESS_KEY__ = ${JSON.stringify(odieAccessKey)};`);
 fs.writeFileSync(distConfigPath, withOdieKey);
-process.stdout.write(`Injected PUBLIC_PO_API_BASE into ${distConfigPath}\n`);
+process.stdout.write(`Injected PUBLIC_PO_API_BASE/API_BASE_URL into ${distConfigPath}\n`);
