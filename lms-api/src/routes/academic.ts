@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { pool } from '../db/pool.js';
 import { requireAuth, requireRole, requireTutor } from '../lib/rbac.js';
+import { getErrorMonitor } from '../lib/error-monitor.js';
 import {
   IdParamSchema,
   StudyActivityEventSchema,
@@ -225,6 +226,7 @@ export async function academicRoutes(app: FastifyInstance) {
     const today = toDateOnly(now);
     const { weekStart, weekEnd } = getWeekRange(now);
 
+    try {
     const upcomingRes = await pool.query(
       `select s.id, s.date, s.start_time, s.mode, s.location, a.subject
        from sessions s
@@ -397,6 +399,11 @@ export async function academicRoutes(app: FastifyInstance) {
       predictiveScore: score,
       careerGoals,
     });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/tutor/dashboard', {
@@ -408,6 +415,7 @@ export async function academicRoutes(app: FastifyInstance) {
     const tutorId = req.user!.tutorId!;
     const today = toDateOnly(new Date());
 
+    try {
     const todaySessionsRes = await pool.query(
       `select s.id, s.date, s.start_time, s.status, s.mode, st.full_name as student_name
        from sessions s
@@ -497,6 +505,11 @@ export async function academicRoutes(app: FastifyInstance) {
         { id: 'message_student', label: 'Message student', href: '/tutor/index.html' },
       ]
     });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/study-activity', {
@@ -602,8 +615,10 @@ export async function academicRoutes(app: FastifyInstance) {
           xp: nextXp,
         }
       });
-    } catch (err) {
+    } catch (err: any) {
       await client.query('ROLLBACK');
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
       throw err;
     } finally {
       client.release();
@@ -633,39 +648,45 @@ export async function academicRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'student_id_required' });
     }
 
-    const allowed = await userCanAccessStudent(req.user!.userId, role, studentId, tutorId);
-    if (!allowed) {
-      return reply.code(403).send({ error: 'forbidden' });
+    try {
+      const allowed = await userCanAccessStudent(req.user!.userId, role, studentId, tutorId);
+      if (!allowed) {
+        return reply.code(403).send({ error: 'forbidden' });
+      }
+
+      const payload = await buildWeeklyReportPayload(studentId, week.weekStart, week.weekEnd);
+      if (!payload) {
+        return reply.code(404).send({ error: 'student_not_found' });
+      }
+
+      const ownerRes = await pool.query(
+        `select id from users where student_id = $1`,
+        [studentId]
+      );
+      if (ownerRes.rowCount === 0) {
+        return reply.code(409).send({ error: 'student_user_missing' });
+      }
+      const ownerUserId = ownerRes.rows[0].id as string;
+
+      const res = await pool.query(
+        `insert into weekly_reports (user_id, week_start, week_end, payload_json, created_by_user_id)
+         values ($1, $2::date, $3::date, $4::jsonb, $5)
+         on conflict (user_id, week_start, week_end)
+         do update set payload_json = excluded.payload_json,
+                       created_by_user_id = excluded.created_by_user_id,
+                       created_at = now()
+         returning id, user_id, week_start, week_end, created_at`,
+        [ownerUserId, week.weekStart, week.weekEnd, JSON.stringify(payload), req.user!.userId]
+      );
+
+      logEvent(req, 'report_generated', { reportId: res.rows[0].id });
+
+      return reply.code(201).send({ report: res.rows[0] });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-
-    const payload = await buildWeeklyReportPayload(studentId, week.weekStart, week.weekEnd);
-    if (!payload) {
-      return reply.code(404).send({ error: 'student_not_found' });
-    }
-
-    const ownerRes = await pool.query(
-      `select id from users where student_id = $1`,
-      [studentId]
-    );
-    if (ownerRes.rowCount === 0) {
-      return reply.code(409).send({ error: 'student_user_missing' });
-    }
-    const ownerUserId = ownerRes.rows[0].id as string;
-
-    const res = await pool.query(
-      `insert into weekly_reports (user_id, week_start, week_end, payload_json, created_by_user_id)
-       values ($1, $2::date, $3::date, $4::jsonb, $5)
-       on conflict (user_id, week_start, week_end)
-       do update set payload_json = excluded.payload_json,
-                     created_by_user_id = excluded.created_by_user_id,
-                     created_at = now()
-       returning id, user_id, week_start, week_end, created_at`,
-      [ownerUserId, week.weekStart, week.weekEnd, JSON.stringify(payload), req.user!.userId]
-    );
-
-    logEvent(req, 'report_generated', { reportId: res.rows[0].id });
-
-    return reply.code(201).send({ report: res.rows[0] });
   });
 
   app.get('/reports', {
@@ -706,33 +727,39 @@ export async function academicRoutes(app: FastifyInstance) {
 
     const where = filters.length ? `where ${filters.join(' and ')}` : '';
 
-    const listRes = await pool.query(
-      `select wr.id, wr.week_start, wr.week_end, wr.created_at,
-              u.student_id,
-              s.full_name as student_name
-       from weekly_reports wr
-       join users u on u.id = wr.user_id
-       left join students s on s.id = u.student_id
-       ${where}
-       order by wr.created_at desc
-       limit $${params.length + 1} offset $${params.length + 2}`,
-      [...params, limit, offset]
-    );
+    try {
+      const listRes = await pool.query(
+        `select wr.id, wr.week_start, wr.week_end, wr.created_at,
+                u.student_id,
+                s.full_name as student_name
+         from weekly_reports wr
+         join users u on u.id = wr.user_id
+         left join students s on s.id = u.student_id
+         ${where}
+         order by wr.created_at desc
+         limit $${params.length + 1} offset $${params.length + 2}`,
+        [...params, limit, offset]
+      );
 
-    const totalRes = await pool.query(
-      `select count(*)
-       from weekly_reports wr
-       join users u on u.id = wr.user_id
-       ${where}`,
-      params
-    );
+      const totalRes = await pool.query(
+        `select count(*)
+         from weekly_reports wr
+         join users u on u.id = wr.user_id
+         ${where}`,
+        params
+      );
 
-    return reply.send({
-      items: listRes.rows,
-      total: Number(totalRes.rows[0]?.count || 0),
-      page,
-      pageSize,
-    });
+      return reply.send({
+        items: listRes.rows,
+        total: Number(totalRes.rows[0]?.count || 0),
+        page,
+        pageSize,
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/tutor/reports', {
@@ -767,33 +794,39 @@ export async function academicRoutes(app: FastifyInstance) {
     }
 
     const where = `where ${filters.join(' and ')}`;
-    const listRes = await pool.query(
-      `select wr.id, wr.week_start, wr.week_end, wr.created_at,
-              u.student_id,
-              s.full_name as student_name
-       from weekly_reports wr
-       join users u on u.id = wr.user_id
-       left join students s on s.id = u.student_id
-       ${where}
-       order by wr.created_at desc
-       limit $${params.length + 1} offset $${params.length + 2}`,
-      [...params, limit, offset]
-    );
+    try {
+      const listRes = await pool.query(
+        `select wr.id, wr.week_start, wr.week_end, wr.created_at,
+                u.student_id,
+                s.full_name as student_name
+         from weekly_reports wr
+         join users u on u.id = wr.user_id
+         left join students s on s.id = u.student_id
+         ${where}
+         order by wr.created_at desc
+         limit $${params.length + 1} offset $${params.length + 2}`,
+        [...params, limit, offset]
+      );
 
-    const totalRes = await pool.query(
-      `select count(*)
-       from weekly_reports wr
-       join users u on u.id = wr.user_id
-       ${where}`,
-      params
-    );
+      const totalRes = await pool.query(
+        `select count(*)
+         from weekly_reports wr
+         join users u on u.id = wr.user_id
+         ${where}`,
+        params
+      );
 
-    return reply.send({
-      items: listRes.rows,
-      total: Number(totalRes.rows[0]?.count || 0),
-      page,
-      pageSize,
-    });
+      return reply.send({
+        items: listRes.rows,
+        total: Number(totalRes.rows[0]?.count || 0),
+        page,
+        pageSize,
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/reports/:id', {
@@ -805,40 +838,46 @@ export async function academicRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
     }
 
-    const reportRes = await pool.query(
-      `select wr.id, wr.user_id, wr.week_start, wr.week_end, wr.payload_json, wr.created_at,
-              u.student_id
-       from weekly_reports wr
-       join users u on u.id = wr.user_id
-       where wr.id = $1`,
-      [params.data.id]
-    );
+    try {
+      const reportRes = await pool.query(
+        `select wr.id, wr.user_id, wr.week_start, wr.week_end, wr.payload_json, wr.created_at,
+                u.student_id
+         from weekly_reports wr
+         join users u on u.id = wr.user_id
+         where wr.id = $1`,
+        [params.data.id]
+      );
 
-    if (reportRes.rowCount === 0) {
-      return reply.code(404).send({ error: 'report_not_found' });
-    }
-
-    const report = reportRes.rows[0];
-    const allowed = await userCanAccessStudent(
-      req.user!.userId,
-      req.user!.role,
-      report.student_id,
-      req.user!.tutorId
-    );
-    if (!allowed) {
-      return reply.code(403).send({ error: 'forbidden' });
-    }
-
-    logEvent(req, 'report_viewed', { reportId: report.id });
-
-    return reply.send({
-      report: {
-        id: report.id,
-        weekStart: toDateOnly(new Date(report.week_start)),
-        weekEnd: toDateOnly(new Date(report.week_end)),
-        payload: normalizeJson(report.payload_json, {}),
-        createdAt: report.created_at,
+      if (reportRes.rowCount === 0) {
+        return reply.code(404).send({ error: 'report_not_found' });
       }
-    });
+
+      const report = reportRes.rows[0];
+      const allowed = await userCanAccessStudent(
+        req.user!.userId,
+        req.user!.role,
+        report.student_id,
+        req.user!.tutorId
+      );
+      if (!allowed) {
+        return reply.code(403).send({ error: 'forbidden' });
+      }
+
+      logEvent(req, 'report_viewed', { reportId: report.id });
+
+      return reply.send({
+        report: {
+          id: report.id,
+          weekStart: toDateOnly(new Date(report.week_start)),
+          weekEnd: toDateOnly(new Date(report.week_end)),
+          payload: normalizeJson(report.payload_json, {}),
+          createdAt: report.created_at,
+        }
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 }

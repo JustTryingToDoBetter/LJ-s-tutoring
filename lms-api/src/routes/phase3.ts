@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { requireAdmin, requireAuth, requireRole, requireTutor } from '../lib/rbac.js';
+import { getErrorMonitor } from '../lib/error-monitor.js';
 import { parsePagination } from '../lib/pagination.js';
 import { enqueueJob } from '../lib/job-queue.js';
 import { moderateCommunityText, sanitizeNickname } from '../lib/community-safety.js';
@@ -473,41 +474,47 @@ export async function phase3Routes(app: FastifyInstance) {
     setPrivateNoStore(reply);
     const userId = req.user!.userId;
 
-    let snapshotRes = await pool.query(
-      `select id, score_date, risk_score, momentum_score, reasons_json, metrics_json, recommended_actions_json, created_at
-       from student_score_snapshots
-       where user_id = $1
-       order by score_date desc
-       limit 1`,
-      [userId]
-    );
+    try {
+      let snapshotRes = await pool.query(
+        `select id, score_date, risk_score, momentum_score, reasons_json, metrics_json, recommended_actions_json, created_at
+         from student_score_snapshots
+         where user_id = $1
+         order by score_date desc
+         limit 1`,
+        [userId]
+      );
 
-    if (snapshotRes.rowCount === 0) {
-      const client = await pool.connect();
-      try {
-        const today = toDateOnly();
-        const recomputed = await recomputeUserScore(client, userId, today);
-        snapshotRes = { rows: [recomputed], rowCount: 1 } as any;
-      } finally {
-        client.release();
+      if (snapshotRes.rowCount === 0) {
+        const client = await pool.connect();
+        try {
+          const today = toDateOnly();
+          const recomputed = await recomputeUserScore(client, userId, today);
+          snapshotRes = { rows: [recomputed], rowCount: 1 } as any;
+        } finally {
+          client.release();
+        }
       }
+
+      const snapshot = snapshotRes.rows[0];
+      return reply.send({
+        snapshot: {
+          id: snapshot.id,
+          date: toDateOnly(new Date(snapshot.score_date)),
+          riskScore: Number(snapshot.risk_score),
+          momentumScore: Number(snapshot.momentum_score),
+          reasons: typeof snapshot.reasons_json === 'string' ? JSON.parse(snapshot.reasons_json) : snapshot.reasons_json,
+          metrics: typeof snapshot.metrics_json === 'string' ? JSON.parse(snapshot.metrics_json) : snapshot.metrics_json,
+          recommendedActions: typeof snapshot.recommended_actions_json === 'string'
+            ? JSON.parse(snapshot.recommended_actions_json)
+            : snapshot.recommended_actions_json,
+          createdAt: snapshot.created_at,
+        }
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-
-    const snapshot = snapshotRes.rows[0];
-    return reply.send({
-      snapshot: {
-        id: snapshot.id,
-        date: toDateOnly(new Date(snapshot.score_date)),
-        riskScore: Number(snapshot.risk_score),
-        momentumScore: Number(snapshot.momentum_score),
-        reasons: typeof snapshot.reasons_json === 'string' ? JSON.parse(snapshot.reasons_json) : snapshot.reasons_json,
-        metrics: typeof snapshot.metrics_json === 'string' ? JSON.parse(snapshot.metrics_json) : snapshot.metrics_json,
-        recommendedActions: typeof snapshot.recommended_actions_json === 'string'
-          ? JSON.parse(snapshot.recommended_actions_json)
-          : snapshot.recommended_actions_json,
-        createdAt: snapshot.created_at,
-      }
-    });
   });
 
   app.get('/tutor/scores', {
@@ -521,53 +528,59 @@ export async function phase3Routes(app: FastifyInstance) {
 
     const { page, pageSize, offset, limit } = parsePagination(parsed.data, { pageSize: 20 });
 
-    const rows = await pool.query(
-      `select
-          s.id as student_id,
-          s.full_name as student_name,
-          latest.risk_score,
-          latest.momentum_score,
-          latest.score_date,
-          latest.reasons_json,
-          latest.recommended_actions_json
-       from students s
-       join tutor_student_map tsm on tsm.student_id = s.id and tsm.tutor_id = $1
-       left join users u on u.student_id = s.id
-       left join lateral (
-          select risk_score, momentum_score, score_date, reasons_json, recommended_actions_json
-          from student_score_snapshots ss
-          where ss.user_id = u.id
-          order by score_date desc
-          limit 1
-       ) latest on true
-       order by latest.risk_score desc nulls last, s.full_name asc
-       limit $2 offset $3`,
-      [req.user!.tutorId, limit, offset]
-    );
+    try {
+      const rows = await pool.query(
+        `select
+            s.id as student_id,
+            s.full_name as student_name,
+            latest.risk_score,
+            latest.momentum_score,
+            latest.score_date,
+            latest.reasons_json,
+            latest.recommended_actions_json
+         from students s
+         join tutor_student_map tsm on tsm.student_id = s.id and tsm.tutor_id = $1
+         left join users u on u.student_id = s.id
+         left join lateral (
+            select risk_score, momentum_score, score_date, reasons_json, recommended_actions_json
+            from student_score_snapshots ss
+            where ss.user_id = u.id
+            order by score_date desc
+            limit 1
+         ) latest on true
+         order by latest.risk_score desc nulls last, s.full_name asc
+         limit $2 offset $3`,
+        [req.user!.tutorId, limit, offset]
+      );
 
-    const totalRes = await pool.query(
-      `select count(*)::int as total
-       from tutor_student_map
-       where tutor_id = $1`,
-      [req.user!.tutorId]
-    );
+      const totalRes = await pool.query(
+        `select count(*)::int as total
+         from tutor_student_map
+         where tutor_id = $1`,
+        [req.user!.tutorId]
+      );
 
-    return reply.send({
-      items: rows.rows.map((row) => ({
-        studentId: row.student_id,
-        studentName: row.student_name,
-        riskScore: row.risk_score == null ? null : Number(row.risk_score),
-        momentumScore: row.momentum_score == null ? null : Number(row.momentum_score),
-        scoreDate: row.score_date ? toDateOnly(new Date(row.score_date)) : null,
-        reasons: row.reasons_json ? (typeof row.reasons_json === 'string' ? JSON.parse(row.reasons_json) : row.reasons_json) : [],
-        recommendedActions: row.recommended_actions_json
-          ? (typeof row.recommended_actions_json === 'string' ? JSON.parse(row.recommended_actions_json) : row.recommended_actions_json)
-          : [],
-      })),
-      total: Number(totalRes.rows[0]?.total || 0),
-      page,
-      pageSize,
-    });
+      return reply.send({
+        items: rows.rows.map((row) => ({
+          studentId: row.student_id,
+          studentName: row.student_name,
+          riskScore: row.risk_score == null ? null : Number(row.risk_score),
+          momentumScore: row.momentum_score == null ? null : Number(row.momentum_score),
+          scoreDate: row.score_date ? toDateOnly(new Date(row.score_date)) : null,
+          reasons: row.reasons_json ? (typeof row.reasons_json === 'string' ? JSON.parse(row.reasons_json) : row.reasons_json) : [],
+          recommendedActions: row.recommended_actions_json
+            ? (typeof row.recommended_actions_json === 'string' ? JSON.parse(row.recommended_actions_json) : row.recommended_actions_json)
+            : [],
+        })),
+        total: Number(totalRes.rows[0]?.total || 0),
+        page,
+        pageSize,
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/admin/scores/recompute', {
@@ -601,6 +614,10 @@ export async function phase3Routes(app: FastifyInstance) {
         const snapshot = await recomputeUserScore(client, userId, scoreDate);
         snapshots.push(snapshot);
       }
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     } finally {
       client.release();
     }
@@ -626,30 +643,42 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(401).send({ error: 'unauthorized' });
     }
 
-    const job = await enqueueJob(pool, 'score_recompute', {
-      requestedAt: new Date().toISOString(),
-      requestId: req.id,
-    });
+    try {
+      const job = await enqueueJob(pool, 'score_recompute', {
+        requestedAt: new Date().toISOString(),
+        requestId: req.id,
+      });
 
-    return reply.code(202).send({ ok: true, jobId: job.id, status: job.status });
+      return reply.code(202).send({ ok: true, jobId: job.id, status: job.status });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/community/profile/me', {
     preHandler: [app.authenticate, requireAuth],
   }, async (req, reply) => {
     setPrivateNoStore(reply);
-    const profile = await ensureCommunityProfile(req.user!.userId);
-    return reply.send({
-      profile: {
-        userId: profile.user_id,
-        nickname: profile.nickname,
-        privacySettings: typeof profile.privacy_settings_json === 'string'
-          ? JSON.parse(profile.privacy_settings_json)
-          : profile.privacy_settings_json,
-        createdAt: profile.created_at,
-        updatedAt: profile.updated_at,
-      }
-    });
+    try {
+      const profile = await ensureCommunityProfile(req.user!.userId);
+      return reply.send({
+        profile: {
+          userId: profile.user_id,
+          nickname: profile.nickname,
+          privacySettings: typeof profile.privacy_settings_json === 'string'
+            ? JSON.parse(profile.privacy_settings_json)
+            : profile.privacy_settings_json,
+          createdAt: profile.created_at,
+          updatedAt: profile.updated_at,
+        }
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.patch('/community/profile/me', {
@@ -660,37 +689,43 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const existing = await ensureCommunityProfile(req.user!.userId);
-    const currentPrivacy = typeof existing.privacy_settings_json === 'string'
-      ? JSON.parse(existing.privacy_settings_json)
-      : existing.privacy_settings_json;
+    try {
+      const existing = await ensureCommunityProfile(req.user!.userId);
+      const currentPrivacy = typeof existing.privacy_settings_json === 'string'
+        ? JSON.parse(existing.privacy_settings_json)
+        : existing.privacy_settings_json;
 
-    const nextNickname = sanitizeNickname(parsed.data.nickname ?? existing.nickname, existing.nickname);
-    const nextPrivacy = {
-      ...currentPrivacy,
-      ...(parsed.data.privacySettings || {}),
-    };
+      const nextNickname = sanitizeNickname(parsed.data.nickname ?? existing.nickname, existing.nickname);
+      const nextPrivacy = {
+        ...currentPrivacy,
+        ...(parsed.data.privacySettings || {}),
+      };
 
-    const updated = await pool.query(
-      `update community_profiles
-       set nickname = $2,
-           privacy_settings_json = $3::jsonb,
-           updated_at = now()
-       where user_id = $1
-       returning user_id, nickname, privacy_settings_json, updated_at`,
-      [req.user!.userId, nextNickname, JSON.stringify(nextPrivacy)]
-    );
+      const updated = await pool.query(
+        `update community_profiles
+         set nickname = $2,
+             privacy_settings_json = $3::jsonb,
+             updated_at = now()
+         where user_id = $1
+         returning user_id, nickname, privacy_settings_json, updated_at`,
+        [req.user!.userId, nextNickname, JSON.stringify(nextPrivacy)]
+      );
 
-    return reply.send({
-      profile: {
-        userId: updated.rows[0].user_id,
-        nickname: updated.rows[0].nickname,
-        privacySettings: typeof updated.rows[0].privacy_settings_json === 'string'
-          ? JSON.parse(updated.rows[0].privacy_settings_json)
-          : updated.rows[0].privacy_settings_json,
-        updatedAt: updated.rows[0].updated_at,
-      }
-    });
+      return reply.send({
+        profile: {
+          userId: updated.rows[0].user_id,
+          nickname: updated.rows[0].nickname,
+          privacySettings: typeof updated.rows[0].privacy_settings_json === 'string'
+            ? JSON.parse(updated.rows[0].privacy_settings_json)
+            : updated.rows[0].privacy_settings_json,
+          updatedAt: updated.rows[0].updated_at,
+        }
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/community/rooms', {
@@ -721,31 +756,37 @@ export async function phase3Routes(app: FastifyInstance) {
 
     const whereSql = where.length ? `where ${where.join(' and ')}` : '';
 
-    const rows = await pool.query(
-      `select sr.id, sr.subject, sr.grade, sr.created_at,
-              (select count(*)::int from study_room_members m where m.room_id = sr.id) as member_count,
-              exists (
-                select 1 from study_room_members own
-                where own.room_id = sr.id and own.user_id = $${params.length + 1}
-              ) as is_member
-       from study_rooms sr
-       ${whereSql}
-       order by sr.created_at desc
-       limit $${params.length + 2} offset $${params.length + 3}`,
-      [...params, req.user!.userId, limit, offset]
-    );
+    try {
+      const rows = await pool.query(
+        `select sr.id, sr.subject, sr.grade, sr.created_at,
+                (select count(*)::int from study_room_members m where m.room_id = sr.id) as member_count,
+                exists (
+                  select 1 from study_room_members own
+                  where own.room_id = sr.id and own.user_id = $${params.length + 1}
+                ) as is_member
+         from study_rooms sr
+         ${whereSql}
+         order by sr.created_at desc
+         limit $${params.length + 2} offset $${params.length + 3}`,
+        [...params, req.user!.userId, limit, offset]
+      );
 
-    const totalRes = await pool.query(
-      `select count(*)::int as total from study_rooms sr ${whereSql}`,
-      params
-    );
+      const totalRes = await pool.query(
+        `select count(*)::int as total from study_rooms sr ${whereSql}`,
+        params
+      );
 
-    return reply.send({
-      items: rows.rows,
-      total: Number(totalRes.rows[0]?.total || 0),
-      page,
-      pageSize,
-    });
+      return reply.send({
+        items: rows.rows,
+        total: Number(totalRes.rows[0]?.total || 0),
+        page,
+        pageSize,
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/community/rooms', {
@@ -807,19 +848,25 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const exists = await pool.query(`select id from study_rooms where id = $1`, [parsed.data.id]);
-    if (exists.rowCount === 0) {
-      return reply.code(404).send({ error: 'room_not_found' });
+    try {
+      const exists = await pool.query(`select id from study_rooms where id = $1`, [parsed.data.id]);
+      if (exists.rowCount === 0) {
+        return reply.code(404).send({ error: 'room_not_found' });
+      }
+
+      await pool.query(
+        `insert into study_room_members (room_id, user_id)
+         values ($1, $2)
+         on conflict do nothing`,
+        [parsed.data.id, req.user!.userId]
+      );
+
+      return reply.send({ ok: true });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-
-    await pool.query(
-      `insert into study_room_members (room_id, user_id)
-       values ($1, $2)
-       on conflict do nothing`,
-      [parsed.data.id, req.user!.userId]
-    );
-
-    return reply.send({ ok: true });
   });
 
   app.get('/community/rooms/:id/messages', {
@@ -834,6 +881,7 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
+    try {
     const memberRes = await pool.query(
       `select 1 from study_room_members where room_id = $1 and user_id = $2`,
       [parsed.data.id, req.user!.userId]
@@ -879,6 +927,11 @@ export async function phase3Routes(app: FastifyInstance) {
       page,
       pageSize,
     });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/community/rooms/:id/messages', {
@@ -906,27 +959,33 @@ export async function phase3Routes(app: FastifyInstance) {
       });
     }
 
-    const memberRes = await pool.query(
-      `select 1 from study_room_members where room_id = $1 and user_id = $2`,
-      [params.data.id, req.user!.userId]
-    );
-    if (memberRes.rowCount === 0) {
-      return reply.code(403).send({ error: 'forbidden' });
+    try {
+      const memberRes = await pool.query(
+        `select 1 from study_room_members where room_id = $1 and user_id = $2`,
+        [params.data.id, req.user!.userId]
+      );
+      if (memberRes.rowCount === 0) {
+        return reply.code(403).send({ error: 'forbidden' });
+      }
+
+      const moderation = moderateCommunityText(body.data.content);
+
+      const inserted = await pool.query(
+        `insert into study_room_messages (room_id, user_id, content, moderation_state)
+         values ($1, $2, $3, $4)
+         returning id, room_id, user_id, content, moderation_state, created_at`,
+        [params.data.id, req.user!.userId, body.data.content, moderation.state]
+      );
+
+      return reply.code(201).send({
+        message: inserted.rows[0],
+        moderationFlags: moderation.flags,
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-
-    const moderation = moderateCommunityText(body.data.content);
-
-    const inserted = await pool.query(
-      `insert into study_room_messages (room_id, user_id, content, moderation_state)
-       values ($1, $2, $3, $4)
-       returning id, room_id, user_id, content, moderation_state, created_at`,
-      [params.data.id, req.user!.userId, body.data.content, moderation.state]
-    );
-
-    return reply.code(201).send({
-      message: inserted.rows[0],
-      moderationFlags: moderation.flags,
-    });
   });
 
   app.get('/community/rooms/:id/resources', {
@@ -938,23 +997,29 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
     }
 
-    const memberRes = await pool.query(
-      `select 1 from study_room_members where room_id = $1 and user_id = $2`,
-      [params.data.id, req.user!.userId]
-    );
-    if (memberRes.rowCount === 0) {
-      return reply.code(403).send({ error: 'forbidden' });
+    try {
+      const memberRes = await pool.query(
+        `select 1 from study_room_members where room_id = $1 and user_id = $2`,
+        [params.data.id, req.user!.userId]
+      );
+      if (memberRes.rowCount === 0) {
+        return reply.code(403).send({ error: 'forbidden' });
+      }
+
+      const rows = await pool.query(
+        `select id, title, url, created_by, created_at
+         from study_room_pinned_resources
+         where room_id = $1
+         order by created_at desc`,
+        [params.data.id]
+      );
+
+      return reply.send({ items: rows.rows });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-
-    const rows = await pool.query(
-      `select id, title, url, created_by, created_at
-       from study_room_pinned_resources
-       where room_id = $1
-       order by created_at desc`,
-      [params.data.id]
-    );
-
-    return reply.send({ items: rows.rows });
   });
 
   app.post('/community/rooms/:id/resources', {
@@ -976,14 +1041,20 @@ export async function phase3Routes(app: FastifyInstance) {
       });
     }
 
-    const inserted = await pool.query(
-      `insert into study_room_pinned_resources (room_id, title, url, created_by)
-       values ($1, $2, $3, $4)
-       returning id, room_id, title, url, created_by, created_at`,
-      [params.data.id, body.data.title, body.data.url, req.user!.userId]
-    );
+    try {
+      const inserted = await pool.query(
+        `insert into study_room_pinned_resources (room_id, title, url, created_by)
+         values ($1, $2, $3, $4)
+         returning id, room_id, title, url, created_by, created_at`,
+        [params.data.id, body.data.title, body.data.url, req.user!.userId]
+      );
 
-    return reply.code(201).send({ resource: inserted.rows[0] });
+      return reply.code(201).send({ resource: inserted.rows[0] });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/community/challenges', {
@@ -997,26 +1068,32 @@ export async function phase3Routes(app: FastifyInstance) {
 
     const { page, pageSize, offset, limit } = parsePagination(parsed.data, { pageSize: 20 });
 
-    const rows = await pool.query(
-      `select c.id, c.title, c.subject, c.grade, c.week_start, c.week_end, c.xp_reward, c.created_at,
-              exists (
-                select 1 from challenge_submissions cs
-                where cs.challenge_id = c.id and cs.user_id = $1
-              ) as has_submitted
-       from challenges c
-       order by c.week_start desc, c.created_at desc
-       limit $2 offset $3`,
-      [req.user!.userId, limit, offset]
-    );
+    try {
+      const rows = await pool.query(
+        `select c.id, c.title, c.subject, c.grade, c.week_start, c.week_end, c.xp_reward, c.created_at,
+                exists (
+                  select 1 from challenge_submissions cs
+                  where cs.challenge_id = c.id and cs.user_id = $1
+                ) as has_submitted
+         from challenges c
+         order by c.week_start desc, c.created_at desc
+         limit $2 offset $3`,
+        [req.user!.userId, limit, offset]
+      );
 
-    const totalRes = await pool.query(`select count(*)::int as total from challenges`);
+      const totalRes = await pool.query(`select count(*)::int as total from challenges`);
 
-    return reply.send({
-      items: rows.rows,
-      total: Number(totalRes.rows[0]?.total || 0),
-      page,
-      pageSize,
-    });
+      return reply.send({
+        items: rows.rows,
+        total: Number(totalRes.rows[0]?.total || 0),
+        page,
+        pageSize,
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/community/challenges', {
@@ -1031,22 +1108,28 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const challenge = await pool.query(
-      `insert into challenges (title, subject, grade, week_start, week_end, xp_reward, created_by)
-       values ($1, $2, $3, $4::date, $5::date, $6, $7)
-       returning id, title, subject, grade, week_start, week_end, xp_reward, created_by, created_at`,
-      [
-        parsed.data.title,
-        parsed.data.subject,
-        parsed.data.grade ?? null,
-        parsed.data.weekStart,
-        parsed.data.weekEnd,
-        parsed.data.xpReward,
-        req.user!.userId,
-      ]
-    );
+    try {
+      const challenge = await pool.query(
+        `insert into challenges (title, subject, grade, week_start, week_end, xp_reward, created_by)
+         values ($1, $2, $3, $4::date, $5::date, $6, $7)
+         returning id, title, subject, grade, week_start, week_end, xp_reward, created_by, created_at`,
+        [
+          parsed.data.title,
+          parsed.data.subject,
+          parsed.data.grade ?? null,
+          parsed.data.weekStart,
+          parsed.data.weekEnd,
+          parsed.data.xpReward,
+          req.user!.userId,
+        ]
+      );
 
-    return reply.code(201).send({ challenge: challenge.rows[0] });
+      return reply.code(201).send({ challenge: challenge.rows[0] });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/community/challenges/:id/submissions', {
@@ -1112,9 +1195,11 @@ export async function phase3Routes(app: FastifyInstance) {
         submission: inserted.rows[0],
         xpAward,
       });
-    } catch (error) {
+    } catch (err: any) {
       await client.query('ROLLBACK');
-      throw error;
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     } finally {
       client.release();
     }
@@ -1129,6 +1214,7 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
     }
 
+    try {
     const rows = await pool.query(
       `select cs.user_id, cs.score, cs.created_at,
               cp.nickname,
@@ -1165,6 +1251,11 @@ export async function phase3Routes(app: FastifyInstance) {
       .filter(Boolean);
 
     return reply.send({ items });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/community/questions', {
@@ -1201,40 +1292,46 @@ export async function phase3Routes(app: FastifyInstance) {
       filters.push(`q.status = $${params.length}`);
     }
 
-    const blocked = await getBlockedUserIds(req.user!.userId);
-    if (blocked.length > 0) {
-      params.push(blocked);
-      filters.push(`q.user_id <> all($${params.length}::uuid[])`);
+    try {
+      const blocked = await getBlockedUserIds(req.user!.userId);
+      if (blocked.length > 0) {
+        params.push(blocked);
+        filters.push(`q.user_id <> all($${params.length}::uuid[])`);
+      }
+
+      const where = filters.length ? `where ${filters.join(' and ')}` : '';
+
+      const rows = await pool.query(
+        `select q.id, q.user_id, q.subject, q.topic, q.title, q.body, q.status, q.moderation_state, q.created_at,
+                cp.nickname,
+                (select count(*)::int from answers a where a.question_id = q.id and a.moderation_state = 'VISIBLE') as answer_count,
+                (select a2.id from answers a2 where a2.question_id = q.id and a2.is_verified = true order by a2.created_at asc limit 1) as verified_answer_id
+         from questions q
+         left join community_profiles cp on cp.user_id = q.user_id
+         ${where}
+         order by q.created_at desc
+         limit $${params.length + 1} offset $${params.length + 2}`,
+        [...params, limit, offset]
+      );
+
+      const totalRes = await pool.query(
+        `select count(*)::int as total
+         from questions q
+         ${where}`,
+        params
+      );
+
+      return reply.send({
+        items: rows.rows,
+        total: Number(totalRes.rows[0]?.total || 0),
+        page,
+        pageSize,
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-
-    const where = filters.length ? `where ${filters.join(' and ')}` : '';
-
-    const rows = await pool.query(
-      `select q.id, q.user_id, q.subject, q.topic, q.title, q.body, q.status, q.moderation_state, q.created_at,
-              cp.nickname,
-              (select count(*)::int from answers a where a.question_id = q.id and a.moderation_state = 'VISIBLE') as answer_count,
-              (select a2.id from answers a2 where a2.question_id = q.id and a2.is_verified = true order by a2.created_at asc limit 1) as verified_answer_id
-       from questions q
-       left join community_profiles cp on cp.user_id = q.user_id
-       ${where}
-       order by q.created_at desc
-       limit $${params.length + 1} offset $${params.length + 2}`,
-      [...params, limit, offset]
-    );
-
-    const totalRes = await pool.query(
-      `select count(*)::int as total
-       from questions q
-       ${where}`,
-      params
-    );
-
-    return reply.send({
-      items: rows.rows,
-      total: Number(totalRes.rows[0]?.total || 0),
-      page,
-      pageSize,
-    });
   });
 
   app.post('/community/questions', {
@@ -1251,22 +1348,28 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const moderation = moderateCommunityText(`${parsed.data.title}\n${parsed.data.body}`);
-    const question = await pool.query(
-      `insert into questions (user_id, subject, topic, title, body, moderation_state)
-       values ($1, $2, $3, $4, $5, $6)
-       returning id, user_id, subject, topic, title, body, status, moderation_state, created_at`,
-      [
-        req.user!.userId,
-        parsed.data.subject,
-        parsed.data.topic,
-        parsed.data.title,
-        parsed.data.body,
-        moderation.state,
-      ]
-    );
+    try {
+      const moderation = moderateCommunityText(`${parsed.data.title}\n${parsed.data.body}`);
+      const question = await pool.query(
+        `insert into questions (user_id, subject, topic, title, body, moderation_state)
+         values ($1, $2, $3, $4, $5, $6)
+         returning id, user_id, subject, topic, title, body, status, moderation_state, created_at`,
+        [
+          req.user!.userId,
+          parsed.data.subject,
+          parsed.data.topic,
+          parsed.data.title,
+          parsed.data.body,
+          moderation.state,
+        ]
+      );
 
-    return reply.code(201).send({ question: question.rows[0], moderationFlags: moderation.flags });
+      return reply.code(201).send({ question: question.rows[0], moderationFlags: moderation.flags });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/community/questions/:id/answers', {
@@ -1281,36 +1384,42 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const { page, pageSize, offset, limit } = parsePagination(parsed.data, { pageSize: 20 });
-    const blocked = await getBlockedUserIds(req.user!.userId);
+    try {
+      const { page, pageSize, offset, limit } = parsePagination(parsed.data, { pageSize: 20 });
+      const blocked = await getBlockedUserIds(req.user!.userId);
 
-    const rows = await pool.query(
-      `select a.id, a.question_id, a.user_id, a.body, a.is_verified, a.verified_by, a.moderation_state, a.created_at,
-              cp.nickname
-       from answers a
-       left join community_profiles cp on cp.user_id = a.user_id
-       where a.question_id = $1
-         ${isModerator(req.user!.role) ? '' : `and a.moderation_state = 'VISIBLE'`}
-         ${blocked.length > 0 ? `and a.user_id <> all($4::uuid[])` : ''}
-       order by a.is_verified desc, a.created_at asc
-       limit $2 offset $3`,
-      blocked.length > 0 ? [parsed.data.id, limit, offset, blocked] : [parsed.data.id, limit, offset]
-    );
+      const rows = await pool.query(
+        `select a.id, a.question_id, a.user_id, a.body, a.is_verified, a.verified_by, a.moderation_state, a.created_at,
+                cp.nickname
+         from answers a
+         left join community_profiles cp on cp.user_id = a.user_id
+         where a.question_id = $1
+           ${isModerator(req.user!.role) ? '' : `and a.moderation_state = 'VISIBLE'`}
+           ${blocked.length > 0 ? `and a.user_id <> all($4::uuid[])` : ''}
+         order by a.is_verified desc, a.created_at asc
+         limit $2 offset $3`,
+        blocked.length > 0 ? [parsed.data.id, limit, offset, blocked] : [parsed.data.id, limit, offset]
+      );
 
-    const totalRes = await pool.query(
-      `select count(*)::int as total
-       from answers a
-       where a.question_id = $1
-         ${isModerator(req.user!.role) ? '' : `and a.moderation_state = 'VISIBLE'`}`,
-      [parsed.data.id]
-    );
+      const totalRes = await pool.query(
+        `select count(*)::int as total
+         from answers a
+         where a.question_id = $1
+           ${isModerator(req.user!.role) ? '' : `and a.moderation_state = 'VISIBLE'`}`,
+        [parsed.data.id]
+      );
 
-    return reply.send({
-      items: rows.rows,
-      total: Number(totalRes.rows[0]?.total || 0),
-      page,
-      pageSize,
-    });
+      return reply.send({
+        items: rows.rows,
+        total: Number(totalRes.rows[0]?.total || 0),
+        page,
+        pageSize,
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/community/questions/:id/answers', {
@@ -1334,20 +1443,26 @@ export async function phase3Routes(app: FastifyInstance) {
       });
     }
 
-    const question = await pool.query(`select id from questions where id = $1`, [params.data.id]);
-    if (question.rowCount === 0) {
-      return reply.code(404).send({ error: 'question_not_found' });
+    try {
+      const question = await pool.query(`select id from questions where id = $1`, [params.data.id]);
+      if (question.rowCount === 0) {
+        return reply.code(404).send({ error: 'question_not_found' });
+      }
+
+      const moderation = moderateCommunityText(body.data.body);
+      const inserted = await pool.query(
+        `insert into answers (question_id, user_id, body, moderation_state)
+         values ($1, $2, $3, $4)
+         returning id, question_id, user_id, body, is_verified, verified_by, moderation_state, created_at`,
+        [params.data.id, req.user!.userId, body.data.body, moderation.state]
+      );
+
+      return reply.code(201).send({ answer: inserted.rows[0], moderationFlags: moderation.flags });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-
-    const moderation = moderateCommunityText(body.data.body);
-    const inserted = await pool.query(
-      `insert into answers (question_id, user_id, body, moderation_state)
-       values ($1, $2, $3, $4)
-       returning id, question_id, user_id, body, is_verified, verified_by, moderation_state, created_at`,
-      [params.data.id, req.user!.userId, body.data.body, moderation.state]
-    );
-
-    return reply.code(201).send({ answer: inserted.rows[0], moderationFlags: moderation.flags });
   });
 
   app.post('/community/answers/:id/verify', {
@@ -1399,9 +1514,11 @@ export async function phase3Routes(app: FastifyInstance) {
 
       await client.query('COMMIT');
       return reply.send({ ok: true, xpAward });
-    } catch (error) {
+    } catch (err: any) {
       await client.query('ROLLBACK');
-      throw error;
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     } finally {
       client.release();
     }
@@ -1421,14 +1538,20 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const created = await pool.query(
-      `insert into community_reports (reporter_id, target_type, target_id, reason)
-       values ($1, $2, $3, $4)
-       returning id, reporter_id, target_type, target_id, reason, created_at`,
-      [req.user!.userId, parsed.data.targetType, parsed.data.targetId, parsed.data.reason]
-    );
+    try {
+      const created = await pool.query(
+        `insert into community_reports (reporter_id, target_type, target_id, reason)
+         values ($1, $2, $3, $4)
+         returning id, reporter_id, target_type, target_id, reason, created_at`,
+        [req.user!.userId, parsed.data.targetType, parsed.data.targetId, parsed.data.reason]
+      );
 
-    return reply.code(201).send({ report: created.rows[0] });
+      return reply.code(201).send({ report: created.rows[0] });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/community/moderation/block', {
@@ -1449,14 +1572,20 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'cannot_block_self' });
     }
 
-    await pool.query(
-      `insert into community_blocks (blocker_user_id, blocked_user_id)
-       values ($1, $2)
-       on conflict do nothing`,
-      [req.user!.userId, parsed.data.blockedUserId]
-    );
+    try {
+      await pool.query(
+        `insert into community_blocks (blocker_user_id, blocked_user_id)
+         values ($1, $2)
+         on conflict do nothing`,
+        [req.user!.userId, parsed.data.blockedUserId]
+      );
 
-    return reply.send({ ok: true });
+      return reply.send({ ok: true });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.patch('/community/moderation/:targetType/:id/hide', {
@@ -1471,15 +1600,21 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    if (parsed.data.targetType === 'QUESTION') {
-      await pool.query(`update questions set moderation_state = 'HIDDEN' where id = $1`, [parsed.data.id]);
-    } else if (parsed.data.targetType === 'ANSWER') {
-      await pool.query(`update answers set moderation_state = 'HIDDEN' where id = $1`, [parsed.data.id]);
-    } else {
-      await pool.query(`update study_room_messages set moderation_state = 'HIDDEN' where id = $1`, [parsed.data.id]);
-    }
+    try {
+      if (parsed.data.targetType === 'QUESTION') {
+        await pool.query(`update questions set moderation_state = 'HIDDEN' where id = $1`, [parsed.data.id]);
+      } else if (parsed.data.targetType === 'ANSWER') {
+        await pool.query(`update answers set moderation_state = 'HIDDEN' where id = $1`, [parsed.data.id]);
+      } else {
+        await pool.query(`update study_room_messages set moderation_state = 'HIDDEN' where id = $1`, [parsed.data.id]);
+      }
 
-    return reply.send({ ok: true });
+      return reply.send({ ok: true });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.delete('/community/moderation/:targetType/:id', {
@@ -1494,15 +1629,21 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    if (parsed.data.targetType === 'QUESTION') {
-      await pool.query(`update questions set moderation_state = 'DELETED', status = 'CLOSED' where id = $1`, [parsed.data.id]);
-    } else if (parsed.data.targetType === 'ANSWER') {
-      await pool.query(`update answers set moderation_state = 'DELETED' where id = $1`, [parsed.data.id]);
-    } else {
-      await pool.query(`update study_room_messages set moderation_state = 'DELETED' where id = $1`, [parsed.data.id]);
-    }
+    try {
+      if (parsed.data.targetType === 'QUESTION') {
+        await pool.query(`update questions set moderation_state = 'DELETED', status = 'CLOSED' where id = $1`, [parsed.data.id]);
+      } else if (parsed.data.targetType === 'ANSWER') {
+        await pool.query(`update answers set moderation_state = 'DELETED' where id = $1`, [parsed.data.id]);
+      } else {
+        await pool.query(`update study_room_messages set moderation_state = 'DELETED' where id = $1`, [parsed.data.id]);
+      }
 
-    return reply.send({ ok: true });
+      return reply.send({ ok: true });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/career/goals', {
@@ -1557,9 +1698,11 @@ export async function phase3Routes(app: FastifyInstance) {
       await client.query('COMMIT');
 
       return reply.send({ ok: true, goalIds: dedupedGoalIds, snapshots });
-    } catch (error) {
+    } catch (err: any) {
       await client.query('ROLLBACK');
-      throw error;
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     } finally {
       client.release();
     }
@@ -1572,68 +1715,74 @@ export async function phase3Routes(app: FastifyInstance) {
     const goalsData = loadCareerGoals();
     const userId = req.user!.userId;
 
-    const selectedRes = await pool.query(
-      `select goal_id, created_at
-       from career_goal_selections
-       where user_id = $1
-       order by created_at asc`,
-      [userId]
-    );
-
-    const selectedGoalIds = selectedRes.rows.map((row) => row.goal_id as string);
-
-    const snapshotsRes = selectedGoalIds.length > 0
-      ? await pool.query(
-        `select distinct on (goal_id)
-            goal_id, alignment_score, reasons_json, metrics_json, created_at
-         from career_progress_snapshots
+    try {
+      const selectedRes = await pool.query(
+        `select goal_id, created_at
+         from career_goal_selections
          where user_id = $1
-           and goal_id = any($2::text[])
-         order by goal_id, created_at desc`,
-        [userId, selectedGoalIds]
-      )
-      : { rows: [] as any[] };
+         order by created_at asc`,
+        [userId]
+      );
 
-    const latestByGoal = new Map<string, any>();
-    snapshotsRes.rows.forEach((row) => latestByGoal.set(String(row.goal_id), row));
+      const selectedGoalIds = selectedRes.rows.map((row) => row.goal_id as string);
 
-    const selectedGoals = selectedGoalIds
-      .map((goalId) => {
-        const goal = goalsData.goals.find((item) => item.id === goalId);
-        if (!goal) return null;
-        const snapshot = latestByGoal.get(goalId);
-        return {
-          goal,
-          latestSnapshot: snapshot
-            ? {
-              alignmentScore: Number(snapshot.alignment_score),
-              reasons: typeof snapshot.reasons_json === 'string' ? JSON.parse(snapshot.reasons_json) : snapshot.reasons_json,
-              metrics: typeof snapshot.metrics_json === 'string' ? JSON.parse(snapshot.metrics_json) : snapshot.metrics_json,
-              createdAt: snapshot.created_at,
-            }
-            : null,
-        };
-      })
-      .filter(Boolean);
+      const snapshotsRes = selectedGoalIds.length > 0
+        ? await pool.query(
+          `select distinct on (goal_id)
+              goal_id, alignment_score, reasons_json, metrics_json, created_at
+           from career_progress_snapshots
+           where user_id = $1
+             and goal_id = any($2::text[])
+           order by goal_id, created_at desc`,
+          [userId, selectedGoalIds]
+        )
+        : { rows: [] as any[] };
 
-    const recommendedVaultTags = [...new Set(selectedGoals.flatMap((entry: any) => entry.goal.recommendedVaultTags))].slice(0, 12);
-    const nextSteps = selectedGoals.flatMap((entry: any) => {
-      const reasons = entry.latestSnapshot?.reasons || [];
-      return reasons.slice(0, 2);
-    }).slice(0, 4);
+      const latestByGoal = new Map<string, any>();
+      snapshotsRes.rows.forEach((row) => latestByGoal.set(String(row.goal_id), row));
 
-    return reply.send({
-      version: goalsData.version,
-      selectedGoals,
-      recommendedVaultTags,
-      nextSteps,
-      emptyState: selectedGoals.length === 0
-        ? {
-          title: 'No career goals selected yet',
-          description: 'Select at least one goal to unlock roadmap recommendations.',
-        }
-        : null,
-    });
+      const selectedGoals = selectedGoalIds
+        .map((goalId) => {
+          const goal = goalsData.goals.find((item) => item.id === goalId);
+          if (!goal) return null;
+          const snapshot = latestByGoal.get(goalId);
+          return {
+            goal,
+            latestSnapshot: snapshot
+              ? {
+                alignmentScore: Number(snapshot.alignment_score),
+                reasons: typeof snapshot.reasons_json === 'string' ? JSON.parse(snapshot.reasons_json) : snapshot.reasons_json,
+                metrics: typeof snapshot.metrics_json === 'string' ? JSON.parse(snapshot.metrics_json) : snapshot.metrics_json,
+                createdAt: snapshot.created_at,
+              }
+              : null,
+          };
+        })
+        .filter(Boolean);
+
+      const recommendedVaultTags = [...new Set(selectedGoals.flatMap((entry: any) => entry.goal.recommendedVaultTags))].slice(0, 12);
+      const nextSteps = selectedGoals.flatMap((entry: any) => {
+        const reasons = entry.latestSnapshot?.reasons || [];
+        return reasons.slice(0, 2);
+      }).slice(0, 4);
+
+      return reply.send({
+        version: goalsData.version,
+        selectedGoals,
+        recommendedVaultTags,
+        nextSteps,
+        emptyState: selectedGoals.length === 0
+          ? {
+            title: 'No career goals selected yet',
+            description: 'Select at least one goal to unlock roadmap recommendations.',
+          }
+          : null,
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/tutor/students/:studentId/career', {
@@ -1650,57 +1799,63 @@ export async function phase3Routes(app: FastifyInstance) {
       return reply.code(403).send({ error: 'forbidden' });
     }
 
-    const ownerRes = await pool.query(`select id from users where student_id = $1`, [params.data.studentId]);
-    if (ownerRes.rowCount === 0) {
-      return reply.code(404).send({ error: 'student_user_not_found' });
-    }
+    try {
+      const ownerRes = await pool.query(`select id from users where student_id = $1`, [params.data.studentId]);
+      if (ownerRes.rowCount === 0) {
+        return reply.code(404).send({ error: 'student_user_not_found' });
+      }
 
-    const ownerUserId = ownerRes.rows[0].id as string;
-    const goalsData = loadCareerGoals();
+      const ownerUserId = ownerRes.rows[0].id as string;
+      const goalsData = loadCareerGoals();
 
-    const selectedRes = await pool.query(
-      `select goal_id
-       from career_goal_selections
-       where user_id = $1
-       order by created_at asc`,
-      [ownerUserId]
-    );
-
-    const selectedGoalIds = selectedRes.rows.map((row) => row.goal_id as string);
-    const snapshotsRes = selectedGoalIds.length > 0
-      ? await pool.query(
-        `select distinct on (goal_id)
-            goal_id, alignment_score, reasons_json, metrics_json, created_at
-         from career_progress_snapshots
+      const selectedRes = await pool.query(
+        `select goal_id
+         from career_goal_selections
          where user_id = $1
-           and goal_id = any($2::text[])
-         order by goal_id, created_at desc`,
-        [ownerUserId, selectedGoalIds]
-      )
-      : { rows: [] as any[] };
+         order by created_at asc`,
+        [ownerUserId]
+      );
 
-    const byGoal = new Map<string, any>();
-    snapshotsRes.rows.forEach((row) => byGoal.set(String(row.goal_id), row));
+      const selectedGoalIds = selectedRes.rows.map((row) => row.goal_id as string);
+      const snapshotsRes = selectedGoalIds.length > 0
+        ? await pool.query(
+          `select distinct on (goal_id)
+              goal_id, alignment_score, reasons_json, metrics_json, created_at
+           from career_progress_snapshots
+           where user_id = $1
+             and goal_id = any($2::text[])
+           order by goal_id, created_at desc`,
+          [ownerUserId, selectedGoalIds]
+        )
+        : { rows: [] as any[] };
 
-    return reply.send({
-      selectedGoals: selectedGoalIds
-        .map((goalId) => {
-          const goal = goalsData.goals.find((item) => item.id === goalId);
-          if (!goal) return null;
-          const snapshot = byGoal.get(goalId);
-          return {
-            goal,
-            latestSnapshot: snapshot
-              ? {
-                alignmentScore: Number(snapshot.alignment_score),
-                reasons: typeof snapshot.reasons_json === 'string' ? JSON.parse(snapshot.reasons_json) : snapshot.reasons_json,
-                metrics: typeof snapshot.metrics_json === 'string' ? JSON.parse(snapshot.metrics_json) : snapshot.metrics_json,
-                createdAt: snapshot.created_at,
-              }
-              : null,
-          };
-        })
-        .filter(Boolean),
-    });
+      const byGoal = new Map<string, any>();
+      snapshotsRes.rows.forEach((row) => byGoal.set(String(row.goal_id), row));
+
+      return reply.send({
+        selectedGoals: selectedGoalIds
+          .map((goalId) => {
+            const goal = goalsData.goals.find((item) => item.id === goalId);
+            if (!goal) return null;
+            const snapshot = byGoal.get(goalId);
+            return {
+              goal,
+              latestSnapshot: snapshot
+                ? {
+                  alignmentScore: Number(snapshot.alignment_score),
+                  reasons: typeof snapshot.reasons_json === 'string' ? JSON.parse(snapshot.reasons_json) : snapshot.reasons_json,
+                  metrics: typeof snapshot.metrics_json === 'string' ? JSON.parse(snapshot.metrics_json) : snapshot.metrics_json,
+                  createdAt: snapshot.created_at,
+                }
+                : null,
+            };
+          })
+          .filter(Boolean),
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 }

@@ -64,6 +64,7 @@ import { anonymizeStudent, anonymizeTutor, exportStudentData, exportTutorData } 
 import { PII_CLASSIFICATION_MAP } from '../lib/data-classification.js';
 import { parsePagination } from '../lib/pagination.js';
 import { enqueueJob, getJob } from '../lib/job-queue.js';
+import { getErrorMonitor } from '../lib/error-monitor.js';
 
 
 function toDateString(value: Date) {
@@ -337,67 +338,79 @@ export async function adminRoutes(app: FastifyInstance) {
   };
 
 
-  app.get('/admin/dashboard', async (_req, reply) => {
-    const [tutors, students, sessions] = await Promise.all([
-      pool.query(`select count(*) from tutor_profiles where active = true`),
-      pool.query(`select count(*) from students where is_active = true`),
-      pool.query(`select status, count(*) from sessions group by status`)
-    ]);
+  app.get('/admin/dashboard', async (req, reply) => {
+    try {
+      const [tutors, students, sessions] = await Promise.all([
+        pool.query(`select count(*) from tutor_profiles where active = true`),
+        pool.query(`select count(*) from students where is_active = true`),
+        pool.query(`select status, count(*) from sessions group by status`)
+      ]);
 
-    return reply.send({
-      tutors: Number(tutors.rows[0].count),
-      students: Number(students.rows[0].count),
-      sessions: sessions.rows
-    });
+      return reply.send({
+        tutors: Number(tutors.rows[0].count),
+        students: Number(students.rows[0].count),
+        sessions: sessions.rows
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
-  app.get('/admin/retention/summary', async (_req, reply) => {
-    const cutoffs = getRetentionCutoffs(new Date());
-    const config = getRetentionConfig();
+  app.get('/admin/retention/summary', async (req, reply) => {
+    try {
+      const cutoffs = getRetentionCutoffs(new Date());
+      const config = getRetentionConfig();
 
-    const [
-      magicLinkRes,
-      auditRes,
-      historyRes,
-      invoiceRes,
-      sessionRes,
-      requestRes
-    ] = await Promise.all([
-      pool.query(`select count(*) as count from magic_link_tokens where expires_at < $1`, [cutoffs.magicLinkBefore]),
-      pool.query(`select count(*) as count from audit_log where created_at < $1`, [cutoffs.auditBefore]),
-      pool.query(`select count(*) as count from session_history where created_at < $1`, [cutoffs.sessionHistoryBefore]),
-      pool.query(`select count(*) as count from invoices where period_end < $1::date`, [cutoffs.invoicesBefore]),
-      pool.query(`select count(*) as count from sessions where date < $1::date`, [cutoffs.sessionsBefore]),
-      pool.query(`select count(*) as count from privacy_requests where created_at < $1`, [cutoffs.privacyRequestsBefore])
-    ]);
+      const [
+        magicLinkRes,
+        auditRes,
+        historyRes,
+        invoiceRes,
+        sessionRes,
+        requestRes
+      ] = await Promise.all([
+        pool.query(`select count(*) as count from magic_link_tokens where expires_at < $1`, [cutoffs.magicLinkBefore]),
+        pool.query(`select count(*) as count from audit_log where created_at < $1`, [cutoffs.auditBefore]),
+        pool.query(`select count(*) as count from session_history where created_at < $1`, [cutoffs.sessionHistoryBefore]),
+        pool.query(`select count(*) as count from invoices where period_end < $1::date`, [cutoffs.invoicesBefore]),
+        pool.query(`select count(*) as count from sessions where date < $1::date`, [cutoffs.sessionsBefore]),
+        pool.query(`select count(*) as count from privacy_requests where created_at < $1`, [cutoffs.privacyRequestsBefore])
+      ]);
 
-    const latestEventRes = await pool.query(
-      `select id, ran_at, summary_json
-       from retention_events
-       order by ran_at desc
-       limit 1`
-    );
-    const latestEvent = latestEventRes.rowCount
-      ? {
-          id: latestEventRes.rows[0].id,
-          ranAt: latestEventRes.rows[0].ran_at,
-          summary: latestEventRes.rows[0].summary_json
+      const latestEventRes = await pool.query(
+        `select id, ran_at, summary_json
+         from retention_events
+         order by ran_at desc
+         limit 1`
+      );
+      const latestEvent = latestEventRes.rowCount
+        ? {
+            id: latestEventRes.rows[0].id,
+            ranAt: latestEventRes.rows[0].ran_at,
+            summary: latestEventRes.rows[0].summary_json
+          }
+        : null;
+
+      return reply.send({
+        config,
+        cutoffs,
+        latestEvent,
+        eligible: {
+          magicLinkTokens: Number(magicLinkRes.rows[0].count),
+          auditLogs: Number(auditRes.rows[0].count),
+          sessionHistory: Number(historyRes.rows[0].count),
+          invoices: Number(invoiceRes.rows[0].count),
+          sessions: Number(sessionRes.rows[0].count),
+          privacyRequests: Number(requestRes.rows[0].count)
         }
-      : null;
-
-    return reply.send({
-      config,
-      cutoffs,
-      latestEvent,
-      eligible: {
-        magicLinkTokens: Number(magicLinkRes.rows[0].count),
-        auditLogs: Number(auditRes.rows[0].count),
-        sessionHistory: Number(historyRes.rows[0].count),
-        invoices: Number(invoiceRes.rows[0].count),
-        sessions: Number(sessionRes.rows[0].count),
-        privacyRequests: Number(requestRes.rows[0].count)
-      }
-    });
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/admin/tutors', async (req, reply) => {
@@ -415,6 +428,7 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(201).send(result);
     } catch (err: any) {
       if (err?.code === '23505') return reply.code(409).send({ error: 'email_already_exists' });
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -423,8 +437,14 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.get('/admin/tutors', async (req, reply) => {
-    const result = await listTutors(pool, req.query as any);
-    return reply.send(result);
+    try {
+      const result = await listTutors(pool, req.query as any);
+      return reply.send(result);
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.patch('/admin/tutors/:id', async (req, reply) => {
@@ -434,12 +454,18 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const updated = await updateTutor(pool, tutorId, parsed.data);
-    if (!updated) return reply.code(404).send({ error: 'tutor_not_found' });
-    if ('error' in updated) {
-      return reply.code(409).send({ error: updated.error, invalidSubjects: updated.invalidSubjects });
+    try {
+      const updated = await updateTutor(pool, tutorId, parsed.data);
+      if (!updated) return reply.code(404).send({ error: 'tutor_not_found' });
+      if ('error' in updated) {
+        return reply.code(409).send({ error: updated.error, invalidSubjects: updated.invalidSubjects });
+      }
+      return reply.send({ tutor: updated });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-    return reply.send({ tutor: updated });
   });
 
   app.post('/admin/students', async (req, reply) => {
@@ -447,8 +473,14 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-    const student = await createStudent(pool, parsed.data);
-    return reply.code(201).send({ student });
+    try {
+      const student = await createStudent(pool, parsed.data);
+      return reply.code(201).send({ student });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/admin/privacy-requests', async (req, reply) => {
@@ -458,37 +490,43 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     const adminId = req.user!.userId;
-    const res = await pool.query(
-      `insert into privacy_requests
-       (request_type, subject_type, subject_id, reason, status, created_by_user_id)
-       values ($1, $2, $3, $4, 'OPEN', $5)
-       returning *`,
-      [
-        parsed.data.requestType,
-        parsed.data.subjectType,
-        parsed.data.subjectId,
-        parsed.data.reason ?? null,
-        adminId
-      ]
-    );
+    try {
+      const res = await pool.query(
+        `insert into privacy_requests
+         (request_type, subject_type, subject_id, reason, status, created_by_user_id)
+         values ($1, $2, $3, $4, 'OPEN', $5)
+         returning *`,
+        [
+          parsed.data.requestType,
+          parsed.data.subjectType,
+          parsed.data.subjectId,
+          parsed.data.reason ?? null,
+          adminId
+        ]
+      );
 
-    await logAuditSafe(pool, {
-      actorUserId: adminId,
-      actorRole: 'ADMIN',
-      action: 'privacy_request.create',
-      entityType: 'privacy_request',
-      entityId: res.rows[0].id,
-      meta: safeAuditMeta({
-        requestType: parsed.data.requestType,
-        subjectType: parsed.data.subjectType,
-        subjectId: parsed.data.subjectId
-      }),
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] as string | undefined,
-      correlationId: req.id,
-    });
+      await logAuditSafe(pool, {
+        actorUserId: adminId,
+        actorRole: 'ADMIN',
+        action: 'privacy_request.create',
+        entityType: 'privacy_request',
+        entityId: res.rows[0].id,
+        meta: safeAuditMeta({
+          requestType: parsed.data.requestType,
+          subjectType: parsed.data.subjectType,
+          subjectId: parsed.data.subjectId
+        }),
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id,
+      });
 
-    return reply.code(201).send({ request: res.rows[0] });
+      return reply.code(201).send({ request: res.rows[0] });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/admin/data-classification', async (_req, reply) => {
@@ -501,43 +539,49 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const { page, pageSize, offset, limit } = parsePagination(req.query as any, { pageSize: 200 });
-    const params: any[] = [];
-    const filters: string[] = [];
-    if (parsed.data.status) {
-      params.push(parsed.data.status);
-      filters.push(`status = $${params.length}`);
-    }
-    if (parsed.data.subjectType) {
-      params.push(parsed.data.subjectType);
-      filters.push(`subject_type = $${params.length}`);
-    }
-    if (parsed.data.subjectId) {
-      params.push(parsed.data.subjectId);
-      filters.push(`subject_id = $${params.length}`);
-    }
+    try {
+      const { page, pageSize, offset, limit } = parsePagination(req.query as any, { pageSize: 200 });
+      const params: any[] = [];
+      const filters: string[] = [];
+      if (parsed.data.status) {
+        params.push(parsed.data.status);
+        filters.push(`status = $${params.length}`);
+      }
+      if (parsed.data.subjectType) {
+        params.push(parsed.data.subjectType);
+        filters.push(`subject_type = $${params.length}`);
+      }
+      if (parsed.data.subjectId) {
+        params.push(parsed.data.subjectId);
+        filters.push(`subject_id = $${params.length}`);
+      }
 
-    const where = filters.length ? `where ${filters.join(' and ')}` : '';
-    const res = await pool.query(
-      `select * from privacy_requests ${where}
-       order by created_at desc
-       limit $${params.length + 1} offset $${params.length + 2}`,
-      [...params, limit, offset]
-    );
+      const where = filters.length ? `where ${filters.join(' and ')}` : '';
+      const res = await pool.query(
+        `select * from privacy_requests ${where}
+         order by created_at desc
+         limit $${params.length + 1} offset $${params.length + 2}`,
+        [...params, limit, offset]
+      );
 
-    const totalRes = await pool.query(
-      `select count(*) from privacy_requests ${where}`,
-      params
-    );
+      const totalRes = await pool.query(
+        `select count(*) from privacy_requests ${where}`,
+        params
+      );
 
-    const total = Number(totalRes.rows[0]?.count || 0);
-    return reply.send({
-      requests: res.rows,
-      items: res.rows,
-      total,
-      page,
-      pageSize
-    });
+      const total = Number(totalRes.rows[0]?.count || 0);
+      return reply.send({
+        requests: res.rows,
+        items: res.rows,
+        total,
+        page,
+        pageSize
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/admin/privacy-requests/:id/export', async (req, reply) => {
@@ -547,30 +591,36 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     const requestId = params.data.id;
 
-    const res = await pool.query(
-      `select * from privacy_requests where id = $1`,
-      [requestId]
-    );
-    if (res.rowCount === 0) return reply.code(404).send({ error: 'privacy_request_not_found' });
+    try {
+      const res = await pool.query(
+        `select * from privacy_requests where id = $1`,
+        [requestId]
+      );
+      if (res.rowCount === 0) return reply.code(404).send({ error: 'privacy_request_not_found' });
 
-    const request = res.rows[0];
-    let payload: any = null;
-    if (request.subject_type === 'TUTOR') {
-      payload = await exportTutorData(pool, request.subject_id);
-    } else {
-      payload = await exportStudentData(pool, request.subject_id);
+      const request = res.rows[0];
+      let payload: any = null;
+      if (request.subject_type === 'TUTOR') {
+        payload = await exportTutorData(pool, request.subject_id);
+      } else {
+        payload = await exportStudentData(pool, request.subject_id);
+      }
+
+      return reply.send({
+        request: {
+          id: request.id,
+          requestType: request.request_type,
+          subjectType: request.subject_type,
+          subjectId: request.subject_id,
+          createdAt: request.created_at
+        },
+        data: payload
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-
-    return reply.send({
-      request: {
-        id: request.id,
-        requestType: request.request_type,
-        subjectType: request.subject_type,
-        subjectId: request.subject_id,
-        createdAt: request.created_at
-      },
-      data: payload
-    });
   });
 
   app.post('/admin/privacy-requests/:id/close', async (req, reply) => {
@@ -687,6 +737,7 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.send({ request: updatedRes.rows[0] });
     } catch (err: any) {
       await client.query('ROLLBACK');
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -695,8 +746,14 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.get('/admin/students', async (req, reply) => {
-    const result = await listStudents(pool, req.query as any);
-    return reply.send(result);
+    try {
+      const result = await listStudents(pool, req.query as any);
+      return reply.send(result);
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.patch('/admin/students/:id', async (req, reply) => {
@@ -705,9 +762,15 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-    const updated = await updateStudent(pool, studentId, parsed.data);
-    if (!updated) return reply.code(404).send({ error: 'student_not_found' });
-    return reply.send({ student: updated });
+    try {
+      const updated = await updateStudent(pool, studentId, parsed.data);
+      if (!updated) return reply.code(404).send({ error: 'student_not_found' });
+      return reply.send({ student: updated });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/admin/assignments', async (req, reply) => {
@@ -715,19 +778,31 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-    const result = await createAssignment(pool, parsed.data);
-    if ('error' in result) {
-      if (result.error === 'tutor_not_found' || result.error === 'student_not_found') {
-        return reply.code(404).send({ error: result.error });
+    try {
+      const result = await createAssignment(pool, parsed.data);
+      if ('error' in result) {
+        if (result.error === 'tutor_not_found' || result.error === 'student_not_found') {
+          return reply.code(404).send({ error: result.error });
+        }
+        return reply.code(409).send({ error: result.error });
       }
-      return reply.code(409).send({ error: result.error });
+      return reply.code(201).send({ assignment: result.assignment });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-    return reply.code(201).send({ assignment: result.assignment });
   });
 
   app.get('/admin/assignments', async (req, reply) => {
-    const result = await listAssignments(pool, req.query as any);
-    return reply.send(result);
+    try {
+      const result = await listAssignments(pool, req.query as any);
+      return reply.send(result);
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.patch('/admin/assignments/:id', async (req, reply) => {
@@ -736,15 +811,21 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-    const updated = await updateAssignment(pool, assignmentId, parsed.data);
-    if (!updated) return reply.code(404).send({ error: 'assignment_not_found' });
-    if ('error' in updated) {
-      if (updated.error === 'tutor_not_found' || updated.error === 'student_not_found') {
-        return reply.code(404).send({ error: updated.error });
+    try {
+      const updated = await updateAssignment(pool, assignmentId, parsed.data);
+      if (!updated) return reply.code(404).send({ error: 'assignment_not_found' });
+      if ('error' in updated) {
+        if (updated.error === 'tutor_not_found' || updated.error === 'student_not_found') {
+          return reply.code(404).send({ error: updated.error });
+        }
+        return reply.code(409).send({ error: updated.error });
       }
-      return reply.code(409).send({ error: updated.error });
+      return reply.send({ assignment: updated });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-    return reply.send({ assignment: updated });
   });
 
   app.get('/admin/sessions', async (req, reply) => {
@@ -752,8 +833,14 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-    const result = await listSessions(pool, parsed.data);
-    return reply.send(result);
+    try {
+      const result = await listSessions(pool, parsed.data);
+      return reply.send(result);
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/admin/sessions/:id/history', async (req, reply) => {
@@ -763,8 +850,14 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     const sessionId = params.data.id;
-    const history = await getSessionHistory(pool, sessionId);
-    return reply.send({ history });
+    try {
+      const history = await getSessionHistory(pool, sessionId);
+      return reply.send({ history });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/admin/impersonate/start', async (req, reply) => {
@@ -776,27 +869,33 @@ export async function adminRoutes(app: FastifyInstance) {
     const sessionToken = req.cookies?.session;
     if (!sessionToken) return reply.code(401).send({ error: 'unauthorized' });
 
-    const result = await startImpersonation(
-      app,
-      pool,
-      parsed.data,
-      {
-        adminId: req.user!.userId,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'] as string | undefined,
-        correlationId: req.id
-      },
-      sessionToken,
-      logAuditSafe
-    );
+    try {
+      const result = await startImpersonation(
+        app,
+        pool,
+        parsed.data,
+        {
+          adminId: req.user!.userId,
+          ip: req.ip,
+          userAgent: req.headers['user-agent'] as string | undefined,
+          correlationId: req.id
+        },
+        sessionToken,
+        logAuditSafe
+      );
 
-    if (!result) return reply.code(404).send({ error: 'tutor_not_found' });
+      if (!result) return reply.code(404).send({ error: 'tutor_not_found' });
 
-    reply.setCookie('impersonation', result.token, impersonationCookieOptions());
-    return reply.send({
-      impersonationId: result.impersonationId,
-      tutor: result.tutor
-    });
+      reply.setCookie('impersonation', result.token, impersonationCookieOptions());
+      return reply.send({
+        impersonationId: result.impersonationId,
+        tutor: result.tutor
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/admin/impersonate/stop', async (req, reply) => {
@@ -815,23 +914,29 @@ export async function adminRoutes(app: FastifyInstance) {
       }
     }
 
-    if (impersonationId) {
-      await stopImpersonation(
-        pool,
-        { impersonationId },
-        {
-          adminId: req.user!.userId,
-          ip: req.ip,
-          userAgent: req.headers['user-agent'] as string | undefined,
-          correlationId: req.id
-        },
-        logAuditSafe
-      );
+    try {
+      if (impersonationId) {
+        await stopImpersonation(
+          pool,
+          { impersonationId },
+          {
+            adminId: req.user!.userId,
+            ip: req.ip,
+            userAgent: req.headers['user-agent'] as string | undefined,
+            correlationId: req.id
+          },
+          logAuditSafe
+        );
+      }
+
+      reply.clearCookie('impersonation', { path: '/' });
+      return reply.send({ ok: true });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      reply.clearCookie('impersonation', { path: '/' });
+      return reply.code(500).send({ error: 'internal_error' });
     }
-
-    reply.clearCookie('impersonation', { path: '/' });
-
-    return reply.send({ ok: true });
   });
 
   app.get('/admin/audit', async (req, reply) => {
@@ -840,52 +945,58 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
 
-    const { from, to, actorId, entityType, entityId, page, pageSize } = parsed.data;
-    const { where, params } = buildAuditFilters({ from, to, actorId, entityType, entityId });
-    const offset = (page - 1) * pageSize;
+    try {
+      const { from, to, actorId, entityType, entityId, page, pageSize } = parsed.data;
+      const { where, params } = buildAuditFilters({ from, to, actorId, entityType, entityId });
+      const offset = (page - 1) * pageSize;
 
-    const listRes = await pool.query(
-      `select a.id, a.action, a.entity_type, a.entity_id, a.meta_json, a.ip, a.user_agent,
-              a.correlation_id, a.created_at, a.actor_user_id,
-              u.email as actor_email, u.role as actor_role
-       from audit_log a
-       left join users u on u.id = a.actor_user_id
-       ${where}
-       order by a.created_at desc
-       limit $${params.length + 1} offset $${params.length + 2}`,
-      [...params, pageSize, offset]
-    );
+      const listRes = await pool.query(
+        `select a.id, a.action, a.entity_type, a.entity_id, a.meta_json, a.ip, a.user_agent,
+                a.correlation_id, a.created_at, a.actor_user_id,
+                u.email as actor_email, u.role as actor_role
+         from audit_log a
+         left join users u on u.id = a.actor_user_id
+         ${where}
+         order by a.created_at desc
+         limit $${params.length + 1} offset $${params.length + 2}`,
+        [...params, pageSize, offset]
+      );
 
-    const totalRes = await pool.query(
-      `select count(*)
-       from audit_log a
-       ${where}`,
-      params
-    );
+      const totalRes = await pool.query(
+        `select count(*)
+         from audit_log a
+         ${where}`,
+        params
+      );
 
-    const items = listRes.rows.map((row) => ({
-      id: row.id,
-      action: row.action,
-      entityType: row.entity_type,
-      entityId: row.entity_id,
-      meta: row.meta_json,
-      ip: row.ip,
-      userAgent: row.user_agent,
-      correlationId: row.correlation_id,
-      createdAt: row.created_at,
-      actor: row.actor_user_id ? {
-        id: row.actor_user_id,
-        email: row.actor_email,
-        role: row.actor_role
-      } : null
-    }));
+      const items = listRes.rows.map((row) => ({
+        id: row.id,
+        action: row.action,
+        entityType: row.entity_type,
+        entityId: row.entity_id,
+        meta: row.meta_json,
+        ip: row.ip,
+        userAgent: row.user_agent,
+        correlationId: row.correlation_id,
+        createdAt: row.created_at,
+        actor: row.actor_user_id ? {
+          id: row.actor_user_id,
+          email: row.actor_email,
+          role: row.actor_role
+        } : null
+      }));
 
-    return reply.send({
-      items,
-      total: Number(totalRes.rows[0].count),
-      page,
-      pageSize
-    });
+      return reply.send({
+        items,
+        total: Number(totalRes.rows[0].count),
+        page,
+        pageSize
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/admin/audit/export.csv', async (req, reply) => {
@@ -907,48 +1018,54 @@ export async function adminRoutes(app: FastifyInstance) {
     reply.header('Content-Type', 'text/csv; charset=utf-8');
     reply.header('Content-Disposition', 'attachment; filename="audit-export.csv"');
 
-    reply.raw.write('timestamp,action,entity_type,entity_id,actor_id,actor_email,actor_role,ip,user_agent,correlation_id,meta\n');
+    try {
+      reply.raw.write('timestamp,action,entity_type,entity_id,actor_id,actor_email,actor_role,ip,user_agent,correlation_id,meta\n');
 
-    const pageSize = 500;
-    let page = 1;
+      const pageSize = 500;
+      let page = 1;
 
-    while (true) {
-      const offset = (page - 1) * pageSize;
-      const rows = await pool.query(
-        `select a.action, a.entity_type, a.entity_id, a.meta_json, a.ip, a.user_agent,
-                a.correlation_id, a.created_at, a.actor_user_id,
-                u.email as actor_email, u.role as actor_role
-         from audit_log a
-         left join users u on u.id = a.actor_user_id
-         ${where}
-         order by a.created_at desc
-         limit $${params.length + 1} offset $${params.length + 2}`,
-        [...params, pageSize, offset]
-      );
+      while (true) {
+        const offset = (page - 1) * pageSize;
+        const rows = await pool.query(
+          `select a.action, a.entity_type, a.entity_id, a.meta_json, a.ip, a.user_agent,
+                  a.correlation_id, a.created_at, a.actor_user_id,
+                  u.email as actor_email, u.role as actor_role
+           from audit_log a
+           left join users u on u.id = a.actor_user_id
+           ${where}
+           order by a.created_at desc
+           limit $${params.length + 1} offset $${params.length + 2}`,
+          [...params, pageSize, offset]
+        );
 
-      if (rows.rowCount === 0) break;
+        if (rows.rowCount === 0) break;
 
-      for (const row of rows.rows) {
-        const line = [
-          csvValue(row.created_at?.toISOString?.() ?? row.created_at),
-          csvValue(row.action),
-          csvValue(row.entity_type),
-          csvValue(row.entity_id),
-          csvValue(row.actor_user_id),
-          csvValue(row.actor_email),
-          csvValue(row.actor_role),
-          csvValue(row.ip),
-          csvValue(row.user_agent),
-          csvValue(row.correlation_id),
-          csvValue(row.meta_json)
-        ].join(',');
-        reply.raw.write(`${line}\n`);
+        for (const row of rows.rows) {
+          const line = [
+            csvValue(row.created_at?.toISOString?.() ?? row.created_at),
+            csvValue(row.action),
+            csvValue(row.entity_type),
+            csvValue(row.entity_id),
+            csvValue(row.actor_user_id),
+            csvValue(row.actor_email),
+            csvValue(row.actor_role),
+            csvValue(row.ip),
+            csvValue(row.user_agent),
+            csvValue(row.correlation_id),
+            csvValue(row.meta_json)
+          ].join(',');
+          reply.raw.write(`${line}\n`);
+        }
+
+        page += 1;
       }
 
-      page += 1;
+      reply.raw.end();
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      reply.raw.end();
     }
-
-    reply.raw.end();
   });
 
   app.post('/admin/jobs/audit-export', async (req, reply) => {
@@ -958,24 +1075,30 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     const adminId = req.user!.userId;
-    const job = await enqueueJob(pool, 'audit_export_csv', {
-      filters: parsed.data,
-      adminId
-    });
+    try {
+      const job = await enqueueJob(pool, 'audit_export_csv', {
+        filters: parsed.data,
+        adminId
+      });
 
-    await logAuditSafe(pool, {
-      actorUserId: adminId,
-      actorRole: 'ADMIN',
-      action: 'job.enqueue',
-      entityType: 'job',
-      entityId: job.id,
-      meta: safeAuditMeta({ jobType: job.job_type }),
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] as string | undefined,
-      correlationId: req.id,
-    });
+      await logAuditSafe(pool, {
+        actorUserId: adminId,
+        actorRole: 'ADMIN',
+        action: 'job.enqueue',
+        entityType: 'job',
+        entityId: job.id,
+        meta: safeAuditMeta({ jobType: job.job_type }),
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id,
+      });
 
-    return reply.code(202).send({ jobId: job.id, status: job.status });
+      return reply.code(202).send({ jobId: job.id, status: job.status });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/admin/jobs/payroll-generate', async (req, reply) => {
@@ -985,24 +1108,30 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     const adminId = req.user!.userId;
-    const job = await enqueueJob(pool, 'payroll_generate', {
-      weekStart: parsed.data.weekStart,
-      adminId
-    });
+    try {
+      const job = await enqueueJob(pool, 'payroll_generate', {
+        weekStart: parsed.data.weekStart,
+        adminId
+      });
 
-    await logAuditSafe(pool, {
-      actorUserId: adminId,
-      actorRole: 'ADMIN',
-      action: 'job.enqueue',
-      entityType: 'job',
-      entityId: job.id,
-      meta: safeAuditMeta({ jobType: job.job_type, weekStart: parsed.data.weekStart }),
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] as string | undefined,
-      correlationId: req.id,
-    });
+      await logAuditSafe(pool, {
+        actorUserId: adminId,
+        actorRole: 'ADMIN',
+        action: 'job.enqueue',
+        entityType: 'job',
+        entityId: job.id,
+        meta: safeAuditMeta({ jobType: job.job_type, weekStart: parsed.data.weekStart }),
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id,
+      });
 
-    return reply.code(202).send({ jobId: job.id, status: job.status });
+      return reply.code(202).send({ jobId: job.id, status: job.status });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/admin/jobs/payroll-csv', async (req, reply) => {
@@ -1012,24 +1141,30 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     const adminId = req.user!.userId;
-    const job = await enqueueJob(pool, 'payroll_week_csv', {
-      weekStart: parsed.data.weekStart,
-      adminId
-    });
+    try {
+      const job = await enqueueJob(pool, 'payroll_week_csv', {
+        weekStart: parsed.data.weekStart,
+        adminId
+      });
 
-    await logAuditSafe(pool, {
-      actorUserId: adminId,
-      actorRole: 'ADMIN',
-      action: 'job.enqueue',
-      entityType: 'job',
-      entityId: job.id,
-      meta: safeAuditMeta({ jobType: job.job_type, weekStart: parsed.data.weekStart }),
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] as string | undefined,
-      correlationId: req.id,
-    });
+      await logAuditSafe(pool, {
+        actorUserId: adminId,
+        actorRole: 'ADMIN',
+        action: 'job.enqueue',
+        entityType: 'job',
+        entityId: job.id,
+        meta: safeAuditMeta({ jobType: job.job_type, weekStart: parsed.data.weekStart }),
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id,
+      });
 
-    return reply.code(202).send({ jobId: job.id, status: job.status });
+      return reply.code(202).send({ jobId: job.id, status: job.status });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/admin/jobs/:id', async (req, reply) => {
@@ -1038,24 +1173,30 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
     }
 
-    const job = await getJob(pool, params.data.id);
-    if (!job) return reply.code(404).send({ error: 'job_not_found' });
+    try {
+      const job = await getJob(pool, params.data.id);
+      if (!job) return reply.code(404).send({ error: 'job_not_found' });
 
-    return reply.send({
-      job: {
-        id: job.id,
-        status: job.status,
-        jobType: job.job_type,
-        createdAt: job.created_at,
-        startedAt: job.started_at,
-        finishedAt: job.finished_at,
-        attempts: job.attempts,
-        maxAttempts: job.max_attempts,
-        deadLetteredAt: job.dead_lettered_at,
-        result: job.result_json ?? null,
-        error: job.error_text ?? null
-      }
-    });
+      return reply.send({
+        job: {
+          id: job.id,
+          status: job.status,
+          jobType: job.job_type,
+          createdAt: job.created_at,
+          startedAt: job.started_at,
+          finishedAt: job.finished_at,
+          attempts: job.attempts,
+          maxAttempts: job.max_attempts,
+          deadLetteredAt: job.dead_lettered_at,
+          result: job.result_json ?? null,
+          error: job.error_text ?? null
+        }
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/admin/jobs/:id/download', async (req, reply) => {
@@ -1064,16 +1205,22 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
     }
 
-    const job = await getJob(pool, params.data.id);
-    if (!job) return reply.code(404).send({ error: 'job_not_found' });
-    if (job.status !== 'COMPLETED') return reply.code(409).send({ error: 'job_not_ready' });
+    try {
+      const job = await getJob(pool, params.data.id);
+      if (!job) return reply.code(404).send({ error: 'job_not_found' });
+      if (job.status !== 'COMPLETED') return reply.code(409).send({ error: 'job_not_ready' });
 
-    const result = job.result_json || {};
-    if (!result.csv) return reply.code(404).send({ error: 'job_result_missing' });
+      const result = job.result_json || {};
+      if (!result.csv) return reply.code(404).send({ error: 'job_result_missing' });
 
-    reply.header('Content-Type', result.contentType || 'text/csv');
-    reply.header('Content-Disposition', `attachment; filename="${result.filename || 'export.csv'}"`);
-    return reply.send(result.csv);
+      reply.header('Content-Type', result.contentType || 'text/csv');
+      reply.header('Content-Disposition', `attachment; filename="${result.filename || 'export.csv'}"`);
+      return reply.send(result.csv);
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/admin/sessions/bulk-approve', {
@@ -1107,6 +1254,7 @@ export async function adminRoutes(app: FastifyInstance) {
       });
       return reply.send(result);
     } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -1145,6 +1293,7 @@ export async function adminRoutes(app: FastifyInstance) {
       });
       return reply.send(result);
     } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -1166,23 +1315,29 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     const sessionId = params.data.id;
     const adminId = req.user!.userId;
-    const result = await approveSession(
-      pool,
-      sessionId,
-      adminId,
-      { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
-      logAuditSafe
-    );
-    if ('error' in result) {
-      if (result.error === 'session_not_found') return reply.code(404).send({ error: result.error });
-      return reply.code(409).send({ error: result.error });
+    try {
+      const result = await approveSession(
+        pool,
+        sessionId,
+        adminId,
+        { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        logAuditSafe
+      );
+      if ('error' in result) {
+        if (result.error === 'session_not_found') return reply.code(404).send({ error: result.error });
+        return reply.code(409).send({ error: result.error });
+      }
+      await checkApprovalAlerts(adminId, {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id
+      });
+      return reply.send(result);
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-    await checkApprovalAlerts(adminId, {
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] as string | undefined,
-      correlationId: req.id
-    });
-    return reply.send(result);
   });
 
   app.post('/admin/sessions/:id/reject', {
@@ -1203,24 +1358,30 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
     }
-    const result = await rejectSession(
-      pool,
-      sessionId,
-      parsed.data,
-      adminId,
-      { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
-      logAuditSafe
-    );
-    if ('error' in result) {
-      if (result.error === 'session_not_found') return reply.code(404).send({ error: result.error });
-      return reply.code(409).send({ error: result.error });
+    try {
+      const result = await rejectSession(
+        pool,
+        sessionId,
+        parsed.data,
+        adminId,
+        { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        logAuditSafe
+      );
+      if ('error' in result) {
+        if (result.error === 'session_not_found') return reply.code(404).send({ error: result.error });
+        return reply.code(409).send({ error: result.error });
+      }
+      await checkApprovalAlerts(adminId, {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id
+      });
+      return reply.send(result);
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-    await checkApprovalAlerts(adminId, {
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] as string | undefined,
-      correlationId: req.id
-    });
-    return reply.send(result);
   });
 
   app.post('/admin/payroll/generate-week', {
@@ -1250,6 +1411,7 @@ export async function adminRoutes(app: FastifyInstance) {
       }
       return reply.send(result);
     } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -1289,6 +1451,7 @@ export async function adminRoutes(app: FastifyInstance) {
       }
       return reply.send(result);
     } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -1337,6 +1500,7 @@ export async function adminRoutes(app: FastifyInstance) {
       });
       return reply.code(201).send(result);
     } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
       req.log?.error?.(err);
       return reply.code(500).send({ error: 'internal_error' });
     } finally {
@@ -1350,8 +1514,14 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_week_start' });
     }
     const weekStart = params.data.weekStart;
-    const result = await listAdjustments(pool, weekStart);
-    return reply.send(result);
+    try {
+      const result = await listAdjustments(pool, weekStart);
+      return reply.send(result);
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.delete('/admin/adjustments/:id', {
@@ -1372,24 +1542,30 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     const adjustmentId = params.data.id;
     const adminId = req.user!.userId;
-    const result = await deleteAdjustment(
-      pool,
-      adjustmentId,
-      parsed.data,
-      adminId,
-      { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
-      logAuditSafe
-    );
-    if ('error' in result) {
-      if (result.error === 'adjustment_not_found') return reply.code(404).send({ error: result.error });
-      return reply.code(409).send({ error: result.error });
+    try {
+      const result = await deleteAdjustment(
+        pool,
+        adjustmentId,
+        parsed.data,
+        adminId,
+        { adminId, ip: req.ip, userAgent: req.headers['user-agent'] as string | undefined, correlationId: req.id },
+        logAuditSafe
+      );
+      if ('error' in result) {
+        if (result.error === 'adjustment_not_found') return reply.code(404).send({ error: result.error });
+        return reply.code(409).send({ error: result.error });
+      }
+      await checkPayrollAdjustmentAlerts(adminId, {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] as string | undefined,
+        correlationId: req.id
+      });
+      return reply.send(result);
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
     }
-    await checkPayrollAdjustmentAlerts(adminId, {
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] as string | undefined,
-      correlationId: req.id
-    });
-    return reply.send(result);
   });
 
   app.get('/admin/payroll/week/:weekStart.csv', {
@@ -1406,41 +1582,47 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     const weekStart = params.data.weekStart;
 
-    const res = await pool.query(
-      `select i.invoice_number, i.period_start, i.period_end, i.total_amount,
-              t.full_name as tutor_name,
-              l.session_id, l.adjustment_id, l.line_type, l.description, l.minutes, l.rate, l.amount
-       from invoices i
-       join tutor_profiles t on t.id = i.tutor_id
-       join invoice_lines l on l.invoice_id = i.id
-       where i.period_start = $1::date
-       order by t.full_name asc, i.invoice_number asc`,
-      [weekStart]
-    );
+    try {
+      const res = await pool.query(
+        `select i.invoice_number, i.period_start, i.period_end, i.total_amount,
+                t.full_name as tutor_name,
+                l.session_id, l.adjustment_id, l.line_type, l.description, l.minutes, l.rate, l.amount
+         from invoices i
+         join tutor_profiles t on t.id = i.tutor_id
+         join invoice_lines l on l.invoice_id = i.id
+         where i.period_start = $1::date
+         order by t.full_name asc, i.invoice_number asc`,
+        [weekStart]
+      );
 
-    const header = 'invoice_number,period_start,period_end,tutor_name,session_id,adjustment_id,line_type,description,minutes,rate,amount,total_amount';
-    const lines = res.rows.map((row) => {
-      const safe = (value: any) => String(value ?? '').replaceAll('"', '""');
-      return [
-        row.invoice_number,
-        row.period_start.toISOString().slice(0, 10),
-        row.period_end.toISOString().slice(0, 10),
-        safe(row.tutor_name),
-        row.session_id ?? '',
-        row.adjustment_id ?? '',
-        row.line_type,
-        safe(row.description),
-        row.minutes,
-        row.rate,
-        row.amount,
-        row.total_amount
-      ].join(',');
-    });
+      const header = 'invoice_number,period_start,period_end,tutor_name,session_id,adjustment_id,line_type,description,minutes,rate,amount,total_amount';
+      const lines = res.rows.map((row) => {
+        const safe = (value: any) => String(value ?? '').replaceAll('"', '""');
+        return [
+          row.invoice_number,
+          row.period_start.toISOString().slice(0, 10),
+          row.period_end.toISOString().slice(0, 10),
+          safe(row.tutor_name),
+          row.session_id ?? '',
+          row.adjustment_id ?? '',
+          row.line_type,
+          safe(row.description),
+          row.minutes,
+          row.rate,
+          row.amount,
+          row.total_amount
+        ].join(',');
+      });
 
-    const csv = [header, ...lines].join('\n');
-    reply.header('Content-Type', 'text/csv');
-    reply.header('Content-Disposition', `attachment; filename="payroll-${weekStart}.csv"`);
-    return reply.send(csv);
+      const csv = [header, ...lines].join('\n');
+      reply.header('Content-Type', 'text/csv');
+      reply.header('Content-Disposition', `attachment; filename="payroll-${weekStart}.csv"`);
+      return reply.send(csv);
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.get('/admin/integrity/pay-period/:weekStart', {
@@ -1457,99 +1639,106 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     const weekStart = params.data.weekStart;
 
-    const range = getPayPeriodRange(weekStart);
+    try {
+      const range = getPayPeriodRange(weekStart);
 
-    const payPeriodRes = await pool.query(
-      `select id, status from pay_periods where period_start_date = $1::date`,
-      [weekStart]
-    );
+      const [
+        payPeriodRes,
+        overlappingRes,
+        assignmentRes,
+        missingInvoiceLinesRes,
+        invoiceMismatchRes,
+        pendingRes,
+        duplicateRes
+      ] = await Promise.all([
+        pool.query(`select id, status from pay_periods where period_start_date = $1::date`, [weekStart]),
+        pool.query(
+          `select s1.id as session_id, s1.tutor_id, s1.student_id, s1.date, s1.start_time, s1.end_time,
+                  s2.id as overlap_id
+           from sessions s1
+           join sessions s2
+             on s1.tutor_id = s2.tutor_id
+            and s1.id < s2.id
+            and s1.date = s2.date
+            and not (s1.end_time <= s2.start_time or s1.start_time >= s2.end_time)
+           where s1.date between $1::date and $2::date`,
+          [weekStart, range.end]
+        ),
+        pool.query(
+          `select s.id, s.tutor_id, s.student_id, s.date, s.start_time, s.end_time,
+                  a.start_date, a.end_date, a.allowed_days_json, a.allowed_time_ranges_json
+           from sessions s
+           join assignments a on a.id = s.assignment_id
+           where s.date between $1::date and $2::date`,
+          [weekStart, range.end]
+        ),
+        pool.query(
+          `select s.id, s.tutor_id, s.date
+           from sessions s
+           left join invoice_lines l
+             on l.session_id = s.id and l.line_type = 'SESSION'
+           where s.status = 'APPROVED'
+             and s.date between $1::date and $2::date
+             and l.id is null`,
+          [weekStart, range.end]
+        ),
+        pool.query(
+          `select i.id, i.invoice_number, i.total_amount,
+                  coalesce(sum(l.amount), 0) as line_total
+           from invoices i
+           left join invoice_lines l on l.invoice_id = i.id
+           where i.period_start = $1::date
+           group by i.id
+           having i.total_amount <> coalesce(sum(l.amount), 0)`,
+          [weekStart]
+        ),
+        pool.query(
+          `select s.tutor_id, t.full_name as tutor_name, count(*) as pending
+           from sessions s
+           join tutor_profiles t on t.id = s.tutor_id
+           where s.status = 'SUBMITTED'
+             and s.date between $1::date and $2::date
+           group by s.tutor_id, t.full_name
+           order by t.full_name asc`,
+          [weekStart, range.end]
+        ),
+        pool.query(
+          `select tutor_id, student_id, date, start_time, end_time, count(*) as count
+           from sessions
+           where date between $1::date and $2::date
+           group by tutor_id, student_id, date, start_time, end_time
+           having count(*) > 1
+           order by date asc`,
+          [weekStart, range.end]
+        )
+      ]);
 
-    const overlappingRes = await pool.query(
-      `select s1.id as session_id, s1.tutor_id, s1.student_id, s1.date, s1.start_time, s1.end_time,
-              s2.id as overlap_id
-       from sessions s1
-       join sessions s2
-         on s1.tutor_id = s2.tutor_id
-        and s1.id < s2.id
-        and s1.date = s2.date
-        and not (s1.end_time <= s2.start_time or s1.start_time >= s2.end_time)
-       where s1.date between $1::date and $2::date`,
-      [weekStart, range.end]
-    );
-
-    const assignmentRes = await pool.query(
-      `select s.id, s.tutor_id, s.student_id, s.date, s.start_time, s.end_time,
-              a.start_date, a.end_date, a.allowed_days_json, a.allowed_time_ranges_json
-       from sessions s
-       join assignments a on a.id = s.assignment_id
-       where s.date between $1::date and $2::date`,
-      [weekStart, range.end]
-    );
-
-    const outsideAssignment = assignmentRes.rows.filter((row) => {
-      const date = toDateString(row.date);
-      const allowedDays = normalizeJson(row.allowed_days_json) ?? [];
-      const allowedTimeRanges = normalizeJson(row.allowed_time_ranges_json) ?? [];
-      return !isWithinAssignmentWindow(date, row.start_time, row.end_time, {
-        startDate: toDateString(row.start_date),
-        endDate: row.end_date ? toDateString(row.end_date) : null,
-        allowedDays,
-        allowedTimeRanges
+      const outsideAssignment = assignmentRes.rows.filter((row) => {
+        const date = toDateString(row.date);
+        const allowedDays = normalizeJson(row.allowed_days_json) ?? [];
+        const allowedTimeRanges = normalizeJson(row.allowed_time_ranges_json) ?? [];
+        return !isWithinAssignmentWindow(date, row.start_time, row.end_time, {
+          startDate: toDateString(row.start_date),
+          endDate: row.end_date ? toDateString(row.end_date) : null,
+          allowedDays,
+          allowedTimeRanges
+        });
       });
-    });
 
-    const missingInvoiceLinesRes = await pool.query(
-      `select s.id, s.tutor_id, s.date
-       from sessions s
-       left join invoice_lines l
-         on l.session_id = s.id and l.line_type = 'SESSION'
-       where s.status = 'APPROVED'
-         and s.date between $1::date and $2::date
-         and l.id is null`,
-      [weekStart, range.end]
-    );
-
-    const invoiceMismatchRes = await pool.query(
-      `select i.id, i.invoice_number, i.total_amount,
-              coalesce(sum(l.amount), 0) as line_total
-       from invoices i
-       left join invoice_lines l on l.invoice_id = i.id
-       where i.period_start = $1::date
-       group by i.id
-       having i.total_amount <> coalesce(sum(l.amount), 0)`,
-      [weekStart]
-    );
-
-    const pendingRes = await pool.query(
-      `select s.tutor_id, t.full_name as tutor_name, count(*) as pending
-       from sessions s
-       join tutor_profiles t on t.id = s.tutor_id
-       where s.status = 'SUBMITTED'
-         and s.date between $1::date and $2::date
-       group by s.tutor_id, t.full_name
-       order by t.full_name asc`,
-      [weekStart, range.end]
-    );
-
-    const duplicateRes = await pool.query(
-      `select tutor_id, student_id, date, start_time, end_time, count(*) as count
-       from sessions
-       where date between $1::date and $2::date
-       group by tutor_id, student_id, date, start_time, end_time
-       having count(*) > 1
-       order by date asc`,
-      [weekStart, range.end]
-    );
-
-    return reply.send({
-      payPeriod: payPeriodRes.rows[0] ?? { status: 'OPEN' },
-      overlaps: overlappingRes.rows,
-      outsideAssignmentWindow: outsideAssignment,
-      missingInvoiceLines: missingInvoiceLinesRes.rows,
-      invoiceTotalMismatches: invoiceMismatchRes.rows,
-      pendingSubmissions: pendingRes.rows,
-      duplicateSessions: duplicateRes.rows
-    });
+      return reply.send({
+        payPeriod: payPeriodRes.rows[0] ?? { status: 'OPEN' },
+        overlaps: overlappingRes.rows,
+        outsideAssignmentWindow: outsideAssignment,
+        missingInvoiceLines: missingInvoiceLinesRes.rows,
+        invoiceTotalMismatches: invoiceMismatchRes.rows,
+        pendingSubmissions: pendingRes.rows,
+        duplicateSessions: duplicateRes.rows
+      });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 
   app.post('/admin/invoices/:id/mark-paid', async (req, reply) => {
@@ -1558,11 +1747,17 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'invalid_request', details: params.error.flatten() });
     }
     const invoiceId = params.data.id;
-    const res = await pool.query(
-      `update invoices set status = 'PAID' where id = $1 returning id, status`,
-      [invoiceId]
-    );
-    if (res.rowCount === 0) return reply.code(404).send({ error: 'invoice_not_found' });
-    return reply.send({ invoice: res.rows[0] });
+    try {
+      const res = await pool.query(
+        `update invoices set status = 'PAID' where id = $1 returning id, status`,
+        [invoiceId]
+      );
+      if (res.rowCount === 0) return reply.code(404).send({ error: 'invoice_not_found' });
+      return reply.send({ invoice: res.rows[0] });
+    } catch (err: any) {
+      getErrorMonitor().captureException(err, { correlationId: req.id, userId: req.user?.userId, role: req.user?.role });
+      req.log?.error?.(err);
+      return reply.code(500).send({ error: 'internal_error' });
+    }
   });
 }

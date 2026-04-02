@@ -26,6 +26,8 @@ Copied paths:
 
 `npm run inject:config` rewrites `dist/assets/portal-config.js` so the static site knows which API base URL to call.
 
+It reads local env files with `.env.local` precedence over `.env`.
+
 Supported env vars, in priority order:
 
 1. `PUBLIC_PO_API_BASE`

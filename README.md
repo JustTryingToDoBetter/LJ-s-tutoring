@@ -17,6 +17,8 @@ npm run build
 npm run start
 ```
 
+You can also use `.env.local` for machine-specific secrets; it is ignored by git.
+
 ## Docker Postgres
 
 If you do not have Postgres installed locally, use the bundled Docker setup.
@@ -62,10 +64,16 @@ PUBLIC_PO_API_BASE=http://localhost:3001
 
 ### API config
 
-The API bootstrap loads environment variables from the repository root `.env` and from `lms-api/.env`.
+The API bootstrap loads environment variables from repository and package files in this order:
+
+- `../.env.local`
+- `../.env`
+- `./.env.local`
+- `./.env`
+
 For local `npm start`, make sure `DATABASE_URL`, `COOKIE_SECRET`, `JWT_SECRET`, and `GROQ_API_KEY` are set before starting the API.
 
-See `.env.example` for the canonical local setup.
+See `.env.example` for the canonical variable list (placeholders only).
 
 ### Assistant API
 

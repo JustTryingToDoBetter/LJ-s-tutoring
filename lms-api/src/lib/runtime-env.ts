@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { loadAssistantConfig } from '../domains/assistant/config.js';
 
 function loadEnvFile(filePath: string) {
@@ -10,8 +11,14 @@ function loadEnvFile(filePath: string) {
 }
 
 export function loadRuntimeEnv() {
-  const packageRoot = process.cwd();
-  loadEnvFile(path.resolve(packageRoot, '..', '.env'));
+  // Resolve env files from this module's location so loading is stable even when cwd differs.
+  const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+  const packageRoot = path.resolve(moduleDir, '..', '..');
+  const repoRoot = path.resolve(packageRoot, '..');
+
+  loadEnvFile(path.resolve(repoRoot, '.env.local'));
+  loadEnvFile(path.resolve(repoRoot, '.env'));
+  loadEnvFile(path.resolve(packageRoot, '.env.local'));
   loadEnvFile(path.resolve(packageRoot, '.env'));
 }
 
@@ -28,6 +35,6 @@ export function assertRuntimeEnv() {
   }
 
   throw new Error(
-    `Missing required environment variables: ${missing.join(', ')}. Copy .env.example to .env and set the values before starting the API.`,
+    `Missing required environment variables: ${missing.join(', ')}. Copy .env.example to .env (or .env.local) and set the values before starting the API.`,
   );
 }

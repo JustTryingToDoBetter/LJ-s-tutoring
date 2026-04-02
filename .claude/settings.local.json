@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -E \"\\\\.\\(html|css|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(html|css|js\\)$\")",
+      "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); print\\(''''scripts:'''', list\\(p.get\\(''''scripts'''',{}\\).keys\\(\\)\\)[:10]\\)\")",
+      "Bash(wc -l /workspaces/LJ-s-tutoring/lms-api/src/routes/*.ts)",
+      "Read(//workspacesSS/LJ-s-tutoring/lms-api/src/routes/**)",
+      "Bash(grep -c \"error_monitor\\\\|captureException\" /workspaces/LJ-s-tutoring/lms-api/src/routes/*.ts)",
+      "Bash(grep -n \"CREATE TABLE\\\\|ALTER TABLE\" /workspaces/LJ-s-tutoring/lms-api/prisma/migrations/*/*.sql)"
     ]
   }
 }

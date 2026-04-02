@@ -881,10 +881,17 @@
       dots.forEach((d, idx) => d.setAttribute('aria-current', idx === i ? 'true' : 'false'));
     }
 
-    function scrollToIndex(i, behaviorOverride) {
+   function scrollToIndex(i, behaviorOverride) {
       i = clamp(i, 0, slides.length - 1);
       const behavior = behaviorOverride || (prefersReducedMotion ? 'auto' : 'smooth');
-      slides[i].scrollIntoView({ behavior: behavior, inline: 'start', block: 'nearest' });
+
+      // Horizontal-only scroll inside the carousel track.
+      // This prevents the browser from moving the full page vertically.
+      const trackRect = track.getBoundingClientRect();
+      const slideRect = slides[i].getBoundingClientRect();
+      const left = track.scrollLeft + (slideRect.left - trackRect.left);
+
+      track.scrollTo({ left: left, behavior: behavior });
       setActive(i);
     }
 
