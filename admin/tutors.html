@@ -440,6 +440,61 @@
     }
     .tag-grade   { background: #0d1b2a; color: #c9900c; }
     .tag-subject { background: #f3f4f6; color: #374151; }
+
+    @media (max-width: 640px) {
+      body {
+        padding-top: 4.8rem;
+      }
+
+      .nav-brand {
+        padding-right: 8px;
+      }
+
+      .page {
+        padding: 0 12px 44px;
+        gap: 16px;
+      }
+
+      .panel-header,
+      .panel-body {
+        padding: 14px;
+      }
+
+      .subject-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card-top {
+        flex-wrap: wrap;
+        row-gap: 8px;
+      }
+
+      .status-badge {
+        margin-left: 50px;
+      }
+
+      .card-name {
+        white-space: normal;
+        line-height: 1.35;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .nav-brand {
+        border-right: none;
+        margin-right: 0;
+        padding-right: 4px;
+        font-size: 0.78rem;
+      }
+
+      .page-title {
+        font-size: 1.42rem;
+      }
+
+      .status-badge {
+        margin-left: 0;
+      }
+    }
   </style>
 </head>
 <body data-page="tutors">

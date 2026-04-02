@@ -30,6 +30,10 @@ body {
     var(--bg);
   overflow-x: hidden;
 }
+img, svg, video, canvas, iframe {
+  max-width: 100%;
+  height: auto;
+}
 a { color: inherit; text-decoration: none; }
 p { line-height: 1.6; }
 .portal-shell, .marketing-shell, .legal-shell, .center-shell { width: min(1160px, calc(100% - 32px)); margin: 0 auto; }
@@ -97,10 +101,80 @@ textarea { resize: vertical; }
 .stack-form { margin-top: 1.5rem; }
 .guide-section { margin: 1rem 0; padding: 1rem; border-radius: 16px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); }
 .empty-state { color: var(--muted); border: 1px dashed var(--border); border-radius: 16px; padding: 1rem; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
 @media (max-width: 720px) {
   .portal-shell, .marketing-shell, .legal-shell, .center-shell { width: min(100% - 1rem, 1120px); }
-  .portal-nav-inner { align-items: flex-start; }
-  .nav-links { width: 100%; }
+  .portal-main, .marketing-shell, .legal-shell, .center-shell { padding: 1.1rem 0 2.2rem; }
+  .portal-nav { padding-top: 10px; }
+  .portal-nav-inner {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .brand {
+    justify-content: center;
+    text-align: center;
+  }
+  .nav-links {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-link { flex-shrink: 0; }
+  .hero-card, .panel { padding: 1rem; }
+  .page-title { font-size: clamp(1.55rem, 8vw, 2.1rem); }
+  .row-head { flex-wrap: wrap; align-items: flex-start; }
+  .marketing-grid.two,
+  .grid.two,
+  .feature-card-grid {
+    grid-template-columns: 1fr;
+  }
+  .subject-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .action-row .button,
+  .stack-form .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .panel,
+  .guide-section,
+  .list-item,
+  .odie-form-card {
+    overflow-wrap: anywhere;
+  }
+  .table-wrap,
+  .table-scroll,
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-wrap table,
+  .table-scroll table,
+  .table-container table,
+  .panel table,
+  .card table {
+    min-width: 620px;
+  }
+}
+
+@media (max-width: 460px) {
+  .portal-shell, .marketing-shell, .legal-shell, .center-shell {
+    width: min(100% - 0.75rem, 1120px);
+  }
+  .brand {
+    font-size: 0.88rem;
+    gap: 0.55rem;
+  }
+  .brand-badge, .badge {
+    min-width: 1.8rem;
+    min-height: 1.8rem;
+    padding: 0 0.55rem;
+  }
 }
 
 .eyebrow {
