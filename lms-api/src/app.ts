@@ -108,7 +108,8 @@ export async function buildApp() {
     },
     credentials: true,
     allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'X-Request-Id', 'X-Odie-Access-Key', 'Authorization', 'x-mfa-pending'],
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS']
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    optionsSuccessStatus: 204
   });
   await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
 
