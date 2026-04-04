@@ -1,9 +1,6 @@
 {
   "name": "lj-s-tutoring",
   "private": true,
-  "workspaces": [
-    "lms-api"
-  ],
   "type": "commonjs",
   "engines": {
     "node": "20.x",
