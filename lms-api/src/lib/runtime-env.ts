@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,7 +11,8 @@ function loadEnvFile(filePath: string) {
 }
 
 export function loadRuntimeEnv() {
-  // Resolve env files from this module's location so loading is stable even when cwd differs.
+  if (process.env.NODE_ENV === 'production') return;
+
   const moduleDir = path.dirname(fileURLToPath(import.meta.url));
   const packageRoot = path.resolve(moduleDir, '..', '..');
   const repoRoot = path.resolve(packageRoot, '..');

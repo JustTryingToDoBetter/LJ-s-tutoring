@@ -42,6 +42,10 @@
     "@fastify/oauth2": "^8.2.0",
     "@fastify/rate-limit": "^10.0.0",
     "@prisma/client": "^6.3.1",
+    "@types/node": "^22.10.2",
+    "@types/nodemailer": "^6.4.17",
+    "@types/pdfkit": "^0.17.5",
+    "@types/pg": "^8.16.0",
     "ajv": "^8.18.0",
     "argon2": "^0.40.3",
     "dotenv": "^16.4.5",
@@ -52,12 +56,8 @@
     "pg": "^8.12.0",
     "pino": "^9.6.0",
     "qs": "^6.15.0",
-    "zod": "^3.23.8",
-    "@types/node": "^22.10.2",
-    "@types/nodemailer": "^6.4.17",
-    "@types/pdfkit": "^0.17.5",
-    "@types/pg": "^8.16.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
