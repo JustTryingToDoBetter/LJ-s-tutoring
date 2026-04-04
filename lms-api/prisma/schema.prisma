@@ -75,7 +75,7 @@ model User {
   id             String        @id @default(uuid()) @db.Uuid
   email          String        @unique
   role           Role
-  tutorProfileId String?       @map("tutor_profile_id") @db.Uuid
+  tutorProfileId String?       @unique @map("tutor_profile_id") @db.Uuid
   studentId      String?       @unique @map("student_id") @db.Uuid
   passwordHash   String?       @map("password_hash")
   googleId       String?       @unique @map("google_id")
@@ -87,56 +87,56 @@ model User {
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @default(now()) @map("updated_at")
 
-  magicLinkTokens  MagicLinkToken[]
-  emailOtpTokens   EmailOtpToken[]
-  approvedSessions Session[]       @relation("approved_by")
-  sessionHistoryChanges SessionHistory[] @relation("changed_by")
-  invoices        Invoice[]
-  adjustmentsCreated  Adjustment[] @relation("adjustment_created_by")
-  adjustmentsApproved Adjustment[] @relation("adjustment_approved_by")
-  adjustmentsVoided   Adjustment[] @relation("adjustment_voided_by")
-  impersonationSessionsAsAdmin ImpersonationSession[] @relation("impersonation_admin")
-  impersonationSessionsAsTutor ImpersonationSession[] @relation("impersonation_tutor_user")
-  impersonationSessionsRevoked ImpersonationSession[] @relation("impersonation_revoked_by")
-  auditLogs           AuditLog[]
-  authEventLogs       AuthEventLog[]
-  studyActivityEvents StudyActivityEvent[]
-  studyStreak         StudyStreak?
-  weeklyReports       WeeklyReport[] @relation("weekly_report_owner")
-  generatedReports    WeeklyReport[] @relation("weekly_report_creator")
-  scoreSnapshots      StudentScoreSnapshot[]
-  communityProfile    CommunityProfile?
-  studyRoomMessages   StudyRoomMessage[]
-  studyRoomMemberships StudyRoomMember[]
-  challengesCreated   Challenge[] @relation("challenge_creator")
-  challengeSubmissions ChallengeSubmission[]
-  questions           Question[]
-  answers             Answer[] @relation("answer_author")
-  verifiedAnswers     Answer[] @relation("answer_verifier")
-  moderationReports   CommunityReport[] @relation("community_reporter")
-  blockedUsers        CommunityBlock[] @relation("community_blocker")
-  blockedByUsers      CommunityBlock[] @relation("community_blocked")
-  careerGoalSelections CareerGoalSelection[]
-  careerProgressSnapshots CareerProgressSnapshot[]
-  lockedPayPeriods    PayPeriod[]
+  magicLinkTokens              MagicLinkToken[]
+  emailOtpTokens               EmailOtpToken[]
+  approvedSessions             Session[]                @relation("approved_by")
+  sessionHistoryChanges        SessionHistory[]         @relation("changed_by")
+  invoices                     Invoice[]
+  adjustmentsCreated           Adjustment[]             @relation("adjustment_created_by")
+  adjustmentsApproved          Adjustment[]             @relation("adjustment_approved_by")
+  adjustmentsVoided            Adjustment[]             @relation("adjustment_voided_by")
+  impersonationSessionsAsAdmin ImpersonationSession[]   @relation("impersonation_admin")
+  impersonationSessionsAsTutor ImpersonationSession[]   @relation("impersonation_tutor_user")
+  impersonationSessionsRevoked ImpersonationSession[]   @relation("impersonation_revoked_by")
+  auditLogs                    AuditLog[]
+  authEventLogs                AuthEventLog[]
+  studyActivityEvents          StudyActivityEvent[]
+  studyStreak                  StudyStreak?
+  weeklyReports                WeeklyReport[]           @relation("weekly_report_owner")
+  generatedReports             WeeklyReport[]           @relation("weekly_report_creator")
+  scoreSnapshots               StudentScoreSnapshot[]
+  communityProfile             CommunityProfile?
+  studyRoomMessages            StudyRoomMessage[]
+  studyRoomMemberships         StudyRoomMember[]
+  challengesCreated            Challenge[]              @relation("challenge_creator")
+  challengeSubmissions         ChallengeSubmission[]
+  questions                    Question[]
+  answers                      Answer[]                 @relation("answer_author")
+  verifiedAnswers              Answer[]                 @relation("answer_verifier")
+  moderationReports            CommunityReport[]        @relation("community_reporter")
+  blockedUsers                 CommunityBlock[]         @relation("community_blocker")
+  blockedByUsers               CommunityBlock[]         @relation("community_blocked")
+  careerGoalSelections         CareerGoalSelection[]
+  careerProgressSnapshots      CareerProgressSnapshot[]
+  lockedPayPeriods             PayPeriod[]
 
   @@map("users")
 }
 
 model PayPeriod {
-  id             String          @id @default(uuid()) @db.Uuid
-  periodStartDate DateTime       @map("period_start_date") @db.Date
-  periodEndDate   DateTime       @map("period_end_date") @db.Date
-  status         PayPeriodStatus @default(OPEN)
-  lockedAt       DateTime?       @map("locked_at")
-  lockedByUserId String?         @map("locked_by_user_id") @db.Uuid
-  notes          String?
+  id              String          @id @default(uuid()) @db.Uuid
+  periodStartDate DateTime        @map("period_start_date") @db.Date
+  periodEndDate   DateTime        @map("period_end_date") @db.Date
+  status          PayPeriodStatus @default(OPEN)
+  lockedAt        DateTime?       @map("locked_at")
+  lockedByUserId  String?         @map("locked_by_user_id") @db.Uuid
+  notes           String?
 
-  lockedBy User? @relation(fields: [lockedByUserId], references: [id])
+  lockedBy    User?        @relation(fields: [lockedByUserId], references: [id])
   adjustments Adjustment[]
 
-  @@map("pay_periods")
   @@unique([periodStartDate])
+  @@map("pay_periods")
 }
 
 model Adjustment {
@@ -156,30 +156,30 @@ model Adjustment {
   voidReason       String?          @map("void_reason")
   relatedSessionId String?          @map("related_session_id") @db.Uuid
 
-  tutor TutorProfile @relation(fields: [tutorId], references: [id])
-  payPeriod PayPeriod @relation(fields: [payPeriodId], references: [id])
-  createdBy User @relation("adjustment_created_by", fields: [createdByUserId], references: [id])
-  approvedBy User? @relation("adjustment_approved_by", fields: [approvedByUserId], references: [id])
-  voidedBy User? @relation("adjustment_voided_by", fields: [voidedByUserId], references: [id])
-  relatedSession Session? @relation(fields: [relatedSessionId], references: [id])
-  invoiceLines InvoiceLine[]
+  tutor          TutorProfile  @relation(fields: [tutorId], references: [id])
+  payPeriod      PayPeriod     @relation(fields: [payPeriodId], references: [id])
+  createdBy      User          @relation("adjustment_created_by", fields: [createdByUserId], references: [id])
+  approvedBy     User?         @relation("adjustment_approved_by", fields: [approvedByUserId], references: [id])
+  voidedBy       User?         @relation("adjustment_voided_by", fields: [voidedByUserId], references: [id])
+  relatedSession Session?      @relation(fields: [relatedSessionId], references: [id])
+  invoiceLines   InvoiceLine[]
 
-  @@map("adjustments")
   @@index([tutorId, payPeriodId])
   @@index([payPeriodId])
+  @@map("adjustments")
 }
 
 model MagicLinkToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  tokenHash String   @unique @map("token_hash")
-  expiresAt DateTime @map("expires_at")
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
 
   user User @relation(fields: [userId], references: [id])
 
-  @@map("magic_link_tokens")
   @@index([tokenHash])
+  @@map("magic_link_tokens")
 }
 
 model EmailOtpToken {
@@ -192,8 +192,8 @@ model EmailOtpToken {
 
   user User @relation(fields: [userId], references: [id])
 
-  @@map("email_otp_tokens")
   @@index([tokenHash])
+  @@map("email_otp_tokens")
 }
 
 model AuditLog {
@@ -211,44 +211,44 @@ model AuditLog {
 
   actor User? @relation(fields: [actorUserId], references: [id])
 
-  @@map("audit_log")
   @@index([createdAt(sort: Desc)])
   @@index([actorUserId, createdAt(sort: Desc)])
   @@index([entityType, entityId])
+  @@map("audit_log")
 }
 
 model ImpersonationSession {
-  id              String   @id @db.Uuid
-  adminUserId     String   @map("admin_user_id") @db.Uuid
-  tutorId         String   @map("tutor_id") @db.Uuid
-  tutorUserId     String   @map("tutor_user_id") @db.Uuid
-  sessionHash     String   @map("session_hash")
+  id              String    @id @db.Uuid
+  adminUserId     String    @map("admin_user_id") @db.Uuid
+  tutorId         String    @map("tutor_id") @db.Uuid
+  tutorUserId     String    @map("tutor_user_id") @db.Uuid
+  sessionHash     String    @map("session_hash")
   mode            String
-  expiresAt       DateTime @map("expires_at") @db.Timestamptz
+  expiresAt       DateTime  @map("expires_at") @db.Timestamptz
   revokedAt       DateTime? @map("revoked_at") @db.Timestamptz
-  revokedByUserId String?  @map("revoked_by_user_id") @db.Uuid
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  revokedByUserId String?   @map("revoked_by_user_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
-  adminUser User  @relation("impersonation_admin",      fields: [adminUserId],     references: [id])
+  adminUser User         @relation("impersonation_admin", fields: [adminUserId], references: [id])
   tutor     TutorProfile @relation(fields: [tutorId], references: [id])
-  tutorUser User  @relation("impersonation_tutor_user", fields: [tutorUserId],     references: [id])
-  revokedBy User? @relation("impersonation_revoked_by", fields: [revokedByUserId], references: [id])
+  tutorUser User         @relation("impersonation_tutor_user", fields: [tutorUserId], references: [id])
+  revokedBy User?        @relation("impersonation_revoked_by", fields: [revokedByUserId], references: [id])
 
-  @@map("impersonation_sessions")
   @@index([adminUserId, createdAt(sort: Desc)])
   @@index([tutorId, createdAt(sort: Desc)])
   @@index([expiresAt])
+  @@map("impersonation_sessions")
 }
 
 model RetentionEvent {
-  id         String   @id @default(uuid()) @db.Uuid
-  ranAt      DateTime @default(now()) @map("ran_at") @db.Timestamptz
-  configJson Json     @map("config_json")
-  cutoffsJson Json    @map("cutoffs_json")
-  summaryJson Json    @map("summary_json")
+  id          String   @id @default(uuid()) @db.Uuid
+  ranAt       DateTime @default(now()) @map("ran_at") @db.Timestamptz
+  configJson  Json     @map("config_json")
+  cutoffsJson Json     @map("cutoffs_json")
+  summaryJson Json     @map("summary_json")
 
-  @@map("retention_events")
   @@index([ranAt(sort: Desc)])
+  @@map("retention_events")
 }
 
 model AuthEventLog {
@@ -265,28 +265,28 @@ model AuthEventLog {
 
   user User? @relation(fields: [userId], references: [id])
 
-  @@map("auth_event_log")
   @@index([userId, createdAt(sort: Desc)])
   @@index([ip, createdAt(sort: Desc)])
+  @@map("auth_event_log")
 }
 
 model JobQueue {
-  id         String   @id @default(uuid()) @db.Uuid
-  jobType    String   @map("job_type")
-  status     String   @default("PENDING")
-  payloadJson Json    @map("payload_json")
-  resultJson Json?    @map("result_json")
-  errorText  String?  @map("error_text")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
-  startedAt  DateTime? @map("started_at") @db.Timestamptz
-  finishedAt DateTime? @map("finished_at") @db.Timestamptz
-  attempts   Int      @default(0)
-  maxAttempts Int     @default(3) @map("max_attempts")
+  id             String    @id @default(uuid()) @db.Uuid
+  jobType        String    @map("job_type")
+  status         String    @default("PENDING")
+  payloadJson    Json      @map("payload_json")
+  resultJson     Json?     @map("result_json")
+  errorText      String?   @map("error_text")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  startedAt      DateTime? @map("started_at") @db.Timestamptz
+  finishedAt     DateTime? @map("finished_at") @db.Timestamptz
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(3) @map("max_attempts")
   deadLetteredAt DateTime? @map("dead_lettered_at") @db.Timestamptz
 
-  @@map("job_queue")
   @@index([status, createdAt(sort: Asc)])
   @@index([status, attempts, createdAt(sort: Asc)])
+  @@map("job_queue")
 }
 
 model TutorProfile {
@@ -299,25 +299,25 @@ model TutorProfile {
   qualificationBand String? @map("qualification_band")
   qualifiedSubjects Json?   @map("qualified_subjects_json")
 
-  user        User?
-  assignments Assignment[]
-  sessions    Session[]
-  invoices    Invoice[]
+  user                  User?
+  assignments           Assignment[]
+  sessions              Session[]
+  invoices              Invoice[]
   adjustments           Adjustment[]
   impersonationSessions ImpersonationSession[]
-  tutorMap    TutorStudentMap[]
+  tutorMap              TutorStudentMap[]
 
   @@map("tutor_profiles")
 }
 
 model Student {
-  id            String  @id @default(uuid()) @db.Uuid
-  fullName      String  @map("full_name")
+  id            String   @id @default(uuid()) @db.Uuid
+  fullName      String   @map("full_name")
   grade         String?
-  guardianName  String? @map("guardian_name")
-  guardianPhone String? @map("guardian_phone")
+  guardianName  String?  @map("guardian_name")
+  guardianPhone String?  @map("guardian_phone")
   notes         String?
-  active        Boolean @default(true) @map("is_active")
+  active        Boolean  @default(true) @map("is_active")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @default(now()) @map("updated_at")
 
@@ -340,19 +340,19 @@ model StudyActivityEvent {
 
   user User @relation(fields: [userId], references: [id])
 
-  @@map("study_activity_events")
-  @@index([userId, occurredAt(sort: Desc)])
   @@unique([userId, dedupeKey])
+  @@index([userId, occurredAt(sort: Desc)])
+  @@map("study_activity_events")
 }
 
 model StudyStreak {
-  userId           String   @id @map("user_id") @db.Uuid
-  current          Int      @default(0)
-  longest          Int      @default(0)
+  userId           String    @id @map("user_id") @db.Uuid
+  current          Int       @default(0)
+  longest          Int       @default(0)
   lastCreditedDate DateTime? @map("last_credited_date") @db.Date
-  xp               Int      @default(0)
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  xp               Int       @default(0)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id])
 
@@ -371,9 +371,9 @@ model WeeklyReport {
   user      User  @relation("weekly_report_owner", fields: [userId], references: [id])
   createdBy User? @relation("weekly_report_creator", fields: [createdByUserId], references: [id])
 
-  @@map("weekly_reports")
-  @@index([userId, createdAt(sort: Desc)])
   @@unique([userId, weekStart, weekEnd])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("weekly_reports")
 }
 
 model TutorStudentMap {
@@ -385,28 +385,28 @@ model TutorStudentMap {
   student Student      @relation(fields: [studentId], references: [id])
 
   @@id([tutorId, studentId])
-  @@map("tutor_student_map")
   @@index([studentId, tutorId])
+  @@map("tutor_student_map")
 }
 
 model Assignment {
-  id                   String   @id @default(uuid()) @db.Uuid
-  tutorId              String   @map("tutor_id") @db.Uuid
-  studentId            String   @map("student_id") @db.Uuid
-  subject              String
-  startDate            DateTime @map("start_date") @db.Date
-  endDate              DateTime? @map("end_date") @db.Date
-  rateOverride         Decimal? @map("rate_override") @db.Decimal(12, 2)
-  allowedDaysJson      Json     @map("allowed_days_json")
-  allowedTimeRangesJson Json    @map("allowed_time_ranges_json")
-  active               Boolean  @default(true)
+  id                    String    @id @default(uuid()) @db.Uuid
+  tutorId               String    @map("tutor_id") @db.Uuid
+  studentId             String    @map("student_id") @db.Uuid
+  subject               String
+  startDate             DateTime  @map("start_date") @db.Date
+  endDate               DateTime? @map("end_date") @db.Date
+  rateOverride          Decimal?  @map("rate_override") @db.Decimal(12, 2)
+  allowedDaysJson       Json      @map("allowed_days_json")
+  allowedTimeRangesJson Json      @map("allowed_time_ranges_json")
+  active                Boolean   @default(true)
 
-  tutor   TutorProfile @relation(fields: [tutorId], references: [id])
-  student Student      @relation(fields: [studentId], references: [id])
+  tutor    TutorProfile @relation(fields: [tutorId], references: [id])
+  student  Student      @relation(fields: [studentId], references: [id])
   sessions Session[]
 
-  @@map("assignments")
   @@index([tutorId, studentId])
+  @@map("assignments")
 }
 
 model Session {
@@ -428,89 +428,92 @@ model Session {
   approvedAt      DateTime?     @map("approved_at")
   approvedById    String?       @map("approved_by") @db.Uuid
 
-  tutor      TutorProfile @relation(fields: [tutorId], references: [id])
-  student    Student      @relation(fields: [studentId], references: [id])
-  assignment Assignment  @relation(fields: [assignmentId], references: [id])
-  approvedBy User?        @relation("approved_by", fields: [approvedById], references: [id])
-  history    SessionHistory[]
+  tutor        TutorProfile     @relation(fields: [tutorId], references: [id])
+  student      Student          @relation(fields: [studentId], references: [id])
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id])
+  approvedBy   User?            @relation("approved_by", fields: [approvedById], references: [id])
+  history      SessionHistory[]
   invoiceLines InvoiceLine[]
+  adjustments  Adjustment[]
 
-  @@map("sessions")
   @@index([tutorId, date])
+  @@map("sessions")
 }
 
 model SessionHistory {
-  id               String   @id @default(uuid()) @db.Uuid
-  sessionId        String   @map("session_id") @db.Uuid
-  changedByUserId  String?  @map("changed_by_user_id") @db.Uuid
-  changeType       String   @map("change_type")
-  beforeJson       Json?    @map("before_json")
-  afterJson        Json?    @map("after_json")
-  createdAt        DateTime @default(now()) @map("created_at")
+  id              String   @id @default(uuid()) @db.Uuid
+  sessionId       String   @map("session_id") @db.Uuid
+  changedByUserId String?  @map("changed_by_user_id") @db.Uuid
+  changeType      String   @map("change_type")
+  beforeJson      Json?    @map("before_json")
+  afterJson       Json?    @map("after_json")
+  createdAt       DateTime @default(now()) @map("created_at")
 
-  session Session @relation(fields: [sessionId], references: [id])
-  changedBy User? @relation("changed_by", fields: [changedByUserId], references: [id])
+  session   Session @relation(fields: [sessionId], references: [id])
+  changedBy User?   @relation("changed_by", fields: [changedByUserId], references: [id])
 
-  @@map("session_history")
   @@index([sessionId])
+  @@map("session_history")
 }
 
 model Invoice {
-  id           String        @id @default(uuid()) @db.Uuid
-  tutorId      String        @map("tutor_id") @db.Uuid
-  periodStart  DateTime      @map("period_start") @db.Date
-  periodEnd    DateTime      @map("period_end") @db.Date
-  invoiceNumber String       @map("invoice_number")
-  totalAmount  Decimal       @map("total_amount") @db.Decimal(12, 2)
-  status       InvoiceStatus @default(DRAFT)
-  createdAt    DateTime      @default(now()) @map("created_at")
+  id            String        @id @default(uuid()) @db.Uuid
+  tutorId       String        @map("tutor_id") @db.Uuid
+  periodStart   DateTime      @map("period_start") @db.Date
+  periodEnd     DateTime      @map("period_end") @db.Date
+  invoiceNumber String        @map("invoice_number")
+  totalAmount   Decimal       @map("total_amount") @db.Decimal(12, 2)
+  status        InvoiceStatus @default(DRAFT)
+  createdAt     DateTime      @default(now()) @map("created_at")
 
-  tutor TutorProfile @relation(fields: [tutorId], references: [id])
-  lines InvoiceLine[]
+  tutor  TutorProfile  @relation(fields: [tutorId], references: [id])
+  lines  InvoiceLine[]
+  user   User?         @relation(fields: [userId], references: [id])
+  userId String?       @db.Uuid
 
-  @@map("invoices")
   @@unique([invoiceNumber])
   @@index([tutorId, periodStart])
+  @@map("invoices")
 }
 
 model InvoiceLine {
-  id          String   @id @default(uuid()) @db.Uuid
-  invoiceId   String   @map("invoice_id") @db.Uuid
-  sessionId   String?  @map("session_id") @db.Uuid
-  adjustmentId String? @map("adjustment_id") @db.Uuid
-  lineType    InvoiceLineType @default(SESSION) @map("line_type")
-  description String
-  minutes     Int
-  rate        Decimal  @db.Decimal(12, 2)
-  amount      Decimal  @db.Decimal(12, 2)
+  id           String          @id @default(uuid()) @db.Uuid
+  invoiceId    String          @map("invoice_id") @db.Uuid
+  sessionId    String?         @map("session_id") @db.Uuid
+  adjustmentId String?         @map("adjustment_id") @db.Uuid
+  lineType     InvoiceLineType @default(SESSION) @map("line_type")
+  description  String
+  minutes      Int
+  rate         Decimal         @db.Decimal(12, 2)
+  amount       Decimal         @db.Decimal(12, 2)
 
-  invoice Invoice @relation(fields: [invoiceId], references: [id])
-  session Session? @relation(fields: [sessionId], references: [id])
+  invoice    Invoice     @relation(fields: [invoiceId], references: [id])
+  session    Session?    @relation(fields: [sessionId], references: [id])
   adjustment Adjustment? @relation(fields: [adjustmentId], references: [id])
 
-  @@map("invoice_lines")
   @@index([invoiceId])
   @@index([sessionId])
   @@index([adjustmentId])
+  @@map("invoice_lines")
 }
 
 model PrivacyRequest {
-  id            String                 @id @default(uuid()) @db.Uuid
-  requestType   PrivacyRequestType     @map("request_type")
-  subjectType   PrivacySubjectType     @map("subject_type")
-  subjectId     String                 @map("subject_id") @db.Uuid
-  reason        String?
-  status        PrivacyRequestStatus   @default(OPEN)
-  outcome       PrivacyRequestOutcome?
-  createdByUserId String?              @map("created_by_user_id") @db.Uuid
-  createdAt     DateTime               @default(now()) @map("created_at")
-  closedAt      DateTime?              @map("closed_at")
-  closedByUserId String?               @map("closed_by_user_id") @db.Uuid
-  closeNote     String?                @map("close_note")
+  id              String                 @id @default(uuid()) @db.Uuid
+  requestType     PrivacyRequestType     @map("request_type")
+  subjectType     PrivacySubjectType     @map("subject_type")
+  subjectId       String                 @map("subject_id") @db.Uuid
+  reason          String?
+  status          PrivacyRequestStatus   @default(OPEN)
+  outcome         PrivacyRequestOutcome?
+  createdByUserId String?                @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime               @default(now()) @map("created_at")
+  closedAt        DateTime?              @map("closed_at")
+  closedByUserId  String?                @map("closed_by_user_id") @db.Uuid
+  closeNote       String?                @map("close_note")
 
-  @@map("privacy_requests")
   @@index([status, createdAt(sort: Desc)])
   @@index([subjectType, subjectId])
+  @@map("privacy_requests")
 }
 
 model ArcadePlayer {
@@ -518,9 +521,13 @@ model ArcadePlayer {
   nickname  String?
   createdAt DateTime @default(now()) @map("created_at")
 
-  sessions       ArcadeSession[]
-  scores         ArcadeScore[]
-  adImpressions  ArcadeAdImpression[]
+  sessions               ArcadeSession[]
+  scores                 ArcadeScore[]
+  adImpressions          ArcadeAdImpression[]
+  arcadeScoreValidations ArcadeScoreValidation[]
+  arcadeScoreQuarantines ArcadeScoreQuarantine[]
+  arcadeGameplayEvents   ArcadeGameplayEvent[]
+  arcadeAdEvents         ArcadeAdEvent[]
 
   @@map("arcade_players")
 }
@@ -536,148 +543,155 @@ model ArcadeGame {
 }
 
 model ArcadeSession {
-  id        String   @id @default(uuid()) @db.Uuid
-  playerId  String   @map("player_id") @db.Uuid
-  gameId    String   @map("game_id")
-  startedAt DateTime @default(now()) @map("started_at")
-  endedAt   DateTime? @map("ended_at")
-  clientFingerprintHash String? @map("client_fingerprint_hash")
+  id                    String    @id @default(uuid()) @db.Uuid
+  playerId              String    @map("player_id") @db.Uuid
+  gameId                String    @map("game_id")
+  startedAt             DateTime  @default(now()) @map("started_at")
+  endedAt               DateTime? @map("ended_at")
+  clientFingerprintHash String?   @map("client_fingerprint_hash")
 
-  player ArcadePlayer @relation(fields: [playerId], references: [id])
-  game   ArcadeGame   @relation(fields: [gameId], references: [id])
+  player                 ArcadePlayer            @relation(fields: [playerId], references: [id])
+  game                   ArcadeGame              @relation(fields: [gameId], references: [id])
+  arcadeScores           ArcadeScore[]
+  arcadeSessionTokens    ArcadeSessionToken[]
+  arcadeScoreValidations ArcadeScoreValidation[]
+  arcadeScoreQuarantines ArcadeScoreQuarantine[]
+  arcadeGameplayEvents   ArcadeGameplayEvent[]
+  arcadeAdEvents         ArcadeAdEvent[]
 
-  @@map("arcade_sessions")
   @@index([playerId, startedAt(sort: Desc)])
   @@index([gameId, startedAt(sort: Desc)])
+  @@map("arcade_sessions")
 }
 
 model ArcadeScore {
-  id        String   @id @default(uuid()) @db.Uuid
-  playerId  String   @map("player_id") @db.Uuid
-  gameId    String   @map("game_id")
-  sessionId String?  @map("session_id") @db.Uuid
-  score     Int
-  createdAt DateTime @default(now()) @map("created_at")
-  isValidated Boolean @default(false) @map("is_validated")
+  id          String   @id @default(uuid()) @db.Uuid
+  playerId    String   @map("player_id") @db.Uuid
+  gameId      String   @map("game_id")
+  sessionId   String?  @map("session_id") @db.Uuid
+  score       Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  isValidated Boolean  @default(false) @map("is_validated")
 
-  player ArcadePlayer @relation(fields: [playerId], references: [id])
-  game   ArcadeGame   @relation(fields: [gameId], references: [id])
-  session ArcadeSession? @relation(fields: [sessionId], references: [id])
+  player                 ArcadePlayer            @relation(fields: [playerId], references: [id])
+  game                   ArcadeGame              @relation(fields: [gameId], references: [id])
+  session                ArcadeSession?          @relation(fields: [sessionId], references: [id])
+  arcadeScoreValidations ArcadeScoreValidation[]
 
-  @@map("arcade_scores")
   @@index([gameId, score(sort: Desc), createdAt(sort: Asc)])
   @@index([playerId, createdAt(sort: Desc)])
   @@index([sessionId, createdAt(sort: Desc)])
   @@index([isValidated, gameId, createdAt(sort: Desc)])
+  @@map("arcade_scores")
 }
 
 model ArcadeSessionToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  sessionId String   @map("session_id") @db.Uuid
-  nonce     String
-  issuedAt  DateTime @default(now()) @map("issued_at") @db.Timestamptz
-  expiresAt DateTime @map("expires_at") @db.Timestamptz
-  clientFingerprintHash String? @map("client_fingerprint_hash")
-  revokedAt DateTime? @map("revoked_at") @db.Timestamptz
-  tokenVersion Int @default(1) @map("token_version")
+  id                    String    @id @default(uuid()) @db.Uuid
+  sessionId             String    @map("session_id") @db.Uuid
+  nonce                 String
+  issuedAt              DateTime  @default(now()) @map("issued_at") @db.Timestamptz
+  expiresAt             DateTime  @map("expires_at") @db.Timestamptz
+  clientFingerprintHash String?   @map("client_fingerprint_hash")
+  revokedAt             DateTime? @map("revoked_at") @db.Timestamptz
+  tokenVersion          Int       @default(1) @map("token_version")
 
   session ArcadeSession @relation(fields: [sessionId], references: [id])
 
-  @@map("arcade_session_tokens")
   @@unique([sessionId, nonce])
   @@index([expiresAt])
+  @@map("arcade_session_tokens")
 }
 
 model ArcadeScoreValidation {
-  id         String   @id @default(uuid()) @db.Uuid
-  scoreId    String?  @map("score_id") @db.Uuid
-  sessionId  String?  @map("session_id") @db.Uuid
-  playerId   String?  @map("player_id") @db.Uuid
-  gameId     String   @map("game_id")
-  riskScore  Int      @default(0) @map("risk_score")
-  reasonCode String?  @map("reason_code")
-  validator  String?
-  telemetryJson Json? @map("telemetry_json")
-  validatedAt DateTime @default(now()) @map("validated_at") @db.Timestamptz
+  id            String   @id @default(uuid()) @db.Uuid
+  scoreId       String?  @map("score_id") @db.Uuid
+  sessionId     String?  @map("session_id") @db.Uuid
+  playerId      String?  @map("player_id") @db.Uuid
+  gameId        String   @map("game_id")
+  riskScore     Int      @default(0) @map("risk_score")
+  reasonCode    String?  @map("reason_code")
+  validator     String?
+  telemetryJson Json?    @map("telemetry_json")
+  validatedAt   DateTime @default(now()) @map("validated_at") @db.Timestamptz
 
-  score   ArcadeScore? @relation(fields: [scoreId], references: [id])
+  score   ArcadeScore?   @relation(fields: [scoreId], references: [id])
   session ArcadeSession? @relation(fields: [sessionId], references: [id])
-  player  ArcadePlayer? @relation(fields: [playerId], references: [id])
+  player  ArcadePlayer?  @relation(fields: [playerId], references: [id])
 
-  @@map("arcade_score_validations")
   @@index([sessionId, validatedAt(sort: Desc)])
   @@index([gameId, validatedAt(sort: Desc)])
+  @@map("arcade_score_validations")
 }
 
 model ArcadeScoreQuarantine {
-  id         String   @id @default(uuid()) @db.Uuid
-  sessionId  String?  @map("session_id") @db.Uuid
-  playerId   String?  @map("player_id") @db.Uuid
-  gameId     String   @map("game_id")
-  score      Int
-  payloadJson Json    @map("payload_json")
-  telemetryJson Json? @map("telemetry_json")
-  riskScore  Int      @default(0) @map("risk_score")
-  reasonCode String?  @map("reason_code")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id            String   @id @default(uuid()) @db.Uuid
+  sessionId     String?  @map("session_id") @db.Uuid
+  playerId      String?  @map("player_id") @db.Uuid
+  gameId        String   @map("game_id")
+  score         Int
+  payloadJson   Json     @map("payload_json")
+  telemetryJson Json?    @map("telemetry_json")
+  riskScore     Int      @default(0) @map("risk_score")
+  reasonCode    String?  @map("reason_code")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   session ArcadeSession? @relation(fields: [sessionId], references: [id])
-  player  ArcadePlayer? @relation(fields: [playerId], references: [id])
+  player  ArcadePlayer?  @relation(fields: [playerId], references: [id])
 
-  @@map("arcade_score_quarantine")
   @@index([sessionId, createdAt(sort: Desc)])
+  @@map("arcade_score_quarantine")
 }
 
 model ArcadeGameplayEvent {
-  eventId   String   @id @map("event_id") @db.Uuid
-  eventType String   @map("event_type")
-  occurredAt DateTime @map("occurred_at") @db.Timestamptz
-  sessionId String?  @map("session_id") @db.Uuid
-  userId    String?  @map("user_id") @db.Uuid
-  anonId    String?  @map("anon_id")
-  source    String?
-  dedupeKey String   @unique @map("dedupe_key")
-  payloadJson Json?  @map("payload_json")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  eventId     String   @id @map("event_id") @db.Uuid
+  eventType   String   @map("event_type")
+  occurredAt  DateTime @map("occurred_at") @db.Timestamptz
+  sessionId   String?  @map("session_id") @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  anonId      String?  @map("anon_id")
+  source      String?
+  dedupeKey   String   @unique @map("dedupe_key")
+  payloadJson Json?    @map("payload_json")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   session ArcadeSession? @relation(fields: [sessionId], references: [id])
-  user ArcadePlayer? @relation(fields: [userId], references: [id])
+  user    ArcadePlayer?  @relation(fields: [userId], references: [id])
 
-  @@map("arcade_gameplay_events")
   @@index([sessionId, occurredAt(sort: Desc)])
   @@index([eventType, occurredAt(sort: Desc)])
+  @@map("arcade_gameplay_events")
 }
 
 model ArcadeAdEvent {
-  eventId   String   @id @map("event_id") @db.Uuid
-  eventType String   @map("event_type")
-  occurredAt DateTime @map("occurred_at") @db.Timestamptz
-  sessionId String?  @map("session_id") @db.Uuid
-  userId    String?  @map("user_id") @db.Uuid
-  anonId    String?  @map("anon_id")
-  source    String?
-  dedupeKey String   @unique @map("dedupe_key")
-  placement String?
-  provider  String?
-  creativeId String? @map("creative_id")
-  variantId String? @map("variant_id")
-  payloadJson Json?  @map("payload_json")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  eventId     String   @id @map("event_id") @db.Uuid
+  eventType   String   @map("event_type")
+  occurredAt  DateTime @map("occurred_at") @db.Timestamptz
+  sessionId   String?  @map("session_id") @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  anonId      String?  @map("anon_id")
+  source      String?
+  dedupeKey   String   @unique @map("dedupe_key")
+  placement   String?
+  provider    String?
+  creativeId  String?  @map("creative_id")
+  variantId   String?  @map("variant_id")
+  payloadJson Json?    @map("payload_json")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   session ArcadeSession? @relation(fields: [sessionId], references: [id])
-  user ArcadePlayer? @relation(fields: [userId], references: [id])
+  user    ArcadePlayer?  @relation(fields: [userId], references: [id])
 
-  @@map("arcade_ad_events")
   @@index([sessionId, occurredAt(sort: Desc)])
   @@index([eventType, occurredAt(sort: Desc)])
   @@index([placement, occurredAt(sort: Desc)])
+  @@map("arcade_ad_events")
 }
 
 model ArcadeAdProvider {
-  provider String @id
-  allowedOrigins Json @default("[]") @map("allowed_origins")
-  isActive Boolean @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  provider       String   @id
+  allowedOrigins Json     @default("[]") @map("allowed_origins")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   @@map("arcade_ad_providers")
 }
@@ -691,8 +705,8 @@ model ArcadeAdBlocklist {
   lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz
   seenCount  Int      @default(1) @map("seen_count")
 
-  @@map("arcade_ad_blocklist")
   @@unique([provider, creativeId])
+  @@map("arcade_ad_blocklist")
 }
 
 model ArcadeReconciliationReport {
@@ -711,8 +725,8 @@ model ArcadeAdImpression {
 
   player ArcadePlayer @relation(fields: [playerId], references: [id])
 
-  @@map("arcade_ad_impressions")
   @@index([playerId, placement, createdAt(sort: Desc)])
+  @@map("arcade_ad_impressions")
 }
 
 model ArcadeAdRule {
@@ -724,29 +738,29 @@ model ArcadeAdRule {
 }
 
 model StudentScoreSnapshot {
-  id                String   @id @default(uuid()) @db.Uuid
-  userId            String   @map("user_id") @db.Uuid
-  scoreDate         DateTime @map("score_date") @db.Date
-  riskScore         Int      @map("risk_score")
-  momentumScore     Int      @map("momentum_score")
-  reasonsJson       Json     @map("reasons_json")
-  metricsJson       Json     @map("metrics_json")
-  recommendedActionsJson Json @map("recommended_actions_json")
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id                     String   @id @default(uuid()) @db.Uuid
+  userId                 String   @map("user_id") @db.Uuid
+  scoreDate              DateTime @map("score_date") @db.Date
+  riskScore              Int      @map("risk_score")
+  momentumScore          Int      @map("momentum_score")
+  reasonsJson            Json     @map("reasons_json")
+  metricsJson            Json     @map("metrics_json")
+  recommendedActionsJson Json     @map("recommended_actions_json")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id])
 
-  @@map("student_score_snapshots")
-  @@index([userId, scoreDate(sort: Desc)])
   @@unique([userId, scoreDate])
+  @@index([userId, scoreDate(sort: Desc)])
+  @@map("student_score_snapshots")
 }
 
 model CommunityProfile {
-  userId         String   @id @map("user_id") @db.Uuid
-  nickname       String
-  privacySettingsJson Json @map("privacy_settings_json")
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  userId              String   @id @map("user_id") @db.Uuid
+  nickname            String
+  privacySettingsJson Json     @map("privacy_settings_json")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime @default(now()) @map("updated_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id])
 
@@ -754,31 +768,31 @@ model CommunityProfile {
 }
 
 model StudyRoom {
-  id         String   @id @default(uuid()) @db.Uuid
-  subject    String
-  grade      String?
-  createdBy  String   @map("created_by") @db.Uuid
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id        String   @id @default(uuid()) @db.Uuid
+  subject   String
+  grade     String?
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   memberships StudyRoomMember[]
   messages    StudyRoomMessage[]
   resources   StudyRoomPinnedResource[]
 
-  @@map("study_rooms")
   @@index([subject, grade, createdAt(sort: Desc)])
+  @@map("study_rooms")
 }
 
 model StudyRoomMember {
-  roomId     String   @map("room_id") @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  joinedAt   DateTime @default(now()) @map("joined_at") @db.Timestamptz
+  roomId   String   @map("room_id") @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz
 
   room StudyRoom @relation(fields: [roomId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  user User      @relation(fields: [userId], references: [id])
 
   @@id([roomId, userId])
-  @@map("study_room_members")
   @@index([userId, joinedAt(sort: Desc)])
+  @@map("study_room_members")
 }
 
 model StudyRoomMessage {
@@ -790,11 +804,11 @@ model StudyRoomMessage {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   room StudyRoom @relation(fields: [roomId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  user User      @relation(fields: [userId], references: [id])
 
-  @@map("study_room_messages")
   @@index([roomId, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
+  @@map("study_room_messages")
 }
 
 model StudyRoomPinnedResource {
@@ -807,8 +821,8 @@ model StudyRoomPinnedResource {
 
   room StudyRoom @relation(fields: [roomId], references: [id])
 
-  @@map("study_room_pinned_resources")
   @@index([roomId, createdAt(sort: Desc)])
+  @@map("study_room_pinned_resources")
 }
 
 model Challenge {
@@ -822,12 +836,12 @@ model Challenge {
   createdBy String   @map("created_by") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  creator     User @relation("challenge_creator", fields: [createdBy], references: [id])
+  creator     User                  @relation("challenge_creator", fields: [createdBy], references: [id])
   submissions ChallengeSubmission[]
 
-  @@map("challenges")
   @@index([weekStart, weekEnd])
   @@index([subject, grade, createdAt(sort: Desc)])
+  @@map("challenges")
 }
 
 model ChallengeSubmission {
@@ -842,10 +856,10 @@ model ChallengeSubmission {
   challenge Challenge @relation(fields: [challengeId], references: [id])
   user      User      @relation(fields: [userId], references: [id])
 
-  @@map("challenge_submissions")
   @@unique([challengeId, userId])
   @@index([challengeId, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
+  @@map("challenge_submissions")
 }
 
 model Question {
@@ -859,12 +873,12 @@ model Question {
   moderationState String   @default("VISIBLE") @map("moderation_state")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user    User @relation(fields: [userId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
   answers Answer[]
 
-  @@map("questions")
   @@index([subject, topic, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
+  @@map("questions")
 }
 
 model Answer {
@@ -881,9 +895,9 @@ model Answer {
   author   User     @relation("answer_author", fields: [userId], references: [id])
   verifier User?    @relation("answer_verifier", fields: [verifiedBy], references: [id])
 
-  @@map("answers")
   @@index([questionId, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
+  @@map("answers")
 }
 
 model CommunityReport {
@@ -896,9 +910,9 @@ model CommunityReport {
 
   reporter User @relation("community_reporter", fields: [reporterId], references: [id])
 
-  @@map("community_reports")
   @@index([targetType, targetId, createdAt(sort: Desc)])
   @@index([reporterId, createdAt(sort: Desc)])
+  @@map("community_reports")
 }
 
 model CommunityBlock {
@@ -910,8 +924,8 @@ model CommunityBlock {
   blocked User @relation("community_blocked", fields: [blockedUserId], references: [id])
 
   @@id([blockerUserId, blockedUserId])
-  @@map("community_blocks")
   @@index([blockedUserId, blockerUserId])
+  @@map("community_blocks")
 }
 
 model CareerGoalSelection {
@@ -922,9 +936,9 @@ model CareerGoalSelection {
 
   user User @relation(fields: [userId], references: [id])
 
-  @@map("career_goal_selections")
   @@unique([userId, goalId])
   @@index([goalId, createdAt(sort: Desc)])
+  @@map("career_goal_selections")
 }
 
 model CareerProgressSnapshot {
@@ -938,6 +952,6 @@ model CareerProgressSnapshot {
 
   user User @relation(fields: [userId], references: [id])
 
-  @@map("career_progress_snapshots")
   @@index([userId, goalId, createdAt(sort: Desc)])
+  @@map("career_progress_snapshots")
 }

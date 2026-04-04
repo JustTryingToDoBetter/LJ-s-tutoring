@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,6 +6,24 @@ import {Pool } from 'pg';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function loadEnvFile(filePath: string) {
+  if (fs.existsSync(filePath)) {
+    dotenv.config({ path: filePath, override: false });
+  }
+}
+
+function loadRuntimeEnv() {
+  const packageRoot = path.resolve(__dirname, '..', '..');
+  const repoRoot = path.resolve(packageRoot, '..');
+
+  loadEnvFile(path.resolve(repoRoot, '.env.local'));
+  loadEnvFile(path.resolve(repoRoot, '.env'));
+  loadEnvFile(path.resolve(packageRoot, '.env.local'));
+  loadEnvFile(path.resolve(packageRoot, '.env'));
+}
+
+loadRuntimeEnv();
 
 const DATABASE_URL = [process.env.DATABASE_URL_TEST, process.env.DATABASE_URL]
   .map((value) => (value ?? '').trim())
