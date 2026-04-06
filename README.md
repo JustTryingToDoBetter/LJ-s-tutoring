@@ -12,8 +12,10 @@ Static site + LMS API monorepo.
 
 ```bash
 npm install
+npm install --prefix lms-api
 cp .env.example .env
 npm run build
+npm run build:api
 npm run start
 ```
 
@@ -87,12 +89,13 @@ Both endpoints expect an authenticated session and a CSRF token when called from
 ## Scripts
 
 ```bash
-npm run build        # Build static site + API
+npm run build        # Build static site only
+npm run build:api    # Install + build lms-api from repo root
 npm run build:static # Copy static source files to dist/
 npm run inject:config
 npm run serve        # Serve dist/ on port 8080
 npm run dev          # Serve static site + run API dev server
-npm run start        # Serve static site + run API prod server
+npm run start        # Serve static site + run API prod server (after build:api)
 npm run lint         # Lint JS and validate HTML
 npm run test:unit    # Run frontend helper unit tests
 npm run test:api     # Run LMS API integration tests

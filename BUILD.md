@@ -22,6 +22,30 @@ Copied paths:
 - `robots.txt`
 - `sitemap.xml`
 
+## API build
+
+`npm run build:api` installs API dependencies inside `lms-api/` and compiles TypeScript.
+
+This script is safe to run from the repository root in CI/deploy contexts where only root dependencies were installed.
+
+## DigitalOcean App Platform
+
+Recommended component settings:
+
+Static site component:
+
+- source_dir: repository root
+- build_command: `npm ci && npm run build`
+- output_dir: `dist`
+
+API service component:
+
+- source_dir: `lms-api`
+- build_command: `npm ci && npm run build`
+- run_command: `npm run start`
+
+If your API component must build from repository root, use `npm run build:api` as the build command instead of `npm run build`.
+
 ## Public config injection
 
 `npm run inject:config` rewrites `dist/assets/portal-config.js` so the static site knows which API base URL to call.

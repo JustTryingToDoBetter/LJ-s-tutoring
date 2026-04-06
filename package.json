@@ -26,7 +26,7 @@
     "build:static": "node scripts/build-static.js",
     "build:css": "tailwindcss -c tailwind.config.js -i ./assets/tailwind-input.css -o ./dist/assets/tailwind-input.css --minify",
     "inject:config": "node scripts/inject-config.js",
-    "build:api": "npm run build --prefix lms-api",
+    "build:api": "npm ci --prefix lms-api && npm run build --prefix lms-api",
     "build": "npm run build:static && npm run build:css && npm run inject:config",
     "serve": "http-server dist -p 8081 -c-1",
     "start:static": "npm run serve",
