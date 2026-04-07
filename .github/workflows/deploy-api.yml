@@ -46,6 +46,7 @@ jobs:
           DEPLOY_COMMAND: ${{ secrets.API_DEPLOY_COMMAND }}
           ROLLBACK_COMMAND: ${{ secrets.API_ROLLBACK_COMMAND }}
           DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
+          API_DEPLOY_COMMAND: ${{ secrets.API_DEPLOY_COMMAND }}
         run: |
           if [ "${{ github.event.inputs.rollback }}" = "true" ]; then
             if [ -z "$ROLLBACK_COMMAND" ]; then
