@@ -30,7 +30,7 @@ jobs:
       - name: Release gates
         run: |
           npm run lint
-          npm run build --prefix lms-api
+          cd lms-api && npm run build
 
   deploy:
     needs: preflight
