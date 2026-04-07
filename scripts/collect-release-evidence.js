@@ -10,7 +10,7 @@ function ensureDir(dirPath) {
 
 function readEnv(name, fallback = '') {
   const value = process.env[name];
-  return value == null || value === '' ? fallback : value;
+  return value === null || value === undefined || value === '' ? fallback : value;
 }
 
 const root = path.join(__dirname, '..');
@@ -32,7 +32,7 @@ const evidence = {
     runId,
     ref,
     sha,
-    workflow: readEnv('GITHUB_WORKFLOW', 'release-gates')
+    workflow: readEnv('GITHUB_WORKFLOW', 'release-gates'),
   },
   gates: [
     { name: 'rollback_plan', status: 'passed' },
@@ -40,12 +40,12 @@ const evidence = {
     { name: 'dependency_audit_prod', status: 'passed' },
     { name: 'integration_tests', status: 'passed' },
     { name: 'build', status: 'passed' },
-    { name: 'performance_budgets', status: 'passed' }
+    { name: 'performance_budgets', status: 'passed' },
   ],
   artifacts: {
     rollbackPlan: 'releases/rollback/latest.md',
-    lighthouseConfig: 'lighthouserc.js'
-  }
+    lighthouseConfig: 'lighthouserc.js',
+  },
 };
 
 const outJson = path.join(outDir, `release-gates-${runId}.json`);
