@@ -28,6 +28,8 @@ jobs:
         run: npm ci && npm ci --prefix lms-api
 
       - name: Release gates
+        env:
+          DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
         run: |
           npm run lint
           cd lms-api && npm run build
@@ -43,6 +45,7 @@ jobs:
         env:
           DEPLOY_COMMAND: ${{ secrets.API_DEPLOY_COMMAND }}
           ROLLBACK_COMMAND: ${{ secrets.API_ROLLBACK_COMMAND }}
+          DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
         run: |
           if [ "${{ github.event.inputs.rollback }}" = "true" ]; then
             if [ -z "$ROLLBACK_COMMAND" ]; then
