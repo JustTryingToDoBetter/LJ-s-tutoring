@@ -5,6 +5,8 @@ domains:
     type: PRIMARY
   - domain: www.projectodysseus.live
     type: ALIAS
+  - domain: api.projectodysseus.live
+    type: ALIAS
 
 static_sites:
   - name: website
@@ -75,7 +77,9 @@ services:
     instance_count: 1
     instance_size_slug: basic-xxs
     routes:
-      - path: /api
+      - path: /
+        match:
+          authority: api.projectodysseus.live
     envs:
       - key: NODE_ENV
         value: production
