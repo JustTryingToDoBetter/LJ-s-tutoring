@@ -176,6 +176,8 @@ jobs:
       PORT: 3101
       COOKIE_SECRET: test_cookie_secret_value_for_ci
       JWT_SECRET: test_jwt_secret_value_for_ci
+      GROQ_API_KEY: test_groq_api_key_for_ci
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/lms_test
     steps:
       - uses: actions/checkout@v4
 
@@ -258,6 +260,8 @@ jobs:
       PORT: 3001
       COOKIE_SECRET: test_cookie_secret_value_for_ci
       JWT_SECRET: test_jwt_secret_value_for_ci
+      GROQ_API_KEY: test_groq_api_key_for_ci
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/lms_test
     steps:
       - uses: actions/checkout@v4
 
