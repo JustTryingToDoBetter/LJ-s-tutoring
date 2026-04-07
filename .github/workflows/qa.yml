@@ -121,7 +121,7 @@ jobs:
         continue-on-error: true
         run: |
           set +e
-          npx html-validate "dist/**/*.html" --formatter json > html-validation.json
+          npx html-validate "dist/**/*.html" --config .htmlvalidate.js --formatter json > html-validation.json
           code=$?
           if [ "$code" -eq 0 ]; then
             echo "status=passed" >> $GITHUB_OUTPUT

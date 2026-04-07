@@ -37,17 +37,10 @@ async function loginAs(page: import('@playwright/test').Page, role: Role, email:
 }
 
 async function expectSessionRole(page: import('@playwright/test').Page, role: Role) {
-  const session = await page.evaluate(async (apiBase) => {
-    const response = await fetch(`${apiBase}/auth/session`, { credentials: 'include' });
-    if (!response.ok) {
-      return { ok: false, status: response.status };
-    }
-    const body = await response.json();
-    return { ok: true, role: body?.user?.role };
-  }, apiBaseUrl);
-
-  expect(session.ok).toBeTruthy();
-  expect(session.role).toBe(role);
+  const response = await page.request.get(`${apiBaseUrl}/auth/session`);
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json();
+  expect(body?.user?.role).toBe(role);
 }
 
 test('admin pages redirect to admin login when unauthenticated', async ({ page }) => {

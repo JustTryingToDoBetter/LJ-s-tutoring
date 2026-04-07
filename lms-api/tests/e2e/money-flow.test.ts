@@ -92,11 +92,12 @@ describe('E2E money flow (API)', () => {
 
     const admin = await loginAs('ADMIN', 'admin-e2e@test.local');
 
+    const tutorEmail = `tutor-e2e-${Date.now()}@test.local`;
     const tutorRes = await apiRequest('/admin/tutors', {
       method: 'POST',
       auth: admin,
       body: {
-        email: 'tutor-e2e@test.local',
+        email: tutorEmail,
         fullName: 'Tutor E2E',
         defaultHourlyRate: 300,
         qualificationBand: 'BOTH',
@@ -107,7 +108,7 @@ describe('E2E money flow (API)', () => {
     const tutorPayload = await tutorRes.json();
     const tutorId = tutorPayload.tutor.id as string;
 
-    const tutor = await loginAs('TUTOR', 'tutor-e2e@test.local');
+    const tutor = await loginAs('TUTOR', tutorEmail);
 
     const studentRes = await apiRequest('/admin/students', {
       method: 'POST',
