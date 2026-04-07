@@ -31,18 +31,18 @@ const requiredAlerts = [
   'ProjectOdysseusHighErrorRate',
   'ProjectOdysseusSlowRequestRate',
   'ProjectOdysseusRequestVolumeDrop',
-  'ProjectOdysseusReadyProbeFailing'
+  'ProjectOdysseusReadyProbeFailing',
 ];
 
 for (const alertName of requiredAlerts) {
-  mustInclude(alertsRaw, `alert: ${alertName}`, `alert rule`);
+  mustInclude(alertsRaw, `alert: ${alertName}`, 'alert rule');
 }
 
 const requiredMetricFragments = [
   'po_requests_total',
   'po_requests_error_total',
   'po_requests_slow_total',
-  'probe_success{job="project-odysseus-ready"}'
+  'probe_success{job="project-odysseus-ready"}',
 ];
 
 for (const metric of requiredMetricFragments) {
@@ -65,7 +65,7 @@ const requiredTitles = [
   'Request Rate (req/s)',
   'Error Rate (%)',
   'Slow Request Ratio (%)',
-  'Total Requests (1h)'
+  'Total Requests (1h)',
 ];
 
 for (const title of requiredTitles) {

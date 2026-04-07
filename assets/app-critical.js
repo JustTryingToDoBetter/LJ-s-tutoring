@@ -881,7 +881,7 @@
       dots.forEach((d, idx) => d.setAttribute('aria-current', idx === i ? 'true' : 'false'));
     }
 
-   function scrollToIndex(i, behaviorOverride) {
+    function scrollToIndex(i, behaviorOverride) {
       i = clamp(i, 0, slides.length - 1);
       const behavior = behaviorOverride || (prefersReducedMotion ? 'auto' : 'smooth');
 

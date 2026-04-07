@@ -45,11 +45,11 @@ function injectIntoFile(filePath, apiBase, odieAccessKey) {
   const source = fs.readFileSync(filePath, 'utf8');
   const withApiBase = source.replace(
     /window\.__PO_API_BASE__\s*=\s*.*?;\s*$/m,
-    `window.__PO_API_BASE__ = ${JSON.stringify(apiBase)};`
+    `window.__PO_API_BASE__ = ${JSON.stringify(apiBase)};`,
   );
   const withOdieKey = withApiBase.replace(
     /window\.__ODIE_ACCESS_KEY__\s*=\s*.*?;\s*$/m,
-    `window.__ODIE_ACCESS_KEY__ = ${JSON.stringify(odieAccessKey)};`
+    `window.__ODIE_ACCESS_KEY__ = ${JSON.stringify(odieAccessKey)};`,
   );
   fs.writeFileSync(filePath, withOdieKey);
   return true;

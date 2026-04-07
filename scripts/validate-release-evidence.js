@@ -34,7 +34,7 @@ const requiredGates = [
   'dependency_audit_prod',
   'integration_tests',
   'build',
-  'performance_budgets'
+  'performance_budgets',
 ];
 
 const gateMap = new Map((parsed.gates || []).map((g) => [g.name, g.status]));
