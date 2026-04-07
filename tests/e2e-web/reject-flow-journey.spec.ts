@@ -70,8 +70,8 @@ async function loginAs(
 
 async function applyAuthToBrowser(page: import('@playwright/test').Page, auth: AuthSession) {
   await page.context().addCookies([
-    { name: 'session', value: auth.sessionCookie, url: apiBaseUrl },
-    { name: 'csrf', value: auth.csrfCookie, url: apiBaseUrl },
+    { name: 'session', value: auth.sessionCookie, domain: '127.0.0.1', path: '/' },
+    { name: 'csrf', value: auth.csrfCookie, domain: '127.0.0.1', path: '/' },
   ]);
 }
 

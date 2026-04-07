@@ -10,7 +10,7 @@ export async function resetDb() {
         if to_regclass('public.invoices') is not null then execute 'delete from invoices'; end if;
         if to_regclass('public.adjustments') is not null then execute 'delete from adjustments'; end if;
         if to_regclass('public.pay_periods') is not null then execute 'delete from pay_periods'; end if;
-        if to_regclass('public.session_history') is not null then execute 'delete from session_history'; end if;
+
         if to_regclass('public.auth_event_log') is not null then execute 'delete from auth_event_log'; end if;
         if to_regclass('public.impersonation_sessions') is not null then execute 'delete from impersonation_sessions'; end if;
         if to_regclass('public.audit_log') is not null then execute 'delete from audit_log'; end if;

@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { resetDb } from '../helpers/db.js';
 
 type AuthSession = { cookie: string; csrfToken: string };
 
@@ -80,6 +81,10 @@ async function isApiReachable() {
 }
 
 describe('E2E money flow (API)', () => {
+  beforeAll(async () => {
+    await resetDb();
+  });
+
   it('runs the full payroll flow and exports CSV', async () => {
     if (!(await isApiReachable())) {
       return;

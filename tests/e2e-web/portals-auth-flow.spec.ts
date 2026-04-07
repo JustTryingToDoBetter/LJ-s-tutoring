@@ -29,7 +29,8 @@ async function loginAs(page: import('@playwright/test').Page, role: Role, email:
       parsed.map((entry) => ({
         name: entry.name,
         value: entry.value,
-        url: apiBaseUrl,
+        domain: '127.0.0.1',
+        path: '/',
       }))
     );
   }
