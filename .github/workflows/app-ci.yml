@@ -40,7 +40,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci && npm ci --prefix lms-api
 
       - name: Lint
         run: npm run lint
@@ -80,7 +80,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci && npm ci --prefix lms-api
 
       - name: Run API contract tests
         run: npm run test:contracts --prefix lms-api
@@ -100,7 +100,7 @@ jobs:
         run: npm ci
 
       - name: Run unit tests (web helpers)
-        run: npm run test --prefix lms-api
+        run: npm run test:frontend:unit
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -131,7 +131,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci && npm ci --prefix lms-api
 
       - name: Prepare test results folder
         run: mkdir -p lms-api/test-results
@@ -186,7 +186,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci && npm ci --prefix lms-api
 
       - name: Prepare test results folder
         run: mkdir -p lms-api/test-results
@@ -268,7 +268,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci && npm ci --prefix lms-api
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
