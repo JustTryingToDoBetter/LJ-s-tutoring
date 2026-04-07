@@ -43,10 +43,9 @@ jobs:
 
       - name: Deploy or rollback
         env:
-          DEPLOY_COMMAND: ${{ secrets.API_DEPLOY_COMMAND }}
+          API_DEPLOY_COMMAND: ${{ secrets.API_DEPLOY_COMMAND }}
           ROLLBACK_COMMAND: ${{ secrets.API_ROLLBACK_COMMAND }}
           DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
-          
         run: |
           if [ "${{ github.event.inputs.rollback }}" = "true" ]; then
             if [ -z "$ROLLBACK_COMMAND" ]; then
@@ -55,11 +54,11 @@ jobs:
             fi
             eval "$ROLLBACK_COMMAND"
           else
-            if [ -z "$DEPLOY_COMMAND" ]; then
+            if [ -z "$API_DEPLOY_COMMAND" ]; then
               echo "Missing API_DEPLOY_COMMAND"
               exit 1
             fi
-            eval "$DEPLOY_COMMAND"
+            eval "$API_DEPLOY_COMMAND"
           fi
 
       - name: Post-deploy health check
