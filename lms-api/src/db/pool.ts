@@ -11,8 +11,13 @@ if (!DATABASE_URL) {
   throw new Error('DATABASE_URL is required');
 }
 
+const ssl = DATABASE_URL.includes('sslmode=require')
+  ? { rejectUnauthorized: false }
+  : undefined;
+
 export const pool = new Pool({
   connectionString: DATABASE_URL,
+  ssl,
   max: Number(process.env.PG_POOL_MAX ?? 10),
   idleTimeoutMillis: Number(process.env.PG_IDLE_TIMEOUT_MS ?? 30000),
   connectionTimeoutMillis: Number(process.env.PG_CONN_TIMEOUT_MS ?? 5000),
