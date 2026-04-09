@@ -62,7 +62,7 @@ export async function assistantRoutes(app: FastifyInstance) {
   const requireAccessKey = process.env.NODE_ENV === 'production' || process.env.ODIE_DEV_NO_AUTH === 'false';
   const service = createAssistantService(
     config,
-    [createGroqProvider(config.groqApiKey), createOpenRouterProvider(config.openRouterApiKey)],
+    [createOpenRouterProvider(config.openRouterApiKey), createGroqProvider(config.groqApiKey)],
     app.log.child({ module: 'assistant' }),
   );
 
