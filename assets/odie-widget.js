@@ -31,7 +31,7 @@
   function resolveApiBase() {
     const raw = String(window.__PO_API_BASE__ || '').replace(/\/$/, '');
     const host = window.location.hostname;
-    const isLocal = host === 'localhost' || host === 'http://172.24.16.1:1234';
+    const isLocal = host === 'localhost' || host === '127.0.0.1';
     if (!raw || raw === '__PO_API_BASE__') {
       return isLocal ? window.location.protocol + '//' + host + ':3001' : '/api';
     }
