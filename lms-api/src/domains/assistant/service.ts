@@ -167,7 +167,7 @@ export class AssistantService {
 
     const request: AssistantCompletionRequest = {
       messages,
-      model: this.config.defaultModel,
+      model: '',
       maxTokens: this.config.maxTokens,
       temperature: this.config.temperature,
       timeoutMs: this.config.timeoutMs,
@@ -243,7 +243,7 @@ export class AssistantService {
 
     const request: AssistantCompletionRequest = {
       messages,
-      model: this.config.defaultModel,
+      model: '',
       maxTokens: this.config.maxTokens,
       temperature: this.config.temperature,
       timeoutMs: this.config.timeoutMs,

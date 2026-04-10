@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 const AssistantConfigSchema = z.object({
   OPENROUTER_API_KEY: z.string().trim().optional().default(''),
+  OPENROUTER_MODEL: z.string().trim().optional().default('google/gemma-2-9b-it:free'),
   LMSTUDIO_BASE_URL: z.string().trim().optional().default('http://localhost:1234'),
   LMSTUDIO_MODEL: z.string().trim().optional().default('google/gemma-4-26b-a4b'),
-  DEFAULT_MODEL: z.string().trim().min(1).default('llama-3.3-70b-versatile'),
   MAX_TOKENS: z.coerce.number().int().min(64).max(8192).default(1024),
   TEMPERATURE: z.coerce.number().min(0).max(2).default(0.4),
   ASSISTANT_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(30000),
@@ -19,9 +19,9 @@ const AssistantConfigSchema = z.object({
 
 export type AssistantConfig = {
   openRouterApiKey: string;
+  openRouterModel: string;
   lmStudioBaseUrl: string;
   lmStudioModel: string;
-  defaultModel: string;
   maxTokens: number;
   temperature: number;
   timeoutMs: number;
@@ -32,16 +32,15 @@ export type AssistantConfig = {
   chunkOverlap: number;
   retryAttempts: number;
   retryDelayMs: number;
-  openRouterModel: string;
 };
 
 export function loadAssistantConfig(env: NodeJS.ProcessEnv = process.env): AssistantConfig {
   const parsed = AssistantConfigSchema.parse(env);
   return {
     openRouterApiKey: parsed.OPENROUTER_API_KEY,
+    openRouterModel: parsed.OPENROUTER_MODEL,
     lmStudioBaseUrl: parsed.LMSTUDIO_BASE_URL,
     lmStudioModel: parsed.LMSTUDIO_MODEL,
-    defaultModel: parsed.DEFAULT_MODEL,
     maxTokens: parsed.MAX_TOKENS,
     temperature: parsed.TEMPERATURE,
     timeoutMs: parsed.ASSISTANT_TIMEOUT_MS,
@@ -52,6 +51,5 @@ export function loadAssistantConfig(env: NodeJS.ProcessEnv = process.env): Assis
     chunkOverlap: parsed.ASSISTANT_CHUNK_OVERLAP,
     retryAttempts: parsed.ASSISTANT_RETRY_ATTEMPTS,
     retryDelayMs: parsed.ASSISTANT_RETRY_DELAY_MS,
-    openRouterModel: parsed.DEFAULT_MODEL,
   };
 }
