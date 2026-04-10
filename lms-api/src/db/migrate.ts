@@ -33,7 +33,15 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-const pool = new Pool({ connectionString: DATABASE_URL });
+const ssl = DATABASE_URL.includes('sslmode=require')
+  ? { rejectUnauthorized: false }
+  : undefined;
+
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl,
+  connectionTimeoutMillis: Number(process.env.PG_CONN_TIMEOUT_MS ?? 10000),
+});
 
 function getMigrationsDir() {
   return path.resolve(__dirname, '../../prisma/migrations');

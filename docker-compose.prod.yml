@@ -1,0 +1,15 @@
+services:
+  api:
+    build:
+      context: ./lms-api
+      dockerfile: Dockerfile
+    container_name: lms_api_prod
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-3001}
+    restart: unless-stopped
+    command: sh -c "node dist/db/migrate.js && node dist/index.js"
+    ports:
+      - "${PORT:-3001}:3001"

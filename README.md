@@ -44,6 +44,37 @@ docker compose up api db
 
 The API container waits for Postgres to become healthy before starting migrations.
 
+## Production Docker API
+
+Use the dedicated production compose file to run only the API service against an external managed Postgres database.
+
+Required environment variables in `.env`:
+
+- `DATABASE_URL` (managed Postgres connection string)
+- `COOKIE_SECRET`
+- `JWT_SECRET`
+- `PUBLIC_BASE_URL`
+
+Start production API container:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+View logs:
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f api
+```
+
+Stop production API container:
+
+```bash
+docker compose -f docker-compose.prod.yml down
+```
+
+If you use DigitalOcean Managed Postgres, make sure the server public IP is allowed in the cluster Trusted Sources list, otherwise the API cannot connect.
+
 ### Local URLs
 
 - Static site: `http://localhost:8080`
