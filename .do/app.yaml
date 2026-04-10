@@ -5,6 +5,23 @@ domains:
     type: PRIMARY
   - domain: www.projectodysseus.live
     type: ALIAS
+  - domain: api.projectodysseus.live
+    type: ALIAS
+
+ingress:
+  rules:
+    - component:
+        name: api
+      match:
+        path:
+          prefix: /
+      hosts:
+        - host: api.projectodysseus.live
+    - component:
+        name: website
+      match:
+        path:
+          prefix: /
 
 static_sites:
   - name: website
@@ -74,9 +91,6 @@ services:
     http_port: 8080
     instance_count: 1
     instance_size_slug: basic-xxs
-    domains:
-      - domain: api.projectodysseus.live
-        type: PRIMARY
     routes:
       - path: /
     envs:
