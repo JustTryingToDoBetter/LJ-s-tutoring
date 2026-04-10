@@ -1,8 +1,10 @@
 import { z } from 'zod';
 
 const AssistantConfigSchema = z.object({
-  GROQ_API_KEY: z.string().trim().min(1, 'GROQ_API_KEY is required'),
+  GROQ_API_KEY: z.string().trim().optional().default(''),
   OPENROUTER_API_KEY: z.string().trim().optional().default(''),
+  LMSTUDIO_BASE_URL: z.string().trim().optional().default('http://localhost:1234'),
+  LMSTUDIO_MODEL: z.string().trim().optional().default('gemma-3-12b-it'),
   DEFAULT_MODEL: z.string().trim().min(1).default('llama-3.3-70b-versatile'),
   MAX_TOKENS: z.coerce.number().int().min(64).max(8192).default(1024),
   TEMPERATURE: z.coerce.number().min(0).max(2).default(0.4),
@@ -19,6 +21,8 @@ const AssistantConfigSchema = z.object({
 export type AssistantConfig = {
   groqApiKey: string;
   openRouterApiKey: string;
+  lmStudioBaseUrl: string;
+  lmStudioModel: string;
   defaultModel: string;
   maxTokens: number;
   temperature: number;
@@ -38,6 +42,8 @@ export function loadAssistantConfig(env: NodeJS.ProcessEnv = process.env): Assis
   return {
     groqApiKey: parsed.GROQ_API_KEY,
     openRouterApiKey: parsed.OPENROUTER_API_KEY,
+    lmStudioBaseUrl: parsed.LMSTUDIO_BASE_URL,
+    lmStudioModel: parsed.LMSTUDIO_MODEL,
     defaultModel: parsed.DEFAULT_MODEL,
     maxTokens: parsed.MAX_TOKENS,
     temperature: parsed.TEMPERATURE,

@@ -10,7 +10,7 @@ export type AssistantMessage = {
   content: string;
 };
 
-export type AssistantProviderName = 'groq' | 'openrouter';
+export type AssistantProviderName = 'groq' | 'openrouter' | 'lmstudio';
 
 export type AssistantResponseMetadata = {
   provider: AssistantProviderName;
