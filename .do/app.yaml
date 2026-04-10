@@ -5,8 +5,6 @@ domains:
     type: PRIMARY
   - domain: www.projectodysseus.live
     type: ALIAS
-  - domain: api.projectodysseus.live
-    type: ALIAS
 
 static_sites:
   - name: website
@@ -76,10 +74,11 @@ services:
     http_port: 8080
     instance_count: 1
     instance_size_slug: basic-xxs
+    domains:
+      - domain: api.projectodysseus.live
+        type: PRIMARY
     routes:
       - path: /
-        match:
-          authority: api.projectodysseus.live
     envs:
       - key: PORT
         value: "8080"
@@ -95,3 +94,9 @@ services:
         value: "https://projectodysseus.live,https://www.projectodysseus.live"
       - key: TRUST_PROXY
         value: "1"
+      - key: OPENROUTER_API_KEY
+        type: SECRET
+      - key: ODIE_ACCESS_KEYS
+        type: SECRET
+      - key: DEFAULT_MODEL
+        value: "google/gemma-2-9b-it:free"
