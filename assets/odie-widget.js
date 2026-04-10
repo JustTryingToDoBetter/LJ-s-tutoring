@@ -33,10 +33,10 @@
     const host = window.location.hostname;
     const isLocal = host === 'localhost' || host === 'http://172.24.16.1:1234';
     if (!raw || raw === '__PO_API_BASE__') {
-      return isLocal ? window.location.protocol + '//' + host + ':3001' : '';
+      return isLocal ? window.location.protocol + '//' + host + ':3001' : '/api';
     }
     if (!isLocal && isLoopbackBase(raw)) {
-      return '';
+      return '/api';
     }
     return raw;
   }
