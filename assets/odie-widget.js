@@ -29,13 +29,13 @@
   }
 
   function resolveApiBase() {
-    const raw = String(window.__PO_API_BASE__ || '').replace(/\/$/, '');
     const host = window.location.hostname;
     const isLocal = host === 'localhost' || host === '127.0.0.1';
-    if (!raw || raw === '__PO_API_BASE__') {
-      return isLocal ? window.location.protocol + '//' + host + ':3001' : '/api';
+    if (isLocal) {
+      return window.location.protocol + '//' + host + ':3001';
     }
-    if (!isLocal && isLoopbackBase(raw)) {
+    const raw = String(window.__PO_API_BASE__ || '').replace(/\/$/, '');
+    if (!raw || raw === '__PO_API_BASE__' || isLoopbackBase(raw)) {
       return '/api';
     }
     return raw;
