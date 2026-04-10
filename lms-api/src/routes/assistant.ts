@@ -2,7 +2,6 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { loadAssistantConfig } from '../domains/assistant/config.js';
 import { createAssistantService } from '../domains/assistant/service.js';
-import { createGroqProvider } from '../domains/assistant/providers/groq.js';
 import { createOpenRouterProvider } from '../domains/assistant/providers/openrouter.js';
 import { createLmStudioProvider } from '../domains/assistant/providers/lmstudio.js';
 
@@ -65,7 +64,6 @@ export async function assistantRoutes(app: FastifyInstance) {
     config,
     [
       createLmStudioProvider(config.lmStudioBaseUrl, config.lmStudioModel),
-      createGroqProvider(config.groqApiKey),
       createOpenRouterProvider(config.openRouterApiKey),
     ],
     app.log.child({ module: 'assistant' }),

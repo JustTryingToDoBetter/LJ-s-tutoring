@@ -21,7 +21,6 @@ type ProviderPlan = {
   model: string;
 };
 
-const FALLBACK_GROQ_MODEL = 'llama-3.1-8b-instant';
 
 export function buildProviderPlan(config: AssistantConfig, providers: AssistantProvider[]) {
   const byName = new Map<AssistantProviderName, AssistantProvider>();
@@ -31,18 +30,10 @@ export function buildProviderPlan(config: AssistantConfig, providers: AssistantP
 
   const plans: ProviderPlan[] = [];
   const lmstudio = byName.get('lmstudio');
-  const groq = byName.get('groq');
   const openrouter = byName.get('openrouter');
 
   if (lmstudio?.isConfigured) {
     plans.push({ provider: lmstudio, model: config.lmStudioModel });
-  }
-
-  if (groq?.isConfigured) {
-    plans.push({ provider: groq, model: config.defaultModel });
-    if (config.defaultModel !== FALLBACK_GROQ_MODEL) {
-      plans.push({ provider: groq, model: FALLBACK_GROQ_MODEL });
-    }
   }
 
   if (openrouter?.isConfigured) {
