@@ -18,7 +18,7 @@ jobs:
             echo "HEALTHCHECK_URL not set; skipping."
             exit 0
           fi
-          curl -fsS "${HEALTHCHECK_URL%/}/health"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 15 "${HEALTHCHECK_URL%/}/health"
       - name: Create issue on failure
         if: failure()
         uses: actions/github-script@v7

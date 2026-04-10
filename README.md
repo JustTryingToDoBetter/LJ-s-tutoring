@@ -75,6 +75,22 @@ docker compose -f docker-compose.prod.yml down
 
 If you use DigitalOcean Managed Postgres, make sure the server public IP is allowed in the cluster Trusted Sources list, otherwise the API cannot connect.
 
+Optional P4 gateway layer (Nginx, centralized edge auth + rate limiting):
+
+```bash
+docker compose -f docker-compose.prod.yml -f docker-compose.gateway.yml up -d --build
+```
+
+Gateway docs and policy template: `ops/gateway/README.md` and `ops/gateway/nginx/nginx.conf`.
+
+## Uptime Monitor
+
+The scheduled workflow at `.github/workflows/uptime-check.yml` checks:
+
+- `GET ${HEALTHCHECK_URL}/health`
+
+Set the `HEALTHCHECK_URL` repository secret to enable it.
+
 ### Local URLs
 
 - Static site: `http://localhost:8080`
