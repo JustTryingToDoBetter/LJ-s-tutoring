@@ -46,6 +46,11 @@ API service component:
 
 If your API component must build from repository root, use `npm run build:api` as the build command instead of `npm run build`.
 
+Ingress routing note:
+
+- The app spec uses host-based ingress in `.do/app.yaml` so `api.projectodysseus.live` routes to the `api` service, while `projectodysseus.live` and `www.projectodysseus.live` route to the `website` static component.
+- Without host-based ingress, API endpoints like `/health` can return the static-site 404 page.
+
 ### GitHub Deploy Workflow Inputs
 
 The workflow in `.github/workflows/deploy-api.yml` reads deploy settings from GitHub Secrets or GitHub Variables.

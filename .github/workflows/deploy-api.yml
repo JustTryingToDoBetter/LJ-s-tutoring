@@ -71,6 +71,9 @@ jobs:
               sudo mv doctl /usr/local/bin/doctl
 
               doctl auth init -t "$DIGITALOCEAN_ACCESS_TOKEN"
+              if [ -f ".do/app.yaml" ]; then
+                doctl apps update "$DIGITALOCEAN_APP_ID" --spec .do/app.yaml >/dev/null
+              fi
               doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --wait
               exit 0
             fi

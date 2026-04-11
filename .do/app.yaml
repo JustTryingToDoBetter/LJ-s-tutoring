@@ -8,6 +8,30 @@ domains:
   - domain: api.projectodysseus.live
     type: ALIAS
 
+ingress:
+  rules:
+    - match:
+        host:
+          exact: api.projectodysseus.live
+        path:
+          prefix: /
+      component:
+        name: api
+    - match:
+        host:
+          exact: projectodysseus.live
+        path:
+          prefix: /
+      component:
+        name: website
+    - match:
+        host:
+          exact: www.projectodysseus.live
+        path:
+          prefix: /
+      component:
+        name: website
+
 static_sites:
   - name: website
     build_command: npm ci && npm run build
