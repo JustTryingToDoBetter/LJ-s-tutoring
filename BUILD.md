@@ -57,6 +57,13 @@ Required names:
 - `HEALTHCHECK_URL` (base URL used for post-deploy `/ready` check)
 - `GATEWAY_SHARED_KEY` (required when deploy command uses `docker-compose.gateway.yml`)
 
+Special case supported by workflow:
+
+- If `API_DEPLOY_COMMAND=production`, the workflow performs a DigitalOcean deployment using:
+	- `DIGITALOCEAN_ACCESS_TOKEN`
+	- `DIGITALOCEAN_APP_ID`
+	- optional `DOCTL_VERSION` (defaults to `1.123.0`)
+
 Example `API_DEPLOY_COMMAND` formats:
 
 - `./scripts/deploy-api.sh`

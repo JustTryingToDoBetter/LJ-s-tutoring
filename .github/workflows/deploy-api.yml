@@ -44,6 +44,9 @@ jobs:
           API_DEPLOY_COMMAND: ${{ secrets.API_DEPLOY_COMMAND || vars.API_DEPLOY_COMMAND }}
           ROLLBACK_COMMAND: ${{ secrets.API_ROLLBACK_COMMAND || vars.API_ROLLBACK_COMMAND }}
           GATEWAY_SHARED_KEY: ${{ secrets.GATEWAY_SHARED_KEY || vars.GATEWAY_SHARED_KEY }}
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN || vars.DIGITALOCEAN_ACCESS_TOKEN }}
+          DIGITALOCEAN_APP_ID: ${{ secrets.DIGITALOCEAN_APP_ID || vars.DIGITALOCEAN_APP_ID }}
+          DOCTL_VERSION: ${{ vars.DOCTL_VERSION || '1.123.0' }}
         run: |
           if [ "${{ github.event.inputs.rollback }}" = "true" ]; then
             if [ -z "$ROLLBACK_COMMAND" ]; then
@@ -56,10 +59,27 @@ jobs:
               echo "Missing API_DEPLOY_COMMAND (set it as a secret or variable)"
               exit 1
             fi
-            if [ "$API_DEPLOY_COMMAND" = "production" ] || [ "$API_DEPLOY_COMMAND" = "staging" ]; then
-              echo "API_DEPLOY_COMMAND must be an executable shell command, not '$API_DEPLOY_COMMAND'"
+
+            if [ "$API_DEPLOY_COMMAND" = "production" ]; then
+              if [ -z "$DIGITALOCEAN_ACCESS_TOKEN" ] || [ -z "$DIGITALOCEAN_APP_ID" ]; then
+                echo "API_DEPLOY_COMMAND=production requires DIGITALOCEAN_ACCESS_TOKEN and DIGITALOCEAN_APP_ID"
+                exit 1
+              fi
+
+              curl -fsSL "https://github.com/digitalocean/doctl/releases/download/v${DOCTL_VERSION}/doctl-${DOCTL_VERSION}-linux-amd64.tar.gz" -o doctl.tgz
+              tar -xzf doctl.tgz doctl
+              sudo mv doctl /usr/local/bin/doctl
+
+              doctl auth init -t "$DIGITALOCEAN_ACCESS_TOKEN"
+              doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --wait
+              exit 0
+            fi
+
+            if [ "$API_DEPLOY_COMMAND" = "staging" ]; then
+              echo "API_DEPLOY_COMMAND=staging is not mapped. Set API_DEPLOY_COMMAND to an executable command for staging."
               exit 1
             fi
+
             if echo "$API_DEPLOY_COMMAND" | grep -q "docker-compose.gateway.yml"; then
               if [ -z "$GATEWAY_SHARED_KEY" ]; then
                 echo "Missing GATEWAY_SHARED_KEY (set it as a secret or variable)"
