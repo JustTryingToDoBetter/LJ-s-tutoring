@@ -89,6 +89,8 @@ services:
         type: SECRET
       - key: COOKIE_SECRET
         type: SECRET
+      - key: GATEWAY_SHARED_KEY
+        type: SECRET
       - key: CORS_ORIGIN
         value: "https://projectodysseus.live,https://www.projectodysseus.live"
       - key: TRUST_PROXY

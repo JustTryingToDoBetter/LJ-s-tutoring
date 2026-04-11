@@ -46,6 +46,7 @@ jobs:
           API_DEPLOY_COMMAND: ${{ secrets.API_DEPLOY_COMMAND }}
           ROLLBACK_COMMAND: ${{ secrets.API_ROLLBACK_COMMAND }}
           DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
+          GATEWAY_SHARED_KEY: ${{ secrets.GATEWAY_SHARED_KEY }}
         run: |
           if [ "${{ github.event.inputs.rollback }}" = "true" ]; then
             if [ -z "$ROLLBACK_COMMAND" ]; then
@@ -57,6 +58,12 @@ jobs:
             if [ -z "$API_DEPLOY_COMMAND" ]; then
               echo "Missing API_DEPLOY_COMMAND"
               exit 1
+            fi
+            if echo "$API_DEPLOY_COMMAND" | grep -q "docker-compose.gateway.yml"; then
+              if [ -z "$GATEWAY_SHARED_KEY" ]; then
+                echo "Missing GATEWAY_SHARED_KEY"
+                exit 1
+              fi
             fi
             eval "$API_DEPLOY_COMMAND"
           fi

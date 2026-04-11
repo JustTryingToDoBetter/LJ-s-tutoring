@@ -32,7 +32,7 @@ docker compose up -d db
 That starts Postgres 16 on `localhost:5433` with the defaults from `.env.example`:
 
 ```env
-POSTGRES_PASSWORD=postgres
+LOCAL_POSTGRES_PASSWORD=postgres
 DATABASE_URL=postgresql://postgres:postgres@localhost:5433/lms
 ```
 
@@ -80,6 +80,9 @@ Optional P4 gateway layer (Nginx, centralized edge auth + rate limiting):
 ```bash
 docker compose -f docker-compose.prod.yml -f docker-compose.gateway.yml up -d --build
 ```
+
+Set `GATEWAY_SHARED_KEY` in `.env` (or shell) before running the gateway overlay.
+For CI/CD and hosted deployments, set `GATEWAY_SHARED_KEY` as a repository/deployment secret as well.
 
 Gateway docs and policy template: `ops/gateway/README.md` and `ops/gateway/nginx/nginx.conf`.
 
