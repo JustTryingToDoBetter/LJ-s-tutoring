@@ -46,10 +46,11 @@ API service component:
 
 If your API component must build from repository root, use `npm run build:api` as the build command instead of `npm run build`.
 
-Ingress routing note:
+Routing note:
 
-- The app spec uses authority-based ingress in `.do/app.yaml` so `api.projectodysseus.live` routes to the `api` service, while `projectodysseus.live` and `www.projectodysseus.live` route to the `website` static component.
-- Without authority-based ingress rules, API endpoints like `/health` can return the static-site 404 page.
+- The app spec in `.do/app.yaml` uses component routes: `website` serves `/` and `api` serves `/api`.
+- The static site sets `PUBLIC_PO_API_BASE=/api` so browser calls land on the API prefix.
+- Without this route setup, API endpoints can return static-site 404 pages.
 
 ### GitHub Deploy Workflow Inputs
 
@@ -57,9 +58,9 @@ The workflow in `.github/workflows/deploy-api.yml` reads deploy settings from Gi
 
 Required names:
 
-- `API_DEPLOY_COMMAND` (must be an executable shell command, not labels like `production`)
+- `API_DEPLOY_COMMAND` (set either an executable shell command or `production`)
 - `API_ROLLBACK_COMMAND` (required when rollback mode is used)
-- `HEALTHCHECK_URL` (base URL used for post-deploy `/ready` check)
+- `HEALTHCHECK_URL` (base URL used for post-deploy `/ready` check; with current routes use `https://projectodysseus.live/api`)
 - `GATEWAY_SHARED_KEY` (required when deploy command uses `docker-compose.gateway.yml`)
 
 Special case supported by workflow:
@@ -67,7 +68,7 @@ Special case supported by workflow:
 - If `API_DEPLOY_COMMAND=production`, the workflow performs a DigitalOcean deployment using:
 	- `DIGITAL_ACCESS_TOKEN` (or `DIGITALOCEAN_ACCESS_TOKEN`)
 	- `DIGITAL_APP_ID` (or `DIGITALOCEAN_APP_ID`)
-	- optional `DOCTL_VERSION` (defaults to `1.123.0`)
+	- optional `DOCTL_VERSION` (defaults to `1.154.0`)
 
 Example `API_DEPLOY_COMMAND` formats:
 

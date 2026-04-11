@@ -46,7 +46,7 @@ jobs:
           GATEWAY_SHARED_KEY: ${{ secrets.GATEWAY_SHARED_KEY || vars.GATEWAY_SHARED_KEY }}
           DIGITAL_ACCESS_TOKEN: ${{ secrets.DIGITAL_ACCESS_TOKEN || vars.DIGITAL_ACCESS_TOKEN || secrets.DIGITALOCEAN_ACCESS_TOKEN || vars.DIGITALOCEAN_ACCESS_TOKEN }}
           DIGITAL_APP_ID: ${{ secrets.DIGITAL_APP_ID || vars.DIGITAL_APP_ID || secrets.DIGITALOCEAN_APP_ID || vars.DIGITALOCEAN_APP_ID }}
-          DOCTL_VERSION: ${{ vars.DOCTL_VERSION || '1.123.0' }}
+          DOCTL_VERSION: ${{ vars.DOCTL_VERSION || '1.154.0' }}
         run: |
           if [ "${{ github.event.inputs.rollback }}" = "true" ]; then
             if [ -z "$ROLLBACK_COMMAND" ]; then
