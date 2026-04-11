@@ -48,8 +48,8 @@ If your API component must build from repository root, use `npm run build:api` a
 
 Ingress routing note:
 
-- The app spec uses host-based ingress in `.do/app.yaml` so `api.projectodysseus.live` routes to the `api` service, while `projectodysseus.live` and `www.projectodysseus.live` route to the `website` static component.
-- Without host-based ingress, API endpoints like `/health` can return the static-site 404 page.
+- The app spec uses authority-based ingress in `.do/app.yaml` so `api.projectodysseus.live` routes to the `api` service, while `projectodysseus.live` and `www.projectodysseus.live` route to the `website` static component.
+- Without authority-based ingress rules, API endpoints like `/health` can return the static-site 404 page.
 
 ### GitHub Deploy Workflow Inputs
 
@@ -65,8 +65,8 @@ Required names:
 Special case supported by workflow:
 
 - If `API_DEPLOY_COMMAND=production`, the workflow performs a DigitalOcean deployment using:
-	- `DIGITALOCEAN_ACCESS_TOKEN`
-	- `DIGITALOCEAN_APP_ID`
+	- `DIGITAL_ACCESS_TOKEN` (or `DIGITALOCEAN_ACCESS_TOKEN`)
+	- `DIGITAL_APP_ID` (or `DIGITALOCEAN_APP_ID`)
 	- optional `DOCTL_VERSION` (defaults to `1.123.0`)
 
 Example `API_DEPLOY_COMMAND` formats:

@@ -11,21 +11,21 @@ domains:
 ingress:
   rules:
     - match:
-        host:
+        authority:
           exact: api.projectodysseus.live
         path:
           prefix: /
       component:
         name: api
     - match:
-        host:
+        authority:
           exact: projectodysseus.live
         path:
           prefix: /
       component:
         name: website
     - match:
-        host:
+        authority:
           exact: www.projectodysseus.live
         path:
           prefix: /
