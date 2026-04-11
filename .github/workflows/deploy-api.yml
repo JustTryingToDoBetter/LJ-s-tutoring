@@ -28,8 +28,6 @@ jobs:
         run: npm ci && npm ci --prefix lms-api
 
       - name: Release gates
-        env:
-          DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
         run: |
           npm run lint
           cd lms-api && npm run build
@@ -43,25 +41,28 @@ jobs:
 
       - name: Deploy or rollback
         env:
-          API_DEPLOY_COMMAND: ${{ secrets.API_DEPLOY_COMMAND }}
-          ROLLBACK_COMMAND: ${{ secrets.API_ROLLBACK_COMMAND }}
-          DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
-          GATEWAY_SHARED_KEY: ${{ secrets.GATEWAY_SHARED_KEY }}
+          API_DEPLOY_COMMAND: ${{ secrets.API_DEPLOY_COMMAND || vars.API_DEPLOY_COMMAND }}
+          ROLLBACK_COMMAND: ${{ secrets.API_ROLLBACK_COMMAND || vars.API_ROLLBACK_COMMAND }}
+          GATEWAY_SHARED_KEY: ${{ secrets.GATEWAY_SHARED_KEY || vars.GATEWAY_SHARED_KEY }}
         run: |
           if [ "${{ github.event.inputs.rollback }}" = "true" ]; then
             if [ -z "$ROLLBACK_COMMAND" ]; then
-              echo "Missing API_ROLLBACK_COMMAND"
+              echo "Missing API_ROLLBACK_COMMAND (set it as a secret or variable)"
               exit 1
             fi
             eval "$ROLLBACK_COMMAND"
           else
             if [ -z "$API_DEPLOY_COMMAND" ]; then
-              echo "Missing API_DEPLOY_COMMAND"
+              echo "Missing API_DEPLOY_COMMAND (set it as a secret or variable)"
+              exit 1
+            fi
+            if [ "$API_DEPLOY_COMMAND" = "production" ] || [ "$API_DEPLOY_COMMAND" = "staging" ]; then
+              echo "API_DEPLOY_COMMAND must be an executable shell command, not '$API_DEPLOY_COMMAND'"
               exit 1
             fi
             if echo "$API_DEPLOY_COMMAND" | grep -q "docker-compose.gateway.yml"; then
               if [ -z "$GATEWAY_SHARED_KEY" ]; then
-                echo "Missing GATEWAY_SHARED_KEY"
+                echo "Missing GATEWAY_SHARED_KEY (set it as a secret or variable)"
                 exit 1
               fi
             fi
@@ -70,10 +71,10 @@ jobs:
 
       - name: Post-deploy health check
         env:
-          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL || vars.HEALTHCHECK_URL }}
         run: |
           if [ -z "$HEALTHCHECK_URL" ]; then
-            echo "HEALTHCHECK_URL not set"
+            echo "HEALTHCHECK_URL not set (set it as a secret or variable)"
             exit 1
           fi
           curl -fsS "${HEALTHCHECK_URL%/}/ready"

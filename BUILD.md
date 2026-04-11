@@ -46,6 +46,22 @@ API service component:
 
 If your API component must build from repository root, use `npm run build:api` as the build command instead of `npm run build`.
 
+### GitHub Deploy Workflow Inputs
+
+The workflow in `.github/workflows/deploy-api.yml` reads deploy settings from GitHub Secrets or GitHub Variables.
+
+Required names:
+
+- `API_DEPLOY_COMMAND` (must be an executable shell command, not labels like `production`)
+- `API_ROLLBACK_COMMAND` (required when rollback mode is used)
+- `HEALTHCHECK_URL` (base URL used for post-deploy `/ready` check)
+- `GATEWAY_SHARED_KEY` (required when deploy command uses `docker-compose.gateway.yml`)
+
+Example `API_DEPLOY_COMMAND` formats:
+
+- `./scripts/deploy-api.sh`
+- `doctl apps create-deployment <app-id> --wait`
+
 ## Public config injection
 
 `npm run inject:config` rewrites `dist/assets/portal-config.js` so the static site knows which API base URL to call.
