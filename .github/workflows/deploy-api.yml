@@ -44,8 +44,8 @@ jobs:
           API_DEPLOY_COMMAND: ${{ secrets.API_DEPLOY_COMMAND || vars.API_DEPLOY_COMMAND }}
           ROLLBACK_COMMAND: ${{ secrets.API_ROLLBACK_COMMAND || vars.API_ROLLBACK_COMMAND }}
           GATEWAY_SHARED_KEY: ${{ secrets.GATEWAY_SHARED_KEY || vars.GATEWAY_SHARED_KEY }}
-          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN || vars.DIGITALOCEAN_ACCESS_TOKEN }}
-          DIGITALOCEAN_APP_ID: ${{ secrets.DIGITALOCEAN_APP_ID || vars.DIGITALOCEAN_APP_ID }}
+          DIGITAL_ACCESS_TOKEN: ${{ secrets.DIGITAL_ACCESS_TOKEN || vars.DIGITAL_ACCESS_TOKEN }}
+          DIGITAL_APP_ID: ${{ secrets.DIGITAL_APP_ID || vars.DIGITAL_APP_ID }}
           DOCTL_VERSION: ${{ vars.DOCTL_VERSION || '1.123.0' }}
         run: |
           if [ "${{ github.event.inputs.rollback }}" = "true" ]; then
@@ -70,11 +70,11 @@ jobs:
               tar -xzf doctl.tgz doctl
               sudo mv doctl /usr/local/bin/doctl
 
-              doctl auth init -t "$DIGITALOCEAN_ACCESS_TOKEN"
+              doctl auth init -t "$DIGITAL_ACCESS_TOKEN"
               if [ -f ".do/app.yaml" ]; then
-                doctl apps update "$DIGITALOCEAN_APP_ID" --spec .do/app.yaml >/dev/null
+                doctl apps update "$DIGITAL_APP_ID" --spec .do/app.yaml >/dev/null
               fi
-              doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --wait
+              doctl apps create-deployment "$DIGITAL_APP_ID" --wait
               exit 0
             fi
 
