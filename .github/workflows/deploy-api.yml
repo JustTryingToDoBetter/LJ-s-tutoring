@@ -61,7 +61,7 @@ jobs:
             fi
 
             if [ "$API_DEPLOY_COMMAND" = "production" ]; then
-              if [ -z "$DIGITALOCEAN_ACCESS_TOKEN" ] || [ -z "$DIGITALOCEAN_APP_ID" ]; then
+              if [ -z "$DIGITAL_ACCESS_TOKEN" ] || [ -z "$DIGITAL_APP_ID" ]; then
                 echo "API_DEPLOY_COMMAND=production requires DIGITALOCEAN_ACCESS_TOKEN and DIGITALOCEAN_APP_ID"
                 exit 1
               fi
