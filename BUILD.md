@@ -70,12 +70,15 @@ Special case supported by workflow:
 	- `DIGITAL_APP_ID` (or `DIGITALOCEAN_APP_ID`) when available
 	- optional `DIGITAL_APP_NAME` (or `DIGITALOCEAN_APP_NAME`, default `projectodysseus`) to auto-resolve app ID if ID is stale/missing
 	- optional `DOCTL_VERSION` (defaults to `1.154.0`)
+	- optional `DO_DEPLOY_MAX_CHECKS` (defaults to `120`) and `DO_DEPLOY_POLL_SECONDS` (defaults to `10`) for deployment phase polling
 	- optional workflow input `sync_app_spec` (defaults to `false`; when `true`, `.do/app.yaml` is applied before deployment)
 
 Resolver behavior:
 
 - The workflow resolves app IDs by exact name match first, then by normalized name match (for example `project-odysseus` vs `projectodysseus`).
 - If only one app is visible to the token context, the workflow auto-selects it.
+- On deployment timeout or terminal failure, the workflow now prints deployment details plus recent `deploy` and `run` logs from App Platform for faster root-cause diagnosis.
+- Before creating a deployment, the workflow checks that the live app spec contains required API env keys (`DATABASE_URL`, `JWT_SECRET`, `COOKIE_SECRET`) and that an API route exists on `/api`.
 
 Health check default:
 

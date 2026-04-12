@@ -53,6 +53,8 @@ jobs:
           DIGITAL_APP_NAME: ${{ secrets.DIGITAL_APP_NAME || vars.DIGITAL_APP_NAME || secrets.DIGITALOCEAN_APP_NAME || vars.DIGITALOCEAN_APP_NAME || 'projectodysseus' }}
           DOCTL_VERSION: ${{ vars.DOCTL_VERSION || '1.154.0' }}
           SYNC_APP_SPEC: ${{ github.event.inputs.sync_app_spec || vars.SYNC_APP_SPEC || 'false' }}
+          DO_DEPLOY_MAX_CHECKS: ${{ vars.DO_DEPLOY_MAX_CHECKS || '120' }}
+          DO_DEPLOY_POLL_SECONDS: ${{ vars.DO_DEPLOY_POLL_SECONDS || '10' }}
         run: |
           if [ "${{ github.event.inputs.rollback }}" = "true" ]; then
             if [ -z "$ROLLBACK_COMMAND" ]; then
@@ -154,6 +156,27 @@ jobs:
                 echo "Skipping app spec sync (code-only deployment). Set sync_app_spec=true to apply .do/app.yaml."
               fi
 
+              app_json="$(doctl apps get "$DIGITAL_APP_ID" --output json 2>/dev/null || echo '[]')"
+
+              missing_envs=""
+              for required_key in DATABASE_URL JWT_SECRET COOKIE_SECRET; do
+                if ! echo "$app_json" | grep -Eq "\"key\"[[:space:]]*:[[:space:]]*\"$required_key\""; then
+                  missing_envs="${missing_envs}${missing_envs:+, }$required_key"
+                fi
+              done
+
+              if [ -n "$missing_envs" ]; then
+                echo "App spec is missing required API env keys: $missing_envs"
+                echo "Add these env keys in DigitalOcean App Platform for the API component, then rerun deployment."
+                exit 1
+              fi
+
+              if ! echo "$app_json" | grep -Eq '"path"[[:space:]]*:[[:space:]]*"/api("|/)'; then
+                echo "App spec does not currently expose the API on /api."
+                echo "Rerun with sync_app_spec=true to apply .do/app.yaml route mapping."
+                exit 1
+              fi
+
               deployment_id="$(doctl apps create-deployment "$DIGITAL_APP_ID" --format ID --no-header | awk 'NR == 1 { print $1 }')"
               if [ -z "$deployment_id" ]; then
                 echo "Failed to create deployment for app ID: $DIGITAL_APP_ID"
@@ -161,8 +184,17 @@ jobs:
               fi
               echo "Created deployment ID: $deployment_id"
 
-              max_checks=60
-              sleep_seconds=10
+              print_deployment_diagnostics() {
+                echo "Deployment diagnostics (deployment=$deployment_id):"
+                doctl apps get-deployment "$DIGITAL_APP_ID" "$deployment_id" || true
+                echo "Recent deploy logs:"
+                doctl apps logs "$DIGITAL_APP_ID" --type deploy --deployment "$deployment_id" --tail 200 --no-prefix || true
+                echo "Recent run logs:"
+                doctl apps logs "$DIGITAL_APP_ID" --type run --deployment "$deployment_id" --tail 200 --no-prefix || true
+              }
+
+              max_checks="$DO_DEPLOY_MAX_CHECKS"
+              sleep_seconds="$DO_DEPLOY_POLL_SECONDS"
               for attempt in $(seq 1 "$max_checks"); do
                 phase="$(doctl apps get-deployment "$DIGITAL_APP_ID" "$deployment_id" --format Phase --no-header 2>/dev/null | tr -d '\r' | xargs)"
                 progress="$(doctl apps get-deployment "$DIGITAL_APP_ID" "$deployment_id" --format Progress --no-header 2>/dev/null | tr -d '\r' | xargs)"
@@ -175,14 +207,14 @@ jobs:
                     ;;
                   ERROR|FAILED|CANCELED|SUPERSEDED)
                     echo "Deployment entered terminal state: $phase"
-                    doctl apps get-deployment "$DIGITAL_APP_ID" "$deployment_id" || true
+                    print_deployment_diagnostics
                     exit 1
                     ;;
                 esac
 
                 if [ "$attempt" -eq "$max_checks" ]; then
                   echo "Deployment did not reach ACTIVE/RUNNING before timeout."
-                  doctl apps get-deployment "$DIGITAL_APP_ID" "$deployment_id" || true
+                  print_deployment_diagnostics
                   exit 1
                 fi
 
@@ -209,19 +241,29 @@ jobs:
       - name: Post-deploy health check
         env:
           HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL || vars.HEALTHCHECK_URL || 'https://projectodysseus.live/api' }}
+          SYNC_APP_SPEC: ${{ github.event.inputs.sync_app_spec || vars.SYNC_APP_SPEC || 'false' }}
         run: |
           max_checks=20
           sleep_seconds=10
+          last_http_code="000"
           for attempt in $(seq 1 "$max_checks"); do
-            if curl -fsS "${HEALTHCHECK_URL%/}/ready" >/dev/null; then
+            response_file="$(mktemp)"
+            last_http_code="$(curl -sS -o "$response_file" -w "%{http_code}" "${HEALTHCHECK_URL%/}/ready" || echo 000)"
+            if [ "$last_http_code" = "200" ]; then
               echo "Health check passed on attempt $attempt/$max_checks"
+              rm -f "$response_file"
               exit 0
             fi
-            echo "Health check not ready yet (attempt $attempt/$max_checks)"
+            echo "Health check not ready yet (attempt $attempt/$max_checks, http=$last_http_code)"
+            rm -f "$response_file"
             if [ "$attempt" -lt "$max_checks" ]; then
               sleep "$sleep_seconds"
             fi
           done
 
-          echo "Health check failed after $max_checks attempts: ${HEALTHCHECK_URL%/}/ready"
+          if [ "$last_http_code" = "404" ] && [ "$SYNC_APP_SPEC" != "true" ]; then
+            echo "Health endpoint returned 404 and app spec sync was skipped. Rerun with sync_app_spec=true to apply .do/app.yaml route mapping for /api."
+          fi
+
+          echo "Health check failed after $max_checks attempts: ${HEALTHCHECK_URL%/}/ready (last_http=$last_http_code)"
           exit 1
