@@ -153,7 +153,42 @@ jobs:
               else
                 echo "Skipping app spec sync (code-only deployment). Set sync_app_spec=true to apply .do/app.yaml."
               fi
-              doctl apps create-deployment "$DIGITAL_APP_ID" --wait
+
+              deployment_id="$(doctl apps create-deployment "$DIGITAL_APP_ID" --format ID --no-header | awk 'NR == 1 { print $1 }')"
+              if [ -z "$deployment_id" ]; then
+                echo "Failed to create deployment for app ID: $DIGITAL_APP_ID"
+                exit 1
+              fi
+              echo "Created deployment ID: $deployment_id"
+
+              max_checks=60
+              sleep_seconds=10
+              for attempt in $(seq 1 "$max_checks"); do
+                phase="$(doctl apps get-deployment "$DIGITAL_APP_ID" "$deployment_id" --format Phase --no-header 2>/dev/null | tr -d '\r' | xargs)"
+                progress="$(doctl apps get-deployment "$DIGITAL_APP_ID" "$deployment_id" --format Progress --no-header 2>/dev/null | tr -d '\r' | xargs)"
+                echo "Deployment status: phase=${phase:-unknown} progress=${progress:-unknown} (attempt $attempt/$max_checks)"
+
+                case "$phase" in
+                  ACTIVE|RUNNING)
+                    echo "Deployment reached active state."
+                    break
+                    ;;
+                  ERROR|FAILED|CANCELED|SUPERSEDED)
+                    echo "Deployment entered terminal state: $phase"
+                    doctl apps get-deployment "$DIGITAL_APP_ID" "$deployment_id" || true
+                    exit 1
+                    ;;
+                esac
+
+                if [ "$attempt" -eq "$max_checks" ]; then
+                  echo "Deployment did not reach ACTIVE/RUNNING before timeout."
+                  doctl apps get-deployment "$DIGITAL_APP_ID" "$deployment_id" || true
+                  exit 1
+                fi
+
+                sleep "$sleep_seconds"
+              done
+
               exit 0
             fi
 
@@ -175,4 +210,18 @@ jobs:
         env:
           HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL || vars.HEALTHCHECK_URL || 'https://projectodysseus.live/api' }}
         run: |
-          curl -fsS "${HEALTHCHECK_URL%/}/ready"
+          max_checks=20
+          sleep_seconds=10
+          for attempt in $(seq 1 "$max_checks"); do
+            if curl -fsS "${HEALTHCHECK_URL%/}/ready" >/dev/null; then
+              echo "Health check passed on attempt $attempt/$max_checks"
+              exit 0
+            fi
+            echo "Health check not ready yet (attempt $attempt/$max_checks)"
+            if [ "$attempt" -lt "$max_checks" ]; then
+              sleep "$sleep_seconds"
+            fi
+          done
+
+          echo "Health check failed after $max_checks attempts: ${HEALTHCHECK_URL%/}/ready"
+          exit 1
