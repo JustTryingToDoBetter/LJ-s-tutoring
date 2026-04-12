@@ -158,9 +158,18 @@ jobs:
 
               app_json="$(doctl apps get "$DIGITAL_APP_ID" --output json 2>/dev/null || echo '[]')"
 
+              app_has_key() {
+                local key="$1"
+                grep -Eq "\"key\"[[:space:]]*:[[:space:]]*\"$key\"" <<<"$app_json"
+              }
+
+              app_has_api_route() {
+                grep -Eq '"path"[[:space:]]*:[[:space:]]*"/api("|/)' <<<"$app_json"
+              }
+
               missing_envs=""
               for required_key in DATABASE_URL JWT_SECRET COOKIE_SECRET; do
-                if ! echo "$app_json" | grep -Eq "\"key\"[[:space:]]*:[[:space:]]*\"$required_key\""; then
+                if ! app_has_key "$required_key"; then
                   missing_envs="${missing_envs}${missing_envs:+, }$required_key"
                 fi
               done
@@ -171,10 +180,26 @@ jobs:
                 exit 1
               fi
 
-              if ! echo "$app_json" | grep -Eq '"path"[[:space:]]*:[[:space:]]*"/api("|/)'; then
-                echo "App spec does not currently expose the API on /api."
-                echo "Rerun with sync_app_spec=true to apply .do/app.yaml route mapping."
-                exit 1
+              if [ "$SYNC_APP_SPEC" = "true" ] && ! app_has_api_route; then
+                for route_attempt in $(seq 1 12); do
+                  echo "Waiting for /api route propagation after app spec update (attempt $route_attempt/12)"
+                  sleep 5
+                  app_json="$(doctl apps get "$DIGITAL_APP_ID" --output json 2>/dev/null || echo '[]')"
+                  if app_has_api_route; then
+                    echo "Detected /api route in live app spec."
+                    break
+                  fi
+                done
+              fi
+
+              if ! app_has_api_route; then
+                if [ "$SYNC_APP_SPEC" = "true" ]; then
+                  echo "Warning: App spec still does not show /api route immediately after update. Continuing deployment; post-deploy health check will verify availability."
+                else
+                  echo "App spec does not currently expose the API on /api."
+                  echo "Rerun with sync_app_spec=true to apply .do/app.yaml route mapping."
+                  exit 1
+                fi
               fi
 
               deployment_id="$(doctl apps create-deployment "$DIGITAL_APP_ID" --format ID --no-header | awk 'NR == 1 { print $1 }')"

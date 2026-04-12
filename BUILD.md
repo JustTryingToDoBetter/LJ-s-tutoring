@@ -79,6 +79,7 @@ Resolver behavior:
 - If only one app is visible to the token context, the workflow auto-selects it.
 - On deployment timeout or terminal failure, the workflow now prints deployment details plus recent `deploy` and `run` logs from App Platform for faster root-cause diagnosis.
 - Before creating a deployment, the workflow checks that the live app spec contains required API env keys (`DATABASE_URL`, `JWT_SECRET`, `COOKIE_SECRET`) and that an API route exists on `/api`.
+- When `sync_app_spec=true`, the workflow retries `/api` route detection to allow for App Platform propagation lag and warns (instead of immediate failure) if the route is not instantly visible.
 
 Health check default:
 
