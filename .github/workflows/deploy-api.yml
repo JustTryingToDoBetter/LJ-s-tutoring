@@ -11,6 +11,10 @@ on:
         description: Run rollback command instead of deploy
         required: false
         default: 'false'
+      sync_app_spec:
+        description: Apply .do/app.yaml before deployment (defaults to false for code-only deploys)
+        required: false
+        default: 'false'
 
 jobs:
   preflight:
@@ -47,6 +51,7 @@ jobs:
           DIGITAL_ACCESS_TOKEN: ${{ secrets.DIGITAL_ACCESS_TOKEN || vars.DIGITAL_ACCESS_TOKEN || secrets.DIGITALOCEAN_ACCESS_TOKEN || vars.DIGITALOCEAN_ACCESS_TOKEN }}
           DIGITAL_APP_ID: ${{ secrets.DIGITAL_APP_ID || vars.DIGITAL_APP_ID || secrets.DIGITALOCEAN_APP_ID || vars.DIGITALOCEAN_APP_ID }}
           DOCTL_VERSION: ${{ vars.DOCTL_VERSION || '1.154.0' }}
+          SYNC_APP_SPEC: ${{ github.event.inputs.sync_app_spec || vars.SYNC_APP_SPEC || 'false' }}
         run: |
           if [ "${{ github.event.inputs.rollback }}" = "true" ]; then
             if [ -z "$ROLLBACK_COMMAND" ]; then
@@ -71,8 +76,16 @@ jobs:
               sudo mv doctl /usr/local/bin/doctl
 
               doctl auth init -t "$DIGITAL_ACCESS_TOKEN"
-              if [ -f ".do/app.yaml" ]; then
-                doctl apps update "$DIGITAL_APP_ID" --spec .do/app.yaml >/dev/null
+              if [ "$SYNC_APP_SPEC" = "true" ]; then
+                if [ -f ".do/app.yaml" ]; then
+                  echo "SYNC_APP_SPEC=true: updating app spec from .do/app.yaml"
+                  doctl apps update "$DIGITAL_APP_ID" --spec .do/app.yaml >/dev/null
+                else
+                  echo "SYNC_APP_SPEC=true but .do/app.yaml was not found"
+                  exit 1
+                fi
+              else
+                echo "Skipping app spec sync (code-only deployment). Set sync_app_spec=true to apply .do/app.yaml."
               fi
               doctl apps create-deployment "$DIGITAL_APP_ID" --wait
               exit 0
@@ -94,10 +107,6 @@ jobs:
 
       - name: Post-deploy health check
         env:
-          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL || vars.HEALTHCHECK_URL }}
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL || vars.HEALTHCHECK_URL || 'https://projectodysseus.live/api' }}
         run: |
-          if [ -z "$HEALTHCHECK_URL" ]; then
-            echo "HEALTHCHECK_URL not set (set it as a secret or variable)"
-            exit 1
-          fi
           curl -fsS "${HEALTHCHECK_URL%/}/ready"

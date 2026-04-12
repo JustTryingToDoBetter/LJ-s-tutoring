@@ -5,8 +5,6 @@ domains:
     type: PRIMARY
   - domain: www.projectodysseus.live
     type: ALIAS
-  - domain: api.projectodysseus.live
-    type: ALIAS
 
 static_sites:
   - name: website

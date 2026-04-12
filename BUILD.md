@@ -69,6 +69,11 @@ Special case supported by workflow:
 	- `DIGITAL_ACCESS_TOKEN` (or `DIGITALOCEAN_ACCESS_TOKEN`)
 	- `DIGITAL_APP_ID` (or `DIGITALOCEAN_APP_ID`)
 	- optional `DOCTL_VERSION` (defaults to `1.154.0`)
+	- optional workflow input `sync_app_spec` (defaults to `false`; when `true`, `.do/app.yaml` is applied before deployment)
+
+Health check default:
+
+- If `HEALTHCHECK_URL` is not set in secrets/variables, the workflow defaults to `https://projectodysseus.live/api` and checks `/ready` there.
 
 Example `API_DEPLOY_COMMAND` formats:
 
