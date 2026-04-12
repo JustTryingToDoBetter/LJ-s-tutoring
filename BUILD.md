@@ -42,7 +42,12 @@ API service component:
 
 - source_dir: `lms-api`
 - build_command: `npm ci && npm run build`
-- run_command: `npm run start`
+- run_command: `npm run prisma:migrate:safe && npm start`
+
+Migration startup note:
+
+- `prisma:migrate:safe` runs `prisma migrate deploy`, and if it detects Prisma `P3009` for allowlisted failed migrations (default: `20260205_audit_log`), it resolves them as rolled back and retries deploy once.
+- You can override the allowlist with `PRISMA_AUTO_RESOLVE_MIGRATIONS` (comma-separated migration names).
 
 If your API component must build from repository root, use `npm run build:api` as the build command instead of `npm run build`.
 

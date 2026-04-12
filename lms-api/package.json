@@ -22,6 +22,7 @@
     "job:worker": "tsx scripts/job-worker.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate:safe": "node scripts/prisma-migrate-safe.js",
     "prisma:validate": "prisma validate",
     "test": "node scripts/run-with-test-env.js npm run db:migrate:test && node scripts/run-with-test-env.js vitest run --exclude tests/e2e/**",
     "test:contracts": "node scripts/run-with-test-env.js vitest run tests/contracts",
