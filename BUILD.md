@@ -67,7 +67,8 @@ Special case supported by workflow:
 
 - If `API_DEPLOY_COMMAND=production`, the workflow performs a DigitalOcean deployment using:
 	- `DIGITAL_ACCESS_TOKEN` (or `DIGITALOCEAN_ACCESS_TOKEN`)
-	- `DIGITAL_APP_ID` (or `DIGITALOCEAN_APP_ID`)
+	- `DIGITAL_APP_ID` (or `DIGITALOCEAN_APP_ID`) when available
+	- optional `DIGITAL_APP_NAME` (or `DIGITALOCEAN_APP_NAME`, default `project-odysseus`) to auto-resolve app ID if ID is stale/missing
 	- optional `DOCTL_VERSION` (defaults to `1.154.0`)
 	- optional workflow input `sync_app_spec` (defaults to `false`; when `true`, `.do/app.yaml` is applied before deployment)
 

@@ -50,6 +50,7 @@ jobs:
           GATEWAY_SHARED_KEY: ${{ secrets.GATEWAY_SHARED_KEY || vars.GATEWAY_SHARED_KEY }}
           DIGITAL_ACCESS_TOKEN: ${{ secrets.DIGITAL_ACCESS_TOKEN || vars.DIGITAL_ACCESS_TOKEN || secrets.DIGITALOCEAN_ACCESS_TOKEN || vars.DIGITALOCEAN_ACCESS_TOKEN }}
           DIGITAL_APP_ID: ${{ secrets.DIGITAL_APP_ID || vars.DIGITAL_APP_ID || secrets.DIGITALOCEAN_APP_ID || vars.DIGITALOCEAN_APP_ID }}
+          DIGITAL_APP_NAME: ${{ secrets.DIGITAL_APP_NAME || vars.DIGITAL_APP_NAME || secrets.DIGITALOCEAN_APP_NAME || vars.DIGITALOCEAN_APP_NAME || 'project-odysseus' }}
           DOCTL_VERSION: ${{ vars.DOCTL_VERSION || '1.154.0' }}
           SYNC_APP_SPEC: ${{ github.event.inputs.sync_app_spec || vars.SYNC_APP_SPEC || 'false' }}
         run: |
@@ -66,8 +67,8 @@ jobs:
             fi
 
             if [ "$API_DEPLOY_COMMAND" = "production" ]; then
-              if [ -z "$DIGITAL_ACCESS_TOKEN" ] || [ -z "$DIGITAL_APP_ID" ]; then
-                echo "API_DEPLOY_COMMAND=production requires DIGITAL_ACCESS_TOKEN/DIGITALOCEAN_ACCESS_TOKEN and DIGITAL_APP_ID/DIGITALOCEAN_APP_ID"
+              if [ -z "$DIGITAL_ACCESS_TOKEN" ]; then
+                echo "API_DEPLOY_COMMAND=production requires DIGITAL_ACCESS_TOKEN/DIGITALOCEAN_ACCESS_TOKEN"
                 exit 1
               fi
 
@@ -76,6 +77,38 @@ jobs:
               sudo mv doctl /usr/local/bin/doctl
 
               doctl auth init -t "$DIGITAL_ACCESS_TOKEN"
+
+              resolve_app_id_by_name() {
+                local app_name="$1"
+                doctl apps list --no-header 2>/dev/null | awk -v name="$app_name" '$2 == name { print $1; exit }'
+              }
+
+              if [ -n "$DIGITAL_APP_ID" ]; then
+                if ! doctl apps get "$DIGITAL_APP_ID" >/dev/null 2>&1; then
+                  echo "Configured DIGITAL_APP_ID is not accessible in this token context: $DIGITAL_APP_ID"
+                  DIGITAL_APP_ID=""
+                fi
+              fi
+
+              if [ -z "$DIGITAL_APP_ID" ]; then
+                DIGITAL_APP_ID="$(resolve_app_id_by_name "$DIGITAL_APP_NAME")"
+                if [ -n "$DIGITAL_APP_ID" ]; then
+                  echo "Resolved app ID from DIGITAL_APP_NAME=$DIGITAL_APP_NAME"
+                fi
+              fi
+
+              if [ -z "$DIGITAL_APP_ID" ]; then
+                echo "Unable to resolve DigitalOcean app ID. Set DIGITAL_APP_ID/DIGITALOCEAN_APP_ID or DIGITAL_APP_NAME."
+                echo "Apps visible to this token:"
+                apps_list="$(doctl apps list --no-header 2>/dev/null || true)"
+                if [ -z "$apps_list" ]; then
+                  echo "- none"
+                else
+                  echo "$apps_list" | awk '{print "- " $2 " (" $1 ")"}'
+                fi
+                exit 1
+              fi
+
               if [ "$SYNC_APP_SPEC" = "true" ]; then
                 if [ -f ".do/app.yaml" ]; then
                   echo "SYNC_APP_SPEC=true: updating app spec from .do/app.yaml"
