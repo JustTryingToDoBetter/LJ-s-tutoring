@@ -213,9 +213,18 @@ jobs:
                 echo "Deployment diagnostics (deployment=$deployment_id):"
                 doctl apps get-deployment "$DIGITAL_APP_ID" "$deployment_id" || true
                 echo "Recent deploy logs:"
-                doctl apps logs "$DIGITAL_APP_ID" --type deploy --deployment "$deployment_id" --tail 200 --no-prefix || true
+                deploy_logs="$(doctl apps logs "$DIGITAL_APP_ID" --type deploy --deployment "$deployment_id" --tail 200 --no-prefix || true)"
+                echo "$deploy_logs"
                 echo "Recent run logs:"
-                doctl apps logs "$DIGITAL_APP_ID" --type run --deployment "$deployment_id" --tail 200 --no-prefix || true
+                run_logs="$(doctl apps logs "$DIGITAL_APP_ID" --type run --deployment "$deployment_id" --tail 200 --no-prefix || true)"
+                echo "$run_logs"
+
+                combined_logs="${deploy_logs} ${run_logs}"
+                if echo "$combined_logs" | grep -Eq 'P1012|You must provide a nonempty URL|env\("DATABASE_URL"\)'; then
+                  echo "Detected Prisma datasource error: DATABASE_URL is empty or missing at runtime."
+                  echo "Set DATABASE_URL for API component in DigitalOcean to a full Postgres URL, for example:"
+                  echo "postgresql://<user>:<password>@<host>:<port>/<db>?sslmode=require"
+                fi
               }
 
               max_checks="$DO_DEPLOY_MAX_CHECKS"
