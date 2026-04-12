@@ -50,7 +50,7 @@ jobs:
           GATEWAY_SHARED_KEY: ${{ secrets.GATEWAY_SHARED_KEY || vars.GATEWAY_SHARED_KEY }}
           DIGITAL_ACCESS_TOKEN: ${{ secrets.DIGITAL_ACCESS_TOKEN || vars.DIGITAL_ACCESS_TOKEN || secrets.DIGITALOCEAN_ACCESS_TOKEN || vars.DIGITALOCEAN_ACCESS_TOKEN }}
           DIGITAL_APP_ID: ${{ secrets.DIGITAL_APP_ID || vars.DIGITAL_APP_ID || secrets.DIGITALOCEAN_APP_ID || vars.DIGITALOCEAN_APP_ID }}
-          DIGITAL_APP_NAME: ${{ secrets.DIGITAL_APP_NAME || vars.DIGITAL_APP_NAME || secrets.DIGITALOCEAN_APP_NAME || vars.DIGITALOCEAN_APP_NAME || 'project-odysseus' }}
+          DIGITAL_APP_NAME: ${{ secrets.DIGITAL_APP_NAME || vars.DIGITAL_APP_NAME || secrets.DIGITALOCEAN_APP_NAME || vars.DIGITALOCEAN_APP_NAME || 'projectodysseus' }}
           DOCTL_VERSION: ${{ vars.DOCTL_VERSION || '1.154.0' }}
           SYNC_APP_SPEC: ${{ github.event.inputs.sync_app_spec || vars.SYNC_APP_SPEC || 'false' }}
         run: |
@@ -78,9 +78,35 @@ jobs:
 
               doctl auth init -t "$DIGITAL_ACCESS_TOKEN"
 
+              apps_list="$(doctl apps list --no-header 2>/dev/null || true)"
+
+              normalize_name() {
+                echo "$1" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]'
+              }
+
               resolve_app_id_by_name() {
                 local app_name="$1"
-                doctl apps list --no-header 2>/dev/null | awk -v name="$app_name" '$2 == name { print $1; exit }'
+                local exact_match
+                exact_match="$(echo "$apps_list" | awk -v name="$app_name" '$2 == name { print $1; exit }')"
+                if [ -n "$exact_match" ]; then
+                  echo "$exact_match"
+                  return
+                fi
+
+                local target
+                target="$(normalize_name "$app_name")"
+                if [ -z "$target" ]; then
+                  return
+                fi
+
+                echo "$apps_list" | awk -v target="$target" '
+                  function normalize(s) {
+                    s = tolower(s)
+                    gsub(/[^a-z0-9]/, "", s)
+                    return s
+                  }
+                  normalize($2) == target { print $1; exit }
+                '
               }
 
               if [ -n "$DIGITAL_APP_ID" ]; then
@@ -98,9 +124,16 @@ jobs:
               fi
 
               if [ -z "$DIGITAL_APP_ID" ]; then
+                visible_apps_count="$(echo "$apps_list" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')"
+                if [ "$visible_apps_count" = "1" ]; then
+                  DIGITAL_APP_ID="$(echo "$apps_list" | awk 'NR == 1 { print $1 }')"
+                  echo "Resolved app ID from single visible app in token context"
+                fi
+              fi
+
+              if [ -z "$DIGITAL_APP_ID" ]; then
                 echo "Unable to resolve DigitalOcean app ID. Set DIGITAL_APP_ID/DIGITALOCEAN_APP_ID or DIGITAL_APP_NAME."
                 echo "Apps visible to this token:"
-                apps_list="$(doctl apps list --no-header 2>/dev/null || true)"
                 if [ -z "$apps_list" ]; then
                   echo "- none"
                 else
