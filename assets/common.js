@@ -37,6 +37,17 @@ export function getCsrfToken() {
   return cookie ? decodeURIComponent(cookie.split('=').slice(1).join('=')) : '';
 }
 
+function generateRequestId() {
+  try {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+  } catch {
+    /* noop */
+  }
+  return `po-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export async function apiFetch(path, options = {}) {
   const method = options.method || 'GET';
   const headers = new Headers(options.headers || {});
@@ -46,6 +57,9 @@ export async function apiFetch(path, options = {}) {
   if (['POST', 'PATCH', 'DELETE'].includes(method)) {
     const csrf = getCsrfToken();
     if (csrf) {headers.set('x-csrf-token', csrf);}
+  }
+  if (!headers.has('x-request-id')) {
+    headers.set('x-request-id', generateRequestId());
   }
   const response = await fetch(apiUrl(path), {
     ...options,
@@ -72,22 +86,116 @@ export function setText(selector, value) {
   }
 }
 
-export function renderEmpty(target, text) {
-  target.innerHTML = `<div class="empty-state">${text}</div>`;
+export function clearChildren(node) {
+  if (!node) {return;}
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
 }
 
+export function renderEmpty(target, text) {
+  clearChildren(target);
+  const empty = document.createElement('div');
+  empty.className = 'empty-state';
+  empty.textContent = String(text ?? '');
+  target.appendChild(empty);
+}
+
+/**
+ * Build a list-item element from a plain-object spec. The caller provides
+ * safe text/attribute values and nested children; nothing is interpolated as
+ * HTML. This is the safe alternative to `innerHTML` for rendering per-item
+ * templates that include user/domain data.
+ *
+ * spec: {
+ *   className?: string,
+ *   dataset?: Record<string, string>,
+ *   rows: Array<string | HTMLElement | { el?: string, text?: string, className?: string }>
+ * }
+ */
+export function buildSafeItem(spec) {
+  const wrapper = document.createElement('div');
+  wrapper.className = spec?.className || 'list-item';
+  if (spec?.dataset) {
+    for (const [k, v] of Object.entries(spec.dataset)) {
+      if (v !== null && v !== undefined) {wrapper.dataset[k] = String(v);}
+    }
+  }
+  const rows = Array.isArray(spec?.rows) ? spec.rows : [];
+  for (const row of rows) {
+    if (row === null || row === undefined) {continue;}
+    if (row instanceof HTMLElement) {
+      wrapper.appendChild(row);
+      continue;
+    }
+    if (typeof row === 'string') {
+      const div = document.createElement('div');
+      div.textContent = row;
+      wrapper.appendChild(div);
+      continue;
+    }
+    const tag = row.el || 'div';
+    const node = document.createElement(tag);
+    if (row.className) {node.className = row.className;}
+    if (row.text !== null && row.text !== undefined) {node.textContent = String(row.text);}
+    if (row.children && Array.isArray(row.children)) {
+      for (const child of row.children) {
+        if (child instanceof HTMLElement) {node.appendChild(child);}
+      }
+    }
+    wrapper.appendChild(node);
+  }
+  return wrapper;
+}
+
+/**
+ * Render a list by mapping each item through a renderer that returns an
+ * HTMLElement (or a buildSafeItem spec). Never accepts HTML strings.
+ * This is the XSS-safe replacement for the previous innerHTML-based API.
+ */
 export function renderList(target, items, renderer) {
-  target.innerHTML = '';
+  if (!target) {return;}
+  clearChildren(target);
   if (!items || items.length === 0) {
     renderEmpty(target, 'No data available yet.');
     return;
   }
-  items.forEach((item) => {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'list-item';
-    wrapper.innerHTML = renderer(item);
-    target.appendChild(wrapper);
+  items.forEach((item, index) => {
+    let node;
+    try {
+      const result = renderer(item, index);
+      if (result instanceof HTMLElement) {
+        node = result;
+      } else if (result && typeof result === 'object') {
+        node = buildSafeItem(result);
+      }
+    } catch (_err) {
+      node = null;
+    }
+    if (node) {
+      target.appendChild(node);
+    }
   });
+}
+
+export function renderError(target, text) {
+  if (!target) {return;}
+  clearChildren(target);
+  const err = document.createElement('div');
+  err.className = 'empty-state error-state';
+  err.setAttribute('role', 'alert');
+  err.textContent = String(text ?? 'Something went wrong.');
+  target.appendChild(err);
+}
+
+export function renderLoading(target, text) {
+  if (!target) {return;}
+  clearChildren(target);
+  const loading = document.createElement('div');
+  loading.className = 'empty-state loading-state';
+  loading.setAttribute('aria-busy', 'true');
+  loading.textContent = String(text ?? 'Loading…');
+  target.appendChild(loading);
 }
 
 export async function loadJson(path, options) {

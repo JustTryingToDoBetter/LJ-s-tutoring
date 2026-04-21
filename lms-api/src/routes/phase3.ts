@@ -825,6 +825,13 @@ export async function phase3Routes(app: FastifyInstance) {
       );
 
       await client.query('COMMIT');
+      req.log?.info?.({
+        event: 'community.room.created',
+        requestId: req.id,
+        userId: req.user?.userId,
+        role: req.user?.role,
+        roomId: room.rows[0].id,
+      }, 'analytics.event');
       return reply.code(201).send({ room: room.rows[0] });
     } catch (error) {
       await client.query('ROLLBACK');
@@ -854,12 +861,23 @@ export async function phase3Routes(app: FastifyInstance) {
         return reply.code(404).send({ error: 'room_not_found' });
       }
 
-      await pool.query(
+      const inserted = await pool.query(
         `insert into study_room_members (room_id, user_id)
          values ($1, $2)
-         on conflict do nothing`,
+         on conflict do nothing
+         returning room_id`,
         [parsed.data.id, req.user!.userId]
       );
+
+      if ((inserted.rowCount ?? 0) > 0) {
+        req.log?.info?.({
+          event: 'community.room.joined',
+          requestId: req.id,
+          userId: req.user?.userId,
+          role: req.user?.role,
+          roomId: parsed.data.id,
+        }, 'analytics.event');
+      }
 
       return reply.send({ ok: true });
     } catch (err: any) {
@@ -976,6 +994,16 @@ export async function phase3Routes(app: FastifyInstance) {
          returning id, room_id, user_id, content, moderation_state, created_at`,
         [params.data.id, req.user!.userId, body.data.content, moderation.state]
       );
+
+      req.log?.info?.({
+        event: 'community.message.posted',
+        requestId: req.id,
+        userId: req.user?.userId,
+        role: req.user?.role,
+        roomId: params.data.id,
+        messageId: inserted.rows[0]?.id,
+        moderationState: moderation.state,
+      }, 'analytics.event');
 
       return reply.code(201).send({
         message: inserted.rows[0],

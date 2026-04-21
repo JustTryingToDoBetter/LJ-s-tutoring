@@ -1571,8 +1571,6 @@
       </header>
       <div class="modal-body">
         <div class="chat-tools">
-          <input id="odieAccessKey" class="chat-input" type="password" placeholder="Enter Odie access key" style="min-width:220px;" />
-          <button id="odieAccessKeySave" class="btn" type="button">Save key</button>
           <div id="odieAuthStatus" class="chat-status" aria-live="polite"></div>
         </div>
         <div id="odieMessages" class="chat-window"></div>
@@ -1695,8 +1693,6 @@
     const odieMessages = document.getElementById('odieMessages');
     const odieInput = document.getElementById('odieInput');
     const odieSend = document.getElementById('odieSend');
-    const odieAccessKey = document.getElementById('odieAccessKey');
-    const odieAccessKeySave = document.getElementById('odieAccessKeySave');
     const odieAuthStatus = document.getElementById('odieAuthStatus');
     const odieDocumentText = document.getElementById('odieDocumentText');
     const odieDocQuestion = document.getElementById('odieDocQuestion');
@@ -2126,63 +2122,55 @@
     const runtimeApiBase = window.__PO_API_BASE__ && window.__PO_API_BASE__ !== '__PO_API_BASE__'
       ? String(window.__PO_API_BASE__).replace(/\/$/, '')
       : '';
-    const runtimeOdieAccessKey = window.__ODIE_ACCESS_KEY__ && window.__ODIE_ACCESS_KEY__ !== '__PO_ODIE_ACCESS_KEY__'
-      ? String(window.__ODIE_ACCESS_KEY__).trim()
-      : '';
-    const ODIE_ACCESS_KEY_STORAGE = 'odie-access-key';
+    const assistantUiEnabled = window.__ODIE_ASSISTANT_ENABLED__ !== false;
 
     function apiUrl(path) {
       return runtimeApiBase ? runtimeApiBase + path : path;
     }
 
     function setOdieAuthStatus(text, tone = '') {
+      if (!odieAuthStatus) return;
       odieAuthStatus.textContent = text || '';
       odieAuthStatus.className = 'chat-status' + (tone ? ' ' + tone : '');
     }
 
-    function loadOdieAccessKey() {
-      const fromStorage = localStorage.getItem(ODIE_ACCESS_KEY_STORAGE) || '';
-      const active = fromStorage || runtimeOdieAccessKey;
-      odieAccessKey.value = active;
-      if (active) {
-        setOdieAuthStatus('Odie access key loaded.', 'ok');
-      } else {
-        setOdieAuthStatus('Enter your rotating Odie access key to start chatting.', 'warn');
-      }
-      return active;
+    function getCsrfTokenFromCookie() {
+      const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('csrf='));
+      return cookie ? decodeURIComponent(cookie.split('=').slice(1).join('=')) : '';
     }
 
-    function saveOdieAccessKey() {
-      const value = String(odieAccessKey.value || '').trim();
-      if (!value) {
-        localStorage.removeItem(ODIE_ACCESS_KEY_STORAGE);
-        setOdieAuthStatus('Access key cleared.', 'warn');
-        return '';
+    async function refreshAssistantStatus() {
+      if (!assistantUiEnabled) {
+        setOdieAuthStatus('Odie is currently disabled.', 'warn');
+        return false;
       }
-      localStorage.setItem(ODIE_ACCESS_KEY_STORAGE, value);
-      setOdieAuthStatus('Access key saved.', 'ok');
-      return value;
-    }
-
-    function getOdieAccessKey() {
-      const fromInput = String(odieAccessKey.value || '').trim();
-      if (fromInput) return fromInput;
-      const fromStorage = localStorage.getItem(ODIE_ACCESS_KEY_STORAGE) || '';
-      if (fromStorage) {
-        odieAccessKey.value = fromStorage;
-        return fromStorage;
+      try {
+        const res = await fetch(apiUrl('/assistant/status'), { credentials: 'include' });
+        if (!res.ok) {
+          setOdieAuthStatus('Odie is currently unavailable.', 'warn');
+          return false;
+        }
+        const body = await res.json();
+        if (body && body.enabled === false) {
+          setOdieAuthStatus('Odie is currently disabled.', 'warn');
+          return false;
+        }
+        setOdieAuthStatus('Odie is ready. Ask a question to get started.', 'ok');
+        return true;
+      } catch (_err) {
+        setOdieAuthStatus('Odie is currently unavailable.', 'warn');
+        return false;
       }
-      return runtimeOdieAccessKey;
     }
 
     async function assistantRequest(path, payload) {
-      const accessKey = getOdieAccessKey();
+      const headers = { 'Content-Type': 'application/json' };
+      const csrf = getCsrfTokenFromCookie();
+      if (csrf) headers['X-CSRF-Token'] = csrf;
       const response = await fetch(apiUrl(path), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessKey ? { 'X-Odie-Access-Key': accessKey } : {})
-        },
+        credentials: 'include',
+        headers,
         body: JSON.stringify(payload)
       });
 
@@ -2208,10 +2196,10 @@
 
     function getAssistantErrorMessage(err) {
       if (err && err.status === 401) {
-        return 'Odie access key is missing. Enter your rotating key, save it, then try again.';
+        return 'Your session has expired. Please sign in again to keep chatting with Odie.';
       }
-      if (err && err.status === 403 && err.code === 'assistant_access_key_invalid') {
-        return 'That Odie access key is invalid. Please check the latest rotated key and try again.';
+      if (err && err.status === 503 && err.code === 'assistant_disabled') {
+        return 'Odie is temporarily disabled by the administrators. Please try again later.';
       }
       if (err && err.status === 503) {
         return 'The AI service is not available right now. Please try again in a moment.';
@@ -2289,17 +2277,6 @@
       });
     });
 
-    odieAccessKeySave.addEventListener('click', () => {
-      saveOdieAccessKey();
-    });
-
-    odieAccessKey.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        saveOdieAccessKey();
-      }
-    });
-
     odieDocSend.addEventListener('click', () => {
       const documentText = odieDocumentText.value.trim();
       const question = odieDocQuestion.value.trim();
@@ -2330,7 +2307,7 @@
       }
     });
 
-    loadOdieAccessKey();
+    refreshAssistantStatus();
 
     let careerStarted = false;
 

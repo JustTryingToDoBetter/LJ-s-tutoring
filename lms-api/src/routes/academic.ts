@@ -600,6 +600,12 @@ export async function academicRoutes(app: FastifyInstance) {
 
       await client.query('COMMIT');
 
+      logEvent(req, 'study_activity.logged', {
+        type: parsed.data.type,
+        deduped: false,
+        credited,
+      });
+
       if (credited) {
         logEvent(req, 'streak_credited', { currentStreak: nextCurrent, xp: nextXp });
       }

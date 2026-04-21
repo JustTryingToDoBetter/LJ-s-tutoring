@@ -30,6 +30,12 @@ function setPrivateNoStore(reply: any) {
   reply.header('Pragma', 'no-cache');
 }
 
+export function isAssistantEnabled(env: NodeJS.ProcessEnv = process.env) {
+  const raw = String(env.ASSISTANT_ENABLED ?? 'true').trim().toLowerCase();
+  if (!raw) return true;
+  return raw !== 'false' && raw !== '0' && raw !== 'off' && raw !== 'disabled';
+}
+
 function parseAccessKeys(env: NodeJS.ProcessEnv) {
   const csvKeys = String(env.ODIE_ACCESS_KEYS || '')
     .split(',')
@@ -56,10 +62,34 @@ function getAccessKeyFromRequest(req: any) {
   return '';
 }
 
+const ALLOWED_ROLES = new Set(['STUDENT', 'TUTOR', 'ADMIN']);
+
 export async function assistantRoutes(app: FastifyInstance) {
+  const assistantEnabled = isAssistantEnabled(process.env);
   const config = loadAssistantConfig();
   const accessKeys = parseAccessKeys(process.env);
-  const requireAccessKey = process.env.NODE_ENV === 'production' || process.env.ODIE_DEV_NO_AUTH === 'false';
+  // In production, a session cookie is the primary credential. The access-key
+  // header is only honoured when `ODIE_ALLOW_ACCESS_KEY_FALLBACK=true` (e.g.
+  // for a public landing-page preview). Dev can bypass via ODIE_DEV_NO_AUTH.
+  const allowAccessKeyFallback = String(process.env.ODIE_ALLOW_ACCESS_KEY_FALLBACK || '').toLowerCase() === 'true';
+  const devBypass = process.env.NODE_ENV !== 'production' && String(process.env.ODIE_DEV_NO_AUTH || '').toLowerCase() === 'true';
+
+  // Disabled short-circuit: register handlers that always return a safe disabled response.
+  if (!assistantEnabled) {
+    const disabledHandler = async (_req: any, reply: any) => {
+      setPrivateNoStore(reply);
+      return reply.code(503).send({ error: 'assistant_disabled' });
+    };
+    app.get('/assistant/status', async (_req, reply) => {
+      setPrivateNoStore(reply);
+      return reply.send({ enabled: false });
+    });
+    app.post('/assistant/chat', disabledHandler);
+    app.post('/assistant/document', disabledHandler);
+    app.log.warn({ event: 'assistant.disabled' }, 'assistant.disabled');
+    return;
+  }
+
   const service = createAssistantService(
     config,
     [
@@ -69,9 +99,40 @@ export async function assistantRoutes(app: FastifyInstance) {
     app.log.child({ module: 'assistant' }),
   );
 
-  app.addHook('preHandler', async (req, reply) => {
-    if (!requireAccessKey) {
-      return;
+  app.get('/assistant/status', async (_req, reply) => {
+    setPrivateNoStore(reply);
+    return reply.send({ enabled: true });
+  });
+
+  app.addHook('preHandler', async (req: any, reply) => {
+    // Status endpoint stays publicly available so the UI can hide entry points.
+    if (req.routeOptions?.url === '/assistant/status') return;
+
+    if (devBypass) return;
+
+    // Primary path: an authenticated session with a recognised role.
+    // We avoid calling app.authenticate when there is no session cookie, so we
+    // don't short-circuit with a 401 before we can try the access-key fallback.
+    const sessionCookie = req.cookies?.session;
+    if (sessionCookie) {
+      try {
+        const decoded: any = await (app as any).jwt.verify(sessionCookie);
+        if (decoded?.role && ALLOWED_ROLES.has(decoded.role)) {
+          req.user = {
+            userId: decoded.userId,
+            role: decoded.role,
+            tutorId: decoded.tutorId,
+            studentId: decoded.studentId,
+          };
+          return;
+        }
+      } catch {
+        // bad/expired JWT – fall through to access-key fallback check.
+      }
+    }
+
+    if (!allowAccessKeyFallback) {
+      return reply.code(401).send({ error: 'assistant_auth_required' });
     }
 
     if (accessKeys.size === 0) {
@@ -110,6 +171,8 @@ export async function assistantRoutes(app: FastifyInstance) {
       model: result.metadata.model,
       fallbackUsed: result.metadata.fallbackUsed,
       requestId: req.id,
+      userId: (req as any).user?.userId,
+      role: (req as any).user?.role,
     }, 'assistant.chat.completed');
 
     return reply.send({ text: result.text, metadata: result.metadata });
@@ -138,6 +201,8 @@ export async function assistantRoutes(app: FastifyInstance) {
       fallbackUsed: result.metadata.fallbackUsed,
       documentChunksUsed: result.metadata.documentChunksUsed,
       requestId: req.id,
+      userId: (req as any).user?.userId,
+      role: (req as any).user?.role,
     }, 'assistant.document.completed');
 
     return reply.send({ text: result.text, metadata: result.metadata });

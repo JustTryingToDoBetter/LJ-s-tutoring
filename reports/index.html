@@ -29,11 +29,20 @@
         <p class="page-subtitle">Recently generated learning reports linked to your learner profile.</p>
       </section>
       <section class="panel dashboard-card">
+        <div class="row-head">
+          <h2 class="panel-title">Generate a report</h2>
+          <button id="generateReportBtn" class="button" type="button">Generate this week's report</button>
+        </div>
+        <p id="generateReportStatus" class="note" aria-live="polite"></p>
+      </section>
+      <section class="panel dashboard-card">
+        <h2 class="panel-title">Your reports</h2>
         <div id="studentReportsList" class="list-compact"></div>
       </section>
     </main>
   </div>
   <script src="/assets/portal-config.js"></script>
+  <script src="/assets/student/auth-guard.js"></script>
   <script src="/assets/analytics.js"></script>
   <script type="module" src="/assets/student/reports.js"></script>
 </body>

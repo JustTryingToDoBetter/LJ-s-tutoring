@@ -6,7 +6,9 @@
       "Bash(wc -l /workspaces/LJ-s-tutoring/lms-api/src/routes/*.ts)",
       "Read(//workspacesSS/LJ-s-tutoring/lms-api/src/routes/**)",
       "Bash(grep -c \"error_monitor\\\\|captureException\" /workspaces/LJ-s-tutoring/lms-api/src/routes/*.ts)",
-      "Bash(grep -n \"CREATE TABLE\\\\|ALTER TABLE\" /workspaces/LJ-s-tutoring/lms-api/prisma/migrations/*/*.sql)"
+      "Bash(grep -n \"CREATE TABLE\\\\|ALTER TABLE\" /workspaces/LJ-s-tutoring/lms-api/prisma/migrations/*/*.sql)",
+      "Bash(xargs grep *)",
+      "Bash(node --test tests/frontend/*.test.cjs)"
     ]
   }
 }

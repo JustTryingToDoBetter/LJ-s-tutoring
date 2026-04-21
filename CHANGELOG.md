@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **CRITICAL**: Removed hard-coded Odie access key from the browser bundle
+  (`assets/portal-config.js`) and from the LocalStorage workflow on the
+  student dashboard. Assistant endpoints now authenticate via the session
+  cookie + RBAC; the legacy `X-Odie-Access-Key` header is only accepted when
+  `ODIE_ALLOW_ACCESS_KEY_FALLBACK=true`.
+- Added a server-side feature flag (`ASSISTANT_ENABLED`) that disables all
+  `/assistant/*` endpoints with a `503 assistant_disabled` response and
+  hides the widget UI via `window.__ODIE_ASSISTANT_ENABLED__`.
+- Added missing student auth-guard include to `reports/index.html` so the
+  weekly reports page cannot be hit without a STUDENT session.
+- Removed XSS-prone `innerHTML` patterns in the shared `renderList` helper
+  and in community, dashboard, and report renderers. Introduced a
+  `buildSafeItem` / `renderList(element)` API that only accepts DOM nodes
+  or typed row specs.
+- Stopped logging every inbound request via `console.log('[HIT]')` in the
+  API; structured `request.complete` / `request.slow` logs remain.
+- Reconciled `FUTURE_LMS_SECURITY_BLUEPRINT.md` with current deployment
+  (see the "Route Protection Baseline (Current)" section).
+
+### Added
+- `assets/analytics.js` unified, fail-safe telemetry helper with
+  `track()`, session correlation id, beacon transport, and `PO_ANALYTICS_CONFIG`
+  runtime gating. Instrumented `dashboard.viewed`, `study_activity.logged`,
+  `report.generated`, `report.viewed`, `community.room.created`,
+  `community.room.joined`, and `community.message.posted` events.
+- Student and tutor report pages now support "Generate report" and
+  "View details" actions with explicit loading, empty, and error states.
+
 ### Fixed
 - **ACCESSIBILITY**: All color contrast issues now meet WCAG 2.0 AA standards (4.5:1 ratio)
   - Brand gold: darkened from #fbbf24 to #b8860b (DarkGoldenrod)

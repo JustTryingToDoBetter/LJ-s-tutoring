@@ -124,10 +124,6 @@ export async function buildApp() {
     reply.header('X-Request-Id', requestId);
   });
 
-  app.addHook('onRequest', async (req) => {
-    console.log(`[HIT] ${req.method} ${req.url}`);
-  });
-
   app.addHook('onRequest', async (_req, reply) => {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');

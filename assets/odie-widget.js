@@ -41,12 +41,11 @@
     return raw;
   }
 
-  function resolveAccessKey() {
-    const key = String(window.__ODIE_ACCESS_KEY__ || '').trim();
-    if (!key || key === '__PO_ODIE_ACCESS_KEY__' || /^replace_with_/i.test(key)) {
-      return '';
+  function assistantEnabled() {
+    if (typeof window.__ODIE_ASSISTANT_ENABLED__ === 'boolean') {
+      return window.__ODIE_ASSISTANT_ENABLED__;
     }
-    return key;
+    return true;
   }
 
   function apiUrl(path) {
@@ -183,12 +182,11 @@
     showTyping();
 
     try {
-      const accessKey = resolveAccessKey();
       const headers = { 'Content-Type': 'application/json' };
-      if (accessKey) {headers['x-odie-access-key'] = accessKey;}
 
       const res = await fetch(apiUrl('/assistant/chat'), {
         method: 'POST',
+        credentials: 'include',
         headers: headers,
         body: JSON.stringify({
           message: message,
@@ -222,7 +220,24 @@
     }
   }
 
+  function hideWidgetUi() {
+    const btn = document.getElementById('odie-btn');
+    const panel = document.getElementById('odie-panel');
+    if (btn) {
+      btn.setAttribute('hidden', '');
+      btn.setAttribute('aria-hidden', 'true');
+    }
+    if (panel) {
+      panel.setAttribute('hidden', '');
+      panel.setAttribute('aria-hidden', 'true');
+    }
+  }
+
   function init() {
+    if (!assistantEnabled()) {
+      hideWidgetUi();
+      return;
+    }
     const btn = document.getElementById('odie-btn');
     const closeBtn = document.getElementById('odie-close');
     const sendBtn = document.getElementById('odie-send');

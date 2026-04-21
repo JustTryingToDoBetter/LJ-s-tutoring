@@ -38,34 +38,55 @@ function resolveApiBase(raw) {
   return raw;
 }
 
-function injectIntoFile(filePath, apiBase, odieAccessKey) {
+function assistantEnabled() {
+  const raw = String(process.env.ASSISTANT_ENABLED ?? 'true').trim().toLowerCase();
+  if (!raw) {return true;}
+  return raw !== 'false' && raw !== '0' && raw !== 'off' && raw !== 'disabled';
+}
+
+function injectIntoFile(filePath, apiBase, enabled) {
   if (!fs.existsSync(filePath)) {
     return false;
   }
   const source = fs.readFileSync(filePath, 'utf8');
-  const withApiBase = source.replace(
+  let updated = source.replace(
     /window\.__PO_API_BASE__\s*=\s*.*?;\s*$/m,
     `window.__PO_API_BASE__ = '${apiBase}';`,
   );
-  const withOdieKey = withApiBase.replace(
-    /window\.__ODIE_ACCESS_KEY__\s*=\s*.*?;\s*$/m,
-    `window.__ODIE_ACCESS_KEY__ = '${odieAccessKey}';`,
+  // Strip any legacy access-key assignment so we never ship the secret again.
+  updated = updated.replace(
+    /^\s*window\.__ODIE_ACCESS_KEY__\s*=\s*.*?;\s*$/gm,
+    '',
   );
-  fs.writeFileSync(filePath, withOdieKey);
+  const flagLine = `window.__ODIE_ASSISTANT_ENABLED__ = ${enabled ? 'true' : 'false'};`;
+  if (/window\.__ODIE_ASSISTANT_ENABLED__\s*=/.test(updated)) {
+    updated = updated.replace(
+      /window\.__ODIE_ASSISTANT_ENABLED__\s*=\s*.*?;\s*$/m,
+      flagLine,
+    );
+  } else {
+    updated = `${updated.trimEnd()}\n${flagLine}\n`;
+  }
+  fs.writeFileSync(filePath, updated);
   return true;
 }
 
 const rawApiBase = (process.env.PUBLIC_PO_API_BASE || process.env.API_BASE_URL || '').replace(/\/$/, '');
 const apiBase = resolveApiBase(rawApiBase);
-const odieAccessKey = (process.env.PUBLIC_ODIE_ACCESS_KEY || '').trim();
+const enabled = assistantEnabled();
 
 if (apiBase !== rawApiBase) {
   process.stdout.write(`Codespace detected — rewrote API base: ${rawApiBase} → ${apiBase}\n`);
 }
+if (process.env.PUBLIC_ODIE_ACCESS_KEY) {
+  process.stderr.write(
+    'WARN: PUBLIC_ODIE_ACCESS_KEY is set but no longer used — assistant access keys are never written to the browser bundle.\n',
+  );
+}
 
 // Update dist/ (production build output)
 const distConfigPath = path.resolve(root, 'dist', 'assets', 'portal-config.js');
-if (injectIntoFile(distConfigPath, apiBase, odieAccessKey)) {
+if (injectIntoFile(distConfigPath, apiBase, enabled)) {
   process.stdout.write(`Injected config into ${distConfigPath}\n`);
 } else {
   process.stdout.write('portal-config.js not found in dist/assets — skipping dist injection\n');
@@ -73,6 +94,6 @@ if (injectIntoFile(distConfigPath, apiBase, odieAccessKey)) {
 
 // Update assets/ (source, for dev-server-without-build)
 const srcConfigPath = path.resolve(root, 'assets', 'portal-config.js');
-if (injectIntoFile(srcConfigPath, apiBase, odieAccessKey)) {
+if (injectIntoFile(srcConfigPath, apiBase, enabled)) {
   process.stdout.write(`Injected config into ${srcConfigPath}\n`);
 }
