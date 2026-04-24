@@ -105,6 +105,9 @@ function renderCareerDetail(detail) {
   careerDetail.innerHTML = `
     <div class="list-item odie-detail-card">
       <p>${escapeHtml(detail.description)}</p>
+      <div class="row-head compact">
+        <a class="button" href="/dashboard/career/readiness/index.html?careerId=${encodeURIComponent(detail.id)}">View Readiness Plan</a>
+      </div>
       <div class="metric-grid">
         <div class="metric-card">
           <span class="metric-label">Salary band</span>

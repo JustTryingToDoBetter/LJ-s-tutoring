@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Career Readiness | Odie Careers</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Montserrat:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body data-page="career">
+  <div class="portal-shell">
+    <nav class="portal-nav" aria-label="Student navigation">
+      <div class="portal-nav-inner">
+        <div class="brand"><span class="brand-badge">PO</span>Project Odysseus</div>
+        <div class="nav-links">
+          <a class="nav-link" data-nav="dashboard" href="/dashboard/">Dashboard</a>
+          <a class="nav-link" data-nav="reports" href="/reports/">Reports</a>
+          <a class="nav-link" data-nav="community" href="/dashboard/community/">Community</a>
+          <a class="nav-link" data-nav="career" href="/dashboard/career/">Odie Careers</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="portal-main odie-page">
+      <section class="hero-card odie-hero">
+        <div>
+          <p class="eyebrow">Career Readiness</p>
+          <h1 id="readinessCareerTitle">Build your weekly readiness plan.</h1>
+          <p class="lead">Track skills, portfolio evidence, and next best actions for entry-level opportunities.</p>
+        </div>
+        <div class="odie-hero-meta">
+          <div class="metric-card">
+            <span class="metric-label">Overall readiness</span>
+            <strong class="metric-value" id="overallReadiness">0%</strong>
+            <span class="note" id="readinessLevel">Starting Out</span>
+          </div>
+        </div>
+        <p class="note" id="readinessHint">Loading readiness plan...</p>
+      </section>
+
+      <nav class="section-tabs" aria-label="Odie Careers sections">
+        <a class="section-tab" href="/dashboard/career/">Overview</a>
+        <a class="section-tab" href="/dashboard/career/paths/">Career Paths</a>
+        <a class="section-tab" href="/dashboard/career/eligibility/">Course Eligibility</a>
+        <a class="section-tab active" href="#">Readiness Plan</a>
+      </nav>
+
+      <section class="grid three" id="readinessProgressCards" aria-live="polite"></section>
+
+      <section class="grid two odie-sections">
+        <article class="panel dashboard-card">
+          <div class="row-head">
+            <h2 class="panel-title">Weekly focus</h2>
+          </div>
+          <div id="weeklyPlan" class="list-compact" aria-live="polite"></div>
+        </article>
+
+        <article class="panel dashboard-card">
+          <div class="row-head">
+            <h2 class="panel-title">Next best actions</h2>
+          </div>
+          <div id="nextActions" class="list-compact" aria-live="polite"></div>
+        </article>
+      </section>
+
+      <section class="panel dashboard-card">
+        <div class="row-head">
+          <h2 class="panel-title">Readiness milestones</h2>
+        </div>
+        <div id="milestoneCategories" class="list-compact" aria-live="polite"></div>
+      </section>
+
+      <section class="panel dashboard-card">
+        <div class="row-head">
+          <h2 class="panel-title">Evidence coverage</h2>
+        </div>
+        <div id="evidenceSection" class="list-compact" aria-live="polite"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/assets/portal-config.js"></script>
+  <script src="/assets/student/auth-guard.js"></script>
+  <script src="/assets/analytics.js"></script>
+  <script type="module" src="/assets/student/career-readiness.js"></script>
+</body>
+</html>
