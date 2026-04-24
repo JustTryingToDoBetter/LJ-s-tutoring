@@ -129,7 +129,7 @@ async function computeRiskScore(
   ip: string,
   context: VerifyRequestContext
 ) {
-  const now = new Date();
+  const recentFailureWindowStart = new Date(Date.now() - 10 * 60 * 1000);
   const userAgent = context.userAgent ?? '';
   const acceptLanguage = context.acceptLanguage ?? '';
   const deviceHash = computeDeviceHash(userAgent, acceptLanguage);
@@ -161,7 +161,7 @@ async function computeRiskScore(
     }
   }
 
-  const recentFailures = await countRecentFailures(client, ip, now);
+  const recentFailures = await countRecentFailures(client, ip, recentFailureWindowStart);
   if (recentFailures >= 4) {
     flags.rapidRetries = true;
   }

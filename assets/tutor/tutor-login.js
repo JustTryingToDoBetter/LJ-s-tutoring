@@ -16,6 +16,11 @@ if (googleBtn) {
       'afterend',
       '<p class="note" style="color:var(--red,#e53e3e)">No account found for that Google address. Contact your administrator.</p>',
     );
+  } else if (params.get('error') === 'wrong_role') {
+    googleBtn.closest('div').insertAdjacentHTML(
+      'afterend',
+      '<p class="note" style="color:var(--red,#e53e3e)">That Google account is linked to another portal.</p>',
+    );
   }
 }
 

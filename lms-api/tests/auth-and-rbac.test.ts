@@ -6,6 +6,7 @@ import {
   createAdmin,
   createAssignment,
   createStudent,
+  createStudentUser,
   createTutor,
   issueMagicToken,
   loginWithMagicToken
@@ -261,5 +262,135 @@ describe('Auth + RBAC', () => {
 
     expect(status).toBe(429);
     await app.close();
+  });
+
+  it('flags rapid magic link retries using a recent failure window', async () => {
+    const app = await buildApp();
+    const admin = await createAdmin('admin@example.com');
+    const ip = '127.0.0.1';
+
+    for (let i = 0; i < 4; i += 1) {
+      await pool.query(
+        `insert into auth_event_log
+         (user_id, ip, user_agent, device_hash, country, success, risk_score, flags_json, created_at)
+         values (null, $1, 'test-agent', $2, null, false, 0, '{}'::jsonb, now() - interval '5 minutes')`,
+        [ip, `device-${i}`]
+      );
+    }
+
+    const token = await issueMagicToken(admin.id);
+    const res = await app.inject({
+      method: 'GET',
+      url: `/auth/verify?token=${token}`,
+      headers: {
+        'user-agent': 'test-agent',
+        'accept-language': 'en'
+      }
+    });
+
+    expect(res.statusCode).toBe(302);
+    const events = await pool.query(
+      `select risk_score, flags_json
+       from auth_event_log
+       where user_id = $1 and success = true
+       order by created_at desc
+       limit 1`,
+      [admin.id]
+    );
+    expect(events.rows[0].risk_score).toBeGreaterThanOrEqual(40);
+    expect(events.rows[0].flags_json.rapidRetries).toBe(true);
+    await app.close();
+  });
+
+  it('signs tutors in with verified Google OAuth and links google_id', async () => {
+    const app = await buildApp();
+    const { user } = await createTutor({
+      email: 'tutor@example.com',
+      fullName: 'Tutor One',
+      defaultHourlyRate: 300
+    });
+
+    (app as any).googleOAuth2 = {
+      getAccessTokenFromAuthorizationCodeFlow: async () => ({ token: { access_token: 'test-access-token' } })
+    };
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({
+      ok: true,
+      json: async () => ({ id: 'google-tutor-1', email: user.email, verified_email: true })
+    })) as any;
+
+    try {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/auth/google/callback?code=test'
+      });
+
+      expect(res.statusCode).toBe(302);
+      expect(res.headers.location).toBe('/tutor/dashboard/');
+      expect(String(res.headers['set-cookie'])).toContain('session=');
+
+      const linked = await pool.query('select google_id from users where id = $1', [user.id]);
+      expect(linked.rows[0].google_id).toBe('google-tutor-1');
+    } finally {
+      globalThis.fetch = originalFetch;
+      await app.close();
+    }
+  });
+
+  it('signs students in with verified Google OAuth', async () => {
+    const app = await buildApp();
+    const { user } = await createStudentUser({
+      email: 'student@example.com',
+      fullName: 'Student One',
+      grade: '10'
+    });
+
+    (app as any).googleStudentOAuth2 = {
+      getAccessTokenFromAuthorizationCodeFlow: async () => ({ token: { access_token: 'test-access-token' } })
+    };
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({
+      ok: true,
+      json: async () => ({ id: 'google-student-1', email: user.email, verified_email: true })
+    })) as any;
+
+    try {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/auth/google/student/callback?code=test'
+      });
+
+      expect(res.statusCode).toBe(302);
+      expect(res.headers.location).toBe('/dashboard/');
+      expect(String(res.headers['set-cookie'])).toContain('session=');
+    } finally {
+      globalThis.fetch = originalFetch;
+      await app.close();
+    }
+  });
+
+  it('rejects Google OAuth profiles without a verified email', async () => {
+    const app = await buildApp();
+    (app as any).googleOAuth2 = {
+      getAccessTokenFromAuthorizationCodeFlow: async () => ({ token: { access_token: 'test-access-token' } })
+    };
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({
+      ok: true,
+      json: async () => ({ id: 'google-tutor-2', email: 'tutor@example.com', verified_email: false })
+    })) as any;
+
+    try {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/auth/google/callback?code=test'
+      });
+
+      expect(res.statusCode).toBe(403);
+      expect(res.json().error).toBe('google_email_not_verified');
+    } finally {
+      globalThis.fetch = originalFetch;
+      await app.close();
+    }
   });
 });

@@ -127,6 +127,27 @@ For local `npm start`, make sure `DATABASE_URL`, `COOKIE_SECRET`, `JWT_SECRET`, 
 
 See `.env.example` for the canonical variable list (placeholders only).
 
+### Google OAuth
+
+Tutor and student Google sign-in is enabled when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set.
+
+Configure these authorized redirect URIs in Google Cloud Console:
+
+- Tutor: `http://localhost:3001/auth/google/callback`
+- Student: `http://localhost:3001/auth/google/student/callback`
+
+For production, use the deployed API host in `GOOGLE_CALLBACK_URL` and `GOOGLE_STUDENT_CALLBACK_URL`. Set `GOOGLE_ALLOWED_DOMAIN` when only one Google Workspace or email domain should be accepted. OAuth is sign-in only: tutor and student accounts must already exist in `users`.
+
+### Seed Users
+
+Local dev seed users are created by `npm run seed:dev --prefix lms-api`:
+
+- `admin@dev.local` / `DevPass123!`
+- `tutor@dev.local` / `DevPass123!`
+- `student@dev.local` / `DevPass123!`
+
+Test seed users from `npm run seed:test --prefix lms-api` use `TestPass123!`.
+
 ### Assistant API
 
 The student dashboard now uses the assistant layer at:

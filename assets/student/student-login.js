@@ -7,8 +7,22 @@ const magicFeedback = document.getElementById('magicFeedback');
 const sentMessage  = document.getElementById('sentMessage');
 const resendBtn    = document.getElementById('resendBtn');
 const resendFeedback = document.getElementById('resendFeedback');
+const googleStudentBtn = document.getElementById('googleStudentBtn');
 
 let lastEmail = '';
+
+if (googleStudentBtn) {
+  const API_BASE = (window.__PO_API_BASE__ || '').replace(/\/$/, '');
+  googleStudentBtn.href = `${API_BASE}/auth/google/student/start`;
+
+  const params = new URLSearchParams(window.location.search);
+  const error = params.get('error');
+  if (error === 'account_not_found') {
+    magicFeedback.textContent = 'No student account found for that Google address. Contact your administrator.';
+  } else if (error === 'wrong_role') {
+    magicFeedback.textContent = 'That Google account is linked to another portal.';
+  }
+}
 
 async function requestLink(email, feedbackEl) {
   const res = await apiFetch('/auth/request-link', {
