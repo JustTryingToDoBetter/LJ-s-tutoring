@@ -78,7 +78,7 @@ type VerifyMagicLinkDeps = {
 };
 
 type RequestMagicLinkResult =
-  | { ok: true }
+  | { ok: true; debugMagicLink?: string }
   | { ok: false; status: 429; error: 'rate_limited' };
 
 type RequestMagicLinkDeps = {
@@ -251,7 +251,10 @@ export async function requestMagicLink(
   const sendLink = deps.sendMagicLinkFn ?? sendMagicLink;
   await sendLink({ to: email, link });
 
-  return { ok: true };
+  return {
+    ok: true,
+    ...(process.env.NODE_ENV !== 'production' ? { debugMagicLink: link } : {})
+  };
 }
 
 export async function verifyMagicLink(

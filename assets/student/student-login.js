@@ -1,4 +1,4 @@
-import { apiFetch } from '../common.js';
+import { apiFetch, apiUrl } from '../common.js';
 
 const stepEmail    = document.getElementById('stepEmail');
 const stepSent     = document.getElementById('stepSent');
@@ -12,8 +12,7 @@ const googleStudentBtn = document.getElementById('googleStudentBtn');
 let lastEmail = '';
 
 if (googleStudentBtn) {
-  const API_BASE = (window.__PO_API_BASE__ || '').replace(/\/$/, '');
-  googleStudentBtn.href = `${API_BASE}/auth/google/student/start`;
+  googleStudentBtn.href = apiUrl('/auth/google/student/start');
 
   const params = new URLSearchParams(window.location.search);
   const error = params.get('error');
@@ -29,12 +28,13 @@ async function requestLink(email, feedbackEl) {
     method: 'POST',
     body: { email },
   });
+  const body = await res.json().catch(() => ({}));
   // API always returns ok:true to prevent email enumeration
   if (!res.ok) {
     feedbackEl.textContent = 'Something went wrong. Please try again.';
-    return false;
+    return null;
   }
-  return true;
+  return body;
 }
 
 magicForm?.addEventListener('submit', async (e) => {
@@ -42,13 +42,21 @@ magicForm?.addEventListener('submit', async (e) => {
   magicFeedback.textContent = 'Sending link…';
   lastEmail = magicForm.querySelector('#email').value.trim();
 
-  const ok = await requestLink(lastEmail, magicFeedback);
-  if (!ok) {
+  const result = await requestLink(lastEmail, magicFeedback);
+  if (!result) {
     return;
   }
 
   magicFeedback.textContent = '';
   sentMessage.textContent = `We sent a sign-in link to ${lastEmail}. Click the link to sign in.`;
+  if (result.debugMagicLink) {
+    sentMessage.textContent = 'Local dev mode: open this sign-in link to continue.';
+    const devLink = document.createElement('a');
+    devLink.className = 'button';
+    devLink.href = result.debugMagicLink;
+    devLink.textContent = 'Open sign-in link';
+    sentMessage.after(devLink);
+  }
   stepEmail.hidden = true;
   stepSent.hidden = false;
 });
@@ -56,9 +64,9 @@ magicForm?.addEventListener('submit', async (e) => {
 resendBtn?.addEventListener('click', async () => {
   resendFeedback.textContent = 'Sending again…';
   resendBtn.disabled = true;
-  const ok = await requestLink(lastEmail, resendFeedback);
+  const result = await requestLink(lastEmail, resendFeedback);
   resendBtn.disabled = false;
-  if (ok) {
+  if (result) {
     resendFeedback.textContent = 'Sent! Check your inbox.';
   }
 });

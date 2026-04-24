@@ -191,7 +191,10 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(result.status).send({ error: result.error });
     }
 
-    return reply.send({ ok: true });
+    return reply.send({
+      ok: true,
+      ...(result.debugMagicLink ? { debugMagicLink: result.debugMagicLink } : {})
+    });
   });
   const handleVerify = async (token: string | undefined, req: any, reply: any) => {
     const result = await verifyMagicLink(pool, { token }, {
