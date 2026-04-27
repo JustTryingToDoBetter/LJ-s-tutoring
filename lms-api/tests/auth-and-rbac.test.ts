@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { resetDb } from './helpers/db.js';
 import { pool } from '../src/db/pool.js';
+import { hashPassword } from '../src/lib/security.js';
 import {
   createAdmin,
   createAssignment,
@@ -81,6 +82,28 @@ describe('Auth + RBAC', () => {
     });
 
     expect(res.statusCode).toBe(403);
+    await app.close();
+  });
+
+  it('requires MFA for admin password login', async () => {
+    const app = await buildApp();
+
+    const passwordHash = await hashPassword('correct-horse-battery-staple');
+    const res = await pool.query(
+      `insert into users (email, role, password_hash, is_active)
+       values ($1, 'ADMIN', $2, true)
+       returning email`,
+      ['admin-mfa@example.com', passwordHash]
+    );
+
+    const login = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      payload: { email: res.rows[0].email, password: 'correct-horse-battery-staple' }
+    });
+
+    expect(login.statusCode).toBe(403);
+    expect(login.json().error).toBe('admin_login_requires_mfa');
     await app.close();
   });
 

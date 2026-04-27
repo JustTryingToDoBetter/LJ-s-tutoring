@@ -276,6 +276,12 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(401).send({ error: 'invalid_credentials' });
     }
 
+    // Admin sign-in is intentionally 2-step (password + OTP).
+    // Block password-only sessions for admins to avoid bypassing MFA.
+    if (user.role === 'ADMIN') {
+      return reply.code(403).send({ error: 'admin_login_requires_mfa' });
+    }
+
     if (user.role === 'TUTOR' && !user.tutor_profile_id) {
       return reply.code(500).send({ error: 'tutor_profile_missing' });
     }
@@ -326,9 +332,15 @@ export async function authRoutes(app: FastifyInstance) {
       }
     }
 
-    reply.clearCookie('session', { path: '/' });
-    reply.clearCookie('csrf', { path: '/' });
-    reply.clearCookie('impersonation', { path: '/' });
+    const clearOpts = {
+      path: '/',
+      ...(cookieDomain() ? { domain: cookieDomain() } : {})
+    };
+
+    reply.clearCookie('session', clearOpts);
+    reply.clearCookie('csrf', clearOpts);
+    reply.clearCookie('impersonation', clearOpts);
+    reply.clearCookie('mfa_pending', clearOpts);
     return reply.send({ ok: true });
   });
 
@@ -342,9 +354,15 @@ export async function authRoutes(app: FastifyInstance) {
       [req.user.userId]
     );
 
-    reply.clearCookie('session', { path: '/' });
-    reply.clearCookie('csrf', { path: '/' });
-    reply.clearCookie('impersonation', { path: '/' });
+    const clearOpts = {
+      path: '/',
+      ...(cookieDomain() ? { domain: cookieDomain() } : {})
+    };
+
+    reply.clearCookie('session', clearOpts);
+    reply.clearCookie('csrf', clearOpts);
+    reply.clearCookie('impersonation', clearOpts);
+    reply.clearCookie('mfa_pending', clearOpts);
     return reply.send({ ok: true });
   });
 
