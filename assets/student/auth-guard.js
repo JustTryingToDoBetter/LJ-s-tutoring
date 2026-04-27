@@ -10,7 +10,7 @@
       if (isLocalHost(host)) {
         return `${window.location.protocol}//${host}:3001`;
       }
-      return '';
+      return '/api';
     }
 
     if (isLocalHost(host) && raw === '/api') {

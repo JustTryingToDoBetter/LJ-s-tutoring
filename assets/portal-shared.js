@@ -7,7 +7,7 @@ function resolveApiBase() {
     if (isLocalHost(pageHost)) {
       return `${window.location.protocol}//${pageHost}:3001`;
     }
-    throw new Error('api_base_missing');
+    return '/api';
   }
 
   const normalized = String(raw).replace(/\/$/, '');

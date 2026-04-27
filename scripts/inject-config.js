@@ -71,7 +71,14 @@ function injectIntoFile(filePath, apiBase, enabled) {
   return true;
 }
 
-const rawApiBase = (process.env.PUBLIC_PO_API_BASE || process.env.API_BASE_URL || '').replace(/\/$/, '');
+let rawApiBase = (process.env.PUBLIC_PO_API_BASE || process.env.API_BASE_URL || '/api').replace(/\/$/, '');
+
+// Production deploys the API behind the same-origin /api gateway route.
+// Avoid shipping a cross-origin API base that would trigger CORS + cookie issues.
+if (/^https?:\/\/api\./i.test(rawApiBase)) {
+  rawApiBase = '/api';
+}
+
 const apiBase = resolveApiBase(rawApiBase);
 const enabled = assistantEnabled();
 

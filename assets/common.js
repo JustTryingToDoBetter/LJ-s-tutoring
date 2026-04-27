@@ -9,7 +9,8 @@ function resolveApiBase() {
     if (isLocalHost(host)) {
       return `${window.location.protocol}//${host}:3001`;
     }
-    return '';
+    // In production we deploy the API behind the same-origin gateway path.
+    return '/api';
   }
 
   // Production may use a relative /api gateway path. The local static server
