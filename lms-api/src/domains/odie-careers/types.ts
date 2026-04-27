@@ -178,3 +178,123 @@ export interface CachedSourceDocument {
   statusCode?: number;
   notes?: string;
 }
+
+export type ReadinessMilestoneStatus = 'not_started' | 'in_progress' | 'completed' | 'verified';
+export type ReadinessMilestonePriority = 'low' | 'medium' | 'high' | 'critical';
+export type ReadinessEvidenceType =
+  | 'project_link'
+  | 'github_repo'
+  | 'live_demo'
+  | 'certificate'
+  | 'challenge_completion'
+  | 'assessment_score'
+  | 'uploaded_file'
+  | 'portfolio_case_study'
+  | 'linkedin_post'
+  | 'recommendation'
+  | 'reflection';
+
+export interface ReadinessEvidenceItem {
+  id: string;
+  type: ReadinessEvidenceType;
+  title: string;
+  url: string;
+  description?: string;
+  verified: boolean;
+}
+
+export interface CareerReadinessMilestone {
+  id: string;
+  title: string;
+  description: string;
+  type: 'skill' | 'project' | 'communication' | 'experience_proxy' | 'evidence';
+  status: ReadinessMilestoneStatus;
+  priority: ReadinessMilestonePriority;
+  estimatedHours: number;
+  evidenceRequired: boolean;
+  evidenceItems: ReadinessEvidenceItem[];
+}
+
+export interface CareerReadinessCategory {
+  id: 'core-skills' | 'practical-projects' | 'communication' | 'work-experience-proxies' | 'evidence';
+  title: string;
+  description: string;
+  completionPercentage?: number;
+  milestones: CareerReadinessMilestone[];
+}
+
+export interface CareerReadinessFramework {
+  id: string;
+  careerId: string;
+  title: string;
+  version: string;
+  categories: CareerReadinessCategory[];
+}
+
+export interface CareerReadinessScore {
+  overall: number;
+  coreSkills: number;
+  projects: number;
+  communication: number;
+  workExperienceProxies: number;
+  evidence: number;
+}
+
+export interface CareerReadinessPlan {
+  career: {
+    id: string;
+    title: string;
+    level: 'entry' | 'intermediate' | 'advanced';
+  };
+  framework: {
+    id: string;
+    title: string;
+    version: string;
+  };
+  readinessScore: CareerReadinessScore;
+  categories: CareerReadinessCategory[];
+  weeklyPlan: Array<{
+    week: number;
+    focus: string;
+    tasks: Array<{
+      id: string;
+      title: string;
+      category: string;
+      estimatedHours: number;
+      status: ReadinessMilestoneStatus;
+    }>;
+  }>;
+  nextActions: Array<{
+    id: string;
+    title: string;
+    reason: string;
+    impact: 'low' | 'medium' | 'high';
+  }>;
+}
+
+export interface ReadinessEvidenceInput {
+  type: ReadinessEvidenceType;
+  title: string;
+  url: string;
+  description?: string;
+}
+
+export interface ReadinessMilestoneCompletePayload {
+  careerId: string;
+  evidence?: ReadinessEvidenceInput[];
+  reflection?: string;
+}
+
+export interface ReadinessMilestoneCompletionResult {
+  success: true;
+  milestoneId: string;
+  status: ReadinessMilestoneStatus;
+  idempotent?: boolean;
+  updatedReadinessScore: CareerReadinessScore;
+}
+
+export interface CareerReadinessSummary {
+  frameworkId: string;
+  version: string;
+  categoryCount: number;
+}

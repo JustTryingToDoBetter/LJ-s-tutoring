@@ -5,8 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tutor Dashboard | Project Odysseus</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Montserrat:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/assets/portal.css">
+  <style>
+    .tutor-hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+      gap: 1rem;
+      align-items: stretch;
+      margin-bottom: 1rem;
+    }
+
+    .tutor-hero-card {
+      display: grid;
+      align-content: space-between;
+      gap: 1.25rem;
+      border-color: rgba(245, 158, 11, 0.24);
+      background:
+        linear-gradient(160deg, rgba(251, 191, 36, 0.14), rgba(255, 255, 255, 0.96) 46%),
+        var(--panel);
+    }
+
+    .tutor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .tutor-side-stack {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .quick-tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 860px) {
+      .tutor-hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body data-page="dashboard">
   <div class="portal-shell">
@@ -15,34 +60,66 @@
         <div class="brand"><span class="brand-badge">PO</span>Tutor Portal</div>
         <div class="nav-links">
           <a class="nav-link" data-nav="dashboard" href="/tutor/dashboard/">Dashboard</a>
-          <a class="nav-link" href="/tutor/reports/">Reports</a>
-          <a class="nav-link" href="/tutor/risk/">Risk</a>
+          <a class="nav-link" data-nav="reports" href="/tutor/reports/">Reports</a>
+          <a class="nav-link" data-nav="risk" href="/tutor/risk/">Risk</a>
           <a class="nav-link" href="/tutor/sessions.html">Sessions</a>
           <a class="nav-link" href="/tutor/assignments.html">Assignments</a>
         </div>
       </div>
     </nav>
+
     <main class="portal-main">
-      <section class="page-header">
-        <h1 class="page-title">Tutor Operations</h1>
-        <p class="page-subtitle">Today’s sessions, quick tools, and the students who need attention.</p>
+      <section class="tutor-hero-grid">
+        <article class="panel dashboard-card tutor-hero-card">
+          <div>
+            <p class="eyebrow">Tutor operations</p>
+            <h1 class="page-title">Guide today's learning with clarity.</h1>
+            <p class="page-subtitle">Your sessions, quick tools, and students needing attention in one place.</p>
+            <div class="tutor-actions">
+              <a class="button" href="/tutor/sessions.html">Log a session</a>
+              <a class="button secondary" href="/tutor/assignments.html">View assignments</a>
+            </div>
+          </div>
+          <div class="metric-grid">
+            <article class="panel metric-card">
+              <span class="metric-label">Today</span>
+              <strong class="metric-value" id="tutorMetricSessions">0</strong>
+            </article>
+            <article class="panel metric-card">
+              <span class="metric-label">Attention</span>
+              <strong class="metric-value" id="tutorMetricAttention">0</strong>
+            </article>
+            <article class="panel metric-card">
+              <span class="metric-label">Tools</span>
+              <strong class="metric-value" id="tutorMetricTools">0</strong>
+            </article>
+          </div>
+        </article>
+
+        <aside class="tutor-side-stack">
+          <section class="panel dashboard-card">
+            <div class="row-head">
+              <h2 class="panel-title">Today sessions</h2>
+              <span class="badge subtle flat">Live plan</span>
+            </div>
+            <div id="tutorTodaySessions" class="list-compact"></div>
+          </section>
+        </aside>
       </section>
+
       <section class="grid two">
         <article class="panel dashboard-card">
-          <h2 class="panel-title">Today sessions</h2>
-          <div id="tutorTodaySessions" class="list-compact"></div>
+          <h2 class="panel-title">Quick tools</h2>
+          <div id="tutorQuickTools" class="quick-tool-grid"></div>
         </article>
         <article class="panel dashboard-card">
-          <h2 class="panel-title">Quick tools</h2>
-          <div id="tutorQuickTools" class="link-stack compact"></div>
+          <h2 class="panel-title">Students needing attention</h2>
+          <div id="tutorAttentionList" class="list-compact"></div>
         </article>
-      </section>
-      <section class="panel dashboard-card">
-        <h2 class="panel-title">Students needing attention</h2>
-        <div id="tutorAttentionList" class="list-compact"></div>
       </section>
     </main>
   </div>
+
   <script src="/assets/portal-config.js"></script>
   <script src="/assets/tutor/auth-guard.js"></script>
   <script src="/assets/analytics.js"></script>

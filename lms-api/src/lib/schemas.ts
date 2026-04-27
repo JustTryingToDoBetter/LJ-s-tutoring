@@ -369,3 +369,38 @@ export const StudentSubjectResultSchema = z.object({
 export const OdieCareersEligibilityRequestSchema = z.object({
   subjects: z.array(StudentSubjectResultSchema).min(1).max(20),
 });
+
+
+export const OdieReadinessPlanQuerySchema = z.object({
+  careerId: z.string().trim().min(1).max(120),
+  studentId: z.string().trim().min(1).max(120).optional(),
+});
+
+export const OdieReadinessMilestoneParamSchema = z.object({
+  id: z.string().trim().min(1).max(160),
+});
+
+export const OdieReadinessEvidenceSchema = z.object({
+  type: z.enum([
+    'project_link',
+    'github_repo',
+    'live_demo',
+    'certificate',
+    'challenge_completion',
+    'assessment_score',
+    'uploaded_file',
+    'portfolio_case_study',
+    'linkedin_post',
+    'recommendation',
+    'reflection',
+  ]),
+  title: z.string().trim().min(1).max(120),
+  url: z.string().trim().url().max(400),
+  description: z.string().trim().max(500).optional(),
+});
+
+export const OdieReadinessCompleteBodySchema = z.object({
+  careerId: z.string().trim().min(1).max(120),
+  evidence: z.array(OdieReadinessEvidenceSchema).max(20).optional().default([]),
+  reflection: z.string().trim().max(1000).optional(),
+});

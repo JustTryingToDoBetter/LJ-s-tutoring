@@ -12,6 +12,12 @@ function resolveApiBase() {
     return '';
   }
 
+  // Production may use a relative /api gateway path. The local static server
+  // does not proxy that path, so point browser API calls at the local API.
+  if (isLocalHost(host) && raw === '/api') {
+    return `${window.location.protocol}//${host}:3001`;
+  }
+
   // Keep API host aligned with the page host in local dev to avoid cross-site cookie drops.
   try {
     const parsed = new URL(raw);

@@ -1,4 +1,4 @@
-window.__PO_API_BASE__ = 'https://api.projectodysseus.live';
+window.__PO_API_BASE__ = '/api';
 // Assistant access keys are never shipped to the browser. The Odie endpoints
 // use server-side authentication (session cookie + role check) and a feature
 // flag. Leaving a public placeholder here so legacy code paths fail safely

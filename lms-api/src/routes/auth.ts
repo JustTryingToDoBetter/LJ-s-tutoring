@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 declare module 'fastify' {
   interface FastifyInstance {
     googleOAuth2?: OAuth2Namespace;
+    googleStudentOAuth2?: OAuth2Namespace;
   }
 }
 import { pool } from '../db/pool.js';
@@ -44,6 +45,13 @@ function csrfCookieOptions() {
     secure: isProd,
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
+    ...(cookieDomain() ? { domain: cookieDomain() } : {})
+  };
+}
+
+function clearAuthCookieOptions() {
+  return {
+    path: '/',
     ...(cookieDomain() ? { domain: cookieDomain() } : {})
   };
 }
@@ -111,6 +119,19 @@ function portalRedirectTarget(role: 'ADMIN' | 'TUTOR' | 'STUDENT') {
   return base ? `${base}/dashboard/` : '/dashboard/';
 }
 
+function portalLoginTarget(role: 'ADMIN' | 'TUTOR' | 'STUDENT') {
+  if (role === 'ADMIN') {
+    const base = process.env.ADMIN_PORTAL_URL?.replace(/\/$/, '');
+    return base ? `${base}/login.html` : '/admin/login.html';
+  }
+  if (role === 'TUTOR') {
+    const base = process.env.TUTOR_PORTAL_URL?.replace(/\/$/, '');
+    return base ? `${base}/login.html` : '/tutor/login.html';
+  }
+  const base = process.env.STUDENT_PORTAL_URL?.replace(/\/$/, '');
+  return base ? `${base}/login.html` : '/dashboard/login.html';
+}
+
 export async function authRoutes(app: FastifyInstance) {
   function createWindowLimiter(windowMs: number, maxAttempts: number) {
     const attempts = new Map<string, { count: number; resetAt: number }>();
@@ -170,7 +191,10 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(result.status).send({ error: result.error });
     }
 
-    return reply.send({ ok: true });
+    return reply.send({
+      ok: true,
+      ...(result.debugMagicLink ? { debugMagicLink: result.debugMagicLink } : {})
+    });
   });
   const handleVerify = async (token: string | undefined, req: any, reply: any) => {
     const result = await verifyMagicLink(pool, { token }, {
@@ -332,15 +356,10 @@ export async function authRoutes(app: FastifyInstance) {
       }
     }
 
-    const clearOpts = {
-      path: '/',
-      ...(cookieDomain() ? { domain: cookieDomain() } : {})
-    };
-
-    reply.clearCookie('session', clearOpts);
-    reply.clearCookie('csrf', clearOpts);
-    reply.clearCookie('impersonation', clearOpts);
-    reply.clearCookie('mfa_pending', clearOpts);
+    reply.clearCookie('session', clearAuthCookieOptions());
+    reply.clearCookie('csrf', clearAuthCookieOptions());
+    reply.clearCookie('impersonation', clearAuthCookieOptions());
+  reply.clearCookie('mfa_pending', clearAuthCookieOptions());
     return reply.send({ ok: true });
   });
 
@@ -354,15 +373,10 @@ export async function authRoutes(app: FastifyInstance) {
       [req.user.userId]
     );
 
-    const clearOpts = {
-      path: '/',
-      ...(cookieDomain() ? { domain: cookieDomain() } : {})
-    };
-
-    reply.clearCookie('session', clearOpts);
-    reply.clearCookie('csrf', clearOpts);
-    reply.clearCookie('impersonation', clearOpts);
-    reply.clearCookie('mfa_pending', clearOpts);
+    reply.clearCookie('session', clearAuthCookieOptions());
+    reply.clearCookie('csrf', clearAuthCookieOptions());
+    reply.clearCookie('impersonation', clearAuthCookieOptions());
+  reply.clearCookie('mfa_pending', clearAuthCookieOptions());
     return reply.send({ ok: true });
   });
 
@@ -494,7 +508,7 @@ export async function authRoutes(app: FastifyInstance) {
     const csrfToken = setAuthCookies(reply, jwt);
 
     // Clear the interim cookie
-    reply.clearCookie('mfa_pending', { path: '/' });
+    reply.clearCookie('mfa_pending', clearAuthCookieOptions());
 
     const adminBase = process.env.ADMIN_PORTAL_URL?.replace(/\/$/, '') ?? '';
     return reply.send({
@@ -506,14 +520,19 @@ export async function authRoutes(app: FastifyInstance) {
 
   // ── Google OAuth callback (tutor sign-in) ────────────────────────────────
 
-  app.get('/auth/google/callback', async (req, reply) => {
-    if (!app.googleOAuth2) {
+  async function handleGoogleOAuthCallback(
+    requestedRole: 'TUTOR' | 'STUDENT',
+    oauthNamespace: OAuth2Namespace | undefined,
+    req: any,
+    reply: any
+  ) {
+    if (!oauthNamespace) {
       return reply.code(501).send({ error: 'google_oauth_not_configured' });
     }
 
     let token: { access_token: string };
     try {
-      const result = await app.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+      const result = await oauthNamespace.getAccessTokenFromAuthorizationCodeFlow(req);
       token = result.token as { access_token: string };
     } catch {
       return reply.code(400).send({ error: 'oauth_callback_failed' });
@@ -526,14 +545,30 @@ export async function authRoutes(app: FastifyInstance) {
     if (!profileRes.ok) {
       return reply.code(502).send({ error: 'google_profile_fetch_failed' });
     }
-    const profile = await profileRes.json() as { id: string; email: string };
+    const profile = await profileRes.json() as {
+      id?: string;
+      email?: string;
+      verified_email?: boolean;
+      hd?: string;
+    };
 
     if (!profile.id || !profile.email) {
       return reply.code(400).send({ error: 'google_profile_incomplete' });
     }
+    if (profile.verified_email !== true) {
+      return reply.code(403).send({ error: 'google_email_not_verified' });
+    }
 
     // Find user by google_id first, then fall back to email
     const googleEmail = normalizeEmail(profile.email);
+    const allowedDomain = process.env.GOOGLE_ALLOWED_DOMAIN?.trim().toLowerCase();
+    if (allowedDomain) {
+      const emailDomain = googleEmail.split('@')[1] ?? '';
+      const hostedDomain = String(profile.hd ?? '').trim().toLowerCase();
+      if (emailDomain !== allowedDomain || (hostedDomain && hostedDomain !== allowedDomain)) {
+        return reply.code(403).send({ error: 'google_domain_not_allowed' });
+      }
+    }
     const userRes = await pool.query(
       `select id, email, role, tutor_profile_id, student_id, is_active, google_id
        from users
@@ -544,9 +579,8 @@ export async function authRoutes(app: FastifyInstance) {
     );
 
     if (Number(userRes.rowCount ?? 0) === 0) {
-      // Tutor must be pre-registered — Google OAuth is sign-in only, not sign-up
-      const tutorBase = process.env.TUTOR_PORTAL_URL?.replace(/\/$/, '') ?? '';
-      const loginUrl = tutorBase ? `${tutorBase}/login.html` : '/tutor/login.html';
+      // Users must be pre-registered: Google OAuth is sign-in only, not sign-up.
+      const loginUrl = portalLoginTarget(requestedRole);
       return reply.redirect(`${loginUrl}?error=account_not_found`);
     }
 
@@ -563,11 +597,14 @@ export async function authRoutes(app: FastifyInstance) {
     if (!user.is_active) {
       return reply.code(403).send({ error: 'account_disabled' });
     }
-    if (user.role !== 'TUTOR') {
-      return reply.code(403).send({ error: 'wrong_role' });
+    if (user.role !== requestedRole) {
+      return reply.redirect(`${portalLoginTarget(requestedRole)}?error=wrong_role`);
     }
-    if (!user.tutor_profile_id) {
+    if (requestedRole === 'TUTOR' && !user.tutor_profile_id) {
       return reply.code(500).send({ error: 'tutor_profile_missing' });
+    }
+    if (requestedRole === 'STUDENT' && !user.student_id) {
+      return reply.code(500).send({ error: 'student_profile_missing' });
     }
 
     // Link google_id on first Google sign-in via email match
@@ -580,13 +617,21 @@ export async function authRoutes(app: FastifyInstance) {
 
     const jwt = await issueTrackedSessionJwt(app, {
       userId: user.id,
-      role: 'TUTOR',
-      tutorId: user.tutor_profile_id
+      role: requestedRole,
+      tutorId: user.tutor_profile_id ?? undefined,
+      studentId: user.student_id ?? undefined
     }, req);
     setAuthCookies(reply, jwt);
 
-    const tutorBase = process.env.TUTOR_PORTAL_URL?.replace(/\/$/, '') ?? '';
-    return reply.redirect(tutorBase ? `${tutorBase}/dashboard/` : '/tutor/dashboard/');
+    return reply.redirect(portalRedirectTarget(requestedRole));
+  }
+
+  app.get('/auth/google/callback', async (req, reply) => {
+    return handleGoogleOAuthCallback('TUTOR', app.googleOAuth2, req, reply);
+  });
+
+  app.get('/auth/google/student/callback', async (req, reply) => {
+    return handleGoogleOAuthCallback('STUDENT', app.googleStudentOAuth2, req, reply);
   });
 
   app.get('/auth/session', {

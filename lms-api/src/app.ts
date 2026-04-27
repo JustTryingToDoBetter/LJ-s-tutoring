@@ -171,18 +171,28 @@ export async function buildApp() {
 
   // Google OAuth — only active when credentials are configured
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    await app.register(oauth2, {
-      name: 'googleOAuth2',
-      scope: ['profile', 'email'],
+    const googleCredentials = {
       credentials: {
         client: {
           id: process.env.GOOGLE_CLIENT_ID,
           secret: process.env.GOOGLE_CLIENT_SECRET
         },
         auth: oauth2.GOOGLE_CONFIGURATION
-      },
+      }
+    };
+    await app.register(oauth2, {
+      name: 'googleOAuth2',
+      scope: ['profile', 'email'],
+      ...googleCredentials,
       startRedirectPath: '/auth/google/start',
       callbackUri: process.env.GOOGLE_CALLBACK_URL ?? 'http://localhost:3001/auth/google/callback'
+    });
+    await app.register(oauth2, {
+      name: 'googleStudentOAuth2',
+      scope: ['profile', 'email'],
+      ...googleCredentials,
+      startRedirectPath: '/auth/google/student/start',
+      callbackUri: process.env.GOOGLE_STUDENT_CALLBACK_URL ?? 'http://localhost:3001/auth/google/student/callback'
     });
   }
 

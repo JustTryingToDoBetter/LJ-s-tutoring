@@ -92,6 +92,19 @@ export async function createStudent(input: StudentInput) {
   return res.rows[0] as { id: string; full_name: string; grade: string | null };
 }
 
+export async function createStudentUser(input: StudentInput & { email: string }) {
+  const student = await createStudent(input);
+  const uniqueEmail = uniquifyEmail(input.email);
+  const userRes = await pool.query(
+    `insert into users (email, role, student_id)
+     values ($1, 'STUDENT', $2)
+     returning id, email, role, student_id`,
+    [uniqueEmail, student.id]
+  );
+
+  return { student, user: userRes.rows[0] };
+}
+
 export async function createAssignment(input: AssignmentInput) {
   const res = await pool.query(
     `insert into assignments

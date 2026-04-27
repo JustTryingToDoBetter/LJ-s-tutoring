@@ -13,6 +13,10 @@
       return '';
     }
 
+    if (isLocalHost(host) && raw === '/api') {
+      return `${window.location.protocol}//${host}:3001`;
+    }
+
     try {
       const parsed = new URL(raw);
       if (isLocalHost(host) && isLocalHost(parsed.hostname) && parsed.hostname !== host) {

@@ -1,4 +1,4 @@
-import { apiFetch } from '../common.js';
+import { apiFetch, apiUrl } from '../common.js';
 
 const form     = document.getElementById('loginForm');
 const feedback = document.getElementById('loginFeedback');
@@ -6,8 +6,7 @@ const googleBtn = document.getElementById('googleBtn');
 
 // Point the Google button at the API start URL
 if (googleBtn) {
-  const API_BASE = (window.__PO_API_BASE__ || '').replace(/\/$/, '');
-  googleBtn.href = `${API_BASE}/auth/google/start`;
+  googleBtn.href = apiUrl('/auth/google/start');
 
   // Show an error if we were redirected back from Google with ?error=
   const params = new URLSearchParams(window.location.search);
@@ -15,6 +14,11 @@ if (googleBtn) {
     googleBtn.closest('div').insertAdjacentHTML(
       'afterend',
       '<p class="note" style="color:var(--red,#e53e3e)">No account found for that Google address. Contact your administrator.</p>',
+    );
+  } else if (params.get('error') === 'wrong_role') {
+    googleBtn.closest('div').insertAdjacentHTML(
+      'afterend',
+      '<p class="note" style="color:var(--red,#e53e3e)">That Google account is linked to another portal.</p>',
     );
   }
 }

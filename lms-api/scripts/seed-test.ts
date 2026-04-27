@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import argon2 from 'argon2';
 import { Pool } from 'pg';
 
 const databaseUrl = process.env.DATABASE_URL_TEST;
@@ -10,6 +11,11 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 const pool = new Pool({ connectionString: databaseUrl });
+const PASSWORD = 'TestPass123!';
+
+async function hashPassword() {
+  return argon2.hash(PASSWORD, { type: argon2.argon2id });
+}
 
 const ids = {
   adminUser: '00000000-0000-0000-0000-000000000001',
@@ -21,22 +27,30 @@ const ids = {
 
 async function ensureAdmin() {
   const email = 'admin@test.local';
+  const passwordHash = await hashPassword();
   const existing = await pool.query('select id from users where email = $1', [email]);
-  if (existing.rowCount > 0) return existing.rows[0].id as string;
+  if (existing.rowCount > 0) {
+    await pool.query('update users set password_hash = $1 where email = $2', [passwordHash, email]);
+    return existing.rows[0].id as string;
+  }
 
   const res = await pool.query(
-    `insert into users (id, email, role)
-     values ($1, $2, 'ADMIN')
+    `insert into users (id, email, role, password_hash, first_name, last_name)
+     values ($1, $2, 'ADMIN', $3, 'Test', 'Admin')
      returning id`,
-    [ids.adminUser, email]
+    [ids.adminUser, email, passwordHash]
   );
   return res.rows[0].id as string;
 }
 
 async function ensureTutor() {
   const email = 'tutor@test.local';
+  const passwordHash = await hashPassword();
   const existing = await pool.query('select id from users where email = $1', [email]);
-  if (existing.rowCount > 0) return existing.rows[0].id as string;
+  if (existing.rowCount > 0) {
+    await pool.query('update users set password_hash = $1 where email = $2', [passwordHash, email]);
+    return existing.rows[0].id as string;
+  }
 
   await pool.query(
     `insert into tutor_profiles (id, full_name, phone, default_hourly_rate, active)
@@ -46,10 +60,10 @@ async function ensureTutor() {
   );
 
   const res = await pool.query(
-    `insert into users (id, email, role, tutor_profile_id)
-     values ($1, $2, 'TUTOR', $3)
+    `insert into users (id, email, role, tutor_profile_id, password_hash, first_name, last_name)
+     values ($1, $2, 'TUTOR', $3, $4, 'Test', 'Tutor')
      returning id`,
-    [ids.tutorUser, email, ids.tutorProfile]
+    [ids.tutorUser, email, ids.tutorProfile, passwordHash]
   );
   return res.rows[0].id as string;
 }
@@ -99,11 +113,13 @@ async function run() {
     const assignmentId = await ensureAssignment();
 
     const studentUserRes = await pool.query(
-      `insert into users (email, role, student_id)
-       values ($1, 'STUDENT', $2)
-       on conflict (email) do update set student_id = excluded.student_id
+      `insert into users (email, role, student_id, password_hash, first_name, last_name)
+       values ($1, 'STUDENT', $2, $3, 'Test', 'Student')
+       on conflict (email) do update set
+         student_id = excluded.student_id,
+         password_hash = excluded.password_hash
        returning id`,
-      ['student@test.local', studentId]
+      ['student@test.local', studentId, await hashPassword()]
     );
     const studentUserId = studentUserRes.rows[0].id as string;
 
@@ -135,6 +151,7 @@ async function run() {
       studentId,
       studentUserId,
       assignmentId,
+      password: PASSWORD,
     });
   } finally {
     await pool.end();
