@@ -106,17 +106,32 @@ async function issueTrackedSessionJwt(
   return jwtToken;
 }
 
-function portalRedirectTarget(role: 'ADMIN' | 'TUTOR' | 'STUDENT') {
-  if (role === 'ADMIN') {
-    const base = process.env.ADMIN_PORTAL_URL?.replace(/\/$/, '');
-    return base ? `${base}/` : '/admin/';
-  }
-  if (role === 'TUTOR') {
-    const base = process.env.TUTOR_PORTAL_URL?.replace(/\/$/, '');
-    return base ? `${base}/dashboard/` : '/tutor/dashboard/';
-  }
-  const base = process.env.STUDENT_PORTAL_URL?.replace(/\/$/, '');
-  return base ? `${base}/dashboard/` : '/dashboard/';
+function requestHost(req?: any) {
+  const raw = (req?.headers?.['x-forwarded-host'] || req?.headers?.host || '') as string | string[];
+  const value = Array.isArray(raw) ? String(raw[0] ?? '') : String(raw ?? '');
+  return value.split(',')[0]?.trim().toLowerCase() || '';
+}
+
+function portalRedirectTarget(role: 'ADMIN' | 'TUTOR' | 'STUDENT', req?: any) {
+  // Prefer explicit configuration when present.
+  const adminBase = process.env.ADMIN_PORTAL_URL?.replace(/\/$/, '');
+  const tutorBase = process.env.TUTOR_PORTAL_URL?.replace(/\/$/, '');
+  const studentBase = process.env.STUDENT_PORTAL_URL?.replace(/\/$/, '');
+
+  if (role === 'ADMIN' && adminBase) return `${adminBase}/`;
+  if (role === 'TUTOR' && tutorBase) return `${tutorBase}/dashboard/`;
+  if (role === 'STUDENT' && studentBase) return `${studentBase}/dashboard/`;
+
+  // No configured portal URLs: choose paths based on the request host.
+  // On role subdomains, the portal is served at root.
+  const host = requestHost(req);
+  const isAdminSub = host.startsWith('admin.');
+  const isTutorSub = host.startsWith('tutor.');
+  const isStudentSub = host.startsWith('student.');
+
+  if (role === 'ADMIN') return isAdminSub ? '/' : '/admin/';
+  if (role === 'TUTOR') return isTutorSub ? '/dashboard/' : '/tutor/dashboard/';
+  return isStudentSub ? '/dashboard/' : '/dashboard/';
 }
 
 function portalLoginTarget(role: 'ADMIN' | 'TUTOR' | 'STUDENT') {
@@ -233,11 +248,11 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(result.status).send({ error: result.error });
     }
 
-    const verified = await app.jwt.verify<{ userId: string }>(result.jwt);
+    const verified = await app.jwt.verify<{ userId: string; role: 'ADMIN' | 'TUTOR' | 'STUDENT' }>(result.jwt);
     await trackSession(app, result.jwt, verified.userId, req);
 
     setAuthCookies(reply, result.jwt);
-    return reply.redirect(result.redirectTo);
+    return reply.redirect(portalRedirectTarget(verified.role, req));
   };
 
   app.get('/auth/verify', {
@@ -326,7 +341,7 @@ export async function authRoutes(app: FastifyInstance) {
       token: jwt,
       csrfToken,
       role: user.role,
-      redirectTo: portalRedirectTarget(user.role)
+      redirectTo: portalRedirectTarget(user.role, req)
     });
   });
 
@@ -510,11 +525,10 @@ export async function authRoutes(app: FastifyInstance) {
     // Clear the interim cookie
     reply.clearCookie('mfa_pending', clearAuthCookieOptions());
 
-    const adminBase = process.env.ADMIN_PORTAL_URL?.replace(/\/$/, '') ?? '';
     return reply.send({
       ok: true,
       csrfToken,
-      redirectTo: adminBase ? `${adminBase}/` : '/admin/'
+      redirectTo: portalRedirectTarget('ADMIN', req)
     });
   });
 
@@ -623,7 +637,7 @@ export async function authRoutes(app: FastifyInstance) {
     }, req);
     setAuthCookies(reply, jwt);
 
-    return reply.redirect(portalRedirectTarget(requestedRole));
+    return reply.redirect(portalRedirectTarget(requestedRole, req));
   }
 
   app.get('/auth/google/callback', async (req, reply) => {
@@ -656,6 +670,132 @@ export async function authRoutes(app: FastifyInstance) {
         : null,
     });
   });
+
+  // Dev helper for local portal testing across admin/tutor/student without needing OTP/magic links.
+  // Protected by DEV_LOGIN_TOKEN and disabled in production.
+  if (process.env.NODE_ENV !== 'production' && process.env.DEV_LOGIN_TOKEN) {
+    app.post('/auth/dev/login-as', async (req, reply) => {
+      const header = req.headers['x-dev-login-token'];
+      const token = Array.isArray(header) ? String(header[0] ?? '') : String(header ?? '');
+      if (!token || token !== process.env.DEV_LOGIN_TOKEN) {
+        return reply.code(403).send({ error: 'forbidden' });
+      }
+
+      const parsed = TestLoginSchema.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'invalid_request', details: parsed.error.flatten() });
+      }
+
+      const email = normalizeEmail(parsed.data.email);
+      const role = parsed.data.role;
+      const client = await pool.connect();
+      let userId: string | undefined;
+      let tutorId: string | null = null;
+      let studentId: string | null = null;
+
+      try {
+        await client.query('BEGIN');
+
+        const existing = await client.query(
+          `select id, role, tutor_profile_id, student_id from users where email = $1`,
+          [email]
+        );
+
+        if (Number(existing.rowCount || 0) > 0) {
+          const row = existing.rows[0] as { id: string; role: 'ADMIN' | 'TUTOR' | 'STUDENT'; tutor_profile_id: string | null; student_id: string | null };
+          if (row.role !== role) {
+            await client.query('ROLLBACK');
+            return reply.code(409).send({ error: 'role_mismatch' });
+          }
+          userId = row.id;
+          tutorId = row.tutor_profile_id;
+          studentId = row.student_id;
+
+          if (role === 'TUTOR' && !tutorId) {
+            const tutorRes = await client.query(
+              `insert into tutor_profiles (full_name, phone, default_hourly_rate, active)
+               values ($1, null, $2, true)
+               returning id`,
+              ['Dev Tutor', 250]
+            );
+            tutorId = tutorRes.rows[0].id as string;
+            await client.query(
+              `update users set tutor_profile_id = $1 where id = $2`,
+              [tutorId, userId]
+            );
+          }
+          if (role === 'STUDENT' && !studentId) {
+            const studentRes = await client.query(
+              `insert into students (full_name, grade, is_active)
+               values ($1, $2, true)
+               returning id`,
+              ['Dev Student', '10']
+            );
+            studentId = studentRes.rows[0].id as string;
+            await client.query(
+              `update users set student_id = $1 where id = $2`,
+              [studentId, userId]
+            );
+          }
+        } else if (role === 'ADMIN') {
+          const res = await client.query(
+            `insert into users (email, role)
+             values ($1, 'ADMIN')
+             returning id`,
+            [email]
+          );
+          userId = res.rows[0].id as string;
+        } else if (role === 'TUTOR') {
+          const tutorRes = await client.query(
+            `insert into tutor_profiles (full_name, phone, default_hourly_rate, active)
+             values ($1, null, $2, true)
+             returning id`,
+            ['Dev Tutor', 250]
+          );
+          tutorId = tutorRes.rows[0].id as string;
+          const userRes = await client.query(
+            `insert into users (email, role, tutor_profile_id)
+             values ($1, 'TUTOR', $2)
+             returning id`,
+            [email, tutorId]
+          );
+          userId = userRes.rows[0].id as string;
+        } else {
+          const studentRes = await client.query(
+            `insert into students (full_name, grade, is_active)
+             values ($1, $2, true)
+             returning id`,
+            ['Dev Student', '10']
+          );
+          studentId = studentRes.rows[0].id as string;
+          const userRes = await client.query(
+            `insert into users (email, role, student_id)
+             values ($1, 'STUDENT', $2)
+             returning id`,
+            [email, studentId]
+          );
+          userId = userRes.rows[0].id as string;
+        }
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        req.log?.error?.(err);
+        return reply.code(500).send({ error: 'internal_error' });
+      } finally {
+        client.release();
+      }
+
+      const jwt = await issueTrackedSessionJwt(app, {
+        userId,
+        role,
+        tutorId: tutorId ?? undefined,
+        studentId: studentId ?? undefined
+      }, req);
+      const csrfToken = setAuthCookies(reply, jwt);
+      return reply.send({ ok: true, csrfToken, redirectTo: portalRedirectTarget(role, req) });
+    });
+  }
 
   if (process.env.NODE_ENV === 'test') {
     app.post('/test/login-as', async (req, reply) => {
