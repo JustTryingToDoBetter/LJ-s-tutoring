@@ -65,6 +65,19 @@
 
 </head>
 <body class="font-sans text-slate-800 antialiased bg-slate-50">
+    <script>
+      (function () {
+        var portalRoutes = {
+          'admin.projectodysseus.live': '/admin/login.html',
+          'tutor.projectodysseus.live': '/tutor/dashboard/',
+          'student.projectodysseus.live': '/dashboard/login.html'
+        };
+        var target = portalRoutes[window.location.hostname];
+        if (target && (window.location.pathname === '/' || window.location.pathname === '/index.html')) {
+          window.location.replace(target);
+        }
+      })();
+    </script>
     
     
   

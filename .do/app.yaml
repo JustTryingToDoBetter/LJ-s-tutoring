@@ -16,23 +16,7 @@ ingress:
         authority:
           exact: admin.projectodysseus.live
         path:
-          prefix: /admin
-      component:
-        name: website
-    - match:
-        authority:
-          exact: admin.projectodysseus.live
-        path:
           prefix: /
-      redirect:
-        redirect_code: 302
-        scheme: https
-        uri: /admin/admin/login.html
-    - match:
-        authority:
-          exact: tutor.projectodysseus.live
-        path:
-          prefix: /tutor
       component:
         name: website
     - match:
@@ -40,15 +24,6 @@ ingress:
           exact: tutor.projectodysseus.live
         path:
           prefix: /
-      redirect:
-        redirect_code: 302
-        scheme: https
-        uri: /tutor/tutor/dashboard/
-    - match:
-        authority:
-          exact: student.projectodysseus.live
-        path:
-          prefix: /dashboard
       component:
         name: website
     - match:
@@ -56,10 +31,8 @@ ingress:
           exact: student.projectodysseus.live
         path:
           prefix: /
-      redirect:
-        redirect_code: 302
-        scheme: https
-        uri: /dashboard/dashboard/login.html
+      component:
+        name: website
     - match:
         path:
           prefix: /
