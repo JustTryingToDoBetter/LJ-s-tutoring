@@ -27,7 +27,7 @@ ingress:
       redirect:
         redirect_code: 302
         scheme: https
-        uri: /admin/login.html
+        uri: /admin/admin/login.html
     - match:
         authority:
           exact: tutor.projectodysseus.live
@@ -43,7 +43,7 @@ ingress:
       redirect:
         redirect_code: 302
         scheme: https
-        uri: /tutor/dashboard/
+        uri: /tutor/tutor/dashboard/
     - match:
         authority:
           exact: student.projectodysseus.live
@@ -59,7 +59,7 @@ ingress:
       redirect:
         redirect_code: 302
         scheme: https
-        uri: /dashboard/login.html
+        uri: /dashboard/dashboard/login.html
     - match:
         path:
           prefix: /
