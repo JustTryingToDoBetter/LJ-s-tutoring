@@ -179,7 +179,7 @@ async function loadPlan() {
 }
 
 async function completeMilestone(milestoneId) {
-  if (!milestoneId || !state.plan?.career?.id) return;
+  if (!milestoneId || !state.plan?.career?.id) {return;}
 
   try {
     await loadJson(`/odie-careers/readiness/milestone/${encodeURIComponent(milestoneId)}/complete`, {
