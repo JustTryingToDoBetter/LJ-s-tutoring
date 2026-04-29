@@ -19,6 +19,7 @@ ingress:
           prefix: /assets
       component:
         name: website
+        preserve_path_prefix: true
     - match:
         authority:
           exact: tutor.projectodysseus.live
@@ -26,6 +27,7 @@ ingress:
           prefix: /assets
       component:
         name: website
+        preserve_path_prefix: true
     - match:
         authority:
           exact: student.projectodysseus.live
@@ -33,6 +35,7 @@ ingress:
           prefix: /assets
       component:
         name: website
+        preserve_path_prefix: true
     - match:
         authority:
           exact: admin.projectodysseus.live
@@ -40,6 +43,7 @@ ingress:
           prefix: /favicon.svg
       component:
         name: website
+        preserve_path_prefix: true
     - match:
         authority:
           exact: tutor.projectodysseus.live
@@ -47,6 +51,7 @@ ingress:
           prefix: /favicon.svg
       component:
         name: website
+        preserve_path_prefix: true
     - match:
         authority:
           exact: student.projectodysseus.live
@@ -54,33 +59,7 @@ ingress:
           prefix: /favicon.svg
       component:
         name: website
-    - match:
-        authority:
-          exact: admin.projectodysseus.live
-        path:
-          prefix: /admin/login.html
-      redirect:
-        redirect_code: 302
-        scheme: https
-        uri: /admin/admin/login.html
-    - match:
-        authority:
-          exact: tutor.projectodysseus.live
-        path:
-          prefix: /tutor/dashboard/
-      redirect:
-        redirect_code: 302
-        scheme: https
-        uri: /tutor/tutor/dashboard/
-    - match:
-        authority:
-          exact: student.projectodysseus.live
-        path:
-          prefix: /dashboard/login.html
-      redirect:
-        redirect_code: 302
-        scheme: https
-        uri: /dashboard/dashboard/login.html
+        preserve_path_prefix: true
     - match:
         authority:
           exact: admin.projectodysseus.live
@@ -88,6 +67,7 @@ ingress:
           prefix: /admin
       component:
         name: website
+        preserve_path_prefix: true
     - match:
         authority:
           exact: tutor.projectodysseus.live
@@ -95,6 +75,7 @@ ingress:
           prefix: /tutor
       component:
         name: website
+        preserve_path_prefix: true
     - match:
         authority:
           exact: student.projectodysseus.live
@@ -102,6 +83,7 @@ ingress:
           prefix: /dashboard
       component:
         name: website
+        preserve_path_prefix: true
     - match:
         authority:
           exact: admin.projectodysseus.live
@@ -110,7 +92,7 @@ ingress:
       redirect:
         redirect_code: 302
         scheme: https
-        uri: /admin/admin/login.html
+        uri: /admin/login.html
     - match:
         authority:
           exact: tutor.projectodysseus.live
@@ -119,7 +101,7 @@ ingress:
       redirect:
         redirect_code: 302
         scheme: https
-        uri: /tutor/tutor/dashboard/
+        uri: /tutor/dashboard/
     - match:
         authority:
           exact: student.projectodysseus.live
@@ -128,7 +110,7 @@ ingress:
       redirect:
         redirect_code: 302
         scheme: https
-        uri: /dashboard/dashboard/login.html
+        uri: /dashboard/login.html
     - match:
         path:
           prefix: /
