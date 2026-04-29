@@ -347,6 +347,19 @@ iframe {
   display: block;
 }
 
+#lead-grade option,
+#grade option {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+#lead-grade option:disabled,
+#grade option:disabled,
+#lead-grade option[value=''],
+#grade option[value=''] {
+  color: #475569;
+}
+
 /* Keyboard Shortcuts Modal */
 .shortcuts-modal {
   position: fixed;

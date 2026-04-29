@@ -43,7 +43,7 @@ services:
       PUBLIC_BASE_URL: http://localhost:3001
       COOKIE_SECRET: FVgUiipN9DBALinEuUDRbH/sbdulw61Z5TmQGxqn09c=
       EMAIL_PROVIDER_KEY: ""
-      EMAIL_FROM: projectodysseus10@gmail.com
+      EMAIL_FROM: projectodysseus.maths@gmail.com
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       ODIE_ACCESS_KEYS: ${ODIE_ACCESS_KEYS:-}

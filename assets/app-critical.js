@@ -19,7 +19,7 @@
     formspreeEndpoint: 'https://formspree.io/f/xreebzqa',
 
     // Contact email
-    email: 'projectodysseus10@gmail.com',
+    email: 'projectodysseus.maths@gmail.com',
 
     // Countdown target date (YYYY, Month-1, Day, Hour, Min)
     // Month is 0-indexed: January = 0, February = 1, etc.
@@ -233,7 +233,7 @@
         if (countdown) {
           const msg = document.createElement('p');
           msg.className = 'text-brand-gold font-bold';
-          msg.textContent = 'Bookings Now Open!';
+          msg.textContent = 'Enquiries Now Open!';
           countdown.replaceChildren(msg);
         }
       }
@@ -454,7 +454,7 @@
         'Hi! My website form submission failed. My name is ' +
         (details.name || '') +
         (details.grade ? ' (Grade ' + details.grade + ')' : '') +
-        '. Can you help me book a session?';
+        '. Can you help me with the next steps?';
 
       const waHref = 'https://wa.me/' + CONFIG.whatsappNumber + '?text=' + encodeURIComponent(waMessage);
 

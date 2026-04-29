@@ -12,7 +12,7 @@
       'description': 'Top-rated Mathematics tutoring for Grade 8-12 students in Cape Town and South Africa. CAPS curriculum specialists with proven results.',
       'url': 'https://projectodysseus.live',
       'logo': 'https://projectodysseus.live/favicon.svg',
-      'email': 'projectodysseus10@gmail.com',
+      'email': 'projectodysseus.maths@gmail.com',
       'telephone': '+27679327754',
       'foundingDate': '2024',
       'areaServed': [
@@ -91,7 +91,7 @@
         },
       ],
       'telephone': '+27679327754',
-      'email': 'projectodysseus.math@gmail.com',
+      'email': 'projectodysseus.maths@gmail.com',
       'address': {
         '@type': 'PostalAddress',
         'addressLocality': 'Cape Town',
@@ -139,7 +139,7 @@
           'name': 'How can maths tutoring help my child pass matric?',
           'acceptedAnswer': {
             '@type': 'Answer',
-            'text': "Our personalised 1-on-1 maths tutoring identifies your child's specific weak areas, builds understanding from the ground up, and provides exam strategies. 95% of our students see significant grade improvement.",
+            'text': "Our personalised 1-on-1 maths tutoring identifies your child's specific weak areas, builds understanding from the ground up, and provides exam strategies matched to their grade.",
           },
         },
       ],
